@@ -13,7 +13,14 @@ class UserController extends Controller
     public function index()
     {
         $tenant = app('tenant');
+        
+        // Get member role ID to exclude
+        $memberRole = Role::where('slug', 'member')->first();
+        
         $users = User::where('tenant_id', $tenant->id)
+            ->when($memberRole, function ($query) use ($memberRole) {
+                return $query->where('role_id', '!=', $memberRole->id);
+            })
             ->with('role')
             ->paginate(10);
 
@@ -22,7 +29,12 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = Role::all();
+        // Exclude member role from selection
+        $memberRole = Role::where('slug', 'member')->first();
+        $roles = Role::when($memberRole, function ($query) use ($memberRole) {
+            return $query->where('id', '!=', $memberRole->id);
+        })->get();
+        
         return view('users.create', compact('roles'));
     }
 
@@ -56,7 +68,12 @@ class UserController extends Controller
             abort(404);
         }
 
-        $roles = Role::all();
+        // Exclude member role from selection
+        $memberRole = Role::where('slug', 'member')->first();
+        $roles = Role::when($memberRole, function ($query) use ($memberRole) {
+            return $query->where('id', '!=', $memberRole->id);
+        })->get();
+        
         return view('users.edit', compact('user', 'roles'));
     }
 

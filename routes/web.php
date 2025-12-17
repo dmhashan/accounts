@@ -64,6 +64,29 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class)
             ->middleware('permission:users.view');
         
+        // Member Management routes
+        Route::get('/members', [\App\Http\Controllers\MemberController::class, 'index'])
+            ->middleware('permission:users.view')
+            ->name('members.index');
+        Route::get('/members/create', [\App\Http\Controllers\MemberController::class, 'create'])
+            ->middleware('permission:users.create')
+            ->name('members.create');
+        Route::post('/members', [\App\Http\Controllers\MemberController::class, 'store'])
+            ->middleware('permission:users.create')
+            ->name('members.store');
+        Route::get('/members/{member}/edit', [\App\Http\Controllers\MemberController::class, 'edit'])
+            ->middleware('permission:users.edit')
+            ->name('members.edit');
+        Route::put('/members/{member}', [\App\Http\Controllers\MemberController::class, 'update'])
+            ->middleware('permission:users.edit')
+            ->name('members.update');
+        Route::patch('/members/{member}/toggle-status', [\App\Http\Controllers\MemberController::class, 'toggleStatus'])
+            ->middleware('permission:users.edit')
+            ->name('members.toggle-status');
+        Route::delete('/members/{member}', [\App\Http\Controllers\MemberController::class, 'destroy'])
+            ->middleware('permission:users.delete')
+            ->name('members.destroy');
+        
         // Role Management routes
         Route::get('/roles', [\App\Http\Controllers\RoleController::class, 'index'])
             ->middleware('permission:roles.view')
