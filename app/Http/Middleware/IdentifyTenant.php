@@ -16,6 +16,24 @@ class IdentifyTenant
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Check if multitenancy is bypassed
+        if (!config('app.multitenancy_enabled', true)) {
+            $bypassDomain = config('app.multitenancy_bypass_domain');
+            
+            if ($bypassDomain) {
+                $tenant = Tenant::where('domain', $bypassDomain)->first();
+                
+                if ($tenant) {
+                    $request->merge(['tenant' => $tenant]);
+                    app()->instance('tenant', $tenant);
+                    return $next($request);
+                }
+            }
+            
+            // If bypass is enabled but no valid domain, redirect to landing
+            return redirect('/');
+        }
+        
         $host = $request->getHost();
         $baseDomain = config('app.domain', 'localhost');
         

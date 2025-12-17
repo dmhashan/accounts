@@ -68,6 +68,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Multitenancy Settings
+    |--------------------------------------------------------------------------
+    |
+    | These values control whether multitenancy is enabled and which domain
+    | to use when multitenancy is bypassed. When MULTITENANCY_ENABLED is false,
+    | the system will use MULTITENANCY_BYPASS_DOMAIN to identify the tenant.
+    |
+    */
+
+    'multitenancy_enabled' => env('MULTITENANCY_ENABLED', true),
+    'multitenancy_bypass_domain' => env('MULTITENANCY_BYPASS_DOMAIN', null),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

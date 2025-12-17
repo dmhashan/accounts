@@ -14,18 +14,13 @@ class TenantSeeder extends Seeder
     public function run(): void
     {
         Tenant::create([
-            'name' => 'Company 1',
-            'domain' => 'company-1',
+            'name' => 'CoreX Fitness',
+            'domain' => 'gym',
         ]);
 
         Tenant::create([
-            'name' => 'Company 2',
-            'domain' => 'company-2',
-        ]);
-
-        Tenant::create([
-            'name' => 'Company 3',
-            'domain' => 'company-3',
+            'name' => 'Test Tenant',
+            'domain' => 'test',
         ]);
     }
 }

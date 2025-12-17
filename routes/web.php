@@ -6,6 +6,22 @@ use Illuminate\Support\Facades\Route;
 
 // Root route - check for tenant
 Route::get('/', function () {
+    // Check if multitenancy is bypassed
+    if (!config('app.multitenancy_enabled', true)) {
+        $bypassDomain = config('app.multitenancy_bypass_domain');
+        
+        if ($bypassDomain) {
+            $tenant = \App\Models\Tenant::where('domain', $bypassDomain)->first();
+            
+            if ($tenant) {
+                app()->instance('tenant', $tenant);
+                return view('tenant-landing', ['tenant' => $tenant]);
+            }
+        }
+        
+        return view('landing');
+    }
+    
     $host = request()->getHost();
     $baseDomain = config('app.domain', 'localhost');
     
