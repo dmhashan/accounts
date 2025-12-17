@@ -74,6 +74,15 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         Route::post('/roles/{role}/permissions', [\App\Http\Controllers\RoleController::class, 'updatePermissions'])
             ->middleware('permission:roles.permissions')
             ->name('roles.permissions.update');
+        
+        // Settings route
+        Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])
+            ->name('settings.index');
+        
+        // Reports route
+        Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])
+            ->middleware('permission:reports.view')
+            ->name('reports.index');
     });
     
     // Logout route
