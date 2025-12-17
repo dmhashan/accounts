@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="title">{{ $role->name }} Permissions - {{ app('tenant')->name }}</x-slot>
     
-    <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="flex h-screen bg-background-light dark:bg-background-dark">
         <x-sidebar />
 
         <div class="flex-1 flex flex-col overflow-hidden">
@@ -29,22 +29,22 @@
                 @endif
 
                 <div class="max-w-4xl mx-auto">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+                    <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 mb-6">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                                <h2 class="text-2xl font-bold text-secondary-900 dark:text-white flex items-center">
                                     {{ $role->name }}
                                     @if(!$role->is_editable)
-                                        <span class="ml-3 px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
+                                        <span class="ml-3 px-3 py-1 text-xs bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400 rounded-full">
                                             Predefined Role
                                         </span>
                                     @endif
                                 </h2>
                                 @if($role->description)
-                                    <p class="text-gray-600 dark:text-gray-400 mt-2">{{ $role->description }}</p>
+                                    <p class="text-secondary-600 dark:text-secondary-400 mt-2">{{ $role->description }}</p>
                                 @endif
                             </div>
-                            <a href="{{ route('roles.index') }}" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                            <a href="{{ route('roles.index') }}" class="px-4 py-2 text-secondary-700 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-white">
                                 Back
                             </a>
                         </div>
@@ -55,9 +55,9 @@
                         
                         <div class="space-y-6">
                             @foreach($allPermissions as $feature => $permissions)
-                                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $feature }}</h3>
+                                <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                                    <div class="px-6 py-4 bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">{{ $feature }}</h3>
                                     </div>
                                     <div class="p-6">
                                         <div class="space-y-4">
@@ -69,14 +69,14 @@
                                                             value="{{ $permission->id }}"
                                                             {{ $role->permissions->contains($permission->id) ? 'checked' : '' }}
                                                             {{ !$role->is_editable ? 'disabled' : '' }}
-                                                            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                                            class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded">
                                                     </div>
                                                     <div class="ml-3 flex-1">
-                                                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                                                        <div class="text-sm font-medium text-secondary-700 dark:text-secondary-300 group-hover:text-secondary-900 dark:group-hover:text-white">
                                                             {{ $permission->name }}
                                                         </div>
                                                         @if($permission->description)
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $permission->description }}</p>
+                                                            <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">{{ $permission->description }}</p>
                                                         @endif
                                                     </div>
                                                 </label>
@@ -89,13 +89,13 @@
 
                         @if($role->is_editable && auth()->user()->hasPermission('roles.permissions'))
                             <div class="mt-6 flex justify-end">
-                                <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+                                <button type="submit" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors">
                                     Update Permissions
                                 </button>
                             </div>
                         @else
-                            <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                            <div class="mt-6 p-4 bg-secondary-50 dark:bg-background-dark rounded-lg border border-secondary-200 dark:border-secondary-700">
+                                <p class="text-sm text-secondary-600 dark:text-secondary-400 flex items-center">
                                     <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                     </svg>
