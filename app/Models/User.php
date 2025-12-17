@@ -20,6 +20,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'tenant_id',
+        'role_id',
         'name',
         'email',
         'password',
@@ -51,5 +52,25 @@ class User extends Authenticatable
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function hasPermission(string $permissionSlug): bool
+    {
+        return $this->role?->hasPermission($permissionSlug) ?? false;
+    }
+
+    public function hasRole(string $roleSlug): bool
+    {
+        return $this->role?->slug === $roleSlug;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
     }
 }

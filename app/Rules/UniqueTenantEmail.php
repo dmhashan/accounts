@@ -9,10 +9,12 @@ use Illuminate\Contracts\Validation\ValidationRule;
 class UniqueTenantEmail implements ValidationRule
 {
     protected $tenantId;
+    protected $ignoreUserId;
 
-    public function __construct($tenantId)
+    public function __construct($tenantId, $ignoreUserId = null)
     {
         $this->tenantId = $tenantId;
+        $this->ignoreUserId = $ignoreUserId;
     }
 
     /**
@@ -22,11 +24,14 @@ class UniqueTenantEmail implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $exists = User::where('tenant_id', $this->tenantId)
-            ->where('email', $value)
-            ->exists();
-            
-        if ($exists) {
+        $query = User::where('tenant_id', $this->tenantId)
+            ->where('email', $value);
+        
+        if ($this->ignoreUserId) {
+            $query->where('id', '!=', $this->ignoreUserId);
+        }
+        
+        if ($query->exists()) {
             $fail('The :attribute has already been taken for this tenant.');
         }
     }

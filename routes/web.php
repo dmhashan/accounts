@@ -43,6 +43,23 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         return view('dashboard');
     })->middleware('auth')->name('dashboard');
     
+    // User Management routes (requires authentication and permissions)
+    Route::middleware(['auth'])->group(function () {
+        Route::resource('users', \App\Http\Controllers\UserController::class)
+            ->middleware('permission:users.view');
+        
+        // Role Management routes
+        Route::get('/roles', [\App\Http\Controllers\RoleController::class, 'index'])
+            ->middleware('permission:roles.view')
+            ->name('roles.index');
+        Route::get('/roles/{role}', [\App\Http\Controllers\RoleController::class, 'show'])
+            ->middleware('permission:roles.view')
+            ->name('roles.show');
+        Route::post('/roles/{role}/permissions', [\App\Http\Controllers\RoleController::class, 'updatePermissions'])
+            ->middleware('permission:roles.permissions')
+            ->name('roles.permissions.update');
+    });
+    
     // Logout route
     Route::post('/logout', function () {
         auth()->logout();

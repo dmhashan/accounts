@@ -26,8 +26,12 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
+        // Get default member role
+        $memberRole = \App\Models\Role::where('slug', 'member')->first();
+
         $user = User::create([
             'tenant_id' => $tenant->id,
+            'role_id' => $memberRole?->id,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
