@@ -6,8 +6,8 @@
             <div class="bg-white rounded-2xl shadow-xl p-8">
                 <!-- Header -->
                 <div class="text-center mb-8">
-                    <div class="mx-auto mb-6">
-                        <img src="{{ asset('images/black-text-logo.png') }}" alt="{{ app('tenant')->name }}" class="h-16 mx-auto">
+                    <div class="mx-auto">
+                        <img src="{{ asset('images/black-text-logo.png') }}" alt="{{ app('tenant')->name }}" class="h-32 mx-auto">
                     </div>
                     <h2 class="text-3xl font-bold text-secondary-900">Create Account</h2>
                     <p class="mt-2 text-sm text-secondary-600">Join us today</p>
