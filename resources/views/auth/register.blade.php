@@ -6,13 +6,11 @@
             <div class="bg-white rounded-2xl shadow-xl p-8">
                 <!-- Header -->
                 <div class="text-center mb-8">
-                    <div class="mx-auto h-16 w-16 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center mb-4">
-                        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
+                    <div class="mx-auto">
+                        <img src="{{ asset('images/black-text-logo.png') }}" alt="{{ app('tenant')->name }}" class="h-32 mx-auto">
                     </div>
                     <h2 class="text-3xl font-bold text-secondary-900">Create Account</h2>
-                    <p class="mt-2 text-sm text-secondary-600">{{ app('tenant')->name }}</p>
+                    <p class="mt-2 text-sm text-secondary-600">Join us today</p>
                 </div>
 
                 <form action="{{ route('register') }}" method="POST" class="space-y-5">

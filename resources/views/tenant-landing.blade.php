@@ -6,8 +6,8 @@
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                 <!-- Header Section -->
                 <div class="bg-gradient-to-r from-primary-500 to-primary-700 px-8 py-12 text-center">
-                    <div class="mx-auto h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
-                        <span class="text-3xl font-bold text-primary-600">{{ substr($tenant->name, 0, 1) }}</span>
+                    <div class="mx-auto mb-6 bg-white rounded-full h-20 w-20 flex items-center justify-center shadow-lg ">
+                        <img src="{{ asset('images/black-text-logo.png') }}" alt="{{ $tenant->name }}" class="h-20 mx-auto">
                     </div>
                     <h1 class="text-4xl font-extrabold text-white mb-2">{{ $tenant->name }}</h1>
                     <p class="text-primary-100">Welcome to our platform</p>

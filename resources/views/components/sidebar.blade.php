@@ -6,10 +6,8 @@
     <!-- Logo/Brand -->
     <div class="h-16 flex items-center justify-between px-6 border-b border-secondary-200 dark:border-secondary-700">
         <div class="flex items-center flex-1 min-w-0">
-            <div class="h-10 w-10 bg-gradient-to-r from-primary-500 to-primary-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span class="text-lg font-bold text-white">{{ substr(app('tenant')->name, 0, 1) }}</span>
-            </div>
-            <span class="ml-3 text-lg font-semibold text-secondary-900 dark:text-white truncate">{{ app('tenant')->name }}</span>
+            <img src="{{ asset('images/black-text-logo.png') }}" alt="{{ app('tenant')->name }}" class="h-10 block dark:hidden">
+            <img src="{{ asset('images/white-text-logo.png') }}" alt="{{ app('tenant')->name }}" class="h-10 hidden dark:block">
         </div>
         <!-- Close button for mobile -->
         <button onclick="toggleSidebar()" class="lg:hidden p-2 text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors" title="Close menu">

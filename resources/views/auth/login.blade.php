@@ -6,13 +6,11 @@
             <div class="bg-white rounded-2xl shadow-xl p-8">
                 <!-- Header -->
                 <div class="text-center mb-8">
-                    <div class="mx-auto h-16 w-16 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center mb-4">
-                        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
+                    <div class="mx-auto">
+                        <img src="{{ asset('images/black-text-logo.png') }}" alt="{{ app('tenant')->name }}" class="h-32 mx-auto">
                     </div>
                     <h2 class="text-3xl font-bold text-secondary-900">Welcome Back</h2>
-                    <p class="mt-2 text-sm text-secondary-600">{{ app('tenant')->name }}</p>
+                    <p class="mt-2 text-sm text-secondary-600">Sign in to your account</p>
                 </div>
 
                 @if(session('error'))
