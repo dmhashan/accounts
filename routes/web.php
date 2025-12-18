@@ -56,6 +56,10 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {
+        // Members should be redirected to their profile
+        if (auth()->user()->hasRole('member')) {
+            return redirect()->route('member.profile');
+        }
         return view('dashboard');
     })->middleware('auth')->name('dashboard');
     
@@ -64,7 +68,7 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class)
             ->middleware('permission:users.view');
         
-        // Member Management routes
+        // Member Management routes (Admin/Staff only)
         Route::get('/members', [\App\Http\Controllers\MemberController::class, 'index'])
             ->middleware('permission:users.view')
             ->name('members.index');
@@ -86,6 +90,20 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         Route::delete('/members/{member}', [\App\Http\Controllers\MemberController::class, 'destroy'])
             ->middleware('permission:users.delete')
             ->name('members.destroy');
+        
+        // Member Profile (for members to view their own profile)
+        Route::get('/profile', [\App\Http\Controllers\MemberController::class, 'profile'])
+            ->name('member.profile');
+        
+        // Member-specific routes (Workout, Diet, Payments, Attendance)
+        Route::get('/workout-schedule', [\App\Http\Controllers\WorkoutScheduleController::class, 'index'])
+            ->name('workout-schedule.index');
+        Route::get('/diet-plan', [\App\Http\Controllers\DietPlanController::class, 'index'])
+            ->name('diet-plan.index');
+        Route::get('/payments', [\App\Http\Controllers\PaymentController::class, 'index'])
+            ->name('payments.index');
+        Route::get('/attendance', [\App\Http\Controllers\AttendanceController::class, 'index'])
+            ->name('attendance.index');
         
         // Role Management routes
         Route::get('/roles', [\App\Http\Controllers\RoleController::class, 'index'])

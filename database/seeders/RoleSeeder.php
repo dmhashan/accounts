@@ -37,12 +37,8 @@ class RoleSeeder extends Seeder
         $allPermissions = Permission::all();
         $admin->permissions()->sync($allPermissions->pluck('id'));
 
-        // Assign limited permissions to Member
-        $memberPermissions = Permission::whereIn('slug', [
-            'dashboard.view',
-            'users.view',
-            'reports.view',
-        ])->pluck('id');
-        $member->permissions()->sync($memberPermissions);
+        // Member role has no special permissions - they can only access their own profile
+        // and member-specific features (workout, diet, payments, attendance)
+        $member->permissions()->sync([]);
     }
 }

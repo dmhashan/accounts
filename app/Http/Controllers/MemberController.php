@@ -142,4 +142,15 @@ class MemberController extends Controller
         return redirect()->route('members.index')
             ->with('success', 'Member deleted successfully.');
     }
+
+    public function profile()
+    {
+        // For members, show only their own profile
+        $member = Member::where('tenant_id', app('tenant')->id)
+            ->where('user_id', auth()->id())
+            ->with('user')
+            ->firstOrFail();
+        
+        return view('members.profile', compact('member'));
+    }
 }
