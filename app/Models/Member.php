@@ -19,10 +19,12 @@ class Member extends Model
         'date_of_birth',
         'comment',
         'is_active',
+        'is_verified',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_verified' => 'boolean',
         'date_of_birth' => 'date',
     ];
 

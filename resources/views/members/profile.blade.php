@@ -64,6 +64,18 @@
                                             </span>
                                         @endif
                                     </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-1">Verification Status</label>
+                                        @if($member->is_verified)
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                Verified
+                                            </span>
+                                        @else
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                                Pending Verification
+                                            </span>
+                                        @endif
+                                    </div>
                                     @if($member->comment)
                                         <div class="md:col-span-2">
                                             <label class="block text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-1">Notes</label>

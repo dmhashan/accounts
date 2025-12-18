@@ -87,6 +87,9 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         Route::patch('/members/{member}/toggle-status', [\App\Http\Controllers\MemberController::class, 'toggleStatus'])
             ->middleware('permission:users.edit')
             ->name('members.toggle-status');
+        Route::patch('/members/{member}/toggle-verification', [\App\Http\Controllers\MemberController::class, 'toggleVerification'])
+            ->middleware('permission:users.edit')
+            ->name('members.toggle-verification');
         Route::delete('/members/{member}', [\App\Http\Controllers\MemberController::class, 'destroy'])
             ->middleware('permission:users.delete')
             ->name('members.destroy');

@@ -41,6 +41,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Phone</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Verified</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
@@ -78,6 +79,17 @@
                                                 </span>
                                             @endif
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @if($member->is_verified)
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                    Verified
+                                                </span>
+                                            @else
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                                    Unverified
+                                                </span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center justify-end space-x-2">
                                                 @if(auth()->user()->hasPermission('users.edit'))
@@ -89,6 +101,13 @@
                                                         @method('PATCH')
                                                         <button type="submit" class="text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-300">
                                                             {{ $member->is_active ? 'Deactivate' : 'Activate' }}
+                                                        </button>
+                                                    </form>
+                                                    <form action="{{ route('members.toggle-verification', $member) }}" method="POST" class="inline">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                                            {{ $member->is_verified ? 'Unverify' : 'Verify' }}
                                                         </button>
                                                     </form>
                                                 @endif

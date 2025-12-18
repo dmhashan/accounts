@@ -43,6 +43,7 @@ class MemberController extends Controller
         $validated['member_id'] = Member::generateMemberId();
         $validated['tenant_id'] = app('tenant')->id;
         $validated['is_active'] = true;
+        $validated['is_verified'] = true; // Admin-created members are verified
 
         // Create member
         $member = Member::create($validated);
@@ -120,6 +121,23 @@ class MemberController extends Controller
         ]);
 
         $status = $member->is_active ? 'activated' : 'deactivated';
+        
+        return redirect()->route('members.index')
+            ->with('success', "Member {$status} successfully.");
+    }
+
+    public function toggleVerification(Member $member)
+    {
+        // Ensure member belongs to current tenant
+        if ($member->tenant_id !== app('tenant')->id) {
+            abort(403);
+        }
+
+        $member->update([
+            'is_verified' => !$member->is_verified
+        ]);
+
+        $status = $member->is_verified ? 'verified' : 'unverified';
         
         return redirect()->route('members.index')
             ->with('success', "Member {$status} successfully.");
