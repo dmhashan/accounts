@@ -36,6 +36,7 @@ class MemberController extends Controller
             'nic' => 'nullable|string|max:50',
             'date_of_birth' => 'nullable|date',
             'comment' => 'nullable|string',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
         // Generate member ID
@@ -55,7 +56,7 @@ class MemberController extends Controller
                 'role_id' => $memberRole->id,
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'password' => Hash::make(Str::random(16)), // Random password, to be reset
+                'password' => Hash::make($validated['password']),
             ]);
 
             // Link member to user
@@ -63,7 +64,7 @@ class MemberController extends Controller
         }
 
         return redirect()->route('members.index')
-            ->with('success', 'Member created successfully. Login credentials will be sent to the member.');
+            ->with('success', 'Member created successfully.');
     }
 
     public function edit(Member $member)

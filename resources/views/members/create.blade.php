@@ -75,6 +75,21 @@
                                     @enderror
                                 </div>
 
+                                <div>
+                                    <label for="password" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Password *</label>
+                                    <input type="password" name="password" id="password" required
+                                        class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
+                                    @error('password')
+                                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="password_confirmation" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Confirm Password *</label>
+                                    <input type="password" name="password_confirmation" id="password_confirmation" required
+                                        class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
+                                </div>
+
                                 <div class="md:col-span-2">
                                     <label for="comment" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Comment</label>
                                     <textarea name="comment" id="comment" rows="4"
