@@ -13,29 +13,36 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            // User Management
-            ['name' => 'View Users', 'slug' => 'users.view', 'feature' => 'User Management', 'description' => 'View all users in the system'],
-            ['name' => 'Create Users', 'slug' => 'users.create', 'feature' => 'User Management', 'description' => 'Create new users'],
-            ['name' => 'Edit Users', 'slug' => 'users.edit', 'feature' => 'User Management', 'description' => 'Edit existing users'],
-            ['name' => 'Delete Users', 'slug' => 'users.delete', 'feature' => 'User Management', 'description' => 'Delete users'],
+            // Admin Features
+            ['name' => 'View Users', 'slug' => 'users.view', 'feature' => 'Admin Features', 'description' => 'View all users in the system'],
+            ['name' => 'Create Users', 'slug' => 'users.create', 'feature' => 'Admin Features', 'description' => 'Create new users'],
+            ['name' => 'Edit Users', 'slug' => 'users.edit', 'feature' => 'Admin Features', 'description' => 'Edit existing users'],
+            ['name' => 'Delete Users', 'slug' => 'users.delete', 'feature' => 'Admin Features', 'description' => 'Delete users'],
             
-            // Role Management
-            ['name' => 'View Roles', 'slug' => 'roles.view', 'feature' => 'Role Management', 'description' => 'View all roles'],
-            ['name' => 'Manage Permissions', 'slug' => 'roles.permissions', 'feature' => 'Role Management', 'description' => 'Assign permissions to roles'],
+            // Admin Features - Role Management
+            ['name' => 'View Roles', 'slug' => 'roles.view', 'feature' => 'Admin Features', 'description' => 'View all roles'],
+            ['name' => 'Manage Permissions', 'slug' => 'roles.permissions', 'feature' => 'Admin Features', 'description' => 'Assign permissions to roles'],
             
-            // Reports
-            ['name' => 'View Reports', 'slug' => 'reports.view', 'feature' => 'Reports', 'description' => 'View system reports'],
-            ['name' => 'Export Reports', 'slug' => 'reports.export', 'feature' => 'Reports', 'description' => 'Export reports'],
+            // Admin Features - Reports
+            ['name' => 'View Reports', 'slug' => 'reports.view', 'feature' => 'Admin Features', 'description' => 'View system reports'],
+            ['name' => 'Export Reports', 'slug' => 'reports.export', 'feature' => 'Admin Features', 'description' => 'Export reports'],
             
-            // Settings
-            ['name' => 'Manage Settings', 'slug' => 'settings.manage', 'feature' => 'Settings', 'description' => 'Manage system settings'],
+            // Admin Features - Settings
+            ['name' => 'Manage Settings', 'slug' => 'settings.manage', 'feature' => 'Admin Features', 'description' => 'Manage system settings'],
             
-            // Dashboard
-            ['name' => 'View Dashboard', 'slug' => 'dashboard.view', 'feature' => 'Dashboard', 'description' => 'Access the dashboard'],
+            // Admin Features - Dashboard
+            ['name' => 'View Dashboard', 'slug' => 'dashboard.view', 'feature' => 'Admin Features', 'description' => 'Access the admin dashboard'],
+      
+            // Member Features
+            ['name' => 'View Profile', 'slug' => 'member.profile.view', 'feature' => 'Member Features', 'description' => 'View member profile'],
+            ['name' => 'View Workout Schedule', 'slug' => 'member.workout.view', 'feature' => 'Member Features', 'description' => 'View workout schedule'],
+            ['name' => 'View Diet Plan', 'slug' => 'member.diet.view', 'feature' => 'Member Features', 'description' => 'View diet plan'],
+            ['name' => 'View Payments', 'slug' => 'member.payments.view', 'feature' => 'Member Features', 'description' => 'View payments history'],
+            ['name' => 'View Attendance', 'slug' => 'member.attendance.view', 'feature' => 'Member Features', 'description' => 'View attendance records'],
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(
+            Permission::updateOrCreate(
                 ['slug' => $permission['slug']],
                 $permission
             );

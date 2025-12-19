@@ -33,12 +33,12 @@ class RoleSeeder extends Seeder
             ]
         );
 
-        // Assign all permissions to Admin
-        $allPermissions = Permission::all();
-        $admin->permissions()->sync($allPermissions->pluck('id'));
+        // Assign only admin features to Admin role
+        $adminPermissions = Permission::where('feature', 'Admin Features')->pluck('id');
+        $admin->permissions()->sync($adminPermissions);
 
-        // Member role has no special permissions - they can only access their own profile
-        // and member-specific features (workout, diet, payments, attendance)
-        $member->permissions()->sync([]);
+        // Assign only member features to Member role
+        $memberPermissions = Permission::where('feature', 'Member Features')->pluck('id');
+        $member->permissions()->sync($memberPermissions);
     }
 }
