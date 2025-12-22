@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Member;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -28,10 +29,16 @@ class MemberController extends Controller
 
     public function store(Request $request)
     {
+        $tenant = app('tenant');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'gender' => 'required|in:male,female,other',
-            'email' => 'required|email|unique:members,email',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
+            ],
             'phone_number' => 'nullable|string|max:20',
             'nic' => 'nullable|string|max:50',
             'date_of_birth' => 'nullable|date',
@@ -50,10 +57,17 @@ class MemberController extends Controller
 
         // Create user account with member role
         $memberRole = Role::where('slug', 'member')->first();
-        
+
         if ($memberRole) {
+            // Ensure user email is unique for this tenant to avoid DB errors
+            if (User::where('tenant_id', $tenant->id)->where('email', $validated['email'])->exists()) {
+                // Rollback created member
+                $member->delete();
+                return back()->withErrors(['email' => 'The email has already been taken for this tenant.'])->withInput();
+            }
+
             $user = User::create([
-                'tenant_id' => app('tenant')->id,
+                'tenant_id' => $tenant->id,
                 'role_id' => $memberRole->id,
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -85,10 +99,16 @@ class MemberController extends Controller
             abort(403);
         }
 
+        $tenant = app('tenant');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'gender' => 'required|in:male,female,other',
-            'email' => 'required|email|unique:members,email,' . $member->id,
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id))->ignore($member->id),
+            ],
             'phone_number' => 'nullable|string|max:20',
             'nic' => 'nullable|string|max:50',
             'date_of_birth' => 'nullable|date',

@@ -40,6 +40,7 @@
                         <input id="password" name="password" type="password" required
                                class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                                placeholder="••••••••">
+                        @include('components.password-criteria', ['passwordId' => 'password', 'confirmId' => 'password_confirmation'])
                     </div>
 
                     <div>

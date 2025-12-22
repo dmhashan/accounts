@@ -19,9 +19,9 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="md:col-span-2">
                             <label for="name" class="block text-sm font-medium text-secondary-700 mb-2">Full Name *</label>
-                            <input id="name" name="name" type="text" required autofocus
-                                   class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('name') border-red-300 @enderror"
-                                   placeholder="John Doe" value="{{ old('name') }}">
+                            <input id="name" name="name" type="text" required autofocus maxlength="255"
+                                class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('name') border-red-300 @enderror"
+                                placeholder="John Doe" value="{{ old('name') }}">
                             @error('name')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -52,9 +52,9 @@
 
                         <div>
                             <label for="email" class="block text-sm font-medium text-secondary-700 mb-2">Email Address *</label>
-                            <input id="email" name="email" type="email" required
-                                   class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-300 @enderror"
-                                   placeholder="you@example.com" value="{{ old('email') }}">
+                            <input id="email" name="email" type="email" required maxlength="255"
+                                class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-300 @enderror"
+                                placeholder="you@example.com" value="{{ old('email') }}">
                             @error('email')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -62,7 +62,7 @@
 
                         <div>
                             <label for="phone_number" class="block text-sm font-medium text-secondary-700 mb-2">Phone Number</label>
-                            <input type="text" name="phone_number" id="phone_number" value="{{ old('phone_number') }}"
+                            <input type="text" name="phone_number" id="phone_number" value="{{ old('phone_number') }}" maxlength="20"
                                 class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 @error('phone_number') border-red-300 @enderror"
                                 placeholder="+1234567890">
                             @error('phone_number')
@@ -72,7 +72,7 @@
 
                         <div>
                             <label for="nic" class="block text-sm font-medium text-secondary-700 mb-2">NIC Number</label>
-                            <input type="text" name="nic" id="nic" value="{{ old('nic') }}"
+                            <input type="text" name="nic" id="nic" value="{{ old('nic') }}" maxlength="50"
                                 class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 @error('nic') border-red-300 @enderror"
                                 placeholder="123456789V">
                             @error('nic')
@@ -82,9 +82,10 @@
 
                         <div>
                             <label for="password" class="block text-sm font-medium text-secondary-700 mb-2">Password *</label>
-                            <input id="password" name="password" type="password" required
+                            <input id="password" name="password" type="password" required minlength="8"
                                    class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('password') border-red-300 @enderror"
                                    placeholder="••••••••">
+                            @include('components.password-criteria', ['passwordId' => 'password', 'confirmId' => 'password_confirmation'])
                             @error('password')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror

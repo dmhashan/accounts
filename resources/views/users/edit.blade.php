@@ -19,7 +19,7 @@
                             <div class="space-y-6">
                                 <div>
                                     <label for="name" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Name</label>
-                                    <input type="text" name="name" id="name" value="{{ old('name', $user->name) }}" required
+                                    <input type="text" name="name" id="name" value="{{ old('name', $user->name) }}" required maxlength="255"
                                         class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     @error('name')
                                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -28,7 +28,7 @@
 
                                 <div>
                                     <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-                                    <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}" required
+                                    <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}" required maxlength="255"
                                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
                                     @error('email')
                                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -57,8 +57,9 @@
                                     <div class="space-y-4">
                                         <div>
                                             <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password</label>
-                                            <input type="password" name="password" id="password"
+                                            <input type="password" name="password" id="password" minlength="8"
                                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                                            @include('components.password-criteria', ['passwordId' => 'password', 'confirmId' => 'password_confirmation'])
                                             @error('password')
                                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                                             @enderror

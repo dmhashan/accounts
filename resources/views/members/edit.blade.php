@@ -25,7 +25,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="md:col-span-2">
                                     <label for="name" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Full Name *</label>
-                                    <input type="text" name="name" id="name" value="{{ old('name', $member->name) }}" required
+                                    <input type="text" name="name" id="name" value="{{ old('name', $member->name) }}" required maxlength="255"
                                         class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     @error('name')
                                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -57,7 +57,7 @@
 
                                 <div>
                                     <label for="email" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Email *</label>
-                                    <input type="email" name="email" id="email" value="{{ old('email', $member->email) }}" required
+                                    <input type="email" name="email" id="email" value="{{ old('email', $member->email) }}" required maxlength="255"
                                         class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     @error('email')
                                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -66,7 +66,7 @@
 
                                 <div>
                                     <label for="phone_number" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Phone Number</label>
-                                    <input type="text" name="phone_number" id="phone_number" value="{{ old('phone_number', $member->phone_number) }}"
+                                    <input type="text" name="phone_number" id="phone_number" value="{{ old('phone_number', $member->phone_number) }}" maxlength="20"
                                         class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     @error('phone_number')
                                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -75,7 +75,7 @@
 
                                 <div>
                                     <label for="nic" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">NIC Number</label>
-                                    <input type="text" name="nic" id="nic" value="{{ old('nic', $member->nic) }}"
+                                    <input type="text" name="nic" id="nic" value="{{ old('nic', $member->nic) }}" maxlength="50"
                                         class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     @error('nic')
                                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>

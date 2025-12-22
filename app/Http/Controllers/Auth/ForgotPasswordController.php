@@ -50,8 +50,14 @@ class ForgotPasswordController extends Controller
         // For now, we'll show the token on screen (development only)
         $resetLink = route('password.reset', ['token' => $token, 'email' => $request->email]);
 
+        // Only expose reset link in non-production environments
+        if (app()->environment('production')) {
+            // TODO: dispatch email
+            return back()->with('success', 'Password reset link has been sent to your email address.');
+        }
+
         return back()->with('success', 'Password reset link has been sent to your email address.')
-            ->with('resetLink', $resetLink); // Remove this in production
+            ->with('resetLink', $resetLink);
     }
 
     public function showResetForm(Request $request, $token)

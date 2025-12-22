@@ -18,13 +18,16 @@ return new class extends Migration
             $table->string('member_id')->unique();
             $table->string('name');
             $table->enum('gender', ['male', 'female', 'other']);
-            $table->string('email')->unique();
+            $table->string('email');
             $table->string('phone_number')->nullable();
             $table->string('nic')->nullable();
             $table->date('date_of_birth')->nullable();
             $table->text('comment')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            // ensure emails are unique per tenant
+            $table->unique(['tenant_id', 'email']);
         });
     }
 
