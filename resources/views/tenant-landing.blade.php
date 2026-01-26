@@ -582,7 +582,7 @@
                         </div>
                         <h3 class="text-2xl font-bold text-gray-900 mb-2">Monthly</h3>
                         <div class="mb-6">
-                            <span class="text-5xl font-bold text-gray-900">3000</span>
+                            <span class="text-5xl font-bold text-gray-900">USD 35.00</span>
                             <span class="text-gray-600 text-xl">/month</span>
                         </div>
                         <ul class="space-y-4 mb-8 text-left">
@@ -623,7 +623,7 @@
                     <div class="text-center">
                         <h3 class="text-2xl font-bold text-gray-900 mb-2 mt-10">Day Pass</h3>
                         <div class="mb-6">
-                            <span class="text-5xl font-bold text-gray-900">1000</span>
+                            <span class="text-5xl font-bold text-gray-900">USD 3.50</span>
                             <span class="text-gray-600 text-xl">/day</span>
                         </div>
                         <ul class="space-y-4 mb-8 text-left">
@@ -664,7 +664,7 @@
                     <div class="text-center">
                         <h3 class="text-2xl font-bold text-gray-900 mb-2 mt-10">Personal Training</h3>
                         <div class="mb-6">
-                            <span class="text-5xl font-bold text-gray-900">1000</span>
+                            <span class="text-5xl font-bold text-gray-900">USD 3.50</span>
                             <span class="text-gray-600 text-xl">/session</span>
                         </div>
                         <ul class="space-y-4 mb-8 text-left">
