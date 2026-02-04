@@ -13,14 +13,14 @@ class TenantSeeder extends Seeder
      */
     public function run(): void
     {
-        Tenant::create([
-            'name' => 'CoreX Fitness',
-            'domain' => 'gym',
-        ]);
+        Tenant::firstOrCreate(
+            ['domain' => 'gym'],
+            ['name' => 'CoreX Fitness']
+        );
 
-        Tenant::create([
-            'name' => 'Test Tenant',
-            'domain' => 'test',
-        ]);
+        Tenant::firstOrCreate(
+            ['domain' => 'test'],
+            ['name' => 'Test Tenant']
+        );
     }
 }

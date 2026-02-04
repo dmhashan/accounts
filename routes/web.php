@@ -127,6 +127,36 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])
             ->middleware('permission:reports.view')
             ->name('reports.index');
+
+        // Inventory routes
+        Route::prefix('inventory')->name('inventory.')->middleware('permission:inventory.manage')->group(function () {
+            Route::resource('products', \App\Http\Controllers\ProductController::class)
+                ->except(['show']);
+            Route::resource('variations', \App\Http\Controllers\ProductVariationController::class)
+                ->except(['show']);
+            Route::get('/stock', [\App\Http\Controllers\StockController::class, 'index'])
+                ->name('stock.index');
+            Route::get('/stock/create', [\App\Http\Controllers\StockController::class, 'create'])
+                ->name('stock.create');
+            Route::get('/stock/{stock}/edit', [\App\Http\Controllers\StockController::class, 'edit'])
+                ->name('stock.edit');
+            Route::post('/stock', [\App\Http\Controllers\StockController::class, 'store'])
+                ->name('stock.store');
+            Route::put('/stock/{stock}', [\App\Http\Controllers\StockController::class, 'update'])
+                ->name('stock.update');
+            Route::delete('/stock/{stock}', [\App\Http\Controllers\StockController::class, 'destroy'])
+                ->name('stock.destroy');
+        });
+
+        // POS routes
+        Route::prefix('pos')->name('pos.')->middleware('permission:pos.sales')->group(function () {
+            Route::get('/sales', [\App\Http\Controllers\SaleController::class, 'index'])
+                ->name('sales.index');
+            Route::get('/sales/create', [\App\Http\Controllers\SaleController::class, 'create'])
+                ->name('sales.create');
+            Route::post('/sales', [\App\Http\Controllers\SaleController::class, 'store'])
+                ->name('sales.store');
+        });
     });
     
     // Logout route

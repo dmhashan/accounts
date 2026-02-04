@@ -32,6 +32,12 @@ class PermissionSeeder extends Seeder
             
             // Admin Features - Dashboard
             ['name' => 'View Dashboard', 'slug' => 'dashboard.view', 'feature' => 'Admin Features', 'description' => 'Access the admin dashboard'],
+
+            // Inventory
+            ['name' => 'Manage Inventory', 'slug' => 'inventory.manage', 'feature' => 'Inventory', 'description' => 'Access inventory management module'],
+
+            // POS
+            ['name' => 'Process Sales', 'slug' => 'pos.sales', 'feature' => 'POS', 'description' => 'Access POS sales module'],
       
             // Member Features
             ['name' => 'View Profile', 'slug' => 'member.profile.view', 'feature' => 'Member Features', 'description' => 'View member profile'],
