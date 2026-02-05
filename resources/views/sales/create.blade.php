@@ -2,7 +2,7 @@
     <x-slot name="title">New Sale - {{ app('tenant')->name }}</x-slot>
 
     @php
-        $uiMode = in_array(request('ui'), ['desktop', 'touch']) ? request('ui') : 'touch';
+    $uiMode = in_array(request('ui'), ['desktop', 'touch']) ? request('ui') : 'touch';
     @endphp
 
     <div class="flex h-screen bg-background-light dark:bg-background-dark">
@@ -13,7 +13,7 @@
                 <x-slot name="title">New Sale</x-slot>
             </x-header>
 
-            <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6" data-ui-mode="{{ $uiMode }}">
+            <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6 pb-20" data-ui-mode="{{ $uiMode }}">
                 <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
                     @csrf
 
@@ -39,9 +39,9 @@
                                     class="min-w-[220px] px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     <option value="">Walk-in (optional)</option>
                                     @foreach($members as $member)
-                                        <option value="{{ $member->name }}" {{ old('customer_name') === $member->name ? 'selected' : '' }}>
-                                            {{ $member->member_id }} - {{ $member->name }}
-                                        </option>
+                                    <option value="{{ $member->name }}" {{ old('customer_name') === $member->name ? 'selected' : '' }}>
+                                        {{ $member->member_id }} - {{ $member->name }}
+                                    </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -49,7 +49,7 @@
 
                         <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
                         @error('customer_type')
-                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
 
                         <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors">Sales History</a>
@@ -60,6 +60,34 @@
                     </div>
                     <div class="sale-mode" data-mode="touch">
                         @include('sales.touch')
+                    </div>
+
+                    <div class="fixed bottom-0 left-0 right-0 z-30">
+                        <div class="bg-white/95 dark:bg-secondary-900/95 backdrop-blur border-t border-secondary-200 dark:border-secondary-700 px-4 md:px-6 py-3">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
+                                <div class="flex items-center gap-3">
+                                    <label class="text-xs font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Total</label>
+                                    <input type="text" data-role="total-amount" class="w-full h-9 px-3 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-secondary-100 dark:bg-secondary-800 text-secondary-900 dark:text-white" value="0.00" readonly>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="paid_amount" class="text-xs font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Paid</label>
+                                    <div class="w-full">
+                                        <input type="number" step="0.01" min="0" name="paid_amount" data-role="paid-amount" value="{{ old('paid_amount', '0.00') }}"
+                                            class="w-full h-9 px-3 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
+                                        @error('paid_amount')
+                                        <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label class="text-xs font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Balance</label>
+                                    <input type="text" data-role="balance-amount" class="w-full h-9 px-3 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-secondary-100 dark:bg-secondary-800 text-secondary-900 dark:text-white" value="0.00" readonly>
+                                </div>
+                                <div class="md:justify-self-end">
+                                    <button type="submit" class="w-full md:w-auto h-9 px-4 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">Complete Sale</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </main>
@@ -201,9 +229,9 @@
 
             itemsTable = activeWrapper.querySelector('[data-role="items-table"]');
             addItemBtn = activeWrapper.querySelector('[data-role="add-item"]');
-            totalAmountInput = activeWrapper.querySelector('[data-role="total-amount"]');
-            paidAmountInput = activeWrapper.querySelector('[data-role="paid-amount"]');
-            balanceAmountInput = activeWrapper.querySelector('[data-role="balance-amount"]');
+            totalAmountInput = salePage.querySelector('[data-role="total-amount"]');
+            paidAmountInput = salePage.querySelector('[data-role="paid-amount"]');
+            balanceAmountInput = salePage.querySelector('[data-role="balance-amount"]');
 
             if (addItemBtn) {
                 addItemBtn.onclick = addRow;
@@ -232,15 +260,15 @@
         });
 
         const storedUiMode = localStorage.getItem('saleUiMode');
-        const initialUiMode = ['desktop', 'touch'].includes(storedUiMode)
-            ? storedUiMode
-            : (salePage.dataset.uiMode || 'touch');
+        const initialUiMode = ['desktop', 'touch'].includes(storedUiMode) ?
+            storedUiMode :
+            (salePage.dataset.uiMode || 'touch');
         setActiveMode(initialUiMode);
 
         const storedCustomerType = localStorage.getItem('saleCustomerType');
-        const initialCustomerType = ['local', 'foreign'].includes(storedCustomerType)
-            ? storedCustomerType
-            : (customerTypeInput.value || 'local');
+        const initialCustomerType = ['local', 'foreign'].includes(storedCustomerType) ?
+            storedCustomerType :
+            (customerTypeInput.value || 'local');
         setCustomerType(initialCustomerType);
     </script>
 </x-app-layout>
