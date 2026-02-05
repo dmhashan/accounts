@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Member;
 use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\Sale;
@@ -53,7 +54,11 @@ class SaleController extends Controller
                 ];
             });
 
-        return view('sales.create', compact('variations', 'availableStock', 'priceMap'));
+        $members = Member::where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get();
+
+        return view('sales.create', compact('variations', 'availableStock', 'priceMap', 'members'));
     }
 
     public function store(Request $request)

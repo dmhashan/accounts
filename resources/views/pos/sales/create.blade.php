@@ -10,7 +10,10 @@
             </x-header>
 
             <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
+                    @csrf
+
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                     <div class="flex flex-wrap items-center gap-4">
                         <div class="flex items-center gap-3">
                             <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">UI Mode</span>
@@ -27,35 +30,31 @@
                                 <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Foreign</button>
                             </div>
                         </div>
+
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Customer</span>
+                            <select name="customer_name" id="customer_name"
+                                class="min-w-[220px] px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
+                                <option value="">Walk-in (optional)</option>
+                                @foreach($members as $member)
+                                    <option value="{{ $member->name }}" {{ old('customer_name') === $member->name ? 'selected' : '' }}>
+                                        {{ $member->member_id }} - {{ $member->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
 
-                    <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors touch-btn">Sales History</a>
-                </div>
+                    <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
+                    @error('customer_type')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
 
-                <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
-                    @csrf
+                    <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors touch-btn">Sales History</a>
+                    </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 space-y-6">
-                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 touch-card">
-                                <h3 class="text-lg font-semibold text-secondary-900 dark:text-white mb-4">Customer Info</h3>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label for="customer_name" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Customer (optional)</label>
-                                        <input type="text" name="customer_name" id="customer_name" value="{{ old('customer_name') }}"
-                                            class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
-                                    </div>
-
-                                    <div>
-                                        <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
-                                        @error('customer_type')
-                                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-
                             <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 touch-card">
                                 <div class="flex items-center justify-between mb-4">
                                     <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Sale Items</h3>
