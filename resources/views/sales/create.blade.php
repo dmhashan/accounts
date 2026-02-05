@@ -9,9 +9,27 @@
                 <x-slot name="title">New Sale</x-slot>
             </x-header>
 
-            <main class="flex-1 overflow-y-auto p-4 md:p-6">
-                <div class="flex flex-wrap justify-end items-center gap-4 mb-6">
-                    <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors">Sales History</a>
+            <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">UI Mode</span>
+                            <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden" id="uiModeToggle">
+                                <button type="button" data-ui-mode="desktop" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Desktop</button>
+                                <button type="button" data-ui-mode="touch" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Touch Friendly</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Customer Type</span>
+                            <div id="customerTypeToggle" class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                                <button type="button" data-customer-type="local" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Local</button>
+                                <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Foreign</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors touch-btn">Sales History</a>
                 </div>
 
                 <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
@@ -19,7 +37,7 @@
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 space-y-6">
-                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6">
+                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 touch-card">
                                 <h3 class="text-lg font-semibold text-secondary-900 dark:text-white mb-4">Customer Info</h3>
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -30,13 +48,7 @@
                                     </div>
 
                                     <div>
-                                        <label for="customer_type" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Customer Type *</label>
-                                        <select name="customer_type" id="customer_type" required
-                                            class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
-                                            <option value="">Select type</option>
-                                            <option value="local" {{ old('customer_type') === 'local' ? 'selected' : '' }}>Local</option>
-                                            <option value="foreign" {{ old('customer_type') === 'foreign' ? 'selected' : '' }}>Foreign</option>
-                                        </select>
+                                        <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
                                         @error('customer_type')
                                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                                         @enderror
@@ -44,10 +56,10 @@
                                 </div>
                             </div>
 
-                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6">
+                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 touch-card">
                                 <div class="flex items-center justify-between mb-4">
                                     <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Sale Items</h3>
-                                    <button type="button" id="addItemBtn" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">Add Item</button>
+                                    <button type="button" id="addItemBtn" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors touch-btn">Add Item</button>
                                 </div>
 
                                 @error('items')
@@ -75,7 +87,7 @@
                         </div>
 
                         <div class="space-y-6">
-                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6">
+                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 touch-card">
                                 <h3 class="text-lg font-semibold text-secondary-900 dark:text-white mb-4">Billing</h3>
 
                                 <div class="space-y-4">
@@ -97,7 +109,7 @@
                                     </div>
                                 </div>
 
-                                <button type="submit" class="mt-6 w-full px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">Complete Sale</button>
+                                <button type="submit" class="mt-6 w-full px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors touch-btn">Complete Sale</button>
                             </div>
                         </div>
                     </div>
@@ -106,6 +118,30 @@
         </div>
     </div>
 
+    <style>
+        #salePage.ui-touch .touch-card {
+            padding: 1.75rem;
+        }
+
+        #salePage.ui-touch .touch-btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+        }
+
+        #salePage.ui-touch input,
+        #salePage.ui-touch select,
+        #salePage.ui-touch button,
+        #salePage.ui-touch textarea {
+            font-size: 1rem;
+        }
+
+        #salePage.ui-touch table th,
+        #salePage.ui-touch table td {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+    </style>
+
     <script>
         const variations = @json($variations);
         const availableStock = @json($availableStock);
@@ -113,7 +149,10 @@
 
         const itemsTable = document.getElementById('itemsTable');
         const addItemBtn = document.getElementById('addItemBtn');
-        const customerTypeSelect = document.getElementById('customer_type');
+        const customerTypeInput = document.getElementById('customer_type');
+        const customerTypeToggle = document.getElementById('customerTypeToggle');
+        const uiModeToggle = document.getElementById('uiModeToggle');
+        const salePage = document.getElementById('salePage');
         const totalAmountInput = document.getElementById('totalAmount');
         const paidAmountInput = document.getElementById('paid_amount');
         const balanceAmountInput = document.getElementById('balanceAmount');
@@ -121,7 +160,7 @@
         let rowIndex = 0;
 
         function getPrice(variationId) {
-            const type = customerTypeSelect.value;
+            const type = customerTypeInput.value;
             if (!type || !priceMap[variationId]) return 0;
             const raw = type === 'local' ? priceMap[variationId].local : priceMap[variationId].foreign;
             const parsed = parseFloat(raw);
@@ -154,8 +193,10 @@
 
             const price = variationId ? getPrice(variationId) : 0;
             unitPriceInput.value = price.toFixed(2);
+
             const qty = parseFloat(qtyInput.value || '0');
-            subtotalInput.value = (price * qty).toFixed(2);
+            const unitPrice = parseFloat(unitPriceInput.value || '0');
+            subtotalInput.value = (unitPrice * qty).toFixed(2);
             recalcTotals();
         }
 
@@ -213,12 +254,41 @@
             updateRowPrices(row);
         }
 
-        addItemBtn.addEventListener('click', addRow);
-        customerTypeSelect.addEventListener('change', () => {
+        function setToggleActive(container, value, dataKey) {
+            container.querySelectorAll('button').forEach(button => {
+                const isActive = button.getAttribute(dataKey) === value;
+                button.classList.toggle('bg-primary-600', isActive);
+                button.classList.toggle('text-white', isActive);
+                button.classList.toggle('text-secondary-700', !isActive);
+                button.classList.toggle('dark:text-secondary-300', !isActive);
+            });
+        }
+
+        function setCustomerType(type) {
+            customerTypeInput.value = type;
+            setToggleActive(customerTypeToggle, type, 'data-customer-type');
             itemsTable.querySelectorAll('tr').forEach(updateRowPrices);
+        }
+
+        function setUiMode(mode) {
+            salePage.classList.toggle('ui-touch', mode === 'touch');
+            setToggleActive(uiModeToggle, mode, 'data-ui-mode');
+            localStorage.setItem('saleUiMode', mode);
+        }
+
+        addItemBtn.addEventListener('click', addRow);
+        customerTypeToggle.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => setCustomerType(button.getAttribute('data-customer-type')));
+        });
+        uiModeToggle.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => setUiMode(button.getAttribute('data-ui-mode')));
         });
         paidAmountInput.addEventListener('input', recalcTotals);
 
+        const initialCustomerType = customerTypeInput.value || 'local';
+        setCustomerType(initialCustomerType);
+        const savedUiMode = localStorage.getItem('saleUiMode') || 'desktop';
+        setUiMode(savedUiMode);
         addRow();
         recalcTotals();
     </script>
