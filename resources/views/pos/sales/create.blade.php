@@ -130,8 +130,6 @@
             const row = document.createElement('tr');
             row.className = 'hover:bg-secondary-50 dark:hover:bg-secondary-800/50';
             row.innerHTML = `
-                <td class="py-3 text-secondary-700 dark:text-secondary-300" data-code>-</td>
-                <td class="py-3 text-secondary-700 dark:text-secondary-300" data-product>-</td>
                 <td class="py-3">
                     <select name="items[${rowIndex}][product_variation_id]" data-variation required
                         class="w-full px-2 py-1 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
@@ -160,13 +158,7 @@
 
             const variationSelect = row.querySelector('[data-variation]');
             const qtyInput = row.querySelector('[data-qty]');
-            const codeCell = row.querySelector('[data-code]');
-            const productCell = row.querySelector('[data-product]');
-
             variationSelect.addEventListener('change', () => {
-                const selected = variations.find(v => String(v.id) === variationSelect.value);
-                codeCell.textContent = selected ? selected.id : '-';
-                productCell.textContent = selected ? selected.product?.name ?? '-' : '-';
                 updateRowPrices(row);
             });
 

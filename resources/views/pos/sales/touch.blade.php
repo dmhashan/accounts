@@ -14,9 +14,7 @@
                 <table class="w-full text-base">
                     <thead class="text-secondary-500 dark:text-secondary-400">
                         <tr>
-                            <th class="py-3 text-left">Item Code</th>
                             <th class="py-3 text-left">Product</th>
-                            <th class="py-3 text-left">Variation</th>
                             <th class="py-3 text-left">Available</th>
                             <th class="py-3 text-left">Qty</th>
                             <th class="py-3 text-left">Unit Price</th>
