@@ -131,7 +131,7 @@
         @endif
 
         @if(auth()->user()->hasPermission('pos.sales'))
-        <a href="{{ route('pos.sales.create') }}" class="flex items-center px-4 py-3 text-sm font-medium {{ request()->routeIs('pos.*') ? 'text-white bg-gradient-to-r from-primary-500 to-primary-700' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700' }} rounded-lg transition-colors">
+        <a href="{{ route('pos.sales.create') }}" data-collapse-sidebar="true" class="flex items-center px-4 py-3 text-sm font-medium {{ request()->routeIs('pos.*') ? 'text-white bg-gradient-to-r from-primary-500 to-primary-700' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700' }} rounded-lg transition-colors">
             <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m2 0h.01M7 7h.01M5 7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7z" />
             </svg>

@@ -26,6 +26,34 @@ window.toggleSidebar = function() {
         overlay.classList.toggle('hidden');
 
         const isCollapsed = sidebar.getAttribute('data-collapsed') === 'true';
-        sidebar.setAttribute('data-collapsed', isCollapsed ? 'false' : 'true');
+        const nextState = isCollapsed ? 'false' : 'true';
+        sidebar.setAttribute('data-collapsed', nextState);
+        localStorage.setItem('sidebarCollapsed', nextState);
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const storedState = localStorage.getItem('sidebarCollapsed');
+
+    if (sidebar && storedState) {
+        sidebar.setAttribute('data-collapsed', storedState);
+        if (storedState === 'true') {
+            sidebar.classList.add('-translate-x-full');
+            overlay?.classList.add('hidden');
+        } else {
+            sidebar.classList.remove('-translate-x-full');
+        }
+    }
+
+    const posLink = document.querySelector('[data-collapse-sidebar="true"]');
+    if (posLink && sidebar && overlay) {
+        posLink.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+            sidebar.setAttribute('data-collapsed', 'true');
+            localStorage.setItem('sidebarCollapsed', 'true');
+        });
+    }
+});
