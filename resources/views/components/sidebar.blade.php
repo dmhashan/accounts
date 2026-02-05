@@ -103,14 +103,23 @@
         @endif
 
         @if(auth()->user()->hasPermission('inventory.manage'))
+        @php($inventoryOpen = request()->routeIs('inventory.*'))
         <div class="space-y-2">
-            <div class="flex items-center px-4 py-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
-                <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" />
+            <button type="button"
+                class="w-full flex items-center justify-between px-4 py-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded-lg transition-colors"
+                data-collapse-target="inventoryMenu"
+                aria-expanded="{{ $inventoryOpen ? 'true' : 'false' }}">
+                <span class="flex items-center">
+                    <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Inventory
+                </span>
+                <svg class="h-4 w-4 transition-transform {{ $inventoryOpen ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-collapse-icon>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
-                Inventory
-            </div>
-            <div class="pl-6 space-y-1">
+            </button>
+            <div id="inventoryMenu" class="pl-6 space-y-1 {{ $inventoryOpen ? '' : 'hidden' }}">
                 <a href="{{ route('inventory.products.index') }}" class="flex items-center px-3 py-2 text-sm font-medium {{ request()->routeIs('inventory.products.*') ? 'text-white bg-gradient-to-r from-primary-500 to-primary-700' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700' }} rounded-lg transition-colors">
                     Products
                 </a>
@@ -171,3 +180,23 @@
         </form>
     </div>
 </aside>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-collapse-target]').forEach(button => {
+            const targetId = button.getAttribute('data-collapse-target');
+            const target = document.getElementById(targetId);
+            const icon = button.querySelector('[data-collapse-icon]');
+
+            if (!target) return;
+
+            button.addEventListener('click', () => {
+                const isHidden = target.classList.toggle('hidden');
+                button.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+                if (icon) {
+                    icon.classList.toggle('rotate-180', !isHidden);
+                }
+            });
+        });
+    });
+</script>
