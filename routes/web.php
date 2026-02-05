@@ -164,7 +164,7 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         auth()->logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
-        return redirect()->route('register.form');
+        return redirect('/');
     })->name('logout');
 });
 
