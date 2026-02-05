@@ -148,16 +148,16 @@ Route::middleware([IdentifyTenant::class])->group(function () {
                 ->name('stock.destroy');
         });
 
-        // POS routes
-        Route::prefix('pos')->name('pos.')->middleware('permission:pos.sales')->group(function () {
-            Route::get('/sales', [\App\Http\Controllers\SaleController::class, 'index'])
-                ->name('sales.index');
-            Route::get('/sales/create', [\App\Http\Controllers\SaleController::class, 'create'])
-                ->name('sales.create');
-            Route::post('/sales', [\App\Http\Controllers\SaleController::class, 'store'])
-                ->name('sales.store');
-            Route::delete('/sales/{sale}', [\App\Http\Controllers\SaleController::class, 'destroy'])
-                ->name('sales.destroy');
+        // Sales routes
+        Route::prefix('sales')->name('sales.')->middleware('permission:sales.process')->group(function () {
+            Route::get('/', [\App\Http\Controllers\SaleController::class, 'index'])
+                ->name('index');
+            Route::get('/create', [\App\Http\Controllers\SaleController::class, 'create'])
+                ->name('create');
+            Route::post('/', [\App\Http\Controllers\SaleController::class, 'store'])
+                ->name('store');
+            Route::delete('/{sale}', [\App\Http\Controllers\SaleController::class, 'destroy'])
+                ->name('destroy');
         });
     });
     

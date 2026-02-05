@@ -21,7 +21,7 @@ class SaleController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('pos.sales.index', compact('sales'));
+        return view('sales.index', compact('sales'));
     }
 
     public function create()
@@ -53,7 +53,7 @@ class SaleController extends Controller
                 ];
             });
 
-        return view('pos.sales.create', compact('variations', 'availableStock', 'priceMap'));
+        return view('sales.create', compact('variations', 'availableStock', 'priceMap'));
     }
 
     public function store(Request $request)
@@ -164,7 +164,7 @@ class SaleController extends Controller
                 }
             }
 
-            return redirect()->route('pos.sales.index')
+            return redirect()->route('sales.index')
                 ->with('success', 'Sale completed successfully.');
         });
     }
@@ -179,7 +179,7 @@ class SaleController extends Controller
 
         $sale->delete();
 
-        return redirect()->route('pos.sales.index')
+        return redirect()->route('sales.index')
             ->with('success', 'Sale deleted successfully.');
     }
 }

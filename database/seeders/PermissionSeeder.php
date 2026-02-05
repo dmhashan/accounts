@@ -36,8 +36,8 @@ class PermissionSeeder extends Seeder
             // Inventory
             ['name' => 'Manage Inventory', 'slug' => 'inventory.manage', 'feature' => 'Inventory', 'description' => 'Access inventory management module'],
 
-            // POS
-            ['name' => 'Process Sales', 'slug' => 'pos.sales', 'feature' => 'POS', 'description' => 'Access POS sales module'],
+            // Sales
+            ['name' => 'Process Sales', 'slug' => 'sales.process', 'feature' => 'Sales', 'description' => 'Access sales module'],
       
             // Member Features
             ['name' => 'View Profile', 'slug' => 'member.profile.view', 'feature' => 'Member Features', 'description' => 'View member profile'],

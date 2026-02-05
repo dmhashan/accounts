@@ -47,9 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const posLink = document.querySelector('[data-collapse-sidebar="true"]');
-    if (posLink && sidebar && overlay) {
-        posLink.addEventListener('click', () => {
+    const salesLink = document.querySelector('[data-collapse-sidebar="true"]');
+    if (salesLink && sidebar && overlay) {
+        salesLink.addEventListener('click', () => {
             sidebar.classList.add('-translate-x-full');
             overlay.classList.add('hidden');
             sidebar.setAttribute('data-collapsed', 'true');
