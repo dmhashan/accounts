@@ -1,6 +1,10 @@
 <x-app-layout>
     <x-slot name="title">New Sale - {{ app('tenant')->name }}</x-slot>
 
+    @php
+        $uiMode = in_array(request('ui'), ['desktop', 'touch']) ? request('ui') : 'desktop';
+    @endphp
+
     <div class="flex h-screen bg-background-light dark:bg-background-dark">
         <x-sidebar />
 
@@ -9,137 +13,57 @@
                 <x-slot name="title">New Sale</x-slot>
             </x-header>
 
-            <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6">
+            <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6" data-ui-mode="{{ $uiMode }}">
                 <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
                     @csrf
 
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                    <div class="flex flex-wrap items-center gap-4">
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">UI Mode</span>
-                            <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden" id="uiModeToggle">
-                                <button type="button" data-ui-mode="desktop" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Desktop</button>
-                                <button type="button" data-ui-mode="touch" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Touch Friendly</button>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Customer Type</span>
-                            <div id="customerTypeToggle" class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                                <button type="button" data-customer-type="local" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Local</button>
-                                <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Foreign</button>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Customer</span>
-                            <select name="customer_name" id="customer_name"
-                                class="min-w-[220px] px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
-                                <option value="">Walk-in (optional)</option>
-                                @foreach($members as $member)
-                                    <option value="{{ $member->name }}" {{ old('customer_name') === $member->name ? 'selected' : '' }}>
-                                        {{ $member->member_id }} - {{ $member->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
-                    @error('customer_type')
-                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-
-                    <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors touch-btn">Sales History</a>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-2 space-y-6">
-                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 touch-card">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Sale Items</h3>
-                                    <button type="button" id="addItemBtn" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors touch-btn">Add Item</button>
-                                </div>
-
-                                @error('items')
-                                    <p class="mb-4 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                                @enderror
-
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-sm">
-                                        <thead class="text-secondary-500 dark:text-secondary-400">
-                                            <tr>
-                                                <th class="py-2 text-left">Item Code</th>
-                                                <th class="py-2 text-left">Product</th>
-                                                <th class="py-2 text-left">Variation</th>
-                                                <th class="py-2 text-left">Available</th>
-                                                <th class="py-2 text-left">Qty</th>
-                                                <th class="py-2 text-left">Unit Price</th>
-                                                <th class="py-2 text-left">Subtotal</th>
-                                                <th class="py-2"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="itemsTable" class="divide-y divide-secondary-200 dark:divide-secondary-700"></tbody>
-                                    </table>
+                        <div class="flex flex-wrap items-center gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden" id="uiModeToggle">
+                                    <button type="button" data-ui-mode="desktop" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Desktop</button>
+                                    <button type="button" data-ui-mode="touch" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Touch</button>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="space-y-6">
-                            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 touch-card">
-                                <h3 class="text-lg font-semibold text-secondary-900 dark:text-white mb-4">Billing</h3>
-
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Total Amount</label>
-                                        <input type="text" id="totalAmount" class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-secondary-100 dark:bg-secondary-800 text-secondary-900 dark:text-white" value="0.00" readonly>
-                                    </div>
-                                    <div>
-                                        <label for="paid_amount" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Paid Amount</label>
-                                        <input type="number" step="0.01" min="0" name="paid_amount" id="paid_amount" value="{{ old('paid_amount', '0.00') }}"
-                                            class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
-                                        @error('paid_amount')
-                                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Balance</label>
-                                        <input type="text" id="balanceAmount" class="w-full px-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-secondary-100 dark:bg-secondary-800 text-secondary-900 dark:text-white" value="0.00" readonly>
-                                    </div>
+                            <div class="flex items-center gap-3">
+                                <div id="customerTypeToggle" class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                                    <button type="button" data-customer-type="local" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Local</button>
+                                    <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Foreign</button>
                                 </div>
+                            </div>
 
-                                <button type="submit" class="mt-6 w-full px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors touch-btn">Complete Sale</button>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Customer</span>
+                                <select name="customer_name" id="customer_name"
+                                    class="min-w-[220px] px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
+                                    <option value="">Walk-in (optional)</option>
+                                    @foreach($members as $member)
+                                        <option value="{{ $member->name }}" {{ old('customer_name') === $member->name ? 'selected' : '' }}>
+                                            {{ $member->member_id }} - {{ $member->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
+
+                        <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
+                        @error('customer_type')
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+
+                        <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors">Sales History</a>
                     </div>
+
+                    @if ($uiMode === 'touch')
+                        @include('sales.touch')
+                    @else
+                        @include('sales.desktop')
+                    @endif
                 </form>
             </main>
         </div>
     </div>
-
-    <style>
-        #salePage.ui-touch .touch-card {
-            padding: 1.75rem;
-        }
-
-        #salePage.ui-touch .touch-btn {
-            padding: 0.75rem 1.25rem;
-            font-size: 1rem;
-        }
-
-        #salePage.ui-touch input,
-        #salePage.ui-touch select,
-        #salePage.ui-touch button,
-        #salePage.ui-touch textarea {
-            font-size: 1rem;
-        }
-
-        #salePage.ui-touch table th,
-        #salePage.ui-touch table td {
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-        }
-    </style>
 
     <script>
         const variations = @json($variations);
@@ -270,9 +194,14 @@
         }
 
         function setUiMode(mode) {
-            salePage.classList.toggle('ui-touch', mode === 'touch');
             setToggleActive(uiModeToggle, mode, 'data-ui-mode');
+        }
+
+        function handleUiModeChange(mode) {
             localStorage.setItem('saleUiMode', mode);
+            const url = new URL(window.location.href);
+            url.searchParams.set('ui', mode);
+            window.location.href = url.toString();
         }
 
         addItemBtn.addEventListener('click', addRow);
@@ -280,15 +209,25 @@
             button.addEventListener('click', () => setCustomerType(button.getAttribute('data-customer-type')));
         });
         uiModeToggle.querySelectorAll('button').forEach(button => {
-            button.addEventListener('click', () => setUiMode(button.getAttribute('data-ui-mode')));
+            button.addEventListener('click', () => handleUiModeChange(button.getAttribute('data-ui-mode')));
         });
         paidAmountInput.addEventListener('input', recalcTotals);
 
         const initialCustomerType = customerTypeInput.value || 'local';
         setCustomerType(initialCustomerType);
-        const savedUiMode = localStorage.getItem('saleUiMode') || 'desktop';
-        setUiMode(savedUiMode);
-        addRow();
-        recalcTotals();
+        const url = new URL(window.location.href);
+        const urlUiMode = url.searchParams.get('ui');
+        const storedUiMode = localStorage.getItem('saleUiMode');
+        const validModes = ['desktop', 'touch'];
+        const initialUiMode = validModes.includes(urlUiMode) ? urlUiMode : (validModes.includes(storedUiMode) ? storedUiMode : 'desktop');
+
+        if (!validModes.includes(urlUiMode) && initialUiMode !== 'desktop') {
+            url.searchParams.set('ui', initialUiMode);
+            window.location.replace(url.toString());
+        } else {
+            setUiMode(initialUiMode);
+            addRow();
+            recalcTotals();
+        }
     </script>
 </x-app-layout>
