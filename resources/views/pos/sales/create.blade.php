@@ -56,10 +56,10 @@
                     </div>
 
                     <div class="sale-mode" data-mode="desktop">
-                        @include('sales.desktop')
+                        @include('pos.sales.desktop')
                     </div>
                     <div class="sale-mode" data-mode="touch">
-                        @include('sales.touch')
+                        @include('pos.sales.touch')
                     </div>
                 </form>
             </main>
