@@ -2,7 +2,7 @@
 <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden" onclick="toggleSidebar()"></div>
 
 <!-- Sidebar -->
-<aside id="sidebar" class="fixed lg:static inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 w-64 bg-white dark:bg-secondary-900 border-r border-secondary-200 dark:border-secondary-700 flex flex-col z-50 transition-transform duration-300 ease-in-out">
+<aside id="sidebar" data-collapsed="false" class="fixed lg:static inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:data-[collapsed=true]:-translate-x-full w-64 lg:data-[collapsed=true]:w-0 lg:data-[collapsed=true]:border-r-0 lg:data-[collapsed=true]:overflow-hidden bg-white dark:bg-secondary-900 border-r border-secondary-200 dark:border-secondary-700 flex flex-col z-50 transition-[transform,width] duration-300 ease-in-out">
     <!-- Logo/Brand -->
     <div class="h-16 flex items-center justify-between px-6 border-b border-secondary-200 dark:border-secondary-700">
         <div class="flex items-center min-w-0 mx-auto">

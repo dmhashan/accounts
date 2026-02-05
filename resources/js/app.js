@@ -24,5 +24,8 @@ window.toggleSidebar = function() {
     if (sidebar && overlay) {
         sidebar.classList.toggle('-translate-x-full');
         overlay.classList.toggle('hidden');
+
+        const isCollapsed = sidebar.getAttribute('data-collapsed') === 'true';
+        sidebar.setAttribute('data-collapsed', isCollapsed ? 'false' : 'true');
     }
 }
