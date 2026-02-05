@@ -168,4 +168,18 @@ class SaleController extends Controller
                 ->with('success', 'Sale completed successfully.');
         });
     }
+
+    public function destroy(Sale $sale)
+    {
+        $tenantId = app('tenant')->id;
+
+        if ($sale->tenant_id !== $tenantId) {
+            abort(404);
+        }
+
+        $sale->delete();
+
+        return redirect()->route('pos.sales.index')
+            ->with('success', 'Sale deleted successfully.');
+    }
 }

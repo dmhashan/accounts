@@ -39,6 +39,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Paid</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Balance</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
@@ -51,10 +52,17 @@
                                         <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ number_format($sale->paid_amount, 2) }}</td>
                                         <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ number_format($sale->balance, 2) }}</td>
                                         <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ $sale->created_at->format('Y-m-d') }}</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <form action="{{ route('pos.sales.destroy', $sale) }}" method="POST" onsubmit="return confirm('Delete this sale?');" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium">Delete</button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="px-6 py-12 text-center text-secondary-500 dark:text-secondary-400">No sales recorded.</td>
+                                        <td colspan="8" class="px-6 py-12 text-center text-secondary-500 dark:text-secondary-400">No sales recorded.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

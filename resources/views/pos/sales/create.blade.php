@@ -10,6 +10,10 @@
             </x-header>
 
             <main class="flex-1 overflow-y-auto p-4 md:p-6">
+                <div class="flex flex-wrap justify-end items-center gap-4 mb-6">
+                    <a href="{{ route('pos.sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors">Sales History</a>
+                </div>
+
                 <form action="{{ route('pos.sales.store') }}" method="POST" id="saleForm">
                     @csrf
 

@@ -156,6 +156,8 @@ Route::middleware([IdentifyTenant::class])->group(function () {
                 ->name('sales.create');
             Route::post('/sales', [\App\Http\Controllers\SaleController::class, 'store'])
                 ->name('sales.store');
+            Route::delete('/sales/{sale}', [\App\Http\Controllers\SaleController::class, 'destroy'])
+                ->name('sales.destroy');
         });
     });
     
