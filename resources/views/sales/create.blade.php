@@ -17,24 +17,47 @@
                 <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
                     @csrf
 
-                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                        <div class="flex flex-wrap items-center gap-4">
-                            <div class="flex items-center gap-3">
+                    <div class="flex flex-nowrap items-center gap-4 mb-6 overflow-x-auto overflow-y-visible">
+                        <div class="flex flex-nowrap items-center gap-4">
+                            <div class="flex items-center gap-3 shrink-0">
                                 <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden" id="uiModeToggle">
-                                    <button type="button" data-ui-mode="desktop" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Desktop</button>
-                                    <button type="button" data-ui-mode="touch" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Touch</button>
+                                    <button type="button" data-ui-mode="desktop" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <rect x="3" y="4" width="18" height="12" rx="2" />
+                                            <path d="M8 20h8M12 16v4" />
+                                        </svg>
+                                    </button>
+                                    <button type="button" data-ui-mode="touch" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M12 12V5a2 2 0 1 1 4 0v7" />
+                                            <path d="M8 12V6a2 2 0 1 0-4 0v8a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-2a2 2 0 1 0-4 0v2" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 shrink-0">
                                 <div id="customerTypeToggle" class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                                    <button type="button" data-customer-type="local" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Local</button>
-                                    <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700">Foreign</button>
+                                    <button type="button" data-customer-type="local" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M3 10.5 12 4l9 6.5" />
+                                            <path d="M5 9.5V20h14V9.5" />
+                                            <path d="M9 20v-6h6v6" />
+                                        </svg>
+                                    </button>
+                                    <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <circle cx="12" cy="12" r="9" />
+                                            <path d="M3 12h18" />
+                                            <path d="M12 3a15 15 0 0 1 0 18" />
+                                            <path d="M12 3a15 15 0 0 0 0 18" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-3">
-                                <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Customer</span>
+                            <div class="flex items-center gap-3 shrink-0 relative z-40">
+                                <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Customer</span>
                                 <select name="customer_name" id="customer_name"
                                     class="min-w-[220px] px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     <option value="">Walk-in (optional)</option>
@@ -52,7 +75,7 @@
                         <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
 
-                        <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors">Sales History</a>
+                        <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors whitespace-nowrap shrink-0">Sales History</a>
                     </div>
 
                     <div class="sale-mode" data-mode="desktop">
@@ -64,12 +87,12 @@
 
                     <div class="fixed bottom-0 left-0 right-0 z-30">
                         <div class="bg-white/95 dark:bg-secondary-900/95 backdrop-blur border-t border-secondary-200 dark:border-secondary-700 px-4 md:px-6 py-3">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
-                                <div class="flex items-center gap-3">
+                            <div class="flex flex-nowrap items-center gap-3 overflow-x-auto">
+                                <div class="flex items-center gap-3 shrink-0 min-w-[180px]">
                                     <label class="text-xs font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Total</label>
                                     <input type="text" data-role="total-amount" class="w-full h-9 px-3 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-secondary-100 dark:bg-secondary-800 text-secondary-900 dark:text-white" value="0.00" readonly>
                                 </div>
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-3 shrink-0 min-w-[200px]">
                                     <label for="paid_amount" class="text-xs font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Paid</label>
                                     <div class="w-full">
                                         <input type="number" step="0.01" min="0" name="paid_amount" data-role="paid-amount" value="{{ old('paid_amount', '0.00') }}"
@@ -79,12 +102,12 @@
                                         @enderror
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-3 shrink-0 min-w-[190px]">
                                     <label class="text-xs font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Balance</label>
                                     <input type="text" data-role="balance-amount" class="w-full h-9 px-3 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-secondary-100 dark:bg-secondary-800 text-secondary-900 dark:text-white" value="0.00" readonly>
                                 </div>
-                                <div class="md:justify-self-end">
-                                    <button type="submit" class="w-full md:w-auto h-9 px-4 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">Complete Sale</button>
+                                <div class="shrink-0">
+                                    <button type="submit" class="w-auto h-9 px-4 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors whitespace-nowrap">Complete Sale</button>
                                 </div>
                             </div>
                         </div>
@@ -94,6 +117,14 @@
         </div>
     </div>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+    <style>
+        .choices__list--dropdown,
+        .choices__list[aria-expanded] {
+            z-index: 50;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <script>
         const variations = @json($variations);
         const availableStock = @json($availableStock);
@@ -110,6 +141,21 @@
         const salePage = document.getElementById('salePage');
 
         let rowIndex = 0;
+
+        function initSearchableSelect(select) {
+            if (!select || select.dataset.choicesInitialized === 'true') return;
+            if (typeof window.Choices === 'undefined') {
+                return;
+            }
+            const instance = new Choices(select, {
+                searchEnabled: true,
+                itemSelectText: '',
+                shouldSort: false,
+                allowHTML: false
+            });
+            select.dataset.choicesInitialized = 'true';
+            select.dataset.choicesInstanceId = instance._baseId;
+        }
 
         function getPrice(variationId) {
             const type = customerTypeInput.value;
@@ -186,6 +232,7 @@
 
             const variationSelect = row.querySelector('[data-variation]');
             const qtyInput = row.querySelector('[data-qty]');
+            initSearchableSelect(variationSelect);
             variationSelect.addEventListener('change', () => {
                 updateRowPrices(row);
             });
@@ -246,6 +293,11 @@
             } else {
                 recalcTotals();
             }
+        }
+
+        const customerSelect = document.getElementById('customer_name');
+        if (customerSelect) {
+            initSearchableSelect(customerSelect);
         }
 
         customerTypeToggle.querySelectorAll('button').forEach(button => {
