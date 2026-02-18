@@ -10,6 +10,11 @@ class Tenant extends Model
     protected $fillable = [
         'name',
         'domain',
+        'use_custom_landing_page',
+    ];
+
+    protected $casts = [
+        'use_custom_landing_page' => 'boolean',
     ];
 
     public function users(): HasMany
