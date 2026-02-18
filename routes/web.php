@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Middleware\IdentifyTenant;
+use App\Models\Tenant;
+use App\Services\TenantLandingPageService;
 use Illuminate\Support\Facades\Route;
 
 // Root route - check for tenant
@@ -11,10 +13,16 @@ Route::get('/', function () {
         $bypassDomain = config('app.multitenancy_bypass_domain');
         
         if ($bypassDomain) {
-            $tenant = \App\Models\Tenant::where('domain', $bypassDomain)->first();
+            $tenant = Tenant::where('domain', $bypassDomain)->first();
             
             if ($tenant) {
                 app()->instance('tenant', $tenant);
+
+                if ($tenant->use_custom_landing_page) {
+                    $customPagePath = app(TenantLandingPageService::class)->ensureCustomPageExists($tenant);
+                    return response()->file($customPagePath);
+                }
+
                 return view('tenant-landing', ['tenant' => $tenant]);
             }
         }
@@ -33,7 +41,7 @@ Route::get('/', function () {
         return view('product-landing-page');
     }
     
-    $tenant = \App\Models\Tenant::where('domain', $subdomain)->first();
+    $tenant = Tenant::where('domain', $subdomain)->first();
     
     if (!$tenant) {
         return view('product-landing-page');
@@ -41,6 +49,11 @@ Route::get('/', function () {
     
     // If tenant exists, store it and show tenant landing page
     app()->instance('tenant', $tenant);
+
+    if ($tenant->use_custom_landing_page) {
+        $customPagePath = app(TenantLandingPageService::class)->ensureCustomPageExists($tenant);
+        return response()->file($customPagePath);
+    }
     
     return view('tenant-landing', ['tenant' => $tenant]);
 });
@@ -122,6 +135,8 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         // Settings route
         Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])
             ->name('settings.index');
+        Route::post('/settings/landing-page', [\App\Http\Controllers\SettingsController::class, 'updateLandingPage'])
+            ->name('settings.landing-page.update');
         
         // Reports route
         Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])
