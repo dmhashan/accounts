@@ -10,14 +10,14 @@ Route::get('/', function () {
     if (!config('app.multitenancy_enabled', true)) {
         $bypassDomain = config('app.multitenancy_bypass_domain');
         
-        // if ($bypassDomain) {
-        //     $tenant = \App\Models\Tenant::where('domain', $bypassDomain)->first();
+        if ($bypassDomain) {
+            $tenant = \App\Models\Tenant::where('domain', $bypassDomain)->first();
             
-        //     if ($tenant) {
-        //         app()->instance('tenant', $tenant);
-        //         return view('tenant-landing', ['tenant' => $tenant]);
-        //     }
-        // }
+            if ($tenant) {
+                app()->instance('tenant', $tenant);
+                return view('tenant-landing', ['tenant' => $tenant]);
+            }
+        }
         
         return view('product-landing-page');
     }
