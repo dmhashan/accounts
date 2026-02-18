@@ -611,10 +611,10 @@
                                 Cancel anytime
                             </li>
                         </ul>
-                        <a href="{{ route('register.form') }}" 
+                        <!-- <a href="{{ route('register.form') }}" 
                            class="block w-full px-6 py-4 text-lg font-bold rounded-xl text-white bg-gradient-to-r from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-500/50 transition-all duration-300 text-center uppercase tracking-wide">
                             Get Started
-                        </a>
+                        </a> -->
                     </div>
                 </div>
 
@@ -652,10 +652,10 @@
                                 Try before you commit
                             </li>
                         </ul>
-                        <a href="{{ route('register.form') }}" 
+                        <!-- <a href="{{ route('register.form') }}" 
                            class="block w-full px-6 py-4 text-lg font-bold rounded-xl text-primary-600 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-all duration-300 text-center uppercase tracking-wide">
                             Buy Day Pass
-                        </a>
+                        </a> -->
                     </div>
                 </div>
 
@@ -693,10 +693,10 @@
                                 Achieve goals faster
                             </li>
                         </ul>
-                        <a href="{{ route('register.form') }}" 
+                        <!-- <a href="{{ route('register.form') }}" 
                            class="block w-full px-6 py-4 text-lg font-bold rounded-xl text-primary-600 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-all duration-300 text-center uppercase tracking-wide">
                             Book Session
-                        </a>
+                        </a> -->
                     </div>
                 </div>
             </div>
