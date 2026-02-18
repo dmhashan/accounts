@@ -10,16 +10,16 @@ Route::get('/', function () {
     if (!config('app.multitenancy_enabled', true)) {
         $bypassDomain = config('app.multitenancy_bypass_domain');
         
-        if ($bypassDomain) {
-            $tenant = \App\Models\Tenant::where('domain', $bypassDomain)->first();
+        // if ($bypassDomain) {
+        //     $tenant = \App\Models\Tenant::where('domain', $bypassDomain)->first();
             
-            if ($tenant) {
-                app()->instance('tenant', $tenant);
-                return view('tenant-landing', ['tenant' => $tenant]);
-            }
-        }
+        //     if ($tenant) {
+        //         app()->instance('tenant', $tenant);
+        //         return view('tenant-landing', ['tenant' => $tenant]);
+        //     }
+        // }
         
-        return view('landing');
+        return view('product-landing-page');
     }
     
     $host = request()->getHost();
@@ -30,13 +30,13 @@ Route::get('/', function () {
     
     // If no subdomain (e.g., just localhost), show landing page
     if ($subdomain === $baseDomain) {
-        return view('landing');
+        return view('product-landing-page');
     }
     
     $tenant = \App\Models\Tenant::where('domain', $subdomain)->first();
     
     if (!$tenant) {
-        return view('landing');
+        return view('product-landing-page');
     }
     
     // If tenant exists, store it and show tenant landing page
