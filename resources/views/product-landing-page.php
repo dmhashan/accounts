@@ -39,7 +39,7 @@
 <body class="landing-page-bg landing-page-text font-sans antialiased">
     <!-- <div class="landing-page-border flex items-center justify-between border-b px-6 py-4">
         <div class="flex items-center gap-2">
-            <img src="<?= asset('images/product-logo.png') ?>" alt="Fitness Hub" class="h-7 w-auto">
+            <img src="<?= asset('images/product-logo.svg') ?>" alt="Fitness Hub" class="h-7 w-auto">
         </div>
         <nav class="landing-page-muted hidden items-center gap-6 text-sm font-medium md:flex">
             <a href="#" class="hover:text-secondary-900">Home</a>
@@ -53,7 +53,7 @@
 
     <div class="grid gap-8 p-6 lg:grid-cols-2 lg:items-center lg:p-10">
         <div>
-            <img src="<?= asset('images/product-logo.png') ?>" alt="Fitness Hub" class="h-12 w-auto">
+            <img src="<?= asset('images/product-logo.svg') ?>" alt="Fitness Hub" class="h-12 w-auto">
             <h2 class="mb-4 text-4xl font-extrabold leading-tight sm:text-5xl">
                 Your All-in-One
                 <span class="landing-page-accent block">Management System</span>
