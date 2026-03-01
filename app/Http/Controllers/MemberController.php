@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class MemberController extends Controller
@@ -24,7 +25,9 @@ class MemberController extends Controller
 
     public function create()
     {
-        return view('members.create');
+        $generatedMemberId = Member::generateMemberId();
+
+        return view('members.create', compact('generatedMemberId'));
     }
 
     public function store(Request $request)
@@ -32,25 +35,47 @@ class MemberController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'gender' => 'required|in:male,female,other',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'username' => [
+                'required',
+                'string',
+                'max:50',
+                'alpha_dash',
+                Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
+                Rule::unique('users')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
+            ],
+            'gender' => 'required|in:male,female',
             'email' => [
                 'required',
                 'email',
                 Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
+                Rule::unique('users')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
             ],
-            'phone_number' => 'nullable|string|max:20',
+            'phone_number' => 'required|string|max:20',
             'nic' => 'nullable|string|max:50',
-            'date_of_birth' => 'nullable|date',
-            'comment' => 'nullable|string',
-            'password' => 'required|string|min:8|confirmed',
+            'date_of_birth' => 'required|date|before_or_equal:today',
+            'age' => 'required|integer|min:1|max:120',
+            'address' => 'nullable|string|max:1000',
+            'member_role' => 'required|string|max:50',
+            'admission_fee' => 'nullable|numeric|min:0',
+            'payment_plan' => 'required|string|max:100',
+            'price' => 'required|numeric|min:0',
+            'joined_date' => 'required|date',
+            'comment' => 'nullable|string|max:2000',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        // Generate member ID
+        // Generate member ID server-side and compose full name
         $validated['member_id'] = Member::generateMemberId();
-        $validated['tenant_id'] = app('tenant')->id;
+        $validated['tenant_id'] = $tenant->id;
+        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $validated['is_active'] = true;
         $validated['is_verified'] = true; // Admin-created members are verified
+
+        if ($request->hasFile('profile_photo')) {
+            $validated['profile_photo_path'] = $request->file('profile_photo')->store('member-photos', 'public');
+        }
 
         // Create member
         $member = Member::create($validated);
@@ -59,19 +84,13 @@ class MemberController extends Controller
         $memberRole = Role::where('slug', 'member')->first();
 
         if ($memberRole) {
-            // Ensure user email is unique for this tenant to avoid DB errors
-            if (User::where('tenant_id', $tenant->id)->where('email', $validated['email'])->exists()) {
-                // Rollback created member
-                $member->delete();
-                return back()->withErrors(['email' => 'The email has already been taken for this tenant.'])->withInput();
-            }
-
             $user = User::create([
                 'tenant_id' => $tenant->id,
                 'role_id' => $memberRole->id,
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
+                'username' => $validated['username'],
+                'password' => Hash::make(Str::random(40)),
             ]);
 
             // Link member to user
@@ -89,6 +108,12 @@ class MemberController extends Controller
             abort(403);
         }
 
+        if (!$member->first_name || !$member->last_name) {
+            $parts = preg_split('/\s+/', trim($member->name ?? ''), 2);
+            $member->first_name = $member->first_name ?: ($parts[0] ?? '');
+            $member->last_name = $member->last_name ?: ($parts[1] ?? '');
+        }
+
         return view('members.edit', compact('member'));
     }
 
@@ -101,19 +126,66 @@ class MemberController extends Controller
 
         $tenant = app('tenant');
 
+        $memberUsernameRule = Rule::unique('members')
+            ->where(fn ($q) => $q->where('tenant_id', $tenant->id))
+            ->ignore($member->id);
+
+        $memberEmailRule = Rule::unique('members')
+            ->where(fn ($q) => $q->where('tenant_id', $tenant->id))
+            ->ignore($member->id);
+
+        $userUsernameRule = Rule::unique('users')
+            ->where(fn ($q) => $q->where('tenant_id', $tenant->id));
+
+        $userEmailRule = Rule::unique('users')
+            ->where(fn ($q) => $q->where('tenant_id', $tenant->id));
+
+        if ($member->user_id) {
+            $userUsernameRule = $userUsernameRule->ignore($member->user_id);
+            $userEmailRule = $userEmailRule->ignore($member->user_id);
+        }
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'gender' => 'required|in:male,female,other',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'username' => [
+                'required',
+                'string',
+                'max:50',
+                'alpha_dash',
+                $memberUsernameRule,
+                $userUsernameRule,
+            ],
+            'gender' => 'required|in:male,female',
             'email' => [
                 'required',
                 'email',
-                Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id))->ignore($member->id),
+                $memberEmailRule,
+                $userEmailRule,
             ],
-            'phone_number' => 'nullable|string|max:20',
+            'phone_number' => 'required|string|max:20',
             'nic' => 'nullable|string|max:50',
-            'date_of_birth' => 'nullable|date',
-            'comment' => 'nullable|string',
+            'date_of_birth' => 'required|date|before_or_equal:today',
+            'age' => 'required|integer|min:1|max:120',
+            'address' => 'nullable|string|max:1000',
+            'member_role' => 'required|string|max:50',
+            'admission_fee' => 'nullable|numeric|min:0',
+            'payment_plan' => 'required|string|max:100',
+            'price' => 'required|numeric|min:0',
+            'joined_date' => 'required|date',
+            'comment' => 'nullable|string|max:2000',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
+
+        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
+
+        if ($request->hasFile('profile_photo')) {
+            if ($member->profile_photo_path) {
+                Storage::disk('public')->delete($member->profile_photo_path);
+            }
+
+            $validated['profile_photo_path'] = $request->file('profile_photo')->store('member-photos', 'public');
+        }
 
         $member->update($validated);
 
@@ -122,6 +194,7 @@ class MemberController extends Controller
             $member->user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
+                'username' => $validated['username'],
             ]);
         }
 
@@ -173,6 +246,10 @@ class MemberController extends Controller
         // Delete linked user if exists
         if ($member->user) {
             $member->user->delete();
+        }
+
+        if ($member->profile_photo_path) {
+            Storage::disk('public')->delete($member->profile_photo_path);
         }
 
         $member->delete();

@@ -16,20 +16,26 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $tenant = app('tenant');
-        
+
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'login' => ['required', 'string'],
             'password' => ['required'],
         ]);
-        
-        // Add tenant_id to credentials
-        $credentials['tenant_id'] = $tenant->id;
-        
-        if (Auth::attempt($credentials)) {
+
+        $login = $credentials['login'];
+        $isEmail = filter_var($login, FILTER_VALIDATE_EMAIL);
+
+        $attemptData = [
+            'tenant_id' => $tenant->id,
+            'password' => $credentials['password'],
+            $isEmail ? 'email' : 'username' => $login,
+        ];
+
+        if (Auth::attempt($attemptData)) {
             $request->session()->regenerate();
             return redirect()->route('dashboard');
         }
 
-        return back()->with('error', 'Invalid credentials for this tenant.');
+        return back()->with('error', 'Invalid username/email or password for this tenant.');
     }
 }

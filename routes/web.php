@@ -62,6 +62,12 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     // Login routes
     Route::get('/login', [\App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login.form');
     Route::post('/login', [\App\Http\Controllers\Auth\LoginController::class, 'login'])->name('login');
+    Route::get('/auth/{provider}/redirect', [\App\Http\Controllers\Auth\SocialAuthController::class, 'redirect'])
+        ->whereIn('provider', ['google', 'apple'])
+        ->name('auth.social.redirect');
+    Route::get('/auth/{provider}/callback', [\App\Http\Controllers\Auth\SocialAuthController::class, 'callback'])
+        ->whereIn('provider', ['google', 'apple'])
+        ->name('auth.social.callback');
     
     // Registration routes
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register.form');

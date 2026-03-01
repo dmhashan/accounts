@@ -23,6 +23,10 @@ class User extends Authenticatable
         'role_id',
         'name',
         'email',
+        'username',
+        'social_provider',
+        'social_provider_id',
+        'avatar',
         'password',
     ];
 

@@ -21,13 +21,13 @@
 
                 <form action="{{ route('login') }}" method="POST" class="space-y-6">
                     @csrf
-                    
+
                     <div>
-                        <label for="email" class="block text-sm font-medium text-secondary-700 mb-2">Email Address</label>
-                        <input id="email" name="email" type="email" required autofocus
-                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-300 @enderror"
-                               placeholder="you@example.com" value="{{ old('email') }}">
-                        @error('email')
+                        <label for="login" class="block text-sm font-medium text-secondary-700 mb-2">Username or Email</label>
+                        <input id="login" name="login" type="text" required autofocus
+                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('login') border-red-300 @enderror"
+                               placeholder="john.doe or you@example.com" value="{{ old('login') }}">
+                        @error('login')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -47,6 +47,24 @@
                         Sign In
                     </button>
                 </form>
+
+                <div class="my-6 flex items-center">
+                    <div class="flex-1 border-t border-secondary-200"></div>
+                    <span class="px-3 text-xs uppercase tracking-wider text-secondary-500">or continue with</span>
+                    <div class="flex-1 border-t border-secondary-200"></div>
+                </div>
+
+                <div class="space-y-3">
+                    <a href="{{ route('auth.social.redirect', 'google') }}"
+                        class="w-full inline-flex items-center justify-center py-3.5 px-4 border border-secondary-300 text-secondary-900 font-semibold rounded-lg hover:bg-secondary-50 transition-colors">
+                        Continue with Google
+                    </a>
+
+                    <a href="{{ route('auth.social.redirect', 'apple') }}"
+                        class="w-full inline-flex items-center justify-center py-3.5 px-4 bg-secondary-900 hover:bg-secondary-800 text-white font-semibold rounded-lg transition-colors">
+                        Continue with Apple
+                    </a>
+                </div>
 
                 <div class="mt-6 text-center">
                     <a href="{{ route('register.form') }}" class="text-sm font-medium text-primary-600 hover:text-primary-500 transition-colors">
