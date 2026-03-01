@@ -27,11 +27,11 @@
         }
 
         .landing-page-accent {
-            color: #e97800;
+            color: #e00b00;
         }
 
         .landing-page-accent-bg {
-            background-color: #e97800;
+            background-color: #e00b00;
         }
     </style>
 </head>
