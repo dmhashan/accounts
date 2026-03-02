@@ -36,13 +36,19 @@ class SaleController extends Controller
             ->get();
 
         $availableStock = StockEntry::where('tenant_id', $tenantId)
-            ->whereDate('expiry_date', '>=', $today)
+            ->where(function ($query) use ($today) {
+                $query->whereDate('expiry_date', '>=', $today)
+                    ->orWhereNull('expiry_date');
+            })
             ->groupBy('product_variation_id')
             ->selectRaw('product_variation_id, SUM(quantity) as total')
             ->pluck('total', 'product_variation_id');
 
         $priceMap = StockEntry::where('tenant_id', $tenantId)
-            ->whereDate('expiry_date', '>=', $today)
+            ->where(function ($query) use ($today) {
+                $query->whereDate('expiry_date', '>=', $today)
+                    ->orWhereNull('expiry_date');
+            })
             ->orderBy('expiry_date')
             ->get()
             ->groupBy('product_variation_id')
@@ -98,7 +104,10 @@ class SaleController extends Controller
 
                 $available = StockEntry::where('tenant_id', $tenantId)
                     ->where('product_variation_id', $variation->id)
-                    ->whereDate('expiry_date', '>=', $today)
+                    ->where(function ($query) use ($today) {
+                        $query->whereDate('expiry_date', '>=', $today)
+                            ->orWhereNull('expiry_date');
+                    })
                     ->sum('quantity');
 
                 if ($item['quantity'] > $available) {
@@ -107,7 +116,10 @@ class SaleController extends Controller
 
                 $priceEntry = StockEntry::where('tenant_id', $tenantId)
                     ->where('product_variation_id', $variation->id)
-                    ->whereDate('expiry_date', '>=', $today)
+                    ->where(function ($query) use ($today) {
+                        $query->whereDate('expiry_date', '>=', $today)
+                            ->orWhereNull('expiry_date');
+                    })
                     ->orderBy('expiry_date')
                     ->first();
 

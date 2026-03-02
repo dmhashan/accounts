@@ -1,82 +1,74 @@
 <x-app-layout>
     <x-slot name="title">New Sale - {{ app('tenant')->name }}</x-slot>
 
-    @php
-    $uiMode = in_array(request('ui'), ['desktop', 'touch']) ? request('ui') : 'touch';
-    @endphp
-
     <div class="flex h-screen bg-background-light dark:bg-background-dark">
         <x-sidebar />
 
         <div class="flex-1 flex flex-col overflow-hidden">
             <x-header>
                 <x-slot name="title">New Sale</x-slot>
-            </x-header>
-
-            <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6 pb-20" data-ui-mode="{{ $uiMode }}">
-                <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
-                    @csrf
-
-                    <div class="flex flex-nowrap items-center gap-4 mb-6 overflow-x-auto overflow-y-visible">
-                        <div class="flex flex-nowrap items-center gap-4">
-                            <div class="flex items-center gap-3 shrink-0">
-                                <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden" id="uiModeToggle">
-                                    <button type="button" data-ui-mode="desktop" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
-                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <rect x="3" y="4" width="18" height="12" rx="2" />
-                                            <path d="M8 20h8M12 16v4" />
-                                        </svg>
-                                    </button>
-                                    <button type="button" data-ui-mode="touch" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
-                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <path d="M12 12V5a2 2 0 1 1 4 0v7" />
-                                            <path d="M8 12V6a2 2 0 1 0-4 0v8a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-2a2 2 0 1 0-4 0v2" />
-                                        </svg>
-                                    </button>
-                                </div>
+                <x-slot name="actions">
+                    <div class="flex items-center gap-2 overflow-x-auto overflow-y-visible">
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div id="customerTypeToggle" class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                                <button type="button" data-customer-type="local" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 10.5 12 4l9 6.5" />
+                                        <path d="M5 9.5V20h14V9.5" />
+                                        <path d="M9 20v-6h6v6" />
+                                    </svg>
+                                </button>
+                                <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="M3 12h18" />
+                                        <path d="M12 3a15 15 0 0 1 0 18" />
+                                        <path d="M12 3a15 15 0 0 0 0 18" />
+                                    </svg>
+                                </button>
                             </div>
 
-                            <div class="flex items-center gap-3 shrink-0">
-                                <div id="customerTypeToggle" class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                                    <button type="button" data-customer-type="local" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
-                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <path d="M3 10.5 12 4l9 6.5" />
-                                            <path d="M5 9.5V20h14V9.5" />
-                                            <path d="M9 20v-6h6v6" />
-                                        </svg>
-                                    </button>
-                                    <button type="button" data-customer-type="foreign" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
-                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <circle cx="12" cy="12" r="9" />
-                                            <path d="M3 12h18" />
-                                            <path d="M12 3a15 15 0 0 1 0 18" />
-                                            <path d="M12 3a15 15 0 0 0 0 18" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-3 shrink-0 relative z-40">
-                                <span class="text-sm font-medium text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Customer</span>
+                            <div class="header-customer-select min-w-[240px]">
                                 <select name="customer_name" id="customer_name"
-                                    class="min-w-[220px] px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
+                                    class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                     <option value="">Walk-in (optional)</option>
                                     @foreach($members as $member)
-                                    <option value="{{ $member->name }}" {{ old('customer_name') === $member->name ? 'selected' : '' }}>
-                                        {{ $member->member_id }} - {{ $member->name }}
-                                    </option>
+                                        <option value="{{ $member->id }}" {{ old('customer_name') == $member->id ? 'selected' : '' }}>
+                                            {{ $member->first_name }} {{ $member->last_name }} ({{ $member->phone_number }})
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
                         </div>
 
-                        <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
-                        @error('customer_type')
-                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
+                        <div class="h-8 w-px bg-secondary-200 dark:bg-secondary-700 shrink-0"></div>
 
-                        <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors whitespace-nowrap shrink-0">Sales History</a>
+                        <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden shrink-0" id="uiModeToggle">
+                            <button type="button" data-ui-mode="desktop" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="3" y="4" width="18" height="12" rx="2" />
+                                    <path d="M8 20h8M12 16v4" />
+                                </svg>
+                            </button>
+                            <button type="button" data-ui-mode="touch" class="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 inline-flex items-center gap-2">
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 12V5a2 2 0 1 1 4 0v7" />
+                                    <path d="M8 12V6a2 2 0 1 0-4 0v8a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-2a2 2 0 1 0-4 0v2" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="h-8 w-px bg-secondary-200 dark:bg-secondary-700 shrink-0"></div>
+
+                        <a href="{{ route('sales.index') }}" class="px-3 py-2 text-sm bg-secondary-900 text-white hover:bg-secondary-800 dark:bg-secondary-700 dark:hover:bg-secondary-600 rounded-lg transition-colors whitespace-nowrap shrink-0">Sales History</a>
                     </div>
+                </x-slot>
+            </x-header>
+
+            <main id="salePage" class="flex-1 overflow-y-auto p-4 md:p-6 pb-20">
+                <form action="{{ route('sales.store') }}" method="POST" id="saleForm">
+                    @csrf
+                    <input type="hidden" name="customer_type" id="customer_type" value="{{ old('customer_type', 'local') }}" required>
 
                     <div class="sale-mode" data-mode="desktop">
                         @include('sales.desktop')
@@ -98,7 +90,7 @@
                                         <input type="number" step="0.01" min="0" name="paid_amount" data-role="paid-amount" value="{{ old('paid_amount', '0.00') }}"
                                             class="w-full h-9 px-3 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white">
                                         @error('paid_amount')
-                                        <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                                         @enderror
                                     </div>
                                 </div>
@@ -122,6 +114,50 @@
         .choices__list--dropdown,
         .choices__list[aria-expanded] {
             z-index: 50;
+        }
+
+        .header-customer-select .choices {
+            margin-bottom: 0;
+            min-width: 240px;
+            position: relative;
+            z-index: 70;
+        }
+
+        .header-customer-select .choices__inner {
+            min-height: 38px;
+            padding: 3px 8px;
+            border-radius: 0.5rem;
+            border-color: rgb(203 213 225 / 1);
+            background-color: rgb(255 255 255 / 1);
+            font-size: 0.875rem;
+        }
+
+        .dark .header-customer-select .choices__inner {
+            border-color: rgb(71 85 105 / 1);
+            background-color: rgb(51 65 85 / 1);
+        }
+
+        .header-customer-select .choices[data-type*=select-one]::after {
+            right: 11.5px;
+        }
+
+        .header-customer-select .choices__list--single {
+            padding: 4px 24px 4px 4px;
+        }
+
+        .header-customer-select .choices__list--dropdown,
+        .header-customer-select .choices__list[aria-expanded] {
+            margin-top: 4px;
+            border-radius: 0.5rem;
+            border-color: rgb(203 213 225 / 1);
+            overflow: hidden;
+            z-index: 80;
+        }
+
+        .dark .header-customer-select .choices__list--dropdown,
+        .dark .header-customer-select .choices__list[aria-expanded] {
+            border-color: rgb(71 85 105 / 1);
+            background-color: rgb(30 41 59 / 1);
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
@@ -295,14 +331,10 @@
             }
         }
 
-        const customerSelect = document.getElementById('customer_name');
-        if (customerSelect) {
-            initSearchableSelect(customerSelect);
-        }
-
         customerTypeToggle.querySelectorAll('button').forEach(button => {
             button.addEventListener('click', () => setCustomerType(button.getAttribute('data-customer-type')));
         });
+
         uiModeToggle.querySelectorAll('button').forEach(button => {
             button.addEventListener('click', () => {
                 const mode = button.getAttribute('data-ui-mode');
@@ -314,7 +346,7 @@
         const storedUiMode = localStorage.getItem('saleUiMode');
         const initialUiMode = ['desktop', 'touch'].includes(storedUiMode) ?
             storedUiMode :
-            (salePage.dataset.uiMode || 'touch');
+            'touch';
         setActiveMode(initialUiMode);
 
         const storedCustomerType = localStorage.getItem('saleCustomerType');
