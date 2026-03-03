@@ -1,4 +1,14 @@
 import './bootstrap';
+import { createApp } from 'vue';
+import DashboardOverview from './components/dashboard/DashboardOverview.vue';
+
+function parseJson(value, fallback = {}) {
+    try {
+        return value ? JSON.parse(value) : fallback;
+    } catch {
+        return fallback;
+    }
+}
 
 // Dark mode functionality
 if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -33,6 +43,17 @@ window.toggleSidebar = function() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const dashboardRoot = document.getElementById('dashboard-overview');
+
+    if (dashboardRoot) {
+        createApp(DashboardOverview, {
+            tenant: parseJson(dashboardRoot.dataset.tenant),
+            user: parseJson(dashboardRoot.dataset.user),
+            successMessage: dashboardRoot.dataset.successMessage || '',
+            appDomain: dashboardRoot.dataset.appDomain || '',
+        }).mount(dashboardRoot);
+    }
+
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
     const storedState = localStorage.getItem('sidebarCollapsed');

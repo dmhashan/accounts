@@ -18,6 +18,10 @@ Route::get('/', function () {
             if ($tenant) {
                 app()->instance('tenant', $tenant);
 
+                if (auth()->check() && auth()->user()?->tenant_id === $tenant->id) {
+                    return view('spa');
+                }
+
                 if ($tenant->use_custom_landing_page) {
                     $customPagePath = app(TenantLandingPageService::class)->ensureCustomPageExists($tenant);
                     return response()->file($customPagePath);
@@ -50,6 +54,10 @@ Route::get('/', function () {
     // If tenant exists, store it and show tenant landing page
     app()->instance('tenant', $tenant);
 
+    if (auth()->check() && auth()->user()?->tenant_id === $tenant->id) {
+        return view('spa');
+    }
+
     if ($tenant->use_custom_landing_page) {
         $customPagePath = app(TenantLandingPageService::class)->ensureCustomPageExists($tenant);
         return response()->file($customPagePath);
@@ -77,42 +85,13 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     Route::get('/dashboard', function () {
         // Members should be redirected to their profile
         if (auth()->user()->hasRole('member')) {
-            return redirect()->route('member.profile');
+            return redirect('/#/profile');
         }
-        return view('dashboard');
+        return redirect('/#/dashboard');
     })->middleware('auth')->name('dashboard');
     
     // User Management routes (requires authentication and permissions)
     Route::middleware(['auth'])->group(function () {
-        Route::resource('users', \App\Http\Controllers\UserController::class)
-            ->middleware('permission:users.view');
-        
-        // Member Management routes (Admin/Staff only)
-        Route::get('/members', [\App\Http\Controllers\MemberController::class, 'index'])
-            ->middleware('permission:users.view')
-            ->name('members.index');
-        Route::get('/members/create', [\App\Http\Controllers\MemberController::class, 'create'])
-            ->middleware('permission:users.create')
-            ->name('members.create');
-        Route::post('/members', [\App\Http\Controllers\MemberController::class, 'store'])
-            ->middleware('permission:users.create')
-            ->name('members.store');
-        Route::get('/members/{member}/edit', [\App\Http\Controllers\MemberController::class, 'edit'])
-            ->middleware('permission:users.edit')
-            ->name('members.edit');
-        Route::put('/members/{member}', [\App\Http\Controllers\MemberController::class, 'update'])
-            ->middleware('permission:users.edit')
-            ->name('members.update');
-        Route::patch('/members/{member}/toggle-status', [\App\Http\Controllers\MemberController::class, 'toggleStatus'])
-            ->middleware('permission:users.edit')
-            ->name('members.toggle-status');
-        Route::patch('/members/{member}/toggle-verification', [\App\Http\Controllers\MemberController::class, 'toggleVerification'])
-            ->middleware('permission:users.edit')
-            ->name('members.toggle-verification');
-        Route::delete('/members/{member}', [\App\Http\Controllers\MemberController::class, 'destroy'])
-            ->middleware('permission:users.delete')
-            ->name('members.destroy');
-        
         // Member Profile (for members to view their own profile)
         Route::get('/profile', [\App\Http\Controllers\MemberController::class, 'profile'])
             ->name('member.profile');
@@ -126,17 +105,6 @@ Route::middleware([IdentifyTenant::class])->group(function () {
             ->name('payments.index');
         Route::get('/attendance', [\App\Http\Controllers\AttendanceController::class, 'index'])
             ->name('attendance.index');
-        
-        // Role Management routes
-        Route::get('/roles', [\App\Http\Controllers\RoleController::class, 'index'])
-            ->middleware('permission:roles.view')
-            ->name('roles.index');
-        Route::get('/roles/{role}', [\App\Http\Controllers\RoleController::class, 'show'])
-            ->middleware('permission:roles.view')
-            ->name('roles.show');
-        Route::post('/roles/{role}/permissions', [\App\Http\Controllers\RoleController::class, 'updatePermissions'])
-            ->middleware('permission:roles.permissions')
-            ->name('roles.permissions.update');
         
         // Settings route
         Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])
