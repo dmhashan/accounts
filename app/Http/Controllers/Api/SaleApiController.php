@@ -15,6 +15,20 @@ use Illuminate\Http\Request;
 
 class SaleApiController extends Controller
 {
+    public function memberWallet(Member $member): JsonResponse
+    {
+        if ($member->tenant_id !== app('tenant')->id) {
+            abort(404);
+        }
+
+        return response()->json([
+            'data' => [
+                'member_id' => $member->id,
+                'current_balance' => (float) $member->current_balance,
+            ],
+        ]);
+    }
+
     public function meta(): JsonResponse
     {
         $tenantId = app('tenant')->id;
@@ -83,6 +97,7 @@ class SaleApiController extends Controller
                     'id' => $member->id,
                     'label' => $name . ' (' . $phone . ')',
                     'customer_name' => $name,
+                    'phone_number' => $phone,
                 ];
             })->values(),
         ]);
@@ -102,6 +117,8 @@ class SaleApiController extends Controller
                 'id' => $sale->id,
                 'customer_name' => $sale->customer_name,
                 'customer_type' => $sale->customer_type,
+                'payment_method' => $sale->payment_method,
+                'reference_number' => $sale->reference_number,
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,
                 'balance' => (float) $sale->balance,
@@ -122,7 +139,10 @@ class SaleApiController extends Controller
 
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_member_id' => ['nullable', 'exists:members,id'],
             'customer_type' => ['required', 'in:local,foreign'],
+            'payment_method' => ['required', 'in:cash,bank,card,member_wallet'],
+            'reference_number' => ['nullable', 'string', 'max:255'],
             'paid_amount' => ['required', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_variation_id' => ['required', 'exists:product_variations,id'],
@@ -195,13 +215,44 @@ class SaleApiController extends Controller
                 ];
             }
 
-            $paidAmount = (float) $validated['paid_amount'];
-            $balance = $paidAmount - $total;
+            $member = null;
+            if (!empty($validated['customer_member_id'])) {
+                $member = Member::query()
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->find($validated['customer_member_id']);
+
+                if (!$member) {
+                    abort(422, 'Invalid member selection.');
+                }
+            }
+
+            if (($validated['payment_method'] ?? null) === 'member_wallet') {
+                if (!$member) {
+                    abort(422, 'Please select a member for wallet payment.');
+                }
+
+                if ((float) $member->current_balance < $total) {
+                    abort(422, 'Insufficient member wallet balance.');
+                }
+
+                $paidAmount = $total;
+                $balance = 0;
+                $member->update([
+                    'current_balance' => (float) $member->current_balance - $total,
+                ]);
+            } else {
+                $paidAmount = (float) $validated['paid_amount'];
+                $balance = $paidAmount - $total;
+            }
 
             $sale = Sale::create([
                 'tenant_id' => $tenantId,
                 'customer_name' => $validated['customer_name'] ?? null,
+                'customer_member_id' => $member?->id,
                 'customer_type' => $validated['customer_type'],
+                'payment_method' => $validated['payment_method'],
+                'reference_number' => $validated['reference_number'] ?? null,
                 'total_amount' => $total,
                 'paid_amount' => $paidAmount,
                 'balance' => $balance,

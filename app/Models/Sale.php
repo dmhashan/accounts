@@ -13,7 +13,10 @@ class Sale extends Model
     protected $fillable = [
         'tenant_id',
         'customer_name',
+        'customer_member_id',
         'customer_type',
+        'payment_method',
+        'reference_number',
         'total_amount',
         'paid_amount',
         'balance',

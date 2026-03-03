@@ -27,6 +27,7 @@ class Member extends Model
         'admission_fee',
         'payment_plan',
         'price',
+        'current_balance',
         'joined_date',
         'comment',
         'is_active',
@@ -40,6 +41,7 @@ class Member extends Model
         'joined_date' => 'date',
         'admission_fee' => 'decimal:2',
         'price' => 'decimal:2',
+        'current_balance' => 'decimal:2',
     ];
 
     public function tenant(): BelongsTo

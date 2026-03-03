@@ -1,76 +1,100 @@
 <template>
-    <section>
+    <section class="pb-24">
         <div class="flex flex-col gap-3 mb-4 md:mb-6">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">New Sale</h2>
-                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Process a sale using live stock and pricing from REST API.</p>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">POS checkout with live stock and pricing.</p>
                 </div>
                 <RouterLink to="/sales" class="text-sm text-primary-600 dark:text-primary-400">Sales History</RouterLink>
             </div>
 
-            <div class="flex flex-col lg:flex-row lg:items-center gap-2 overflow-x-auto">
-                <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden shrink-0">
+            <div class="flex items-center flex-nowrap gap-2 pb-1">
+                <div class="inline-flex shrink-0 rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
                     <button
                         type="button"
-                        class="px-3 py-2 text-sm font-medium transition-colors"
-                        :class="form.customer_type === 'local'
-                            ? 'bg-primary-600 text-white'
-                            : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+                        class="px-3 py-2"
+                        :class="form.customer_type === 'local' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+                        title="Local"
+                        aria-label="Local"
                         @click="form.customer_type = 'local'"
                     >
-                        Local
+                        <House class="h-4 w-4" />
                     </button>
                     <button
                         type="button"
-                        class="px-3 py-2 text-sm font-medium transition-colors"
-                        :class="form.customer_type === 'foreign'
-                            ? 'bg-primary-600 text-white'
-                            : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+                        class="px-3 py-2"
+                        :class="form.customer_type === 'foreign' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+                        title="Foreign"
+                        aria-label="Foreign"
                         @click="form.customer_type = 'foreign'"
                     >
-                        Foreign
+                        <Globe class="h-4 w-4" />
                     </button>
                 </div>
 
-                <div class="min-w-[260px] lg:min-w-[320px]">
-                    <label class="sr-only">Select Customer</label>
-                    <input
-                        v-model="memberSearch"
-                        type="text"
-                        placeholder="Search customer"
-                        class="w-full mb-1 px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"
+                <div ref="customerSelectorRef" class="relative shrink-0 w-[240px] md:w-auto md:flex-1 md:min-w-0 md:max-w-md">
+                    <button
+                        type="button"
+                        class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-left flex items-center justify-between"
+                        @click="customerDropdownOpen = !customerDropdownOpen"
                     >
-                    <select
-                        v-model.number="form.customer_member_id"
-                        class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"
-                    >
-                        <option :value="null">Walk-in (optional)</option>
-                        <option v-for="member in filteredMembers" :key="member.id" :value="member.id">{{ member.label }}</option>
-                    </select>
+                        <span class="truncate">{{ selectedMember?.label || 'Walk-in (optional)' }}</span>
+                        <span class="text-secondary-500">▾</span>
+                    </button>
+
+                    <div v-if="customerDropdownOpen" class="absolute z-20 mt-1 w-full bg-white dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg shadow-lg overflow-hidden">
+                        <div class="p-2 border-b border-secondary-200 dark:border-secondary-700">
+                            <input
+                                v-model="memberSearch"
+                                type="text"
+                                placeholder="Search customer..."
+                                class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"
+                            >
+                        </div>
+
+                        <div class="max-h-64 overflow-y-auto py-1">
+                            <button
+                                type="button"
+                                class="w-full px-3 py-2 text-sm text-left hover:bg-secondary-100 dark:hover:bg-secondary-800"
+                                @click="selectCustomer(null)"
+                            >
+                                Walk-in (optional)
+                            </button>
+                            <button
+                                v-for="member in filteredMembers"
+                                :key="member.id"
+                                type="button"
+                                class="w-full px-3 py-2 text-sm text-left hover:bg-secondary-100 dark:hover:bg-secondary-800"
+                                @click="selectCustomer(member.id)"
+                            >
+                                {{ member.label }}
+                            </button>
+
+                            <p v-if="filteredMembers.length === 0" class="px-3 py-3 text-sm text-secondary-500 dark:text-secondary-400">
+                                No customers found.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4">
+                <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 mb-2 uppercase">Payment Method</p>
+                <div class="flex flex-wrap gap-2">
+                    <button v-for="method in paymentMethods" :key="method.value" type="button" class="px-3 py-2 text-sm rounded-lg border" :class="paymentButtonClass(method.value)" :disabled="method.value === 'member_wallet' && !selectedMember" @click="selectPaymentMethod(method.value)">
+                        {{ method.label }}
+                    </button>
                 </div>
 
-                <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden shrink-0">
-                    <button
-                        type="button"
-                        class="px-3 py-2 text-sm font-medium transition-colors"
-                        :class="uiMode === 'desktop'
-                            ? 'bg-primary-600 text-white'
-                            : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
-                        @click="setUiMode('desktop')"
-                    >
-                        Desktop
-                    </button>
-                    <button
-                        type="button"
-                        class="px-3 py-2 text-sm font-medium transition-colors"
-                        :class="uiMode === 'touch'
-                            ? 'bg-primary-600 text-white'
-                            : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
-                        @click="setUiMode('touch')"
-                    >
-                        Touch
-                    </button>
+                <div v-if="showReferenceField" class="mt-3">
+                    <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Reference Number (optional)</label>
+                    <input v-model="form.reference_number" type="text" placeholder="Transaction ID / reference" class="w-full md:max-w-md px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                </div>
+
+                <div v-if="form.payment_method === 'member_wallet'" class="mt-3 text-sm text-secondary-700 dark:text-secondary-300">
+                    <p v-if="walletLoading">Loading wallet balance...</p>
+                    <p v-else>Wallet Balance: <span class="font-semibold">{{ money(walletBalance) }}</span></p>
                 </div>
             </div>
         </div>
@@ -79,125 +103,111 @@
             {{ errorMessage }}
         </div>
 
-        <form class="space-y-4" @submit.prevent="submitSale">
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Paid Amount</label>
-                        <input v-model.number="form.paid_amount" type="number" min="0" step="0.01" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Customer (Optional)</label>
-                        <input :value="selectedMember?.label || 'Walk-in (optional)'" readonly class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-secondary-50 dark:bg-secondary-800/70 text-secondary-700 dark:text-secondary-300">
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-6">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Items</h3>
-                    <button type="button" class="px-3 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-700" @click="addItem">Add Item</button>
-                </div>
-
-                <div v-if="uiMode === 'touch'" class="space-y-3">
-                    <article v-for="(item, index) in form.items" :key="item.key" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3">
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-xs text-secondary-500 dark:text-secondary-400 mb-1">Product</label>
-                                <select v-model.number="item.product_variation_id" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                                    <option :value="null">Select product</option>
-                                    <option v-for="variation in variationOptions" :key="variation.id" :value="variation.id">{{ variation.label }}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-secondary-500 dark:text-secondary-400 mb-1">Quantity</label>
-                                <input v-model.number="item.quantity" type="number" min="1" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 text-xs">
-                                <div>
-                                    <p class="text-secondary-500 dark:text-secondary-400">Available</p>
-                                    <p class="text-secondary-900 dark:text-white">{{ selectedVariation(item.product_variation_id)?.available_stock ?? 0 }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-secondary-500 dark:text-secondary-400">Unit Price</p>
-                                    <p class="text-secondary-900 dark:text-white">{{ money(unitPrice(item)) }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-secondary-500 dark:text-secondary-400">Subtotal</p>
-                                    <p class="text-secondary-900 dark:text-white">{{ money(itemSubtotal(item)) }}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <button v-if="form.items.length > 1" type="button" class="text-sm text-red-600 dark:text-red-400" @click="removeItem(index)">Remove</button>
-                            </div>
+        <form @submit.prevent="submitSale">
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+                <div class="xl:col-span-7 bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Products</h3>
+                        <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                            <button
+                                type="button"
+                                class="px-3 py-2"
+                                :class="catalogView === 'grid' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+                                title="Grid"
+                                aria-label="Grid"
+                                @click="catalogView = 'grid'"
+                            >
+                                <LayoutGrid class="h-4 w-4" />
+                            </button>
+                            <button
+                                type="button"
+                                class="px-3 py-2"
+                                :class="catalogView === 'list' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+                                title="List"
+                                aria-label="List"
+                                @click="catalogView = 'list'"
+                            >
+                                <List class="h-4 w-4" />
+                            </button>
                         </div>
-                    </article>
+                    </div>
+                    <div v-if="catalogView === 'grid'" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
+                        <article v-for="variation in variationOptions" :key="variation.id" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2">
+                            <p class="text-xs font-semibold text-secondary-900 dark:text-white line-clamp-2">{{ variation.label }}</p>
+                            <p class="text-[11px] text-secondary-500 dark:text-secondary-400 mt-1">Stock: {{ variation.available_stock }}</p>
+                            <p class="text-[11px] text-secondary-700 dark:text-secondary-300 mt-1">{{ money(variationPrice(variation)) }}</p>
+                            <button type="button" class="mt-2 w-full px-2 py-1.5 text-xs rounded-lg border border-secondary-300 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800" :disabled="variation.available_stock <= 0" @click="addVariationToCart(variation)">Add</button>
+                        </article>
+                    </div>
+
+                    <div v-else class="space-y-2">
+                        <article v-for="variation in variationOptions" :key="variation.id" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3 flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ variation.label }}</p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400">Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}</p>
+                            </div>
+                            <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-secondary-300 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800" :disabled="variation.available_stock <= 0" @click="addVariationToCart(variation)">Add</button>
+                        </article>
+                    </div>
                 </div>
 
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="border-b border-secondary-200 dark:border-secondary-700">
-                            <tr>
-                                <th class="text-left text-xs text-secondary-500 dark:text-secondary-400 py-2">Product</th>
-                                <th class="text-left text-xs text-secondary-500 dark:text-secondary-400 py-2">Qty</th>
-                                <th class="text-left text-xs text-secondary-500 dark:text-secondary-400 py-2">Available</th>
-                                <th class="text-left text-xs text-secondary-500 dark:text-secondary-400 py-2">Unit Price</th>
-                                <th class="text-left text-xs text-secondary-500 dark:text-secondary-400 py-2">Subtotal</th>
-                                <th class="text-right text-xs text-secondary-500 dark:text-secondary-400 py-2">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(item, index) in form.items" :key="item.key" class="border-b border-secondary-100 dark:border-secondary-800">
-                                <td class="py-2 pr-2">
-                                    <select v-model.number="item.product_variation_id" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                                        <option :value="null">Select product</option>
-                                        <option v-for="variation in variationOptions" :key="variation.id" :value="variation.id">{{ variation.label }}</option>
-                                    </select>
-                                </td>
-                                <td class="py-2 pr-2 w-32">
-                                    <input v-model.number="item.quantity" type="number" min="1" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                                </td>
-                                <td class="py-2 pr-2 text-sm text-secondary-700 dark:text-secondary-300">{{ selectedVariation(item.product_variation_id)?.available_stock ?? 0 }}</td>
-                                <td class="py-2 pr-2 text-sm text-secondary-700 dark:text-secondary-300">{{ money(unitPrice(item)) }}</td>
-                                <td class="py-2 pr-2 text-sm text-secondary-900 dark:text-white font-medium">{{ money(itemSubtotal(item)) }}</td>
-                                <td class="py-2 text-right">
-                                    <button v-if="form.items.length > 1" type="button" class="text-sm text-red-600 dark:text-red-400" @click="removeItem(index)">Remove</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="xl:col-span-5 bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4">
+                    <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">Cart</h3>
+
+                    <div class="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
+                        <article v-for="item in form.items" :key="item.key" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ selectedVariation(item.product_variation_id)?.label || 'Item' }}</p>
+                                    <p class="text-xs text-secondary-500 dark:text-secondary-400">Unit: {{ money(unitPrice(item)) }}</p>
+                                </div>
+                                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeByKey(item.key)">Remove</button>
+                            </div>
+
+                            <div class="mt-2 flex items-center justify-between">
+                                <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                                    <button type="button" class="px-3 py-1.5 text-sm" @click="decrementQty(item)">-</button>
+                                    <div class="px-3 py-1.5 text-sm min-w-10 text-center">{{ item.quantity }}</div>
+                                    <button type="button" class="px-3 py-1.5 text-sm" @click="incrementQty(item)">+</button>
+                                </div>
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ money(itemSubtotal(item)) }}</p>
+                            </div>
+                        </article>
+
+                        <div v-if="form.items.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No items in cart.</div>
+                    </div>
+
+                    <div class="mt-4 space-y-2 border-t border-secondary-200 dark:border-secondary-700 pt-3 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-secondary-500 dark:text-secondary-400">Paid Amount</span>
+                            <span v-if="form.payment_method === 'member_wallet'" class="font-semibold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</span>
+                            <input v-else v-model.number="form.paid_amount" type="number" min="0" step="0.01" class="w-36 px-2 py-1.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-right">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-secondary-500 dark:text-secondary-400">Balance</span>
+                            <span class="font-semibold" :class="balanceAmount < 0 ? 'text-red-600 dark:text-red-400' : 'text-secondary-900 dark:text-white'">{{ money(balanceAmount) }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                    <div>
-                        <p class="text-secondary-500 dark:text-secondary-400">Total Amount</p>
-                        <p class="text-lg font-semibold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</p>
-                    </div>
-                    <div>
-                        <p class="text-secondary-500 dark:text-secondary-400">Paid Amount</p>
-                        <p class="text-lg font-semibold text-secondary-900 dark:text-white">{{ money(form.paid_amount || 0) }}</p>
-                    </div>
-                    <div>
-                        <p class="text-secondary-500 dark:text-secondary-400">Balance</p>
-                        <p class="text-lg font-semibold" :class="balanceAmount < 0 ? 'text-red-600 dark:text-red-400' : 'text-secondary-900 dark:text-white'">{{ money(balanceAmount) }}</p>
-                    </div>
+            <div class="sticky bottom-0 z-10 mt-4 bg-white/95 dark:bg-secondary-900/95 backdrop-blur border border-secondary-200 dark:border-secondary-700 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">Grand Total</p>
+                    <p class="text-xl font-bold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</p>
                 </div>
-
-                <div class="mt-4 flex justify-end">
-                    <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50" :disabled="submitting || loadingMeta">
-                        {{ submitting ? 'Processing...' : 'Complete Sale' }}
-                    </button>
-                </div>
+                <button type="submit" class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50" :disabled="submitDisabled">
+                    {{ submitting ? 'Processing...' : 'Complete Sale' }}
+                </button>
             </div>
         </form>
     </section>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { Globe, House, LayoutGrid, List } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 
 const router = useRouter();
@@ -208,7 +218,11 @@ const errorMessage = ref('');
 const variationOptions = ref([]);
 const members = ref([]);
 const memberSearch = ref('');
-const uiMode = ref('touch');
+const customerDropdownOpen = ref(false);
+const customerSelectorRef = ref(null);
+const catalogView = ref('grid');
+const walletLoading = ref(false);
+const walletBalance = ref(0);
 
 let rowKey = 0;
 
@@ -216,11 +230,18 @@ const form = ref({
     customer_name: '',
     customer_member_id: null,
     customer_type: 'local',
+    payment_method: 'cash',
+    reference_number: '',
     paid_amount: 0,
-    items: [
-        { key: ++rowKey, product_variation_id: null, quantity: 1 },
-    ],
+    items: [],
 });
+
+const paymentMethods = [
+    { value: 'cash', label: 'Cash' },
+    { value: 'bank', label: 'Bank' },
+    { value: 'card', label: 'Card' },
+    { value: 'member_wallet', label: 'Member Wallet' },
+];
 
 const selectedMember = computed(() => {
     if (!form.value.customer_member_id) {
@@ -239,12 +260,36 @@ const filteredMembers = computed(() => {
     return members.value.filter((member) => member.label.toLowerCase().includes(term));
 });
 
+const showReferenceField = computed(() => {
+    return form.value.payment_method === 'bank' || form.value.payment_method === 'card';
+});
+
 const totalAmount = computed(() => {
     return form.value.items.reduce((sum, item) => sum + itemSubtotal(item), 0);
 });
 
 const balanceAmount = computed(() => {
-    return Number(form.value.paid_amount || 0) - totalAmount.value;
+    const paid = form.value.payment_method === 'member_wallet'
+        ? totalAmount.value
+        : Number(form.value.paid_amount || 0);
+
+    return paid - totalAmount.value;
+});
+
+const submitDisabled = computed(() => {
+    if (submitting.value || loadingMeta.value || form.value.items.length === 0) {
+        return true;
+    }
+
+    if (form.value.payment_method === 'member_wallet') {
+        if (!selectedMember.value) {
+            return true;
+        }
+
+        return Number(walletBalance.value || 0) < totalAmount.value;
+    }
+
+    return false;
 });
 
 function money(value) {
@@ -259,13 +304,17 @@ function selectedVariation(variationId) {
     return variationOptions.value.find((variation) => variation.id === variationId) || null;
 }
 
+function variationPrice(variation) {
+    return Number(variation?.prices?.[form.value.customer_type] || 0);
+}
+
 function unitPrice(item) {
     const variation = selectedVariation(item.product_variation_id);
     if (!variation) {
         return 0;
     }
 
-    return Number(variation.prices?.[form.value.customer_type] || 0);
+    return variationPrice(variation);
 }
 
 function itemSubtotal(item) {
@@ -277,17 +326,90 @@ function itemSubtotal(item) {
     return unitPrice(item) * quantity;
 }
 
-function addItem() {
-    form.value.items.push({ key: ++rowKey, product_variation_id: null, quantity: 1 });
+function addVariationToCart(variation) {
+    const existing = form.value.items.find((item) => item.product_variation_id === variation.id);
+
+    if (existing) {
+        incrementQty(existing);
+        return;
+    }
+
+    form.value.items.push({
+        key: ++rowKey,
+        product_variation_id: variation.id,
+        quantity: 1,
+    });
 }
 
-function removeItem(index) {
-    form.value.items.splice(index, 1);
+function incrementQty(item) {
+    const stock = Number(selectedVariation(item.product_variation_id)?.available_stock || 0);
+    if (item.quantity < stock) {
+        item.quantity += 1;
+    }
 }
 
-function setUiMode(mode) {
-    uiMode.value = mode;
-    localStorage.setItem('saleUiMode', mode);
+function decrementQty(item) {
+    if (item.quantity > 1) {
+        item.quantity -= 1;
+    }
+}
+
+function removeByKey(key) {
+    form.value.items = form.value.items.filter((item) => item.key !== key);
+}
+
+function paymentButtonClass(method) {
+    const disabled = method === 'member_wallet' && !selectedMember.value;
+    if (disabled) {
+        return 'border-secondary-200 text-secondary-400 dark:border-secondary-700 dark:text-secondary-500 cursor-not-allowed';
+    }
+
+    return form.value.payment_method === method
+        ? 'bg-primary-600 border-primary-600 text-white'
+        : 'border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800';
+}
+
+function selectPaymentMethod(method) {
+    if (method === 'member_wallet' && !selectedMember.value) {
+        return;
+    }
+
+    form.value.payment_method = method;
+}
+
+function selectCustomer(memberId) {
+    form.value.customer_member_id = memberId;
+    customerDropdownOpen.value = false;
+    memberSearch.value = '';
+}
+
+function handleDocumentClick(event) {
+    if (!customerDropdownOpen.value) {
+        return;
+    }
+
+    if (customerSelectorRef.value && !customerSelectorRef.value.contains(event.target)) {
+        customerDropdownOpen.value = false;
+    }
+}
+
+async function loadWalletBalance() {
+    if (!selectedMember.value || form.value.payment_method !== 'member_wallet') {
+        walletBalance.value = 0;
+        return;
+    }
+
+    walletLoading.value = true;
+
+    try {
+        const response = await apiRequest(`/api/sales/member-wallet/${selectedMember.value.id}`);
+        walletBalance.value = Number(response.data?.current_balance || 0);
+    } catch (error) {
+        errorMessage.value = error?.response?.data?.message || 'Failed to load member wallet balance.';
+        walletBalance.value = 0;
+    } finally {
+        walletLoading.value = false;
+    }
 }
 
 async function loadMeta() {
@@ -311,11 +433,17 @@ async function submitSale() {
 
     try {
         const resolvedCustomerName = selectedMember.value?.customer_name || null;
+        const paidAmount = form.value.payment_method === 'member_wallet'
+            ? totalAmount.value
+            : Number(form.value.paid_amount || 0);
 
         const payload = {
             customer_name: resolvedCustomerName,
+            customer_member_id: selectedMember.value?.id || null,
             customer_type: form.value.customer_type,
-            paid_amount: Number(form.value.paid_amount || 0),
+            payment_method: form.value.payment_method,
+            reference_number: showReferenceField.value ? (form.value.reference_number || null) : null,
+            paid_amount: paidAmount,
             items: form.value.items
                 .filter((item) => item.product_variation_id && Number(item.quantity) > 0)
                 .map((item) => ({
@@ -344,11 +472,36 @@ async function submitSale() {
 }
 
 onMounted(() => {
-    const storedMode = localStorage.getItem('saleUiMode');
-    if (storedMode === 'desktop' || storedMode === 'touch') {
-        uiMode.value = storedMode;
-    }
-
+    document.addEventListener('click', handleDocumentClick);
     loadMeta();
 });
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', handleDocumentClick);
+});
+
+watch(
+    () => form.value.customer_member_id,
+    () => {
+        if (!selectedMember.value && form.value.payment_method === 'member_wallet') {
+            form.value.payment_method = 'cash';
+        }
+    }
+);
+
+watch(
+    () => [form.value.payment_method, form.value.customer_member_id],
+    () => {
+        loadWalletBalance();
+    }
+);
+
+watch(
+    () => totalAmount.value,
+    (value) => {
+        if (form.value.payment_method === 'member_wallet') {
+            form.value.paid_amount = value;
+        }
+    }
+);
 </script>
