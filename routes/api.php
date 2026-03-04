@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\RoleApiController;
 use App\Http\Controllers\Api\SaleApiController;
 use App\Http\Controllers\Api\UserApiController;
 use App\Http\Middleware\IdentifyTenant;
+use App\Models\ProductVariation;
+use App\Models\Sale;
+use App\Models\StockEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -108,18 +111,95 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
 
     Route::get('/dashboard/overview', function (Request $request) {
         $user = $request->user();
+        $tenant = app('tenant');
+        $tenantId = $tenant->id;
+        $today = now()->toDateString();
+        $lowStockThreshold = 5;
+
+        $canViewStockSummary = $user->hasPermission('inventory.manage');
+        $canViewSalesSummary = $user->hasPermission('sales.process');
+
+        $stockSummary = [
+            'can_view' => $canViewStockSummary,
+            'available_units' => 0,
+            'tracked_variations' => 0,
+            'low_stock_variations' => 0,
+            'low_stock_threshold' => $lowStockThreshold,
+            'variation_availability' => [],
+        ];
+
+        if ($canViewStockSummary) {
+            $variationAvailability = ProductVariation::query()
+                ->where('product_variations.tenant_id', $tenantId)
+                ->leftJoin('products', 'products.id', '=', 'product_variations.product_id')
+                ->leftJoin('stock_entries', function ($join) use ($tenantId, $today) {
+                    $join->on('stock_entries.product_variation_id', '=', 'product_variations.id')
+                        ->where('stock_entries.tenant_id', $tenantId)
+                        ->where(function ($query) use ($today) {
+                            $query->whereDate('stock_entries.expiry_date', '>=', $today)
+                                ->orWhereNull('stock_entries.expiry_date');
+                        });
+                })
+                ->groupBy('product_variations.id', 'product_variations.name', 'products.name')
+                ->orderBy('products.name')
+                ->orderBy('product_variations.name')
+                ->selectRaw('product_variations.id as variation_id, product_variations.name as variation_name, products.name as product_name, COALESCE(SUM(stock_entries.quantity), 0) as available_quantity')
+                ->get()
+                ->map(function ($item) use ($lowStockThreshold) {
+                    $availableQuantity = (int) $item->available_quantity;
+                    $productName = (string) ($item->product_name ?? 'Product');
+                    $variationName = (string) $item->variation_name;
+
+                    return [
+                        'variation_id' => (int) $item->variation_id,
+                        'product_name' => $productName,
+                        'variation_name' => $variationName,
+                        'label' => trim($productName.' - '.$variationName),
+                        'available_quantity' => $availableQuantity,
+                        'is_low_stock' => $availableQuantity <= $lowStockThreshold,
+                    ];
+                })
+                ->values();
+
+            $stockSummary['available_units'] = (int) $variationAvailability->sum('available_quantity');
+            $stockSummary['tracked_variations'] = $variationAvailability->count();
+            $stockSummary['low_stock_variations'] = $variationAvailability
+                ->filter(fn ($item) => $item['is_low_stock'])
+                ->count();
+            $stockSummary['variation_availability'] = $variationAvailability;
+        }
+
+        $dailySalesSummary = [
+            'can_view' => $canViewSalesSummary,
+            'date' => $today,
+            'transactions' => 0,
+            'gross_amount' => 0,
+            'paid_amount' => 0,
+        ];
+
+        if ($canViewSalesSummary) {
+            $todaySalesQuery = Sale::query()
+                ->where('tenant_id', $tenantId)
+                ->whereDate('created_at', $today);
+
+            $dailySalesSummary['transactions'] = (int) $todaySalesQuery->count();
+            $dailySalesSummary['gross_amount'] = (float) $todaySalesQuery->sum('total_amount');
+            $dailySalesSummary['paid_amount'] = (float) $todaySalesQuery->sum('paid_amount');
+        }
 
         return response()->json([
             'tenant' => [
-                'name' => app('tenant')->name,
-                'id' => app('tenant')->id,
-                'domain' => app('tenant')->domain,
+                'name' => $tenant->name,
+                'id' => $tenant->id,
+                'domain' => $tenant->domain,
             ],
             'user' => [
                 'name' => $user->name,
                 'id' => $user->id,
                 'email' => $user->email,
             ],
+            'stock_summary' => $stockSummary,
+            'daily_sales_summary' => $dailySalesSummary,
         ]);
     })->middleware('auth');
 
