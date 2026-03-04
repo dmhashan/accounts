@@ -133,6 +133,7 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
 
         Route::get('/members/meta', [MemberApiController::class, 'meta']);
         Route::get('/members', [MemberApiController::class, 'index']);
+        Route::get('/members/export/google-contacts', [MemberApiController::class, 'exportGoogleContacts']);
         Route::get('/members/{member}', [MemberApiController::class, 'show']);
         Route::post('/members', [MemberApiController::class, 'store'])->middleware('permission:users.create');
         Route::put('/members/{member}', [MemberApiController::class, 'update'])->middleware('permission:users.edit');

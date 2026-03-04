@@ -5,13 +5,23 @@
                 <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Member Management</h2>
                 <p class="text-sm text-secondary-500 dark:text-secondary-400">All member records are loaded via REST API.</p>
             </div>
-            <RouterLink
-                v-if="permissions.create"
-                to="/members/new"
-                class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-            >
-                Add Member
-            </RouterLink>
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    :disabled="exporting"
+                    @click="exportGoogleContacts"
+                >
+                    {{ exporting ? 'Exporting...' : 'Export to Google Contact' }}
+                </button>
+                <RouterLink
+                    v-if="permissions.create"
+                    to="/members/new"
+                    class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                >
+                    Add Member
+                </RouterLink>
+            </div>
         </div>
 
         <div class="mb-4 flex gap-2">
@@ -139,6 +149,7 @@ import { apiRequest } from '../composables/useApiClient';
 const context = useAppContext();
 const members = ref([]);
 const loading = ref(false);
+const exporting = ref(false);
 const errorMessage = ref('');
 const search = ref('');
 const permissions = ref({ create: false, edit: false, delete: false });
@@ -203,6 +214,33 @@ function handlePageChange(page) {
 function handleLimitChange(limit) {
     perPage.value = Number(limit);
     loadMembers(1);
+}
+
+async function exportGoogleContacts() {
+    exporting.value = true;
+    errorMessage.value = '';
+
+    try {
+        const csvBlob = await apiRequest('/api/members/export/google-contacts', {
+            responseType: 'blob',
+            headers: {
+                Accept: 'text/csv',
+            },
+        });
+
+        const downloadUrl = window.URL.createObjectURL(csvBlob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `google-contacts-members-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        errorMessage.value = error?.response?.data?.message || 'Failed to export members for Google Contacts.';
+    } finally {
+        exporting.value = false;
+    }
 }
 
 async function toggleStatus(member) {

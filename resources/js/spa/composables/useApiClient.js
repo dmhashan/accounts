@@ -13,6 +13,7 @@ function buildRequestConfig(url, options = {}) {
         method: options.method || 'get',
         data: options.data || undefined,
         params: options.params || undefined,
+        responseType: options.responseType || undefined,
         headers: {
             Accept: 'application/json',
             'X-CSRF-TOKEN': getCsrfToken(),

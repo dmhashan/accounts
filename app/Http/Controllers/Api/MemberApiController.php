@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MemberApiController extends Controller
 {
@@ -75,6 +76,122 @@ class MemberApiController extends Controller
                 'edit' => $currentUser->hasPermission('users.edit'),
                 'delete' => $currentUser->hasPermission('users.delete'),
             ],
+        ]);
+    }
+
+    public function exportGoogleContacts(): StreamedResponse
+    {
+        $tenant = app('tenant');
+
+        $headers = [
+            'Name Prefix',
+            'First Name',
+            'Middle Name',
+            'Last Name',
+            'Name Suffix',
+            'Phonetic First Name',
+            'Phonetic Middle Name',
+            'Phonetic Last Name',
+            'Nickname',
+            'File As',
+            'E-mail 1 - Label',
+            'E-mail 1 - Value',
+            'Phone 1 - Label',
+            'Phone 1 - Value',
+            'Address 1 - Label',
+            'Address 1 - Country',
+            'Address 1 - Street',
+            'Address 1 - Extended Address',
+            'Address 1 - City',
+            'Address 1 - Region',
+            'Address 1 - Postal Code',
+            'Address 1 - PO Box',
+            'Organization Name',
+            'Organization Title',
+            'Organization Department',
+            'Birthday',
+            'Event 1 - Label',
+            'Event 1 - Value',
+            'Relation 1 - Label',
+            'Relation 1 - Value',
+            'Website 1 - Label',
+            'Website 1 - Value',
+            'Custom Field 1 - Label',
+            'Custom Field 1 - Value',
+            'Notes',
+            'Labels',
+        ];
+
+        $tenantId = $tenant->id;
+        $tenantName = (string) $tenant->name;
+        $fileName = 'google-contacts-members-'.now()->format('Ymd_His').'.csv';
+
+        return response()->streamDownload(function () use ($headers, $tenantId, $tenantName) {
+            $output = fopen('php://output', 'w');
+
+            fputcsv($output, $headers);
+
+            foreach (Member::query()->where('tenant_id', $tenantId)->orderBy('created_at', 'desc')->cursor() as $member) {
+                $firstName = trim((string) ($member->first_name ?? ''));
+                $lastName = trim((string) ($member->last_name ?? ''));
+
+                if (!$firstName || !$lastName) {
+                    $parts = preg_split('/\s+/', trim((string) ($member->name ?? '')), 2);
+                    $firstName = $firstName ?: ($parts[0] ?? '');
+                    $lastName = $lastName ?: ($parts[1] ?? '');
+                }
+
+                $fileAs = trim($firstName.' '.$lastName);
+                if ($fileAs === '') {
+                    $fileAs = trim((string) ($member->name ?? ''));
+                }
+
+                $genderLabel = $member->gender === 'female' ? 'Female' : 'Male';
+                $namePrefix = trim($tenantName.' '.$genderLabel.' '.(string) ($member->member_id ?? ''));
+
+                fputcsv($output, [
+                    '',
+                    $namePrefix,
+                    $firstName,
+                    $lastName,
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    $fileAs,
+                    '* Home',
+                    (string) ($member->email ?? ''),
+                    '* Mobile',
+                    (string) ($member->phone_number ?? ''),
+                    '* Home',
+                    '',
+                    (string) ($member->address ?? ''),
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    $tenantName,
+                    (string) ($member->member_role ?? ''),
+                    '',
+                    optional($member->date_of_birth)->format('Y-m-d'),
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'Member ID',
+                    (string) ($member->member_id ?? ''),
+                    (string) ($member->comment ?? ''),
+                    'Members',
+                ]);
+            }
+
+            fclose($output);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 
