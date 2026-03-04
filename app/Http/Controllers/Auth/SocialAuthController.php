@@ -12,9 +12,10 @@ use Throwable;
 
 class SocialAuthController extends Controller
 {
-    public function redirect(string $provider): RedirectResponse
+    public function redirect(Request $request, string $provider): RedirectResponse
     {
         $this->ensureSupportedProvider($provider);
+        $this->setDynamicRedirectUri($request, $provider);
 
         return Socialite::driver($provider)->redirect();
     }
@@ -22,6 +23,7 @@ class SocialAuthController extends Controller
     public function callback(Request $request, string $provider): RedirectResponse
     {
         $this->ensureSupportedProvider($provider);
+        $this->setDynamicRedirectUri($request, $provider);
 
         try {
             $socialUser = Socialite::driver($provider)->user();
@@ -66,5 +68,22 @@ class SocialAuthController extends Controller
     private function ensureSupportedProvider(string $provider): void
     {
         abort_unless(in_array($provider, ['google', 'apple'], true), 404);
+    }
+
+    private function setDynamicRedirectUri(Request $request, string $provider): void
+    {
+        if ($provider !== 'google') {
+            return;
+        }
+
+        config()->set(
+            'services.' . $provider . '.redirect',
+            $this->resolveCallbackUrl($request, $provider)
+        );
+    }
+
+    private function resolveCallbackUrl(Request $request, string $provider): string
+    {
+        return $request->getSchemeAndHttpHost() . route('auth.social.callback', ['provider' => $provider], false);
     }
 }
