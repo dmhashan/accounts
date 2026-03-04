@@ -6,7 +6,6 @@
             :class="open ? 'translate-x-0' : '-translate-x-full'">
             <div class="h-16 px-4 border-b border-secondary-200 dark:border-secondary-700 flex items-center justify-between">
                 <div class="min-w-0">
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400 truncate">{{ context.tenant?.domain }} tenant</p>
                     <h2 class="text-lg font-bold text-secondary-900 dark:text-white truncate">{{ context.tenant?.name || 'Tenant App' }}</h2>
                 </div>
                 <button type="button" class="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 dark:hover:bg-secondary-700" @click="$emit('close')">

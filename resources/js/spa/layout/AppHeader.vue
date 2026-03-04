@@ -8,7 +8,6 @@
             </button>
 
             <div class="min-w-0">
-            <p class="text-sm text-secondary-500 dark:text-secondary-400">{{ context.tenant?.domain }} tenant</p>
             <h1 class="text-lg md:text-xl font-bold text-secondary-900 dark:text-white truncate">{{ pageTitle }}</h1>
             </div>
         </div>
