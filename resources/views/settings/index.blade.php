@@ -50,6 +50,27 @@
                                 <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
 
+                            <div>
+                                <label for="wallet_credit_limit" class="block text-sm font-medium text-secondary-900 dark:text-white mb-2">
+                                    Member Wallet Credit Limit
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    name="wallet_credit_limit"
+                                    id="wallet_credit_limit"
+                                    value="{{ old('wallet_credit_limit', $tenant->wallet_credit_limit) }}"
+                                    class="w-full md:max-w-sm rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white"
+                                >
+                                <p class="text-xs text-secondary-600 dark:text-secondary-400 mt-1">
+                                    Members can spend below zero up to this configured limit.
+                                </p>
+                                @error('wallet_credit_limit')
+                                    <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             <button
                                 type="submit"
                                 class="inline-flex items-center rounded-lg bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 text-sm font-medium transition-colors"

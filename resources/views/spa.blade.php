@@ -29,6 +29,7 @@
                 'reports' => $user->hasPermission('reports.view'),
                 'inventory' => $user->hasPermission('inventory.manage'),
                 'sales' => $user->hasPermission('sales.process'),
+                'company-accounts' => $user->hasPermission('settings.manage') || $user->hasPermission('sales.process'),
                 'profile' => $user->hasPermission('member.profile.view') || $user->hasRole('member'),
                 'workout' => $user->hasPermission('member.workout.view'),
                 'diet' => $user->hasPermission('member.diet.view'),

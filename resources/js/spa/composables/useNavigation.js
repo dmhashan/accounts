@@ -13,6 +13,7 @@ export function useNavigation() {
         if (context.permissions?.roles) items.push({ label: 'Roles', path: '/roles' });
         if (context.permissions?.inventory) items.push({ label: 'Inventory', path: '/inventory' });
         if (context.permissions?.sales) items.push({ label: 'Sales', path: '/sales' });
+        if (context.permissions?.['company-accounts']) items.push({ label: 'Company Accounts', path: '/company-accounts' });
         if (context.permissions?.reports) items.push({ label: 'Reports', path: '/reports' });
         if (context.permissions?.settings) items.push({ label: 'Settings', path: '/settings' });
 

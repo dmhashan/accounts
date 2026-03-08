@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -238,6 +239,18 @@ class MemberApiController extends Controller
 
         $member = Member::create($validated);
 
+        Wallet::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'member_id' => $member->id,
+            ],
+            [
+                'status' => Wallet::STATUS_ACTIVE,
+                'created_by' => $request->user()?->id,
+                'updated_by' => $request->user()?->id,
+            ]
+        );
+
         $memberRole = Role::where('slug', 'member')->first();
         if ($memberRole) {
             $user = User::create([
@@ -258,7 +271,7 @@ class MemberApiController extends Controller
         ], 201);
     }
 
-    public function show(Member $member): JsonResponse
+    public function show(Request $request, Member $member): JsonResponse
     {
         if ($member->tenant_id !== app('tenant')->id) {
             abort(404);
@@ -280,6 +293,8 @@ class MemberApiController extends Controller
                 'gender' => $member->gender,
                 'email' => $member->email,
                 'phone_number' => $member->phone_number,
+                'is_active' => (bool) $member->is_active,
+                'is_verified' => (bool) $member->is_verified,
                 'nic' => $member->nic,
                 'date_of_birth' => optional($member->date_of_birth)->format('Y-m-d'),
                 'age' => $member->age,
@@ -290,6 +305,10 @@ class MemberApiController extends Controller
                 'price' => $member->price,
                 'joined_date' => optional($member->joined_date)->format('Y-m-d'),
                 'comment' => $member->comment,
+            ],
+            'permissions' => [
+                'edit' => $request->user()->hasPermission('users.edit'),
+                'delete' => $request->user()->hasPermission('users.delete'),
             ],
         ]);
     }

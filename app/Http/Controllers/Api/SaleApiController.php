@@ -8,6 +8,7 @@ use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
+use App\Services\FinancialTransactionService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
@@ -15,17 +16,22 @@ use Illuminate\Http\Request;
 
 class SaleApiController extends Controller
 {
-    public function memberWallet(Member $member): JsonResponse
+    public function memberWallet(Request $request, Member $member, FinancialTransactionService $financialTransactionService): JsonResponse
     {
         if ($member->tenant_id !== app('tenant')->id) {
             abort(404);
         }
 
+        $wallet = $financialTransactionService->ensureMemberWallet($member, $request->user()->id);
+        $creditLimit = (float) app('tenant')->wallet_credit_limit;
+
         return response()->json([
-            'data' => [
-                'member_id' => $member->id,
-                'current_balance' => (float) $member->current_balance,
-            ],
+            'wallet_id' => $wallet->id,
+            'member_id' => $member->id,
+            'current_balance' => (float) $wallet->current_balance,
+            'status' => $wallet->status,
+            'credit_limit' => $creditLimit,
+            'available_spend' => (float) $wallet->current_balance + $creditLimit,
         ]);
     }
 
@@ -133,9 +139,10 @@ class SaleApiController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, FinancialTransactionService $financialTransactionService): JsonResponse
     {
         $tenantId = app('tenant')->id;
+        $userId = $request->user()->id;
 
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
@@ -151,7 +158,7 @@ class SaleApiController extends Controller
 
         $today = Carbon::today()->toDateString();
 
-        return DB::transaction(function () use ($validated, $tenantId, $today) {
+        return DB::transaction(function () use ($validated, $tenantId, $today, $financialTransactionService, $userId) {
             $itemsPayload = $validated['items'];
             $variationIds = collect($itemsPayload)->pluck('product_variation_id')->unique();
 
@@ -216,6 +223,7 @@ class SaleApiController extends Controller
             }
 
             $member = null;
+            $wallet = null;
             if (!empty($validated['customer_member_id'])) {
                 $member = Member::query()
                     ->where('tenant_id', $tenantId)
@@ -232,15 +240,10 @@ class SaleApiController extends Controller
                     abort(422, 'Please select a member for wallet payment.');
                 }
 
-                if ((float) $member->current_balance < $total) {
-                    abort(422, 'Insufficient member wallet balance.');
-                }
+                $wallet = $financialTransactionService->ensureMemberWallet($member, $userId);
 
                 $paidAmount = $total;
                 $balance = 0;
-                $member->update([
-                    'current_balance' => (float) $member->current_balance - $total,
-                ]);
             } else {
                 $paidAmount = (float) $validated['paid_amount'];
                 $balance = $paidAmount - $total;
@@ -287,6 +290,22 @@ class SaleApiController extends Controller
                     $remaining -= $deduct;
                 }
             }
+
+            if ($wallet) {
+                $financialTransactionService->recordWalletTransaction($wallet, [
+                    'amount' => $total,
+                    'transaction_type' => 'debit',
+                    'description' => 'Sale #'.$sale->id.' wallet payment',
+                    'status' => 'completed',
+                ], $userId);
+            }
+
+            $financialTransactionService->recordSaleTransaction($sale, [
+                'amount' => $paidAmount,
+                'transaction_type' => 'credit',
+                'description' => 'Sale #'.$sale->id.' completed via '.$validated['payment_method'],
+                'status' => 'completed',
+            ], $userId);
 
             return response()->json([
                 'message' => 'Sale completed successfully.',

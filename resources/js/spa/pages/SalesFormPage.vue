@@ -94,7 +94,11 @@
 
                 <div v-if="form.payment_method === 'member_wallet'" class="mt-3 text-sm text-secondary-700 dark:text-secondary-300">
                     <p v-if="walletLoading">Loading wallet balance...</p>
-                    <p v-else>Wallet Balance: <span class="font-semibold">{{ money(walletBalance) }}</span></p>
+                    <template v-else>
+                        <p>Wallet Balance: <span class="font-semibold">{{ money(walletBalance) }}</span></p>
+                        <p class="mt-1">Credit Limit: <span class="font-semibold">{{ money(walletCreditLimit) }}</span></p>
+                        <p class="mt-1">Available Spend: <span class="font-semibold">{{ money(walletAvailableSpend) }}</span></p>
+                    </template>
                 </div>
             </div>
         </div>
@@ -223,6 +227,8 @@ const customerSelectorRef = ref(null);
 const catalogView = ref('grid');
 const walletLoading = ref(false);
 const walletBalance = ref(0);
+const walletCreditLimit = ref(0);
+const walletAvailableSpend = ref(0);
 
 let rowKey = 0;
 
@@ -286,7 +292,7 @@ const submitDisabled = computed(() => {
             return true;
         }
 
-        return Number(walletBalance.value || 0) < totalAmount.value;
+        return Number(walletAvailableSpend.value || 0) < totalAmount.value;
     }
 
     return false;
@@ -396,6 +402,8 @@ function handleDocumentClick(event) {
 async function loadWalletBalance() {
     if (!selectedMember.value || form.value.payment_method !== 'member_wallet') {
         walletBalance.value = 0;
+        walletCreditLimit.value = 0;
+        walletAvailableSpend.value = 0;
         return;
     }
 
@@ -403,10 +411,14 @@ async function loadWalletBalance() {
 
     try {
         const response = await apiRequest(`/api/sales/member-wallet/${selectedMember.value.id}`);
-        walletBalance.value = Number(response.data?.current_balance || 0);
+        walletBalance.value = Number(response.current_balance || 0);
+        walletCreditLimit.value = Number(response.credit_limit || 0);
+        walletAvailableSpend.value = Number(response.available_spend || (walletBalance.value + walletCreditLimit.value));
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load member wallet balance.';
         walletBalance.value = 0;
+        walletCreditLimit.value = 0;
+        walletAvailableSpend.value = 0;
     } finally {
         walletLoading.value = false;
     }

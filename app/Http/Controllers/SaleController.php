@@ -8,8 +8,10 @@ use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
+use App\Services\FinancialTransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
@@ -67,9 +69,10 @@ class SaleController extends Controller
         return view('sales.create', compact('variations', 'availableStock', 'priceMap', 'members'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, FinancialTransactionService $financialTransactionService)
     {
         $tenantId = app('tenant')->id;
+        $userId = Auth::id();
 
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
@@ -82,7 +85,7 @@ class SaleController extends Controller
 
         $today = Carbon::today()->toDateString();
 
-        return DB::transaction(function () use ($validated, $tenantId, $today) {
+        return DB::transaction(function () use ($validated, $tenantId, $today, $financialTransactionService, $userId) {
             $itemsPayload = $validated['items'];
             $variationIds = collect($itemsPayload)->pluck('product_variation_id')->unique();
 
@@ -180,6 +183,13 @@ class SaleController extends Controller
                     $remaining -= $deduct;
                 }
             }
+
+            $financialTransactionService->recordSaleTransaction($sale, [
+                'amount' => $paidAmount,
+                'transaction_type' => 'credit',
+                'description' => 'Sale #'.$sale->id.' completed via cash',
+                'status' => 'completed',
+            ], $userId);
 
             return redirect()->route('sales.index')
                 ->with('success', 'Sale completed successfully.');

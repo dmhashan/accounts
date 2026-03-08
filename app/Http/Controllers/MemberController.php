@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Member;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -79,6 +81,18 @@ class MemberController extends Controller
 
         // Create member
         $member = Member::create($validated);
+
+        Wallet::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'member_id' => $member->id,
+            ],
+            [
+                'status' => Wallet::STATUS_ACTIVE,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]
+        );
 
         // Create user account with member role
         $memberRole = Role::where('slug', 'member')->first();
@@ -262,7 +276,7 @@ class MemberController extends Controller
     {
         // For members, show only their own profile
         $member = Member::where('tenant_id', app('tenant')->id)
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->with('user')
             ->firstOrFail();
         

@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\MemberApiController;
+use App\Http\Controllers\Api\CompanyAccountApiController;
+use App\Http\Controllers\Api\FinancialSettingsApiController;
 use App\Http\Controllers\Api\InventoryApiController;
 use App\Http\Controllers\Api\RoleApiController;
 use App\Http\Controllers\Api\SaleApiController;
+use App\Http\Controllers\Api\TransactionApiController;
 use App\Http\Controllers\Api\UserApiController;
+use App\Http\Controllers\Api\WalletApiController;
 use App\Http\Middleware\IdentifyTenant;
 use App\Models\ProductVariation;
 use App\Models\Sale;
@@ -100,6 +104,7 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
                 'reports' => $user->hasPermission('reports.view'),
                 'inventory' => $user->hasPermission('inventory.manage'),
                 'sales' => $user->hasPermission('sales.process'),
+                'company-accounts' => $user->hasPermission('settings.manage') || $user->hasPermission('sales.process'),
                 'profile' => $user->hasPermission('member.profile.view') || $user->hasRole('member'),
                 'workout' => $user->hasPermission('member.workout.view'),
                 'diet' => $user->hasPermission('member.diet.view'),
@@ -240,6 +245,18 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
         ]);
     })->middleware(['auth', 'permission:reports.view']);
 
+    Route::get('/financial-settings', [FinancialSettingsApiController::class, 'show'])->middleware(['auth', 'permission:settings.manage']);
+    Route::put('/financial-settings', [FinancialSettingsApiController::class, 'update'])->middleware(['auth', 'permission:settings.manage']);
+
+    Route::prefix('/company-accounts')->middleware(['auth', 'permission:settings.manage'])->group(function () {
+        Route::get('/', [CompanyAccountApiController::class, 'index']);
+        Route::post('/', [CompanyAccountApiController::class, 'store']);
+        Route::post('/transfers', [CompanyAccountApiController::class, 'storeTransfer']);
+        Route::get('/{companyAccount}', [CompanyAccountApiController::class, 'show']);
+        Route::put('/{companyAccount}', [CompanyAccountApiController::class, 'update']);
+        Route::post('/{companyAccount}/transactions', [CompanyAccountApiController::class, 'storeTransaction']);
+    });
+
     Route::prefix('/inventory')->middleware(['auth', 'permission:inventory.manage'])->group(function () {
         Route::get('/meta', [InventoryApiController::class, 'meta']);
 
@@ -266,4 +283,12 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
     Route::get('/sales', [SaleApiController::class, 'index'])->middleware(['auth', 'permission:sales.process']);
     Route::post('/sales', [SaleApiController::class, 'store'])->middleware(['auth', 'permission:sales.process']);
     Route::delete('/sales/{sale}', [SaleApiController::class, 'destroy'])->middleware(['auth', 'permission:sales.process']);
+
+    Route::get('/wallets/member/{member}', [WalletApiController::class, 'showByMember'])->middleware(['auth', 'permission:sales.process']);
+    Route::post('/wallets/member/{member}/top-up', [WalletApiController::class, 'topUp'])->middleware(['auth', 'permission:sales.process']);
+    Route::post('/wallets/member/{member}/transactions', [WalletApiController::class, 'storeTransaction'])->middleware(['auth', 'permission:sales.process']);
+    Route::patch('/wallets/{wallet}/status', [WalletApiController::class, 'updateStatus'])->middleware(['auth', 'permission:sales.process']);
+
+    Route::get('/transactions', [TransactionApiController::class, 'index'])->middleware(['auth', 'permission:sales.process']);
+    Route::patch('/transactions/{transaction}', [TransactionApiController::class, 'update'])->middleware(['auth', 'permission:sales.process']);
 });

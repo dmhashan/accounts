@@ -22,10 +22,12 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'use_custom_landing_page' => ['nullable', 'boolean'],
+            'wallet_credit_limit' => ['required', 'numeric', 'min:0'],
         ]);
 
         $tenant->update([
             'use_custom_landing_page' => (bool) ($validated['use_custom_landing_page'] ?? false),
+            'wallet_credit_limit' => round((float) $validated['wallet_credit_limit'], 2),
         ]);
 
         if ($tenant->use_custom_landing_page) {

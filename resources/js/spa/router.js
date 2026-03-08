@@ -6,6 +6,7 @@ const UsersPage = () => import('./pages/UsersPage.vue');
 const UserFormPage = () => import('./pages/UserFormPage.vue');
 const MembersPage = () => import('./pages/MembersPage.vue');
 const MemberFormPage = () => import('./pages/MemberFormPage.vue');
+const MemberDetailsPage = () => import('./pages/MemberDetailsPage.vue');
 const RolesPage = () => import('./pages/RolesPage.vue');
 const RoleCreatePage = () => import('./pages/RoleCreatePage.vue');
 const RoleEditPage = () => import('./pages/RoleEditPage.vue');
@@ -14,6 +15,7 @@ const InventoryProductFormPage = () => import('./pages/InventoryProductFormPage.
 const InventoryStockFormPage = () => import('./pages/InventoryStockFormPage.vue');
 const SalesPage = () => import('./pages/SalesPage.vue');
 const SalesFormPage = () => import('./pages/SalesFormPage.vue');
+const CompanyAccountsPage = () => import('./pages/CompanyAccountsPage.vue');
 const ReportsPage = () => import('./pages/ReportsPage.vue');
 const SettingsPage = () => import('./pages/SettingsPage.vue');
 const ProfilePage = () => import('./pages/ProfilePage.vue');
@@ -31,6 +33,7 @@ const routes = [
     { path: '/members', component: MembersPage },
     { path: '/members/new', component: MemberFormPage },
     { path: '/members/:id/edit', component: MemberFormPage },
+    { path: '/members/:id', component: MemberDetailsPage },
     { path: '/roles', component: RolesPage },
     { path: '/roles/new', component: RoleCreatePage },
     { path: '/roles/:id/edit', component: RoleEditPage },
@@ -41,6 +44,9 @@ const routes = [
     { path: '/inventory/stock/:id/edit', component: InventoryStockFormPage },
     { path: '/sales', component: SalesPage },
     { path: '/sales/new', component: SalesFormPage },
+    { path: '/company-accounts', component: CompanyAccountsPage },
+    { path: '/CompanyAccounts', redirect: '/company-accounts' },
+    { path: '/finance', redirect: '/company-accounts' },
     { path: '/reports', component: ReportsPage },
     { path: '/settings', component: SettingsPage },
     { path: '/profile', component: ProfilePage },
