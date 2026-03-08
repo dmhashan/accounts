@@ -41,6 +41,7 @@ const routes = [
     { path: '/inventory/stock/:id/edit', component: InventoryStockFormPage },
     { path: '/sales', component: SalesPage },
     { path: '/sales/new', component: SalesFormPage },
+    { path: '/sales/:id/edit', component: SalesFormPage },
     { path: '/reports', component: ReportsPage },
     { path: '/settings', component: SettingsPage },
     { path: '/profile', component: ProfilePage },

@@ -297,6 +297,254 @@ class SaleApiController extends Controller
         });
     }
 
+    public function show(Sale $sale): JsonResponse
+    {
+        if ($sale->tenant_id !== app('tenant')->id) {
+            abort(404);
+        }
+
+        $items = $sale->items()->get();
+
+        return response()->json([
+            'data' => [
+                'id' => $sale->id,
+                'customer_name' => $sale->customer_name,
+                'customer_member_id' => $sale->customer_member_id,
+                'customer_type' => $sale->customer_type,
+                'payment_method' => $sale->payment_method,
+                'reference_number' => $sale->reference_number,
+                'total_amount' => (float) $sale->total_amount,
+                'paid_amount' => (float) $sale->paid_amount,
+                'balance' => (float) $sale->balance,
+                'created_at' => optional($sale->created_at)->toDateString(),
+                'items' => $items->map(function (SaleItem $item) {
+                    return [
+                        'id' => $item->id,
+                        'product_variation_id' => $item->product_variation_id,
+                        'quantity' => $item->quantity,
+                        'unit_price' => (float) $item->unit_price,
+                        'subtotal' => (float) $item->subtotal,
+                    ];
+                }),
+            ],
+        ]);
+    }
+
+    public function update(Sale $sale, Request $request): JsonResponse
+    {
+        if ($sale->tenant_id !== app('tenant')->id) {
+            abort(404);
+        }
+
+        $tenantId = app('tenant')->id;
+        $today = Carbon::today()->toDateString();
+
+        $validated = $request->validate([
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_member_id' => ['nullable', 'exists:members,id'],
+            'customer_type' => ['required', 'in:local,foreign'],
+            'payment_method' => ['required', 'in:cash,bank,card,member_wallet'],
+            'reference_number' => ['nullable', 'string', 'max:255'],
+            'paid_amount' => ['required', 'numeric', 'min:0'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_variation_id' => ['required', 'exists:product_variations,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        return DB::transaction(function () use ($sale, $validated, $tenantId, $today) {
+            // Reverse stock entries for old items (restore quantities)
+            $oldItems = $sale->items()->get();
+            foreach ($oldItems as $item) {
+                $remaining = $item->quantity;
+                
+                $entries = StockEntry::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('product_variation_id', $item->product_variation_id)
+                    ->where(function ($query) use ($today) {
+                        $query->whereDate('expiry_date', '>=', $today)
+                            ->orWhereNull('expiry_date');
+                    })
+                    ->orderBy('expiry_date')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($entries as $entry) {
+                    if ($remaining <= 0) {
+                        break;
+                    }
+
+                    // Add back up to the remaining quantity
+                    $toRestore = $remaining;
+                    $entry->increment('quantity', $toRestore);
+                    $remaining = 0;
+                }
+            }
+
+            // Handle member wallet refund if old payment was member_wallet
+            if ($sale->payment_method === 'member_wallet' && $sale->customer_member_id) {
+                $oldMember = Member::query()
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->find($sale->customer_member_id);
+
+                if ($oldMember) {
+                    $oldMember->update([
+                        'current_balance' => (float) $oldMember->current_balance + (float) $sale->total_amount,
+                    ]);
+                }
+            }
+
+            // Process new items
+            $itemsPayload = $validated['items'];
+            $variationIds = collect($itemsPayload)->pluck('product_variation_id')->unique();
+
+            $variations = ProductVariation::query()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('id', $variationIds)
+                ->with('product')
+                ->get()
+                ->keyBy('id');
+
+            if ($variations->count() !== $variationIds->count()) {
+                abort(422, 'Invalid variation selection.');
+            }
+
+            $saleItems = [];
+            $total = 0;
+
+            foreach ($itemsPayload as $item) {
+                $variation = $variations->get($item['product_variation_id']);
+
+                $available = StockEntry::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('product_variation_id', $variation->id)
+                    ->where(function ($query) use ($today) {
+                        $query->whereDate('expiry_date', '>=', $today)
+                            ->orWhereNull('expiry_date');
+                    })
+                    ->sum('quantity');
+
+                if ($item['quantity'] > $available) {
+                    abort(422, 'Insufficient stock for ' . $variation->product->name . ' - ' . $variation->name);
+                }
+
+                $priceEntry = StockEntry::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('product_variation_id', $variation->id)
+                    ->where(function ($query) use ($today) {
+                        $query->whereDate('expiry_date', '>=', $today)
+                            ->orWhereNull('expiry_date');
+                    })
+                    ->orderBy('expiry_date')
+                    ->first();
+
+                if (!$priceEntry) {
+                    abort(422, 'No valid stock for ' . $variation->product->name . ' - ' . $variation->name);
+                }
+
+                $unitPrice = $validated['customer_type'] === 'local'
+                    ? $priceEntry->local_selling_price
+                    : $priceEntry->foreign_selling_price;
+
+                $subtotal = $unitPrice * $item['quantity'];
+                $total += $subtotal;
+
+                $saleItems[] = [
+                    'product_id' => $variation->product_id,
+                    'product_variation_id' => $variation->id,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $subtotal,
+                ];
+            }
+
+            $member = null;
+            if (!empty($validated['customer_member_id'])) {
+                $member = Member::query()
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->find($validated['customer_member_id']);
+
+                if (!$member) {
+                    abort(422, 'Invalid member selection.');
+                }
+            }
+
+            if (($validated['payment_method'] ?? null) === 'member_wallet') {
+                if (!$member) {
+                    abort(422, 'Please select a member for wallet payment.');
+                }
+
+                if ((float) $member->current_balance < $total) {
+                    abort(422, 'Insufficient member wallet balance.');
+                }
+
+                $paidAmount = $total;
+                $balance = 0;
+                $member->update([
+                    'current_balance' => (float) $member->current_balance - $total,
+                ]);
+            } else {
+                $paidAmount = (float) $validated['paid_amount'];
+                $balance = $paidAmount - $total;
+            }
+
+            // Update sale record
+            $sale->update([
+                'customer_name' => $validated['customer_name'] ?? null,
+                'customer_member_id' => $member?->id,
+                'customer_type' => $validated['customer_type'],
+                'payment_method' => $validated['payment_method'],
+                'reference_number' => $validated['reference_number'] ?? null,
+                'total_amount' => $total,
+                'paid_amount' => $paidAmount,
+                'balance' => $balance,
+            ]);
+
+            // Delete old sale items
+            SaleItem::where('sale_id', $sale->id)->delete();
+
+            // Create new sale items
+            foreach ($saleItems as $saleItem) {
+                $saleItem['sale_id'] = $sale->id;
+                SaleItem::create($saleItem);
+            }
+
+            // Deduct stock for new items
+            foreach ($itemsPayload as $item) {
+                $remaining = $item['quantity'];
+
+                $entries = StockEntry::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('product_variation_id', $item['product_variation_id'])
+                    ->where(function ($query) use ($today) {
+                        $query->whereDate('expiry_date', '>=', $today)
+                            ->orWhereNull('expiry_date');
+                    })
+                    ->orderBy('expiry_date')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($entries as $entry) {
+                    if ($remaining <= 0) {
+                        break;
+                    }
+
+                    $deduct = min($entry->quantity, $remaining);
+                    $entry->update(['quantity' => $entry->quantity - $deduct]);
+                    $remaining -= $deduct;
+                }
+            }
+
+            return response()->json([
+                'message' => 'Sale updated successfully.',
+                'data' => [
+                    'id' => $sale->id,
+                ],
+            ]);
+        });
+    }
+
     public function destroy(Sale $sale): JsonResponse
     {
         if ($sale->tenant_id !== app('tenant')->id) {

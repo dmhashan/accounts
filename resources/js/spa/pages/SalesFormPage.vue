@@ -3,8 +3,8 @@
         <div class="flex flex-col gap-3 mb-4 md:mb-6">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">New Sale</h2>
-                    <p class="text-sm text-secondary-500 dark:text-secondary-400">POS checkout with live stock and pricing.</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">{{ isEdit ? 'Edit Sale' : 'New Sale' }}</h2>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">{{ isEdit ? 'Edit and update sale details.' : 'POS checkout with live stock and pricing.' }}</p>
                 </div>
                 <RouterLink to="/sales" class="text-sm text-primary-600 dark:text-primary-400">Sales History</RouterLink>
             </div>
@@ -197,7 +197,7 @@
                     <p class="text-xl font-bold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</p>
                 </div>
                 <button type="submit" class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50" :disabled="submitDisabled">
-                    {{ submitting ? 'Processing...' : 'Complete Sale' }}
+                    {{ submitting ? (isEdit ? 'Updating...' : 'Processing...') : (isEdit ? 'Update Sale' : 'Complete Sale') }}
                 </button>
             </div>
         </form>
@@ -206,13 +206,15 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { Globe, House, LayoutGrid, List } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 
 const router = useRouter();
+const route = useRoute();
 
 const loadingMeta = ref(false);
+const loadingSale = ref(false);
 const submitting = ref(false);
 const errorMessage = ref('');
 const variationOptions = ref([]);
@@ -225,6 +227,8 @@ const walletLoading = ref(false);
 const walletBalance = ref(0);
 
 let rowKey = 0;
+
+const isEdit = computed(() => Boolean(route.params.id));
 
 const form = ref({
     customer_name: '',
@@ -427,6 +431,36 @@ async function loadMeta() {
     }
 }
 
+async function loadSale() {
+    if (!isEdit.value) return;
+    
+    loadingSale.value = true;
+    errorMessage.value = '';
+
+    try {
+        const response = await apiRequest(`/api/sales/${route.params.id}`);
+        const saleData = response.data;
+
+        form.value.customer_name = saleData.customer_name || '';
+        form.value.customer_member_id = saleData.customer_member_id || null;
+        form.value.customer_type = saleData.customer_type;
+        form.value.payment_method = saleData.payment_method;
+        form.value.reference_number = saleData.reference_number || '';
+        form.value.paid_amount = saleData.paid_amount;
+
+        // Load items
+        form.value.items = saleData.items.map((item) => ({
+            key: ++rowKey,
+            product_variation_id: item.product_variation_id,
+            quantity: item.quantity,
+        }));
+    } catch (error) {
+        errorMessage.value = error?.response?.data?.message || 'Failed to load sale details.';
+    } finally {
+        loadingSale.value = false;
+    }
+}
+
 async function submitSale() {
     submitting.value = true;
     errorMessage.value = '';
@@ -458,10 +492,17 @@ async function submitSale() {
             return;
         }
 
-        await apiRequest('/api/sales', {
-            method: 'post',
-            data: payload,
-        });
+        if (isEdit.value) {
+            await apiRequest(`/api/sales/${route.params.id}`, {
+                method: 'put',
+                data: payload,
+            });
+        } else {
+            await apiRequest('/api/sales', {
+                method: 'post',
+                data: payload,
+            });
+        }
 
         router.push('/sales');
     } catch (error) {
@@ -474,6 +515,7 @@ async function submitSale() {
 onMounted(() => {
     document.addEventListener('click', handleDocumentClick);
     loadMeta();
+    loadSale();
 });
 
 onBeforeUnmount(() => {
