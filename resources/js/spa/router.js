@@ -44,6 +44,7 @@ const routes = [
     { path: '/inventory/stock/:id/edit', component: InventoryStockFormPage },
     { path: '/sales', component: SalesPage },
     { path: '/sales/new', component: SalesFormPage },
+    { path: '/sales/:id/edit', component: SalesFormPage },
     { path: '/company-accounts', component: CompanyAccountsPage },
     { path: '/CompanyAccounts', redirect: '/company-accounts' },
     { path: '/finance', redirect: '/company-accounts' },

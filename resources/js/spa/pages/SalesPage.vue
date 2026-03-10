@@ -23,7 +23,10 @@
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">#{{ sale.id }} • {{ sale.customer_name || 'Walk-in' }}</p>
                                 <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ sale.created_at }} • {{ sale.customer_type }}</p>
                             </div>
-                            <button type="button" class="text-red-600 dark:text-red-400 text-sm" @click="removeSale(sale.id)">Delete</button>
+                            <div class="flex gap-2">
+                                <RouterLink :to="`/sales/${sale.id}/edit`" type="button" class="text-primary-600 dark:text-primary-400 text-sm">Edit</RouterLink>
+                                <button type="button" class="text-red-600 dark:text-red-400 text-sm" @click="removeSale(sale.id)">Delete</button>
+                            </div>
                         </div>
                         <div class="grid grid-cols-3 gap-2 text-xs">
                             <div>
@@ -67,7 +70,8 @@
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(sale.paid_amount) }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(sale.balance) }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ sale.created_at }}</td>
-                                <td class="px-6 py-4 text-right">
+                                <td class="px-6 py-4 text-right space-x-2">
+                                    <RouterLink :to="`/sales/${sale.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">Edit</RouterLink>
                                     <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium" @click="removeSale(sale.id)">Delete</button>
                                 </td>
                             </tr>
