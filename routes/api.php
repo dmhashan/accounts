@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\MemberApiController;
 use App\Http\Controllers\Api\InventoryApiController;
+use App\Http\Controllers\Api\ProfileApiController;
 use App\Http\Controllers\Api\RoleApiController;
 use App\Http\Controllers\Api\SaleApiController;
 use App\Http\Controllers\Api\UserApiController;
@@ -108,6 +109,8 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
             ],
         ]);
     })->middleware('auth');
+
+    Route::get('/profile', [ProfileApiController::class, 'show'])->middleware('auth');
 
     Route::get('/dashboard/overview', function (Request $request) {
         $user = $request->user();

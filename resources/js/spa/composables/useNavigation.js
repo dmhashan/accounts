@@ -17,10 +17,10 @@ export function useNavigation() {
         if (context.permissions?.settings) items.push({ label: 'Settings', path: '/settings' });
 
         if (context.permissions?.profile) items.push({ label: 'Profile', path: '/profile' });
-        if (context.permissions?.workout) items.push({ label: 'Workout', path: '/workout' });
-        if (context.permissions?.diet) items.push({ label: 'Diet', path: '/diet' });
-        if (context.permissions?.payments) items.push({ label: 'Payments', path: '/payments' });
-        if (context.permissions?.attendance) items.push({ label: 'Attendance', path: '/attendance' });
+        // if (context.permissions?.workout) items.push({ label: 'Workout', path: '/workout' });
+        // if (context.permissions?.diet) items.push({ label: 'Diet', path: '/diet' });
+        // if (context.permissions?.payments) items.push({ label: 'Payments', path: '/payments' });
+        // if (context.permissions?.attendance) items.push({ label: 'Attendance', path: '/attendance' });
 
         return items;
     });
