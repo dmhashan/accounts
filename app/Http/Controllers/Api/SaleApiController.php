@@ -570,7 +570,38 @@ class SaleApiController extends Controller
             abort(404);
         }
 
-        $sale->delete();
+        $tenantId = app('tenant')->id;
+        $today = Carbon::today()->toDateString();
+
+        DB::transaction(function () use ($sale, $tenantId, $today) {
+            $items = $sale->items()->get();
+
+            foreach ($items as $item) {
+                $remaining = $item->quantity;
+
+                $entries = StockEntry::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('product_variation_id', $item->product_variation_id)
+                    ->where(function ($query) use ($today) {
+                        $query->whereDate('expiry_date', '>=', $today)
+                            ->orWhereNull('expiry_date');
+                    })
+                    ->orderBy('expiry_date')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($entries as $entry) {
+                    if ($remaining <= 0) {
+                        break;
+                    }
+
+                    $entry->increment('quantity', $remaining);
+                    $remaining = 0;
+                }
+            }
+
+            $sale->delete();
+        });
 
         return response()->json([
             'message' => 'Sale deleted successfully.',
