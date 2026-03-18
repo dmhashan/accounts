@@ -14,6 +14,7 @@ const InventoryProductFormPage = () => import('./pages/InventoryProductFormPage.
 const InventoryStockFormPage = () => import('./pages/InventoryStockFormPage.vue');
 const SalesPage = () => import('./pages/SalesPage.vue');
 const SalesFormPage = () => import('./pages/SalesFormPage.vue');
+const StatsPage = () => import('./pages/StatsPage.vue');
 const ReportsPage = () => import('./pages/ReportsPage.vue');
 const SettingsPage = () => import('./pages/SettingsPage.vue');
 const ProfilePage = () => import('./pages/ProfilePage.vue');
@@ -42,6 +43,7 @@ const routes = [
     { path: '/sales', component: SalesPage },
     { path: '/sales/new', component: SalesFormPage },
     { path: '/sales/:id/edit', component: SalesFormPage },
+    { path: '/stats', component: StatsPage, meta: { title: 'Sales Stats' } },
     { path: '/reports', component: ReportsPage },
     { path: '/settings', component: SettingsPage },
     { path: '/profile', component: ProfilePage },

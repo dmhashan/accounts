@@ -41,6 +41,10 @@ const context = useAppContext();
 defineEmits(['open-menu']);
 
 const pageTitle = computed(() => {
+    if (typeof route.meta?.title === 'string' && route.meta.title.trim() !== '') {
+        return route.meta.title;
+    }
+
     return route.path.replace('/', '').replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) || 'Dashboard';
 });
 

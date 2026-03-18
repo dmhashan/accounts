@@ -24,6 +24,7 @@ class ContextApiTest extends ApiRouteTestCase
             ->assertJsonPath('permissions.users', true)
             ->assertJsonPath('permissions.inventory', true)
             ->assertJsonPath('permissions.sales', true)
+            ->assertJsonPath('permissions.stats', true)
             ->assertJsonPath('permissions.profile', true);
     }
 }

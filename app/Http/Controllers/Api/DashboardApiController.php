@@ -25,4 +25,25 @@ class DashboardApiController extends Controller
 
         return response()->json($this->dashboardOverviewService->build($user, $tenant));
     }
+
+    public function stats(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'range_type' => ['nullable', 'string', 'in:date,week,month,year'],
+            'range_value' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        return response()->json($this->dashboardOverviewService->buildStats(
+            $user,
+            $tenant,
+            $validated['range_type'] ?? 'date',
+            $validated['range_value'] ?? null,
+        ));
+    }
 }

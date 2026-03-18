@@ -44,19 +44,15 @@
                 <h3 class="text-sm font-medium text-secondary-500 dark:text-secondary-400">Daily Sales Summary</h3>
 
                 <template v-if="dailySalesSummary.can_view">
-                    <p class="mt-2 text-2xl font-bold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(dailySalesSummary.gross_amount) }}</p>
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400">Gross Sales · {{ dailySalesSummary.date || 'Today' }}</p>
+                    <p class="mt-3 text-3xl font-bold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(dailySalesSummary.gross_amount) }}</p>
+                    <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">Gross Sales · {{ dailySalesSummary.date || 'Today' }}</p>
 
-                    <div class="mt-4 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg bg-secondary-50 dark:bg-secondary-800/50 p-3">
-                            <p class="text-xs text-secondary-500 dark:text-secondary-400">Transactions</p>
-                            <p class="mt-1 text-sm font-semibold text-secondary-900 dark:text-white">{{ loading ? '-' : formatNumber(dailySalesSummary.transactions) }}</p>
-                        </div>
-                        <div class="rounded-lg bg-secondary-50 dark:bg-secondary-800/50 p-3">
-                            <p class="text-xs text-secondary-500 dark:text-secondary-400">Paid Amount</p>
-                            <p class="mt-1 text-sm font-semibold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(dailySalesSummary.paid_amount) }}</p>
-                        </div>
-                    </div>
+                    <RouterLink
+                        to="/stats"
+                        class="mt-4 inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                    >
+                        Open Sales Stats
+                    </RouterLink>
                 </template>
 
                 <p v-else class="mt-3 text-sm text-secondary-500 dark:text-secondary-400">You do not have permission to view sales summary.</p>
@@ -67,10 +63,8 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 
-const context = useAppContext();
 const loading = ref(false);
 const errorMessage = ref('');
 
@@ -86,9 +80,7 @@ const stockSummary = ref({
 const dailySalesSummary = ref({
     can_view: true,
     date: '',
-    transactions: 0,
     gross_amount: 0,
-    paid_amount: 0,
 });
 
 const numberFormatter = new Intl.NumberFormat();
