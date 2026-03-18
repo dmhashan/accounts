@@ -5,6 +5,7 @@ const DashboardPage = () => import('./pages/DashboardPage.vue');
 const UsersPage = () => import('./pages/UsersPage.vue');
 const UserFormPage = () => import('./pages/UserFormPage.vue');
 const MembersPage = () => import('./pages/MembersPage.vue');
+const MemberViewPage = () => import('./pages/MemberViewPage.vue');
 const MemberFormPage = () => import('./pages/MemberFormPage.vue');
 const RolesPage = () => import('./pages/RolesPage.vue');
 const RoleCreatePage = () => import('./pages/RoleCreatePage.vue');
@@ -32,6 +33,7 @@ const routes = [
     { path: '/members', component: MembersPage },
     { path: '/members/new', component: MemberFormPage },
     { path: '/members/:id/edit', component: MemberFormPage },
+    { path: '/members/:id', component: MemberViewPage },
     { path: '/roles', component: RolesPage },
     { path: '/roles/new', component: RoleCreatePage },
     { path: '/roles/:id/edit', component: RoleEditPage },

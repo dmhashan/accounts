@@ -206,6 +206,7 @@ class MemberService
         return [
             'id' => $member->id,
             'member_id' => $member->member_id,
+            'name' => $member->name,
             'first_name' => $firstName,
             'last_name' => $lastName,
             'username' => $member->username,
@@ -220,8 +221,12 @@ class MemberService
             'admission_fee' => $member->admission_fee,
             'payment_plan' => $member->payment_plan,
             'price' => $member->price,
+            'current_balance' => $member->current_balance,
             'joined_date' => optional($member->joined_date)->format('Y-m-d'),
             'comment' => $member->comment,
+            'is_active' => (bool) $member->is_active,
+            'is_verified' => (bool) $member->is_verified,
+            'created_at' => optional($member->created_at)->toDateString(),
         ];
     }
 

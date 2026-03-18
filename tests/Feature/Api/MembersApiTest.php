@@ -43,15 +43,23 @@ class MembersApiTest extends ApiRouteTestCase
 
     public function test_members_show_route_returns_single_member(): void
     {
-        $this->actingAsUser(['users.view']);
-        $member = $this->createMember();
+        $this->actingAsUser(['users.view', 'users.edit', 'users.delete']);
+        $member = $this->createMember(null, [
+            'is_active' => false,
+            'is_verified' => true,
+            'current_balance' => 1250,
+        ]);
 
         $response = $this->getJson('/api/members/'.$member->id);
 
         $response
             ->assertOk()
             ->assertJsonPath('data.id', $member->id)
-            ->assertJsonPath('data.email', $member->email);
+            ->assertJsonPath('data.email', $member->email)
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.is_verified', true)
+            ->assertJsonPath('permissions.edit', true)
+            ->assertJsonPath('permissions.delete', true);
     }
 
     public function test_members_store_route_creates_member(): void

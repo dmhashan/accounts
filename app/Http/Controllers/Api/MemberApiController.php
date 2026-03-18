@@ -86,12 +86,16 @@ class MemberApiController extends Controller
         ], 201);
     }
 
-    public function show(Member $member): JsonResponse
+    public function show(Request $request, Member $member): JsonResponse
     {
         $this->memberService->ensureTenantMember($member, app('tenant')->id);
 
         return response()->json([
             'data' => $this->memberService->show($member),
+            'permissions' => [
+                'edit' => $request->user()->hasPermission('users.edit'),
+                'delete' => $request->user()->hasPermission('users.delete'),
+            ],
         ]);
     }
 

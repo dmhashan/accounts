@@ -44,7 +44,16 @@
 
             <template v-else>
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="member in members" :key="member.id" class="p-4 space-y-3">
+                    <article
+                        v-for="member in members"
+                        :key="member.id"
+                        class="p-4 space-y-3 cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                        role="link"
+                        tabindex="0"
+                        @click="openMember(member.id)"
+                        @keydown.enter.prevent="openMember(member.id)"
+                        @keydown.space.prevent="openMember(member.id)"
+                    >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="text-xs text-secondary-500 dark:text-secondary-400">ID: {{ member.member_id }}</p>
@@ -60,21 +69,13 @@
                                         {{ member.is_verified ? 'Verified' : 'Unverified' }}
                                     </span>
                                 </div>
-                                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
-                                    {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
-                                </p>
+                                <div class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <p class="text-secondary-500 dark:text-secondary-400">
+                                        {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
+                                    </p>
+                                    <span class="font-semibold text-primary-600 dark:text-primary-400">View details</span>
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="flex items-center gap-3 text-sm flex-wrap">
-                            <RouterLink v-if="permissions.edit" :to="`/members/${member.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                            <button v-if="permissions.edit" type="button" class="text-secondary-700 dark:text-secondary-300" @click="toggleStatus(member)">
-                                {{ member.is_active ? 'Deactivate' : 'Activate' }}
-                            </button>
-                            <button v-if="permissions.edit" type="button" class="text-blue-600 dark:text-blue-400" @click="toggleVerification(member)">
-                                {{ member.is_verified ? 'Unverify' : 'Verify' }}
-                            </button>
-                            <button v-if="permissions.delete" type="button" class="text-red-600 dark:text-red-400" @click="removeMember(member.id)">Delete</button>
                         </div>
                     </article>
 
@@ -87,11 +88,19 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Member</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="member in members" :key="member.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                            <tr
+                                v-for="member in members"
+                                :key="member.id"
+                                class="cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+                                role="link"
+                                tabindex="0"
+                                @click="openMember(member.id)"
+                                @keydown.enter.prevent="openMember(member.id)"
+                                @keydown.space.prevent="openMember(member.id)"
+                            >
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ member.member_id }}</td>
                                 <td class="px-6 py-4">
                                     <div class="flex flex-wrap items-center gap-2">
@@ -107,20 +116,11 @@
                                     <div class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                                         {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
                                     </div>
-                                </td>
-                                <td class="px-6 py-4 text-right text-sm space-x-3 whitespace-nowrap">
-                                    <RouterLink v-if="permissions.edit" :to="`/members/${member.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">Edit</RouterLink>
-                                    <button v-if="permissions.edit" type="button" class="text-secondary-700 hover:text-secondary-900 dark:text-secondary-300 dark:hover:text-secondary-100" @click="toggleStatus(member)">
-                                        {{ member.is_active ? 'Deactivate' : 'Activate' }}
-                                    </button>
-                                    <button v-if="permissions.edit" type="button" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" @click="toggleVerification(member)">
-                                        {{ member.is_verified ? 'Unverify' : 'Verify' }}
-                                    </button>
-                                    <button v-if="permissions.delete" type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeMember(member.id)">Delete</button>
+                                    <div class="mt-2 text-xs font-semibold text-primary-600 dark:text-primary-400">Open member details</div>
                                 </td>
                             </tr>
                             <tr v-if="members.length === 0">
-                                <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No members found.</td>
+                                <td colspan="2" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No members found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -142,11 +142,11 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
-import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 
-const context = useAppContext();
+const router = useRouter();
 const members = ref([]);
 const loading = ref(false);
 const exporting = ref(false);
@@ -181,6 +181,10 @@ function genderBadgeClass(member) {
     }
 
     return 'bg-secondary-100 text-secondary-700 dark:bg-secondary-700 dark:text-secondary-300';
+}
+
+function openMember(memberId) {
+    router.push(`/members/${memberId}`);
 }
 
 async function loadMembers(page = 1) {
@@ -240,37 +244,6 @@ async function exportGoogleContacts() {
         errorMessage.value = error?.response?.data?.message || 'Failed to export members for Google Contacts.';
     } finally {
         exporting.value = false;
-    }
-}
-
-async function toggleStatus(member) {
-    try {
-        await apiRequest(`/api/members/${member.id}/toggle-status`, { method: 'patch' });
-        await loadMembers(meta.value.current_page);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to update member status.';
-    }
-}
-
-async function toggleVerification(member) {
-    try {
-        await apiRequest(`/api/members/${member.id}/toggle-verification`, { method: 'patch' });
-        await loadMembers(meta.value.current_page);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to update member verification.';
-    }
-}
-
-async function removeMember(memberId) {
-    if (!window.confirm('Are you sure you want to delete this member?')) {
-        return;
-    }
-
-    try {
-        await apiRequest(`/api/members/${memberId}`, { method: 'delete' });
-        await loadMembers(meta.value.current_page);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete member.';
     }
 }
 

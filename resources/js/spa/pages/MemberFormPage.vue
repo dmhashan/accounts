@@ -2,7 +2,7 @@
     <section class="max-w-5xl">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">{{ isEdit ? 'Edit Member' : 'Add Member' }}</h2>
-            <RouterLink to="/members" class="text-sm text-primary-600 dark:text-primary-400">Back to Members</RouterLink>
+            <RouterLink :to="backRoute" class="text-sm text-primary-600 dark:text-primary-400">{{ backLabel }}</RouterLink>
         </div>
 
         <form class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-5 md:p-6 space-y-4" @submit.prevent="submit">
@@ -98,6 +98,8 @@ import { apiRequest } from '../composables/useApiClient';
 const route = useRoute();
 const router = useRouter();
 const isEdit = computed(() => Boolean(route.params.id));
+const backRoute = computed(() => (isEdit.value ? `/members/${route.params.id}` : '/members'));
+const backLabel = computed(() => (isEdit.value ? 'Back to Member' : 'Back to Members'));
 const submitting = ref(false);
 const errorMessage = ref('');
 
@@ -137,13 +139,16 @@ async function submit() {
     errorMessage.value = '';
 
     try {
+        let memberId = route.params.id;
+
         if (isEdit.value) {
             await apiRequest(`/api/members/${route.params.id}`, { method: 'put', data: form.value });
         } else {
-            await apiRequest('/api/members', { method: 'post', data: form.value });
+            const response = await apiRequest('/api/members', { method: 'post', data: form.value });
+            memberId = response?.data?.id;
         }
 
-        router.push('/members');
+        router.push(memberId ? `/members/${memberId}` : '/members');
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to save member.';
     } finally {
