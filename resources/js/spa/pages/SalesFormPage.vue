@@ -222,7 +222,7 @@ const members = ref([]);
 const memberSearch = ref('');
 const customerDropdownOpen = ref(false);
 const customerSelectorRef = ref(null);
-const catalogView = ref('grid');
+const catalogView = ref('list');
 const walletLoading = ref(false);
 const walletBalance = ref(0);
 

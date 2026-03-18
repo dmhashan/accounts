@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\SaleItem;
+
 class SalesApiTest extends ApiRouteTestCase
 {
     // Inventory impact tests
@@ -128,6 +130,77 @@ class SalesApiTest extends ApiRouteTestCase
         $response
             ->assertOk()
             ->assertJsonStructure(['variations', 'members']);
+    }
+
+    public function test_sales_meta_variations_are_sorted_by_recent_sales_count_desc(): void
+    {
+        $this->actingAsUser(['sales.process']);
+
+        $topProduct = $this->createProduct(['name' => 'Top Product']);
+        $topVariation = $this->createVariation($topProduct, ['name' => 'Top Variation']);
+        $this->createStockEntry($topProduct, $topVariation, ['quantity' => 50]);
+
+        $middleProduct = $this->createProduct(['name' => 'Middle Product']);
+        $middleVariation = $this->createVariation($middleProduct, ['name' => 'Middle Variation']);
+        $this->createStockEntry($middleProduct, $middleVariation, ['quantity' => 50]);
+
+        $zeroProduct = $this->createProduct(['name' => 'Zero Product']);
+        $zeroVariation = $this->createVariation($zeroProduct, ['name' => 'Zero Variation']);
+        $this->createStockEntry($zeroProduct, $zeroVariation, ['quantity' => 50]);
+
+        $recentSaleA = $this->createSale();
+        $recentSaleA->forceFill([
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ])->saveQuietly();
+
+        SaleItem::create([
+            'sale_id' => $recentSaleA->id,
+            'product_id' => $topProduct->id,
+            'product_variation_id' => $topVariation->id,
+            'quantity' => 5,
+            'unit_price' => 100,
+            'subtotal' => 500,
+        ]);
+
+        $recentSaleB = $this->createSale();
+        $recentSaleB->forceFill([
+            'created_at' => now()->subDays(2),
+            'updated_at' => now()->subDays(2),
+        ])->saveQuietly();
+
+        SaleItem::create([
+            'sale_id' => $recentSaleB->id,
+            'product_id' => $middleProduct->id,
+            'product_variation_id' => $middleVariation->id,
+            'quantity' => 3,
+            'unit_price' => 100,
+            'subtotal' => 300,
+        ]);
+
+        $oldSale = $this->createSale();
+        $oldSale->forceFill([
+            'created_at' => now()->subDays(8),
+            'updated_at' => now()->subDays(8),
+        ])->saveQuietly();
+
+        SaleItem::create([
+            'sale_id' => $oldSale->id,
+            'product_id' => $middleProduct->id,
+            'product_variation_id' => $middleVariation->id,
+            'quantity' => 100,
+            'unit_price' => 100,
+            'subtotal' => 10000,
+        ]);
+
+        $response = $this->getJson('/api/sales/meta');
+
+        $response->assertOk();
+
+        $this->assertSame(
+            [$topVariation->id, $middleVariation->id, $zeroVariation->id],
+            collect($response->json('variations'))->pluck('id')->all()
+        );
     }
 
     public function test_sales_member_wallet_route_returns_member_balance(): void

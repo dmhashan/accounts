@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Member;
 use App\Models\ProductVariation;
+use App\Models\SaleItem;
 use App\Models\StockEntry;
 use Illuminate\Support\Carbon;
 
@@ -12,12 +13,35 @@ class SaleMetaService
     public function build(int $tenantId): array
     {
         $today = Carbon::today()->toDateString();
+        $salesWindowStart = Carbon::now()->subDays(7)->startOfDay();
+
+        $variationSalesCounts = SaleItem::query()
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('sales.tenant_id', $tenantId)
+            ->whereNull('sales.deleted_at')
+            ->where('sales.created_at', '>=', $salesWindowStart)
+            ->groupBy('sale_items.product_variation_id')
+            ->selectRaw('sale_items.product_variation_id, SUM(sale_items.quantity) as total_quantity_sold')
+            ->pluck('total_quantity_sold', 'sale_items.product_variation_id');
 
         $variations = ProductVariation::query()
             ->where('tenant_id', $tenantId)
             ->with('product:id,name')
-            ->orderBy('name')
-            ->get();
+            ->get()
+            ->sort(function (ProductVariation $left, ProductVariation $right) use ($variationSalesCounts) {
+                $leftSales = (int) ($variationSalesCounts[$left->id] ?? 0);
+                $rightSales = (int) ($variationSalesCounts[$right->id] ?? 0);
+
+                if ($leftSales !== $rightSales) {
+                    return $rightSales <=> $leftSales;
+                }
+
+                $leftLabel = trim(($left->product?->name ?? 'Product') . ' - ' . $left->name);
+                $rightLabel = trim(($right->product?->name ?? 'Product') . ' - ' . $right->name);
+
+                return strcmp($leftLabel, $rightLabel);
+            })
+            ->values();
 
         $availableStock = StockEntry::query()
             ->where('tenant_id', $tenantId)
