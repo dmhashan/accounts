@@ -42,6 +42,7 @@ class SaleApiController extends Controller
 
         $sales = Sale::query()
             ->where('tenant_id', app('tenant')->id)
+            ->with(['items.product', 'items.variation'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
@@ -55,7 +56,12 @@ class SaleApiController extends Controller
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,
                 'balance' => (float) $sale->balance,
-                'created_at' => optional($sale->created_at)->toDateString(),
+                'created_at' => optional($sale->created_at)->format('d M Y, H:i'),
+                'items' => $sale->items->map(fn (SaleItem $item) => [
+                    'product_name' => $item->product?->name,
+                    'variation_name' => $item->variation?->name,
+                    'quantity' => $item->quantity,
+                ]),
             ]),
             'meta' => [
                 'current_page' => $sales->currentPage(),

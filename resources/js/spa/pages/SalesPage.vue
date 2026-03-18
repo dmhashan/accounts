@@ -28,20 +28,12 @@
                                 <button type="button" class="text-red-600 dark:text-red-400 text-sm" @click="removeSale(sale.id)">Delete</button>
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 text-xs">
-                            <div>
-                                <p class="text-secondary-500 dark:text-secondary-400">Total</p>
-                                <p class="text-secondary-900 dark:text-white">{{ money(sale.total_amount) }}</p>
-                            </div>
-                            <div>
-                                <p class="text-secondary-500 dark:text-secondary-400">Paid</p>
-                                <p class="text-secondary-900 dark:text-white">{{ money(sale.paid_amount) }}</p>
-                            </div>
-                            <div>
-                                <p class="text-secondary-500 dark:text-secondary-400">Balance</p>
-                                <p class="text-secondary-900 dark:text-white">{{ money(sale.balance) }}</p>
-                            </div>
-                        </div>
+                        <ul class="text-xs space-y-0.5">
+                            <li v-for="(item, i) in sale.items" :key="i" class="text-secondary-700 dark:text-secondary-300">
+                                {{ item.product_name }}<span v-if="item.variation_name"> – {{ item.variation_name }}</span>
+                                <span class="text-secondary-500 dark:text-secondary-400"> × {{ item.quantity }}</span>
+                            </li>
+                        </ul>
                     </article>
 
                     <div v-if="sales.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</div>
@@ -54,10 +46,8 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Sale ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Customer</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Total</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Paid</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Balance</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Items</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date &amp; Time</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                             </tr>
                         </thead>
@@ -66,17 +56,22 @@
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">#{{ sale.id }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ sale.customer_name || 'Walk-in' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 capitalize">{{ sale.customer_type }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(sale.total_amount) }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(sale.paid_amount) }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(sale.balance) }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ sale.created_at }}</td>
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                                    <ul class="space-y-0.5">
+                                        <li v-for="(item, i) in sale.items" :key="i" class="whitespace-nowrap">
+                                            {{ item.product_name }}<span v-if="item.variation_name"> – {{ item.variation_name }}</span>
+                                            <span class="text-secondary-500 dark:text-secondary-400"> × {{ item.quantity }}</span>
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 whitespace-nowrap">{{ sale.created_at }}</td>
                                 <td class="px-6 py-4 text-right space-x-2">
                                     <RouterLink :to="`/sales/${sale.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">Edit</RouterLink>
                                     <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium" @click="removeSale(sale.id)">Delete</button>
                                 </td>
                             </tr>
                             <tr v-if="sales.length === 0">
-                                <td colspan="8" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</td>
+                                <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</td>
                             </tr>
                         </tbody>
                     </table>
