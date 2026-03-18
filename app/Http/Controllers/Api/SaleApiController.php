@@ -131,7 +131,7 @@ class SaleApiController extends Controller
     {
         $this->ensureSaleBelongsToTenant($sale);
 
-        $sale->delete();
+        $this->saleProcessingService->delete($sale, app('tenant')->id);
 
         return response()->json([
             'message' => 'Sale deleted successfully.',

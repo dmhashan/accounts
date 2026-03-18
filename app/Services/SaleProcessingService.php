@@ -70,6 +70,18 @@ class SaleProcessingService
         });
     }
 
+    public function delete(Sale $sale, int $tenantId): void
+    {
+        $today = Carbon::today()->toDateString();
+
+        DB::transaction(function () use ($sale, $tenantId, $today) {
+            $this->restoreStockForExistingItems($sale, $tenantId, $today);
+            $this->refundWalletIfNeeded($sale, $tenantId);
+
+            $sale->delete();
+        });
+    }
+
     private function buildSaleItemsAndTotals(array $validated, int $tenantId, string $today): array
     {
         $itemsPayload = $validated['items'];
