@@ -5,17 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Services\ProfileService;
+use App\Services\DashboardOverviewService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ProfileApiController extends Controller
+class DashboardApiController extends Controller
 {
-    public function __construct(private readonly ProfileService $profileService)
+    public function __construct(private readonly DashboardOverviewService $dashboardOverviewService)
     {
     }
 
-    public function show(Request $request): JsonResponse
+    public function overview(Request $request): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -23,8 +23,6 @@ class ProfileApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        return response()->json([
-            'data' => $this->profileService->build($user, $tenant),
-        ]);
+        return response()->json($this->dashboardOverviewService->build($user, $tenant));
     }
 }

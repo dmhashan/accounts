@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Services\ProfileService;
+use App\Services\AppContextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ProfileApiController extends Controller
+class AppContextApiController extends Controller
 {
-    public function __construct(private readonly ProfileService $profileService)
+    public function __construct(private readonly AppContextService $appContextService)
     {
     }
 
@@ -23,8 +23,6 @@ class ProfileApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        return response()->json([
-            'data' => $this->profileService->build($user, $tenant),
-        ]);
+        return response()->json($this->appContextService->build($user, $tenant));
     }
 }
