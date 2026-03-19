@@ -8,8 +8,21 @@ use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
+        $tenant = app('tenant');
+        $user = Auth::user();
+
+        if ($user && $user->tenant_id === $tenant->id) {
+            return redirect()->route('dashboard');
+        }
+
+        if ($user && $user->tenant_id !== $tenant->id) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
         return view('auth.login');
     }
 

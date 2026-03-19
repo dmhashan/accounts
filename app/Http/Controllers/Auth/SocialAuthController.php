@@ -61,6 +61,7 @@ class SocialAuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->save();
 
         return redirect()->route('dashboard');
     }
