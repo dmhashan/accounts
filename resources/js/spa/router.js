@@ -13,6 +13,9 @@ const RoleEditPage = () => import('./pages/RoleEditPage.vue');
 const InventoryPage = () => import('./pages/InventoryPage.vue');
 const InventoryProductFormPage = () => import('./pages/InventoryProductFormPage.vue');
 const InventoryStockFormPage = () => import('./pages/InventoryStockFormPage.vue');
+const AccountsPage = () => import('./pages/AccountsPage.vue');
+const AccountFormPage = () => import('./pages/AccountFormPage.vue');
+const AccountTransferFormPage = () => import('./pages/AccountTransferFormPage.vue');
 const SalesPage = () => import('./pages/SalesPage.vue');
 const SalesFormPage = () => import('./pages/SalesFormPage.vue');
 const StatsPage = () => import('./pages/StatsPage.vue');
@@ -42,6 +45,11 @@ const routes = [
     { path: '/inventory/products/:id/edit', component: InventoryProductFormPage },
     { path: '/inventory/stock/new', component: InventoryStockFormPage },
     { path: '/inventory/stock/:id/edit', component: InventoryStockFormPage },
+    { path: '/accounts', component: AccountsPage },
+    { path: '/accounts/new', component: AccountFormPage },
+    { path: '/accounts/:id/edit', component: AccountFormPage },
+    { path: '/accounts/transfers/new', component: AccountTransferFormPage },
+    { path: '/accounts/transfers/:id/edit', component: AccountTransferFormPage },
     { path: '/sales', component: SalesPage },
     { path: '/sales/new', component: SalesFormPage },
     { path: '/sales/:id/edit', component: SalesFormPage },

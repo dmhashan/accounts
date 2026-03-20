@@ -12,6 +12,7 @@ export function useNavigation() {
         if (context.permissions?.members) items.push({ label: 'Members', path: '/members' });
         if (context.permissions?.roles) items.push({ label: 'Roles', path: '/roles' });
         if (context.permissions?.inventory) items.push({ label: 'Inventory', path: '/inventory' });
+        if (context.permissions?.accounts) items.push({ label: 'Accounts', path: '/accounts' });
         if (context.permissions?.sales) items.push({ label: 'Sales', path: '/sales' });
         if (context.permissions?.stats) items.push({ label: 'Sales Stats', path: '/stats' });
         if (context.permissions?.reports) items.push({ label: 'Reports', path: '/reports' });

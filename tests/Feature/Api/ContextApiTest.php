@@ -10,6 +10,7 @@ class ContextApiTest extends ApiRouteTestCase
             'dashboard.view',
             'users.view',
             'inventory.manage',
+            'accounts.manage',
             'sales.process',
             'member.profile.view',
         ]);
@@ -23,6 +24,7 @@ class ContextApiTest extends ApiRouteTestCase
             ->assertJsonPath('permissions.dashboard', true)
             ->assertJsonPath('permissions.users', true)
             ->assertJsonPath('permissions.inventory', true)
+            ->assertJsonPath('permissions.accounts', true)
             ->assertJsonPath('permissions.sales', true)
             ->assertJsonPath('permissions.stats', true)
             ->assertJsonPath('permissions.profile', true);

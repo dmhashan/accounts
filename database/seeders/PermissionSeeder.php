@@ -36,6 +36,9 @@ class PermissionSeeder extends Seeder
             // Inventory
             ['name' => 'Manage Inventory', 'slug' => 'inventory.manage', 'feature' => 'Inventory', 'description' => 'Access inventory management module'],
 
+            // Accounting
+            ['name' => 'Manage Accounts', 'slug' => 'accounts.manage', 'feature' => 'Accounting', 'description' => 'Access company accounts and transfers'],
+
             // Sales
             ['name' => 'Process Sales', 'slug' => 'sales.process', 'feature' => 'Sales', 'description' => 'Access sales module'],
       

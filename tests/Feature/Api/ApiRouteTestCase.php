@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\CompanyAccount;
+use App\Models\CompanyAccountTransfer;
 use App\Models\Member;
 use App\Models\Permission;
 use App\Models\Product;
@@ -195,6 +197,31 @@ abstract class ApiRouteTestCase extends TestCase
             'total_amount' => 300,
             'paid_amount' => 300,
             'balance' => 0,
+        ], $attributes));
+    }
+
+    protected function createCompanyAccount(array $attributes = []): CompanyAccount
+    {
+        $sequence = $this->nextSequence();
+
+        return CompanyAccount::create(array_merge([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Account '.$sequence,
+            'opening_balance' => 0,
+            'description' => 'Test account',
+        ], $attributes));
+    }
+
+    protected function createCompanyAccountTransfer(CompanyAccount $sourceAccount, CompanyAccount $destinationAccount, array $attributes = []): CompanyAccountTransfer
+    {
+        return CompanyAccountTransfer::create(array_merge([
+            'tenant_id' => $this->tenant->id,
+            'source_account_id' => $sourceAccount->id,
+            'destination_account_id' => $destinationAccount->id,
+            'amount' => 100,
+            'transfer_date' => now()->toDateString(),
+            'reference_number' => 'TRF-'.Str::upper(Str::random(6)),
+            'notes' => 'Test transfer',
         ], $attributes));
     }
 

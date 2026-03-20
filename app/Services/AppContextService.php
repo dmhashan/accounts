@@ -28,6 +28,7 @@ class AppContextService
                 'settings' => $user->hasPermission('settings.manage'),
                 'reports' => $user->hasPermission('reports.view'),
                 'inventory' => $user->hasPermission('inventory.manage'),
+                'accounts' => $user->hasPermission('accounts.manage'),
                 'sales' => $user->hasPermission('sales.process'),
                 'stats' => $user->hasPermission('sales.process'),
                 'profile' => $user->hasPermission('member.profile.view') || $user->hasRole('member'),
