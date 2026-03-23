@@ -35,6 +35,12 @@ return [
         ],
     ],
 
+    'smslenz' => [
+        'user_id' => env('SMSLENZ_USER_ID'),
+        'api_key' => env('SMSLENZ_API_KEY'),
+        'sender_id' => env('SMSLENZ_SENDER_ID', 'SMSlenzDEMO'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

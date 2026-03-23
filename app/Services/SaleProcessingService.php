@@ -14,11 +14,15 @@ use Illuminate\Support\Facades\DB;
 
 class SaleProcessingService
 {
+    public function __construct(private readonly SmsService $smsService)
+    {
+    }
+
     public function create(int $tenantId, array $validated): Sale
     {
         $today = Carbon::today()->toDateString();
 
-        return DB::transaction(function () use ($tenantId, $validated, $today) {
+        $sale = DB::transaction(function () use ($tenantId, $validated, $today) {
             [$saleItems, $total, $itemsPayload] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
             $member = $this->resolveMember($validated, $tenantId);
             [$paidAmount, $balance, $isPaid, $accountId] = $this->resolvePayment($validated, $member, $total, $tenantId);
@@ -43,6 +47,14 @@ class SaleProcessingService
 
             return $sale;
         });
+
+        if ($sale->is_paid) {
+            $this->sendSalePaidSms($sale);
+        } else {
+            $this->sendSaleOutstandingSms($sale);
+        }
+
+        return $sale;
     }
 
     public function update(Sale $sale, int $tenantId, array $validated): Sale
@@ -95,7 +107,7 @@ class SaleProcessingService
 
     public function markAsPaid(Sale $sale, int $tenantId, array $validated): Sale
     {
-        return DB::transaction(function () use ($sale, $tenantId, $validated) {
+        $paid = DB::transaction(function () use ($sale, $tenantId, $validated) {
             $lockedSale = Sale::query()
                 ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
@@ -122,6 +134,10 @@ class SaleProcessingService
 
             return $lockedSale->fresh();
         });
+
+        $this->sendSalePaidSms($paid);
+
+        return $paid;
     }
 
     private function buildSaleItemsAndTotals(array $validated, int $tenantId, string $today): array
@@ -380,5 +396,45 @@ class SaleProcessingService
                 'notes' => 'Sale payment for sale #'.$sale->id,
             ]
         );
+    }
+
+    private function sendSalePaidSms(Sale $sale): void
+    {
+        $phone = null;
+
+        if ($sale->customer_member_id) {
+            $phone = Member::where('id', $sale->customer_member_id)
+                ->value('phone_number');
+        }
+
+        if (!$phone) {
+            return;
+        }
+
+        $ref = $sale->reference_number ? ' (Ref: '.$sale->reference_number.')' : '';
+        $amount = number_format((float) $sale->total_amount, 2);
+        $message = "Payment received for Sale #{$sale->id}: LKR {$amount}{$ref}. Thank you!";
+
+        $this->smsService->send($phone, $message);
+    }
+
+    private function sendSaleOutstandingSms(Sale $sale): void
+    {
+        $phone = null;
+
+        if ($sale->customer_member_id) {
+            $phone = Member::where('id', $sale->customer_member_id)
+                ->value('phone_number');
+        }
+
+        if (!$phone) {
+            return;
+        }
+
+        $due = number_format(abs((float) $sale->balance), 2);
+        $ref = $sale->reference_number ? ' (Ref: '.$sale->reference_number.')' : '';
+        $message = "Outstanding payment for Sale #{$sale->id}: LKR {$due}{$ref}. Please settle soon.";
+
+        $this->smsService->send($phone, $message);
     }
 }
