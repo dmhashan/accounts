@@ -77,6 +77,13 @@ class CompanyAccountApiController extends Controller
         ]);
     }
 
+    public function transactions(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->integer('per_page', 10), 50);
+
+        return response()->json($this->companyAccountService->transactions(app('tenant')->id, $perPage));
+    }
+
     public function transfers(Request $request): JsonResponse
     {
         $perPage = min((int) $request->integer('per_page', 10), 50);

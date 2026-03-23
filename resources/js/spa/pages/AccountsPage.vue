@@ -10,6 +10,7 @@
         <div class="mb-4 inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
             <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'accounts' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
             <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'transfers' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
+            <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'transactions' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
@@ -164,6 +165,74 @@
                 @limit-change="handleTransferLimitChange"
             />
         </div>
+
+        <div v-if="activeTab === 'transactions'" class="space-y-4">
+            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+                    <article v-for="tx in transactions" :key="tx.id" class="p-4 space-y-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ tx.account_name }}</p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">{{ tx.transaction_date || '-' }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ money(tx.amount) }}</p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ formatType(tx.type) }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div v-if="tx.sale_reference"><span class="text-secondary-500 dark:text-secondary-400">Sale Ref:</span> {{ tx.sale_reference }}</div>
+                            <div v-if="tx.sale_customer"><span class="text-secondary-500 dark:text-secondary-400">Customer:</span> {{ tx.sale_customer }}</div>
+                            <div v-if="tx.reference_number" class="col-span-2"><span class="text-secondary-500 dark:text-secondary-400">Reference:</span> {{ tx.reference_number }}</div>
+                        </div>
+
+                        <p v-if="tx.notes" class="text-xs text-secondary-600 dark:text-secondary-300">{{ tx.notes }}</p>
+                    </article>
+                    <div v-if="transactions.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transactions found.</div>
+                </div>
+
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Account</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Sale Ref</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Reference</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                            <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.transaction_date || '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ tx.account_name }}</td>
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ formatType(tx.type) }}</td>
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.sale_reference || '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.sale_customer || '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.reference_number || '-' }}</td>
+                                <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white text-right">{{ money(tx.amount) }}</td>
+                            </tr>
+                            <tr v-if="transactions.length === 0">
+                                <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No transactions found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <AppPagination
+                :current-page="transactionMeta.current_page"
+                :last-page="transactionMeta.last_page"
+                :per-page="transactionPerPage"
+                :total="transactionMeta.total"
+                :disabled="loadingTransactions"
+                @page-change="handleTransactionPageChange"
+                @limit-change="handleTransactionLimitChange"
+            />
+        </div>
     </section>
 </template>
 
@@ -175,19 +244,28 @@ import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();
 
-const activeTab = ref(route.query.tab === 'transfers' ? 'transfers' : 'accounts');
+const validTabs = ['accounts', 'transfers', 'transactions'];
+const activeTab = ref(validTabs.includes(route.query.tab) ? route.query.tab : 'accounts');
 const accounts = ref([]);
 const transfers = ref([]);
+const transactions = ref([]);
 const errorMessage = ref('');
 const loadingAccounts = ref(false);
 const loadingTransfers = ref(false);
+const loadingTransactions = ref(false);
 const accountMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const transferMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
+const transactionMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const accountPerPage = ref(10);
 const transferPerPage = ref(10);
+const transactionPerPage = ref(10);
 
 function money(value) {
     return Number(value || 0).toFixed(2);
+}
+
+function formatType(type) {
+    return type ? type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '-';
 }
 
 
@@ -229,11 +307,30 @@ async function loadTransfers(page = 1) {
     }
 }
 
+async function loadTransactions(page = 1) {
+    loadingTransactions.value = true;
+
+    try {
+        const response = await apiRequest('/api/accounts/transactions', {
+            params: {
+                page,
+                per_page: transactionPerPage.value,
+            },
+        });
+
+        transactions.value = response.data || [];
+        transactionMeta.value = response.meta || transactionMeta.value;
+        transactionPerPage.value = transactionMeta.value.per_page || transactionPerPage.value;
+    } finally {
+        loadingTransactions.value = false;
+    }
+}
+
 async function loadAll() {
     errorMessage.value = '';
 
     try {
-        await Promise.all([loadAccounts(), loadTransfers()]);
+        await Promise.all([loadAccounts(), loadTransfers(), loadTransactions()]);
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load account data.';
     }
@@ -286,10 +383,19 @@ function handleTransferLimitChange(limit) {
     loadTransfers(1);
 }
 
+function handleTransactionPageChange(page) {
+    loadTransactions(page);
+}
+
+function handleTransactionLimitChange(limit) {
+    transactionPerPage.value = Number(limit);
+    loadTransactions(1);
+}
+
 watch(
     () => route.query.tab,
     (tab) => {
-        activeTab.value = tab === 'transfers' ? 'transfers' : 'accounts';
+        activeTab.value = validTabs.includes(tab) ? tab : 'accounts';
     }
 );
 

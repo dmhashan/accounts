@@ -41,6 +41,9 @@ class PermissionSeeder extends Seeder
 
             // Sales
             ['name' => 'Process Sales', 'slug' => 'sales.process', 'feature' => 'Sales', 'description' => 'Access sales module'],
+            ['name' => 'Create Sales', 'slug' => 'sales.create', 'feature' => 'Sales', 'description' => 'Create new sales'],
+            ['name' => 'Edit Sales', 'slug' => 'sales.edit', 'feature' => 'Sales', 'description' => 'Edit existing sales'],
+            ['name' => 'Delete Sales', 'slug' => 'sales.delete', 'feature' => 'Sales', 'description' => 'Delete sales'],
       
             // Member Features
             ['name' => 'View Profile', 'slug' => 'member.profile.view', 'feature' => 'Member Features', 'description' => 'View member profile'],

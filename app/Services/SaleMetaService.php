@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Member;
 use App\Models\ProductVariation;
+use App\Models\CompanyAccount;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
 use Illuminate\Support\Carbon;
@@ -77,6 +78,11 @@ class SaleMetaService
             ->orderBy('last_name')
             ->get(['id', 'first_name', 'last_name', 'name', 'phone_number']);
 
+        $accounts = CompanyAccount::query()
+            ->where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return [
             'variations' => $variations->map(function (ProductVariation $variation) use ($availableStock, $priceMap) {
                 return [
@@ -103,6 +109,11 @@ class SaleMetaService
                     'phone_number' => $phone,
                 ];
             })->values(),
+            'accounts' => $accounts->map(fn (CompanyAccount $account) => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'label' => $account->name,
+            ])->values(),
         ];
     }
 }

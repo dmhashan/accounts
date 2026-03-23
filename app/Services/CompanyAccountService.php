@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CompanyAccount;
+use App\Models\CompanyAccountTransaction;
 use App\Models\CompanyAccountTransfer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -85,13 +86,53 @@ class CompanyAccountService
             })
             ->exists();
 
-        if ($hasTransfers) {
-            return 'Account cannot be deleted because transfer history exists.';
+        $hasTransactions = CompanyAccountTransaction::query()
+            ->where('tenant_id', $tenantId)
+            ->where('company_account_id', $account->id)
+            ->exists();
+
+        if ($hasTransfers || $hasTransactions) {
+            return 'Account cannot be deleted because transaction history exists.';
         }
 
         $account->delete();
 
         return null;
+    }
+
+    public function transactions(int $tenantId, int $perPage): array
+    {
+        $transactions = CompanyAccountTransaction::query()
+            ->where('tenant_id', $tenantId)
+            ->with([
+                'account:id,name',
+                'sale:id,reference_number,customer_name,total_amount',
+            ])
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return [
+            'data' => collect($transactions->items())->map(fn (CompanyAccountTransaction $tx) => [
+                'id' => $tx->id,
+                'type' => $tx->type,
+                'amount' => $tx->amount,
+                'transaction_date' => $tx->transaction_date?->toDateString(),
+                'reference_number' => $tx->reference_number,
+                'notes' => $tx->notes,
+                'account_name' => $tx->account?->name,
+                'sale_id' => $tx->sale_id,
+                'sale_reference' => $tx->sale?->reference_number,
+                'sale_customer' => $tx->sale?->customer_name,
+                'sale_total' => $tx->sale?->total_amount,
+            ]),
+            'meta' => [
+                'current_page' => $transactions->currentPage(),
+                'last_page' => $transactions->lastPage(),
+                'per_page' => $transactions->perPage(),
+                'total' => $transactions->total(),
+            ],
+        ];
     }
 
     public function transfers(int $tenantId, int $perPage): array
@@ -243,7 +284,8 @@ class CompanyAccountService
         return CompanyAccount::query()
             ->where('tenant_id', $tenantId)
             ->withSum('incomingTransfers as incoming_total', 'amount')
-            ->withSum('outgoingTransfers as outgoing_total', 'amount');
+            ->withSum('outgoingTransfers as outgoing_total', 'amount')
+            ->withSum('transactions as transaction_total', 'amount');
     }
 
     private function serializeAccount(CompanyAccount $account): array
@@ -251,12 +293,13 @@ class CompanyAccountService
         $openingBalance = (float) $account->opening_balance;
         $incomingTotal = (float) ($account->incoming_total ?? 0);
         $outgoingTotal = (float) ($account->outgoing_total ?? 0);
+        $transactionTotal = (float) ($account->transaction_total ?? 0);
 
         return [
             'id' => $account->id,
             'name' => $account->name,
             'opening_balance' => round($openingBalance, 2),
-            'current_balance' => round($openingBalance + $incomingTotal - $outgoingTotal, 2),
+            'current_balance' => round($openingBalance + $incomingTotal + $transactionTotal - $outgoingTotal, 2),
             'description' => $account->description,
             'created_at' => optional($account->created_at)->format('Y-m-d H:i'),
         ];

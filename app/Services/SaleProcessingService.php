@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\CompanyAccount;
+use App\Models\CompanyAccountTransaction;
 use App\Models\Member;
 use App\Models\ProductVariation;
 use App\Models\Sale;
@@ -19,22 +21,25 @@ class SaleProcessingService
         return DB::transaction(function () use ($tenantId, $validated, $today) {
             [$saleItems, $total, $itemsPayload] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
             $member = $this->resolveMember($validated, $tenantId);
-            [$paidAmount, $balance] = $this->resolvePayment($validated, $member, $total);
+            [$paidAmount, $balance, $isPaid, $accountId] = $this->resolvePayment($validated, $member, $total, $tenantId);
 
             $sale = Sale::create([
                 'tenant_id' => $tenantId,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_member_id' => $member?->id,
+                'account_id' => $accountId,
                 'customer_type' => $validated['customer_type'],
                 'payment_method' => $validated['payment_method'],
                 'reference_number' => $validated['reference_number'] ?? null,
                 'total_amount' => $total,
                 'paid_amount' => $paidAmount,
                 'balance' => $balance,
+                'is_paid' => $isPaid,
             ]);
 
             $this->replaceSaleItems($sale, $saleItems);
             $this->deductStock($itemsPayload, $tenantId, $today);
+            $this->recordAccountTransactionForSale($sale, $tenantId);
 
             return $sale;
         });
@@ -42,6 +47,8 @@ class SaleProcessingService
 
     public function update(Sale $sale, int $tenantId, array $validated): Sale
     {
+        $this->ensureSaleIsMutable($sale);
+
         $today = Carbon::today()->toDateString();
 
         return DB::transaction(function () use ($sale, $tenantId, $validated, $today) {
@@ -50,17 +57,19 @@ class SaleProcessingService
 
             [$saleItems, $total, $itemsPayload] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
             $member = $this->resolveMember($validated, $tenantId);
-            [$paidAmount, $balance] = $this->resolvePayment($validated, $member, $total);
+            [$paidAmount, $balance, $isPaid, $accountId] = $this->resolvePayment($validated, $member, $total, $tenantId);
 
             $sale->update([
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_member_id' => $member?->id,
+                'account_id' => $accountId,
                 'customer_type' => $validated['customer_type'],
                 'payment_method' => $validated['payment_method'],
                 'reference_number' => $validated['reference_number'] ?? null,
                 'total_amount' => $total,
                 'paid_amount' => $paidAmount,
                 'balance' => $balance,
+                'is_paid' => $isPaid,
             ]);
 
             $this->replaceSaleItems($sale, $saleItems);
@@ -72,6 +81,8 @@ class SaleProcessingService
 
     public function delete(Sale $sale, int $tenantId): void
     {
+        $this->ensureSaleIsMutable($sale);
+
         $today = Carbon::today()->toDateString();
 
         DB::transaction(function () use ($sale, $tenantId, $today) {
@@ -79,6 +90,37 @@ class SaleProcessingService
             $this->refundWalletIfNeeded($sale, $tenantId);
 
             $sale->delete();
+        });
+    }
+
+    public function markAsPaid(Sale $sale, int $tenantId, array $validated): Sale
+    {
+        return DB::transaction(function () use ($sale, $tenantId, $validated) {
+            $lockedSale = Sale::query()
+                ->where('tenant_id', $tenantId)
+                ->lockForUpdate()
+                ->find($sale->id);
+
+            if (!$lockedSale) {
+                abort(404);
+            }
+
+            if ($lockedSale->is_paid) {
+                abort(422, 'Sale is already paid.');
+            }
+
+            $accountId = $this->resolveAccountId($validated, $tenantId);
+
+            $lockedSale->update([
+                'account_id' => $accountId,
+                'is_paid' => true,
+                'paid_amount' => (float) $lockedSale->total_amount,
+                'balance' => 0,
+            ]);
+
+            $this->recordAccountTransactionForSale($lockedSale, $tenantId, Carbon::today()->toDateString());
+
+            return $lockedSale->fresh();
         });
     }
 
@@ -168,12 +210,27 @@ class SaleProcessingService
         return $member;
     }
 
-    private function resolvePayment(array $validated, ?Member $member, float $total): array
+    private function resolvePayment(array $validated, ?Member $member, float $total, int $tenantId): array
     {
         if (($validated['payment_method'] ?? null) !== 'member_wallet') {
-            $paidAmount = (float) $validated['paid_amount'];
+            $usesPaidStatusFlow = array_key_exists('is_paid', $validated);
 
-            return [$paidAmount, $paidAmount - $total];
+            if ($usesPaidStatusFlow) {
+                $isPaid = (bool) ($validated['is_paid'] ?? false);
+
+                if ($isPaid) {
+                    $accountId = $this->resolveAccountId($validated, $tenantId);
+
+                    return [$total, 0, true, $accountId];
+                }
+
+                return [0, 0 - $total, false, null];
+            }
+
+            $paidAmount = (float) ($validated['paid_amount'] ?? 0);
+            $isPaid = $paidAmount + 0.00001 >= $total;
+
+            return [$paidAmount, $paidAmount - $total, $isPaid, null];
         }
 
         if (!$member) {
@@ -188,7 +245,24 @@ class SaleProcessingService
             'current_balance' => (float) $member->current_balance - $total,
         ]);
 
-        return [$total, 0];
+        return [$total, 0, true, null];
+    }
+
+    private function resolveAccountId(array $validated, int $tenantId): int
+    {
+        if (empty($validated['account_id'])) {
+            abort(422, 'Please select a company account for paid sales.');
+        }
+
+        $account = CompanyAccount::query()
+            ->where('tenant_id', $tenantId)
+            ->find((int) $validated['account_id']);
+
+        if (!$account) {
+            abort(422, 'Invalid company account selection.');
+        }
+
+        return (int) $account->id;
     }
 
     private function replaceSaleItems(Sale $sale, array $saleItems): void
@@ -277,5 +351,34 @@ class SaleProcessingService
         $oldMember->update([
             'current_balance' => (float) $oldMember->current_balance + (float) $sale->total_amount,
         ]);
+    }
+
+    private function ensureSaleIsMutable(Sale $sale): void
+    {
+        if ($sale->is_paid) {
+            abort(422, 'Paid sales cannot be edited or deleted.');
+        }
+    }
+
+    private function recordAccountTransactionForSale(Sale $sale, int $tenantId, ?string $transactionDate = null): void
+    {
+        if (!$sale->is_paid || !$sale->account_id) {
+            return;
+        }
+
+        CompanyAccountTransaction::updateOrCreate(
+            [
+                'sale_id' => $sale->id,
+                'type' => 'sale_payment',
+            ],
+            [
+                'tenant_id' => $tenantId,
+                'company_account_id' => $sale->account_id,
+                'amount' => (float) $sale->total_amount,
+                'transaction_date' => $transactionDate ?? optional($sale->created_at)->toDateString() ?? Carbon::today()->toDateString(),
+                'reference_number' => $sale->reference_number,
+                'notes' => 'Sale payment for sale #'.$sale->id,
+            ]
+        );
     }
 }

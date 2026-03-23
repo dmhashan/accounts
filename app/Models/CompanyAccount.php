@@ -33,4 +33,9 @@ class CompanyAccount extends Model
     {
         return $this->hasMany(CompanyAccountTransfer::class, 'source_account_id');
     }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(CompanyAccountTransaction::class, 'company_account_id');
+    }
 }

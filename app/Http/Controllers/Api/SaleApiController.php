@@ -39,10 +39,13 @@ class SaleApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->integer('per_page', 15), 50);
+        $status = $request->string('status')->toString();
 
         $sales = Sale::query()
             ->where('tenant_id', app('tenant')->id)
             ->with(['items.product', 'items.variation'])
+            ->when($status === 'outstanding', fn ($query) => $query->where('is_paid', false))
+            ->when($status === 'paid', fn ($query) => $query->where('is_paid', true))
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
@@ -56,6 +59,8 @@ class SaleApiController extends Controller
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,
                 'balance' => (float) $sale->balance,
+                'is_paid' => (bool) $sale->is_paid,
+                'account_id' => $sale->account_id,
                 'created_at' => optional($sale->created_at)->format('d M Y, H:i'),
                 'items' => $sale->items->map(fn (SaleItem $item) => [
                     'product_name' => $item->product?->name,
@@ -104,6 +109,8 @@ class SaleApiController extends Controller
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,
                 'balance' => (float) $sale->balance,
+                'is_paid' => (bool) $sale->is_paid,
+                'account_id' => $sale->account_id,
                 'created_at' => optional($sale->created_at)->toDateString(),
                 'items' => $items->map(function (SaleItem $item) {
                     return [
@@ -133,6 +140,26 @@ class SaleApiController extends Controller
         ]);
     }
 
+    public function markAsPaid(Sale $sale, Request $request): JsonResponse
+    {
+        $this->ensureSaleBelongsToTenant($sale);
+
+        $validated = $request->validate([
+            'account_id' => ['required', 'integer', 'exists:company_accounts,id'],
+        ]);
+
+        $sale = $this->saleProcessingService->markAsPaid($sale, app('tenant')->id, $validated);
+
+        return response()->json([
+            'message' => 'Sale marked as paid successfully.',
+            'data' => [
+                'id' => $sale->id,
+                'is_paid' => (bool) $sale->is_paid,
+                'account_id' => $sale->account_id,
+            ],
+        ]);
+    }
+
     public function destroy(Sale $sale): JsonResponse
     {
         $this->ensureSaleBelongsToTenant($sale);
@@ -153,6 +180,8 @@ class SaleApiController extends Controller
             'payment_method' => ['required', 'in:cash,bank,card,member_wallet'],
             'reference_number' => ['nullable', 'string', 'max:255'],
             'paid_amount' => ['required', 'numeric', 'min:0'],
+            'account_id' => ['nullable', 'integer', 'exists:company_accounts,id'],
+            'is_paid' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_variation_id' => ['required', 'exists:product_variations,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],

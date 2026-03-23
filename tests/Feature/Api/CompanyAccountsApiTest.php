@@ -158,6 +158,6 @@ class CompanyAccountsApiTest extends ApiRouteTestCase
 
         $this->deleteJson('/api/accounts/'.$sourceAccount->id)
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Account cannot be deleted because transfer history exists.');
+            ->assertJsonPath('message', 'Account cannot be deleted because transaction history exists.');
     }
 }

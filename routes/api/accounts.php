@@ -7,6 +7,7 @@ Route::get('/accounts/meta', [CompanyAccountApiController::class, 'meta'])->midd
 Route::get('/accounts', [CompanyAccountApiController::class, 'index'])->middleware(['auth', 'permission:accounts.manage']);
 Route::post('/accounts', [CompanyAccountApiController::class, 'store'])->middleware(['auth', 'permission:accounts.manage']);
 
+Route::get('/accounts/transactions', [CompanyAccountApiController::class, 'transactions'])->middleware(['auth', 'permission:accounts.manage']);
 Route::get('/accounts/transfers', [CompanyAccountApiController::class, 'transfers'])->middleware(['auth', 'permission:accounts.manage']);
 Route::post('/accounts/transfers', [CompanyAccountApiController::class, 'storeTransfer'])->middleware(['auth', 'permission:accounts.manage']);
 Route::get('/accounts/transfers/{transfer}', [CompanyAccountApiController::class, 'showTransfer'])->middleware(['auth', 'permission:accounts.manage']);

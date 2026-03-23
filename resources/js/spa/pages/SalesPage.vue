@@ -5,7 +5,26 @@
                 <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Sales History</h2>
                 <p class="text-secondary-600 dark:text-secondary-400 text-sm">Recent sales transactions loaded via REST API.</p>
             </div>
-            <RouterLink to="/sales/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">New Sale</RouterLink>
+            <RouterLink v-if="permissions.create" to="/sales/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">New Sale</RouterLink>
+        </div>
+
+        <div class="mb-4 inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden bg-white dark:bg-secondary-900">
+            <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors"
+                :class="activeTab === 'outstanding' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800'"
+                @click="switchTab('outstanding')"
+            >
+                Outstanding Sales
+            </button>
+            <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors"
+                :class="activeTab === 'paid' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800'"
+                @click="switchTab('paid')"
+            >
+                Paid Sales
+            </button>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
@@ -22,10 +41,12 @@
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">#{{ sale.id }} • {{ sale.customer_name || 'Walk-in' }}</p>
                                 <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ sale.created_at }} • {{ sale.customer_type }}</p>
+                                <p class="mt-1 text-xs font-semibold" :class="sale.is_paid ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">{{ sale.is_paid ? 'Paid' : 'Outstanding' }}</p>
                             </div>
                             <div class="flex gap-2">
-                                <RouterLink :to="`/sales/${sale.id}/edit`" type="button" class="text-primary-600 dark:text-primary-400 text-sm">Edit</RouterLink>
-                                <button type="button" class="text-red-600 dark:text-red-400 text-sm" @click="removeSale(sale.id)">Delete</button>
+                                <button v-if="permissions.edit && !sale.is_paid" type="button" class="text-emerald-600 dark:text-emerald-400 text-sm" @click="openPayNowModal(sale)">Pay Now</button>
+                                <RouterLink v-if="permissions.edit && !sale.is_paid" :to="`/sales/${sale.id}/edit`" type="button" class="text-primary-600 dark:text-primary-400 text-sm">Edit</RouterLink>
+                                <button v-if="permissions.delete && !sale.is_paid" type="button" class="text-red-600 dark:text-red-400 text-sm" @click="removeSale(sale.id)">Delete</button>
                             </div>
                         </div>
                         <ul class="text-xs space-y-0.5">
@@ -48,6 +69,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Type</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Items</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date &amp; Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                             </tr>
                         </thead>
@@ -65,18 +87,59 @@
                                     </ul>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 whitespace-nowrap">{{ sale.created_at }}</td>
+                                <td class="px-6 py-4 text-sm">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" :class="sale.is_paid ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'">{{ sale.is_paid ? 'Paid' : 'Outstanding' }}</span>
+                                </td>
                                 <td class="px-6 py-4 text-right space-x-2">
-                                    <RouterLink :to="`/sales/${sale.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">Edit</RouterLink>
-                                    <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium" @click="removeSale(sale.id)">Delete</button>
+                                    <button v-if="permissions.edit && !sale.is_paid" type="button" class="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 text-sm font-medium" @click="openPayNowModal(sale)">Pay Now</button>
+                                    <RouterLink v-if="permissions.edit && !sale.is_paid" :to="`/sales/${sale.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">Edit</RouterLink>
+                                    <button v-if="permissions.delete && !sale.is_paid" type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium" @click="removeSale(sale.id)">Delete</button>
                                 </td>
                             </tr>
                             <tr v-if="sales.length === 0">
-                                <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</td>
+                                <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </template>
+        </div>
+
+        <div v-if="payNowModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/45" @click="closePayNowModal"></div>
+            <div class="relative z-10 w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4 md:p-5 shadow-xl">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Pay Outstanding Sale</h3>
+                        <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">Select the company account that received payment for sale #{{ selectedSale?.id }}.</p>
+                    </div>
+                    <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNowModal">✕</button>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                    <div class="rounded-lg bg-secondary-50 dark:bg-secondary-800/60 px-3 py-2 text-sm text-secondary-700 dark:text-secondary-200">
+                        <p>Total: <span class="font-semibold">{{ money(selectedSale?.total_amount) }}</span></p>
+                        <p>Customer: <span class="font-semibold">{{ selectedSale?.customer_name || 'Walk-in' }}</span></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
+                        <select v-model.number="selectedAccountId" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                            <option :value="null">Select account</option>
+                            <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
+                                {{ account.label || account.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNowModal">Cancel</button>
+                    <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50" :disabled="payingSale || !selectedAccountId || !selectedSale" @click="markSelectedSaleAsPaid">
+                        {{ payingSale ? 'Processing...' : 'Confirm Payment' }}
+                    </button>
+                </div>
+            </div>
         </div>
 
         <AppPagination
@@ -94,13 +157,26 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import AppPagination from '../components/AppPagination.vue';
+import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 
+const context = useAppContext();
 const sales = ref([]);
 const loading = ref(false);
 const errorMessage = ref('');
 const meta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
 const perPage = ref(15);
+const activeTab = ref('outstanding');
+const companyAccounts = ref([]);
+const payNowModalOpen = ref(false);
+const selectedSale = ref(null);
+const selectedAccountId = ref(null);
+const payingSale = ref(false);
+const permissions = ref({
+    create: Boolean(context.permissions?.salesCreate),
+    edit: Boolean(context.permissions?.salesEdit),
+    delete: Boolean(context.permissions?.salesDelete),
+});
 
 function money(value) {
     const amount = Number(value || 0);
@@ -116,6 +192,7 @@ async function loadSales(page = 1) {
             params: {
                 page,
                 per_page: perPage.value,
+                status: activeTab.value,
             },
         });
 
@@ -129,6 +206,19 @@ async function loadSales(page = 1) {
     }
 }
 
+async function loadMeta() {
+    try {
+        const response = await apiRequest('/api/sales/meta');
+        companyAccounts.value = response.accounts || [];
+
+        if (companyAccounts.value.length > 0 && !selectedAccountId.value) {
+            selectedAccountId.value = companyAccounts.value[0].id;
+        }
+    } catch (error) {
+        errorMessage.value = error?.response?.data?.message || 'Failed to load sale metadata.';
+    }
+}
+
 function handlePageChange(page) {
     loadSales(page);
 }
@@ -136,6 +226,59 @@ function handlePageChange(page) {
 function handleLimitChange(limit) {
     perPage.value = Number(limit);
     loadSales(1);
+}
+
+function switchTab(tab) {
+    if (activeTab.value === tab) {
+        return;
+    }
+
+    activeTab.value = tab;
+    loadSales(1);
+}
+
+function openPayNowModal(sale) {
+    selectedSale.value = sale;
+
+    if (!selectedAccountId.value && companyAccounts.value.length > 0) {
+        selectedAccountId.value = companyAccounts.value[0].id;
+    }
+
+    payNowModalOpen.value = true;
+}
+
+function closePayNowModal(force = false) {
+    if (payingSale.value && !force) {
+        return;
+    }
+
+    payNowModalOpen.value = false;
+    selectedSale.value = null;
+}
+
+async function markSelectedSaleAsPaid() {
+    if (!selectedSale.value || !selectedAccountId.value) {
+        return;
+    }
+
+    payingSale.value = true;
+    errorMessage.value = '';
+
+    try {
+        await apiRequest(`/api/sales/${selectedSale.value.id}/mark-as-paid`, {
+            method: 'post',
+            data: {
+                account_id: Number(selectedAccountId.value),
+            },
+        });
+
+        closePayNowModal(true);
+        await loadSales(meta.value.current_page);
+    } catch (error) {
+        errorMessage.value = error?.response?.data?.message || 'Failed to mark sale as paid.';
+    } finally {
+        payingSale.value = false;
+    }
 }
 
 async function removeSale(id) {
@@ -152,6 +295,7 @@ async function removeSale(id) {
 }
 
 onMounted(() => {
+    loadMeta();
     loadSales();
 });
 </script>

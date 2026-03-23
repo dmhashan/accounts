@@ -78,32 +78,13 @@
                     </div>
                 </div>
             </div>
-
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4">
-                <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 mb-2 uppercase">Payment Method</p>
-                <div class="flex flex-wrap gap-2">
-                    <button v-for="method in paymentMethods" :key="method.value" type="button" class="px-3 py-2 text-sm rounded-lg border" :class="paymentButtonClass(method.value)" :disabled="method.value === 'member_wallet' && !selectedMember" @click="selectPaymentMethod(method.value)">
-                        {{ method.label }}
-                    </button>
-                </div>
-
-                <div v-if="showReferenceField" class="mt-3">
-                    <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Reference Number (optional)</label>
-                    <input v-model="form.reference_number" type="text" placeholder="Transaction ID / reference" class="w-full md:max-w-md px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-
-                <div v-if="form.payment_method === 'member_wallet'" class="mt-3 text-sm text-secondary-700 dark:text-secondary-300">
-                    <p v-if="walletLoading">Loading wallet balance...</p>
-                    <p v-else>Wallet Balance: <span class="font-semibold">{{ money(walletBalance) }}</span></p>
-                </div>
-            </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
 
-        <form @submit.prevent="submitSale">
+        <form @submit.prevent="handleFormSubmit">
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
                 <div class="xl:col-span-7 bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4">
                     <div class="mb-3 flex items-center justify-between gap-3">
@@ -180,7 +161,8 @@
                     <div class="mt-4 space-y-2 border-t border-secondary-200 dark:border-secondary-700 pt-3 text-sm">
                         <div class="flex items-center justify-between">
                             <span class="text-secondary-500 dark:text-secondary-400">Paid Amount</span>
-                            <span v-if="form.payment_method === 'member_wallet'" class="font-semibold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</span>
+                            <span v-if="!isEdit" class="font-semibold text-secondary-900 dark:text-white">Set by action</span>
+                            <span v-else-if="form.payment_method === 'member_wallet'" class="font-semibold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</span>
                             <input v-else v-model.number="form.paid_amount" type="number" min="0" step="0.01" class="w-36 px-2 py-1.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-right">
                         </div>
                         <div class="flex items-center justify-between">
@@ -196,11 +178,70 @@
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">Grand Total</p>
                     <p class="text-xl font-bold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</p>
                 </div>
-                <button type="submit" class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50" :disabled="submitDisabled">
-                    {{ submitting ? (isEdit ? 'Updating...' : 'Processing...') : (isEdit ? 'Update Sale' : 'Complete Sale') }}
+                <button
+                    v-if="isEdit && canEditSale"
+                    type="submit"
+                    class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
+                    :disabled="submitDisabled"
+                >
+                    {{ submitting ? 'Updating...' : 'Update Sale' }}
                 </button>
+                <div v-else-if="canCreateSale" class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="px-5 py-3 text-base font-semibold border border-secondary-300 dark:border-secondary-600 text-secondary-800 dark:text-secondary-100 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 disabled:opacity-50"
+                        :disabled="saveDisabled"
+                        @click="submitSale('save')"
+                    >
+                        {{ submitting ? 'Saving...' : 'Save' }}
+                    </button>
+                    <button
+                        type="button"
+                        class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
+                        :disabled="payNowDisabled"
+                        @click="openPayNowModal"
+                    >
+                        {{ submitting ? 'Processing...' : 'Pay Now' }}
+                    </button>
+                </div>
             </div>
         </form>
+
+        <div v-if="payNowModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/45" @click="closePayNowModal"></div>
+            <div class="relative z-10 w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4 md:p-5 shadow-xl">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Select Company Account</h3>
+                        <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">Choose where this sale payment should be recorded.</p>
+                    </div>
+                    <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNowModal">✕</button>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
+                    <select v-model.number="selectedPayNowAccountId" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                        <option :value="null">Select account</option>
+                        <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
+                            {{ account.label || account.name }}
+                        </option>
+                    </select>
+                    <p v-if="companyAccounts.length === 0" class="mt-2 text-sm text-red-600 dark:text-red-400">No company account found. Add one before using Pay Now.</p>
+                </div>
+
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNowModal">Cancel</button>
+                    <button
+                        type="button"
+                        class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
+                        :disabled="submitting || !selectedPayNowAccountId"
+                        @click="submitSale('pay_now')"
+                    >
+                        {{ submitting ? 'Processing...' : 'Confirm Payment' }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -208,10 +249,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Globe, House, LayoutGrid, List } from 'lucide-vue-next';
+import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 
 const router = useRouter();
 const route = useRoute();
+const context = useAppContext();
 
 const loadingMeta = ref(false);
 const loadingSale = ref(false);
@@ -225,10 +268,17 @@ const customerSelectorRef = ref(null);
 const catalogView = ref('list');
 const walletLoading = ref(false);
 const walletBalance = ref(0);
+const companyAccounts = ref([]);
+const payNowModalOpen = ref(false);
+const selectedPayNowAccountId = ref(null);
+const saleLocked = ref(false);
 
 let rowKey = 0;
 
 const isEdit = computed(() => Boolean(route.params.id));
+const canCreateSale = computed(() => Boolean(context.permissions?.salesCreate));
+const canEditSale = computed(() => Boolean(context.permissions?.salesEdit));
+const hasActionPermission = computed(() => (isEdit.value ? canEditSale.value : canCreateSale.value));
 
 const form = ref({
     customer_name: '',
@@ -281,6 +331,14 @@ const balanceAmount = computed(() => {
 });
 
 const submitDisabled = computed(() => {
+    if (saleLocked.value) {
+        return true;
+    }
+
+    if (!hasActionPermission.value) {
+        return true;
+    }
+
     if (submitting.value || loadingMeta.value || form.value.items.length === 0) {
         return true;
     }
@@ -294,6 +352,14 @@ const submitDisabled = computed(() => {
     }
 
     return false;
+});
+
+const saveDisabled = computed(() => {
+    return !hasActionPermission.value || submitting.value || loadingMeta.value || form.value.items.length === 0;
+});
+
+const payNowDisabled = computed(() => {
+    return submitDisabled.value || companyAccounts.value.length === 0;
 });
 
 function money(value) {
@@ -417,6 +483,10 @@ async function loadWalletBalance() {
 }
 
 async function loadMeta() {
+    if (!hasActionPermission.value) {
+        return;
+    }
+
     loadingMeta.value = true;
     errorMessage.value = '';
 
@@ -424,6 +494,11 @@ async function loadMeta() {
         const response = await apiRequest('/api/sales/meta');
         variationOptions.value = response.variations || [];
         members.value = response.members || [];
+        companyAccounts.value = response.accounts || [];
+
+        if (companyAccounts.value.length > 0 && !selectedPayNowAccountId.value) {
+            selectedPayNowAccountId.value = companyAccounts.value[0].id;
+        }
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load sale metadata.';
     } finally {
@@ -432,7 +507,7 @@ async function loadMeta() {
 }
 
 async function loadSale() {
-    if (!isEdit.value) return;
+    if (!isEdit.value || !canEditSale.value) return;
     
     loadingSale.value = true;
     errorMessage.value = '';
@@ -447,6 +522,12 @@ async function loadSale() {
         form.value.payment_method = saleData.payment_method;
         form.value.reference_number = saleData.reference_number || '';
         form.value.paid_amount = saleData.paid_amount;
+        selectedPayNowAccountId.value = saleData.account_id || selectedPayNowAccountId.value;
+        saleLocked.value = Boolean(saleData.is_paid);
+
+        if (saleLocked.value) {
+            errorMessage.value = 'Paid sales cannot be edited or deleted.';
+        }
 
         // Load items
         form.value.items = saleData.items.map((item) => ({
@@ -461,15 +542,30 @@ async function loadSale() {
     }
 }
 
-async function submitSale() {
+async function submitSale(mode = 'update') {
+    if (!hasActionPermission.value) {
+        errorMessage.value = isEdit.value
+            ? 'You do not have permission to edit sales.'
+            : 'You do not have permission to create sales.';
+        return;
+    }
+
     submitting.value = true;
     errorMessage.value = '';
 
     try {
         const resolvedCustomerName = selectedMember.value?.customer_name || null;
-        const paidAmount = form.value.payment_method === 'member_wallet'
-            ? totalAmount.value
-            : Number(form.value.paid_amount || 0);
+        const isPayNowMode = mode === 'pay_now';
+
+        if (isPayNowMode && !selectedPayNowAccountId.value) {
+            errorMessage.value = 'Please select a company account.';
+            submitting.value = false;
+            return;
+        }
+
+        const paidAmount = isEdit.value
+            ? (form.value.payment_method === 'member_wallet' ? totalAmount.value : Number(form.value.paid_amount || 0))
+            : (isPayNowMode ? totalAmount.value : 0);
 
         const payload = {
             customer_name: resolvedCustomerName,
@@ -478,6 +574,8 @@ async function submitSale() {
             payment_method: form.value.payment_method,
             reference_number: showReferenceField.value ? (form.value.reference_number || null) : null,
             paid_amount: paidAmount,
+            is_paid: isEdit.value ? undefined : isPayNowMode,
+            account_id: isEdit.value ? undefined : (isPayNowMode ? Number(selectedPayNowAccountId.value) : null),
             items: form.value.items
                 .filter((item) => item.product_variation_id && Number(item.quantity) > 0)
                 .map((item) => ({
@@ -502,6 +600,8 @@ async function submitSale() {
                 method: 'post',
                 data: payload,
             });
+
+            payNowModalOpen.value = false;
         }
 
         router.push('/sales');
@@ -512,8 +612,42 @@ async function submitSale() {
     }
 }
 
+function handleFormSubmit() {
+    if (isEdit.value) {
+        submitSale('update');
+    }
+}
+
+function openPayNowModal() {
+    if (payNowDisabled.value) {
+        return;
+    }
+
+    if (!selectedPayNowAccountId.value && companyAccounts.value.length > 0) {
+        selectedPayNowAccountId.value = companyAccounts.value[0].id;
+    }
+
+    payNowModalOpen.value = true;
+}
+
+function closePayNowModal() {
+    if (submitting.value) {
+        return;
+    }
+
+    payNowModalOpen.value = false;
+}
+
 onMounted(() => {
     document.addEventListener('click', handleDocumentClick);
+
+    if (!hasActionPermission.value) {
+        errorMessage.value = isEdit.value
+            ? 'You do not have permission to edit sales.'
+            : 'You do not have permission to create sales.';
+        return;
+    }
+
     loadMeta();
     loadSale();
 });
