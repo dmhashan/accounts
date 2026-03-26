@@ -101,10 +101,13 @@
                                 role="button"
                                 tabindex="0"
                                 class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2 md:p-3 flex items-center justify-between gap-2 md:gap-3 transition-colors"
-                                :class="variation.available_stock > 0 ? 'cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-800' : 'cursor-not-allowed opacity-60'"
-                                @click="variation.available_stock > 0 && addVariationToCart(variation)"
-                                @keydown.enter.prevent="variation.available_stock > 0 && addVariationToCart(variation)"
-                                @keydown.space.prevent="variation.available_stock > 0 && addVariationToCart(variation)"
+                                :class="[
+                                    variation.available_stock > 0 ? 'cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-800' : 'cursor-not-allowed opacity-60',
+                                    activeProductId === variation.id ? 'ring-2 ring-primary-500/60 bg-primary-50 dark:bg-primary-900/20' : ''
+                                ]"
+                                @click="handleProductActivate(variation)"
+                                @keydown.enter.prevent="handleProductActivate(variation)"
+                                @keydown.space.prevent="handleProductActivate(variation)"
                             >
                                 <div class="min-w-0">
                                     <p class="text-xs md:text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ variation.label }}</p>
@@ -118,8 +121,14 @@
                 <div class="col-span-8 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">Cart</h3>
 
-                    <div class="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1">
-                        <article v-for="item in form.items" :key="item.key" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3">
+                    <div ref="cartListRef" class="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1">
+                        <article
+                            v-for="item in form.items"
+                            :key="item.key"
+                            :ref="(element) => setCartItemRef(item.key, element)"
+                            class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3 transition-colors"
+                            :class="activeCartKey === item.key ? 'ring-2 ring-primary-500/50 bg-primary-50/60 dark:bg-primary-900/20' : ''"
+                        >
                             <div class="flex items-start justify-between gap-2">
                                 <div>
                                     <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ selectedVariation(item.product_variation_id)?.label || 'Item' }}</p>
@@ -217,7 +226,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Globe, House } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
@@ -236,6 +245,10 @@ const members = ref([]);
 const memberSearch = ref('');
 const customerDropdownOpen = ref(false);
 const customerSelectorRef = ref(null);
+const activeProductId = ref(null);
+const activeCartKey = ref(null);
+const cartListRef = ref(null);
+const cartItemRefs = ref({});
 const walletLoading = ref(false);
 const walletBalance = ref(0);
 const companyAccounts = ref([]);
@@ -244,6 +257,8 @@ const selectedPayNowAccountId = ref(null);
 const saleLocked = ref(false);
 
 let rowKey = 0;
+let productUiTimer = null;
+let cartFocusTimer = null;
 
 const isEdit = computed(() => Boolean(route.params.id));
 const canCreateSale = computed(() => Boolean(context.permissions?.salesCreate));
@@ -363,6 +378,7 @@ function addVariationToCart(variation) {
 
     if (existing) {
         incrementQty(existing);
+        focusCartItem(variation.id);
         return;
     }
 
@@ -371,6 +387,60 @@ function addVariationToCart(variation) {
         product_variation_id: variation.id,
         quantity: 1,
     });
+
+    focusCartItem(variation.id);
+}
+
+function handleProductActivate(variation) {
+    if (Number(variation?.available_stock || 0) <= 0) {
+        return;
+    }
+
+    activeProductId.value = variation.id;
+    if (productUiTimer) {
+        clearTimeout(productUiTimer);
+    }
+
+    productUiTimer = setTimeout(() => {
+        activeProductId.value = null;
+    }, 220);
+
+    addVariationToCart(variation);
+}
+
+function setCartItemRef(key, element) {
+    if (element) {
+        cartItemRefs.value[key] = element;
+        return;
+    }
+
+    delete cartItemRefs.value[key];
+}
+
+async function focusCartItem(variationId) {
+    await nextTick();
+
+    const cartItem = form.value.items.find((item) => item.product_variation_id === variationId);
+    if (!cartItem) {
+        return;
+    }
+
+    activeCartKey.value = cartItem.key;
+    const targetElement = cartItemRefs.value[cartItem.key];
+
+    if (targetElement && typeof targetElement.scrollIntoView === 'function') {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (cartListRef.value) {
+        cartListRef.value.scrollTo({ top: cartListRef.value.scrollHeight, behavior: 'smooth' });
+    }
+
+    if (cartFocusTimer) {
+        clearTimeout(cartFocusTimer);
+    }
+
+    cartFocusTimer = setTimeout(() => {
+        activeCartKey.value = null;
+    }, 900);
 }
 
 function incrementQty(item) {
@@ -616,6 +686,14 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     document.removeEventListener('click', handleDocumentClick);
+
+    if (productUiTimer) {
+        clearTimeout(productUiTimer);
+    }
+
+    if (cartFocusTimer) {
+        clearTimeout(cartFocusTimer);
+    }
 });
 
 watch(
