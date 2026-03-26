@@ -89,14 +89,22 @@
 
         <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
             <div class="grid min-h-0 flex-1 grid-cols-12 gap-2 md:gap-4">
-                <div class="col-span-4 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+                <div class="col-span-5 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Products</h3>
+                    </div>
+                    <div class="mb-3">
+                        <input
+                            v-model="productSearch"
+                            type="text"
+                            placeholder="Search product..."
+                            class="w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm dark:border-secondary-700 dark:bg-secondary-800"
+                        >
                     </div>
                     <div class="min-h-0 flex-1 overflow-y-auto pr-1">
                         <div class="space-y-2">
                             <article
-                                v-for="variation in variationOptions"
+                                v-for="variation in filteredVariationOptions"
                                 :key="variation.id"
                                 role="button"
                                 tabindex="0"
@@ -114,11 +122,14 @@
                                     <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}</p>
                                 </div>
                             </article>
+                            <p v-if="filteredVariationOptions.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
+                                No products found.
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-span-8 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+                <div class="col-span-7 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">Cart</h3>
 
                     <div ref="cartListRef" class="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1">
@@ -241,6 +252,7 @@ const loadingSale = ref(false);
 const submitting = ref(false);
 const errorMessage = ref('');
 const variationOptions = ref([]);
+const productSearch = ref('');
 const members = ref([]);
 const memberSearch = ref('');
 const customerDropdownOpen = ref(false);
@@ -297,6 +309,23 @@ const filteredMembers = computed(() => {
     }
 
     return members.value.filter((member) => member.label.toLowerCase().includes(term));
+});
+
+const filteredVariationOptions = computed(() => {
+    const term = productSearch.value.trim().toLowerCase();
+
+    return variationOptions.value.filter((variation) => {
+        const stock = Number(variation?.available_stock || 0);
+        if (stock <= 0) {
+            return false;
+        }
+
+        if (!term) {
+            return true;
+        }
+
+        return String(variation?.label || '').toLowerCase().includes(term);
+    });
 });
 
 const showReferenceField = computed(() => {
