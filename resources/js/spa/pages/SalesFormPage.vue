@@ -1,15 +1,18 @@
 <template>
     <section class="pb-24">
-        <div class="flex flex-col gap-3 mb-4 md:mb-6">
-            <div class="flex items-center justify-between gap-3">
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Sales</p>
                     <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">{{ isEdit ? 'Edit Sale' : 'New Sale' }}</h2>
                     <p class="text-sm text-secondary-500 dark:text-secondary-400">{{ isEdit ? 'Edit and update sale details.' : 'POS checkout with live stock and pricing.' }}</p>
                 </div>
-                <RouterLink to="/sales" class="text-sm text-primary-600 dark:text-primary-400">Sales History</RouterLink>
+                <RouterLink to="/sales" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 text-sm font-semibold transition-all hover:bg-secondary-50 dark:hover:bg-secondary-800">
+                    ← Sales History
+                </RouterLink>
             </div>
 
-            <div class="flex items-center flex-nowrap gap-2 pb-1">
+            <div class="mt-4 flex items-center flex-nowrap gap-2 pb-1">
                 <div class="inline-flex shrink-0 rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
                     <button
                         type="button"

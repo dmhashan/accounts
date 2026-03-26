@@ -1,25 +1,26 @@
 <template>
-    <section class="max-w-5xl mx-auto">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 md:mb-6">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">
-                    {{ isEdit ? 'Edit Stock Entry' : 'Add Stock Entry' }}
-                </h2>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage inventory stock details.</p>
+    <section>
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Inventory</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">{{ isEdit ? 'Edit Stock Entry' : 'Add Stock Entry' }}</h2>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage inventory stock details including pricing and dates.</p>
+                </div>
+                <RouterLink
+                    to="/inventory?tab=stock"
+                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 text-sm font-semibold transition-all hover:bg-secondary-50 dark:hover:bg-secondary-800"
+                >
+                    ← Back to Inventory
+                </RouterLink>
             </div>
-            <RouterLink
-                to="/inventory?tab=stock"
-                class="inline-flex items-center justify-center px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-200"
-            >
-                Back to Inventory
-            </RouterLink>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
 
-        <form class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-6" @submit.prevent="save">
+        <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="save">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
                     <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Product</label>
