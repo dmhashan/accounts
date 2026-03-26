@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section class="app-page-frame">
         <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -34,8 +34,10 @@
             {{ errorMessage }}
         </div>
 
-        <div class="app-surface rounded-2xl overflow-hidden">
-            <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading sales...</div>
+        <div class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading sales...</div>
 
             <template v-else>
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
@@ -105,7 +107,21 @@
                         </tbody>
                     </table>
                 </div>
-            </template>
+                    </template>
+                </div>
+            </div>
+
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="meta.current_page"
+                    :last-page="meta.last_page"
+                    :per-page="perPage"
+                    :total="meta.total"
+                    :disabled="loading"
+                    @page-change="handlePageChange"
+                    @limit-change="handleLimitChange"
+                />
+            </div>
         </div>
 
         <div v-if="payNowModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
@@ -145,15 +161,6 @@
             </div>
         </div>
 
-        <AppPagination
-            :current-page="meta.current_page"
-            :last-page="meta.last_page"
-            :per-page="perPage"
-            :total="meta.total"
-            :disabled="loading"
-            @page-change="handlePageChange"
-            @limit-change="handleLimitChange"
-        />
     </section>
 </template>
 

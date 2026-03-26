@@ -142,4 +142,17 @@
         background-clip: text;
         color: transparent;
     }
+
+    .app-page-frame {
+        @apply flex min-h-0 flex-1 flex-col;
+    }
+
+    .app-page-scroll {
+        @apply min-h-0 flex-1 overflow-y-auto;
+        overscroll-behavior: contain;
+    }
+
+    .app-page-pagination {
+        @apply mt-3 shrink-0 border-t border-secondary-200/70 pt-3 dark:border-secondary-700/70;
+    }
 }

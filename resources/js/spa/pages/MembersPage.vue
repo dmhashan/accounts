@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section class="app-page-frame">
         <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
@@ -42,104 +42,110 @@
             {{ errorMessage }}
         </div>
 
-        <div class="app-surface rounded-2xl overflow-hidden">
-            <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading members...</div>
+        <div class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading members...</div>
 
-            <template v-else>
-                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article
-                        v-for="member in members"
-                        :key="member.id"
-                        class="p-4 space-y-3 cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-                        role="link"
-                        tabindex="0"
-                        @click="openMember(member.id)"
-                        @keydown.enter.prevent="openMember(member.id)"
-                        @keydown.space.prevent="openMember(member.id)"
-                    >
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <p class="text-xs text-secondary-500 dark:text-secondary-400">ID: {{ member.member_id }}</p>
-                                <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                                    <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</p>
-                                    <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="genderBadgeClass(member)">
-                                        {{ capitalize(member.gender) || 'N/A' }}
-                                    </span>
-                                    <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
-                                        {{ member.is_active ? 'Active' : 'Inactive' }}
-                                    </span>
-                                    <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
-                                        {{ member.is_verified ? 'Verified' : 'Unverified' }}
-                                    </span>
-                                </div>
-                                <div class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs">
-                                    <p class="text-secondary-500 dark:text-secondary-400">
-                                        {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
-                                    </p>
-                                    <span class="font-semibold text-primary-600 dark:text-primary-400">View details</span>
-                                </div>
-                            </div>
-                        </div>
-                    </article>
-
-                    <div v-if="members.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No members found.</div>
-                </div>
-
-                <div class="hidden md:block overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Member</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr
+                    <template v-else>
+                        <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+                            <article
                                 v-for="member in members"
                                 :key="member.id"
-                                class="cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+                                class="p-4 space-y-3 cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                                 role="link"
                                 tabindex="0"
                                 @click="openMember(member.id)"
                                 @keydown.enter.prevent="openMember(member.id)"
                                 @keydown.space.prevent="openMember(member.id)"
                             >
-                                <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ member.member_id }}</td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</span>
-                                        <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="genderBadgeClass(member)">{{ capitalize(member.gender) || 'N/A' }}</span>
-                                        <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
-                                            {{ member.is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                        <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
-                                            {{ member.is_verified ? 'Verified' : 'Unverified' }}
-                                        </span>
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-xs text-secondary-500 dark:text-secondary-400">ID: {{ member.member_id }}</p>
+                                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                                            <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</p>
+                                            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="genderBadgeClass(member)">
+                                                {{ capitalize(member.gender) || 'N/A' }}
+                                            </span>
+                                            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
+                                                {{ member.is_active ? 'Active' : 'Inactive' }}
+                                            </span>
+                                            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
+                                                {{ member.is_verified ? 'Verified' : 'Unverified' }}
+                                            </span>
+                                        </div>
+                                        <div class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                            <p class="text-secondary-500 dark:text-secondary-400">
+                                                {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
+                                            </p>
+                                            <span class="font-semibold text-primary-600 dark:text-primary-400">View details</span>
+                                        </div>
                                     </div>
-                                    <div class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
-                                        {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
-                                    </div>
-                                    <div class="mt-2 text-xs font-semibold text-primary-600 dark:text-primary-400">Open member details</div>
-                                </td>
-                            </tr>
-                            <tr v-if="members.length === 0">
-                                <td colspan="2" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No members found.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </template>
-        </div>
+                                </div>
+                            </article>
 
-        <AppPagination
-            :current-page="meta.current_page"
-            :last-page="meta.last_page"
-            :per-page="perPage"
-            :total="meta.total"
-            :disabled="loading"
-            @page-change="handlePageChange"
-            @limit-change="handleLimitChange"
-        />
+                            <div v-if="members.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No members found.</div>
+                        </div>
+
+                        <div class="hidden md:block overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Member</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                                    <tr
+                                        v-for="member in members"
+                                        :key="member.id"
+                                        class="cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+                                        role="link"
+                                        tabindex="0"
+                                        @click="openMember(member.id)"
+                                        @keydown.enter.prevent="openMember(member.id)"
+                                        @keydown.space.prevent="openMember(member.id)"
+                                    >
+                                        <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ member.member_id }}</td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</span>
+                                                <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="genderBadgeClass(member)">{{ capitalize(member.gender) || 'N/A' }}</span>
+                                                <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
+                                                    {{ member.is_active ? 'Active' : 'Inactive' }}
+                                                </span>
+                                                <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
+                                                    {{ member.is_verified ? 'Verified' : 'Unverified' }}
+                                                </span>
+                                            </div>
+                                            <div class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                                                {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
+                                            </div>
+                                            <div class="mt-2 text-xs font-semibold text-primary-600 dark:text-primary-400">Open member details</div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="members.length === 0">
+                                        <td colspan="2" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No members found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="meta.current_page"
+                    :last-page="meta.last_page"
+                    :per-page="perPage"
+                    :total="meta.total"
+                    :disabled="loading"
+                    @page-change="handlePageChange"
+                    @limit-change="handleLimitChange"
+                />
+            </div>
+        </div>
     </section>
 </template>
 

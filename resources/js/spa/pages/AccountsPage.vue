@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section class="app-page-frame">
         <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
@@ -24,9 +24,10 @@
             {{ errorMessage }}
         </div>
 
-        <div v-if="activeTab === 'accounts'" class="space-y-4">
-            <div class="app-surface rounded-2xl overflow-hidden">
-                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+        <div v-if="activeTab === 'accounts'" class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="account in accounts" :key="account.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -52,7 +53,7 @@
                     <div v-if="accounts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</div>
                 </div>
 
-                <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
@@ -77,23 +78,27 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <AppPagination
-                :current-page="accountMeta.current_page"
-                :last-page="accountMeta.last_page"
-                :per-page="accountPerPage"
-                :total="accountMeta.total"
-                :disabled="loadingAccounts"
-                @page-change="handleAccountPageChange"
-                @limit-change="handleAccountLimitChange"
-            />
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="accountMeta.current_page"
+                    :last-page="accountMeta.last_page"
+                    :per-page="accountPerPage"
+                    :total="accountMeta.total"
+                    :disabled="loadingAccounts"
+                    @page-change="handleAccountPageChange"
+                    @limit-change="handleAccountLimitChange"
+                />
+            </div>
         </div>
 
-        <div v-if="activeTab === 'transfers'" class="space-y-4">
-            <div class="app-surface rounded-2xl overflow-hidden">
-                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+        <div v-if="activeTab === 'transfers'" class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="transfer in transfers" :key="transfer.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -122,7 +127,7 @@
                     <div v-if="transfers.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</div>
                 </div>
 
-                <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
@@ -151,23 +156,27 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <AppPagination
-                :current-page="transferMeta.current_page"
-                :last-page="transferMeta.last_page"
-                :per-page="transferPerPage"
-                :total="transferMeta.total"
-                :disabled="loadingTransfers"
-                @page-change="handleTransferPageChange"
-                @limit-change="handleTransferLimitChange"
-            />
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="transferMeta.current_page"
+                    :last-page="transferMeta.last_page"
+                    :per-page="transferPerPage"
+                    :total="transferMeta.total"
+                    :disabled="loadingTransfers"
+                    @page-change="handleTransferPageChange"
+                    @limit-change="handleTransferLimitChange"
+                />
+            </div>
         </div>
 
-        <div v-if="activeTab === 'expenses'" class="space-y-4">
-            <div class="app-surface rounded-2xl overflow-hidden">
-                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+        <div v-if="activeTab === 'expenses'" class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="expense in expenses" :key="expense.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -194,7 +203,7 @@
                     <div v-if="expenses.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</div>
                 </div>
 
-                <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
@@ -225,23 +234,27 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <AppPagination
-                :current-page="expenseMeta.current_page"
-                :last-page="expenseMeta.last_page"
-                :per-page="expensePerPage"
-                :total="expenseMeta.total"
-                :disabled="loadingExpenses"
-                @page-change="handleExpensePageChange"
-                @limit-change="handleExpenseLimitChange"
-            />
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="expenseMeta.current_page"
+                    :last-page="expenseMeta.last_page"
+                    :per-page="expensePerPage"
+                    :total="expenseMeta.total"
+                    :disabled="loadingExpenses"
+                    @page-change="handleExpensePageChange"
+                    @limit-change="handleExpenseLimitChange"
+                />
+            </div>
         </div>
 
-        <div v-if="activeTab === 'transactions'" class="space-y-4">
-            <div class="app-surface rounded-2xl overflow-hidden">
-                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+        <div v-if="activeTab === 'transactions'" class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="tx in transactions" :key="tx.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -265,7 +278,7 @@
                     <div v-if="transactions.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transactions found.</div>
                 </div>
 
-                <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
@@ -293,18 +306,21 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <AppPagination
-                :current-page="transactionMeta.current_page"
-                :last-page="transactionMeta.last_page"
-                :per-page="transactionPerPage"
-                :total="transactionMeta.total"
-                :disabled="loadingTransactions"
-                @page-change="handleTransactionPageChange"
-                @limit-change="handleTransactionLimitChange"
-            />
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="transactionMeta.current_page"
+                    :last-page="transactionMeta.last_page"
+                    :per-page="transactionPerPage"
+                    :total="transactionMeta.total"
+                    :disabled="loadingTransactions"
+                    @page-change="handleTransactionPageChange"
+                    @limit-change="handleTransactionLimitChange"
+                />
+            </div>
         </div>
     </section>
 </template>

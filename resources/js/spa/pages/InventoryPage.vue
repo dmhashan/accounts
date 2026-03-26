@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section class="app-page-frame">
         <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
@@ -22,9 +22,10 @@
             {{ errorMessage }}
         </div>
 
-        <div v-if="activeTab === 'products'" class="space-y-4">
-            <div class="app-surface rounded-2xl overflow-hidden">
-                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+        <div v-if="activeTab === 'products'" class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="product in products" :key="product.id" class="p-4">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ product.name }}</p>
                         <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">Variations: {{ product.variations_count }}</p>
@@ -36,7 +37,7 @@
                     <div v-if="products.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No products found.</div>
                 </div>
 
-                <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
@@ -61,23 +62,27 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <AppPagination
-                :current-page="productMeta.current_page"
-                :last-page="productMeta.last_page"
-                :per-page="productPerPage"
-                :total="productMeta.total"
-                :disabled="loadingProducts"
-                @page-change="handleProductPageChange"
-                @limit-change="handleProductLimitChange"
-            />
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="productMeta.current_page"
+                    :last-page="productMeta.last_page"
+                    :per-page="productPerPage"
+                    :total="productMeta.total"
+                    :disabled="loadingProducts"
+                    @page-change="handleProductPageChange"
+                    @limit-change="handleProductLimitChange"
+                />
+            </div>
         </div>
 
-        <div v-if="activeTab === 'stock'" class="space-y-4">
-            <div class="app-surface rounded-2xl overflow-hidden">
-                <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+        <div v-if="activeTab === 'stock'" class="min-h-0 flex flex-1 flex-col">
+            <div class="app-page-scroll">
+                <div class="app-surface rounded-2xl overflow-hidden">
+                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="entry in stockEntries" :key="entry.id" class="p-4 space-y-2">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ entry.product_name }} - {{ entry.variation_name }}</p>
                         <div class="grid grid-cols-2 gap-2 text-xs">
@@ -95,7 +100,7 @@
                     <div v-if="stockEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</div>
                 </div>
 
-                <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
@@ -133,18 +138,21 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <AppPagination
-                :current-page="stockMeta.current_page"
-                :last-page="stockMeta.last_page"
-                :per-page="stockPerPage"
-                :total="stockMeta.total"
-                :disabled="loadingStock"
-                @page-change="handleStockPageChange"
-                @limit-change="handleStockLimitChange"
-            />
+            <div class="app-page-pagination">
+                <AppPagination
+                    :current-page="stockMeta.current_page"
+                    :last-page="stockMeta.last_page"
+                    :per-page="stockPerPage"
+                    :total="stockMeta.total"
+                    :disabled="loadingStock"
+                    @page-change="handleStockPageChange"
+                    @limit-change="handleStockLimitChange"
+                />
+            </div>
         </div>
     </section>
 </template>

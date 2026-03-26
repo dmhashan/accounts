@@ -1,7 +1,7 @@
 <template>
     <div
         v-if="show"
-        class="mt-4 flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end"
+        class="flex w-full flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end"
     >
         <div class="flex items-center justify-end gap-2 flex-nowrap overflow-x-auto max-w-full sm:w-auto">
             <button
