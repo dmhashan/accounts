@@ -2,7 +2,7 @@
     <div>
         <div v-if="open" class="fixed inset-0 bg-slate-950/65 backdrop-blur-sm z-40 lg:hidden" @click="$emit('close')"></div>
 
-        <aside class="fixed inset-y-0 left-0 z-50 w-80 max-w-[92vw] app-surface border-r-0 transform transition-transform duration-300 lg:hidden"
+        <aside class="fixed inset-y-0 left-0 z-50 w-80 max-w-[92vw] app-surface border-r-0 transform transition-transform duration-300 lg:hidden flex flex-col"
             :class="open ? 'translate-x-0' : '-translate-x-full'">
             <div class="h-16 px-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center justify-between">
                 <div class="min-w-0">
@@ -21,7 +21,7 @@
                 <p class="text-xs text-secondary-500 dark:text-secondary-400 truncate">{{ context.user?.email }}</p>
             </div>
 
-            <nav class="flex-1 overflow-y-auto p-4 space-y-1.5">
+            <nav class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-1.5">
                 <RouterLink
                     v-for="item in menuItems"
                     :key="item.path"
