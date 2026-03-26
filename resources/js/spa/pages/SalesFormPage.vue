@@ -88,25 +88,34 @@
         </div>
 
         <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
-            <div class="grid min-h-0 flex-1 grid-cols-2 gap-2 md:gap-4">
-                <div class="flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+            <div class="grid min-h-0 flex-1 grid-cols-12 gap-2 md:gap-4">
+                <div class="col-span-4 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Products</h3>
                     </div>
                     <div class="min-h-0 flex-1 overflow-y-auto pr-1">
                         <div class="space-y-2">
-                            <article v-for="variation in variationOptions" :key="variation.id" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2 md:p-3 flex items-center justify-between gap-2 md:gap-3">
+                            <article
+                                v-for="variation in variationOptions"
+                                :key="variation.id"
+                                role="button"
+                                tabindex="0"
+                                class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2 md:p-3 flex items-center justify-between gap-2 md:gap-3 transition-colors"
+                                :class="variation.available_stock > 0 ? 'cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-800' : 'cursor-not-allowed opacity-60'"
+                                @click="variation.available_stock > 0 && addVariationToCart(variation)"
+                                @keydown.enter.prevent="variation.available_stock > 0 && addVariationToCart(variation)"
+                                @keydown.space.prevent="variation.available_stock > 0 && addVariationToCart(variation)"
+                            >
                                 <div class="min-w-0">
                                     <p class="text-xs md:text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ variation.label }}</p>
                                     <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}</p>
                                 </div>
-                                <button type="button" class="px-2 py-1.5 md:px-3 text-xs md:text-sm rounded-lg border border-secondary-300 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800" :disabled="variation.available_stock <= 0" @click="addVariationToCart(variation)">Add</button>
                             </article>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+                <div class="col-span-8 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">Cart</h3>
 
                     <div class="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1">
