@@ -14,6 +14,12 @@ Route::get('/accounts/transfers/{transfer}', [CompanyAccountApiController::class
 Route::put('/accounts/transfers/{transfer}', [CompanyAccountApiController::class, 'updateTransfer'])->middleware(['auth', 'permission:accounts.manage']);
 Route::delete('/accounts/transfers/{transfer}', [CompanyAccountApiController::class, 'destroyTransfer'])->middleware(['auth', 'permission:accounts.manage']);
 
+Route::get('/accounts/expenses', [CompanyAccountApiController::class, 'expenses'])->middleware(['auth', 'permission:accounts.manage']);
+Route::post('/accounts/expenses', [CompanyAccountApiController::class, 'storeExpense'])->middleware(['auth', 'permission:accounts.manage']);
+Route::get('/accounts/expenses/{expense}', [CompanyAccountApiController::class, 'showExpense'])->middleware(['auth', 'permission:accounts.manage']);
+Route::put('/accounts/expenses/{expense}', [CompanyAccountApiController::class, 'updateExpense'])->middleware(['auth', 'permission:accounts.manage']);
+Route::delete('/accounts/expenses/{expense}', [CompanyAccountApiController::class, 'destroyExpense'])->middleware(['auth', 'permission:accounts.manage']);
+
 Route::get('/accounts/{account}', [CompanyAccountApiController::class, 'show'])->middleware(['auth', 'permission:accounts.manage']);
 Route::put('/accounts/{account}', [CompanyAccountApiController::class, 'update'])->middleware(['auth', 'permission:accounts.manage']);
 Route::delete('/accounts/{account}', [CompanyAccountApiController::class, 'destroy'])->middleware(['auth', 'permission:accounts.manage']);

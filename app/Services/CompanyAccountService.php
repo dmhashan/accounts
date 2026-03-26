@@ -107,6 +107,7 @@ class CompanyAccountService
             ->with([
                 'account:id,name',
                 'sale:id,reference_number,customer_name,total_amount',
+                'expense:id,category',
             ])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -125,6 +126,8 @@ class CompanyAccountService
                 'sale_reference' => $tx->sale?->reference_number,
                 'sale_customer' => $tx->sale?->customer_name,
                 'sale_total' => $tx->sale?->total_amount,
+                'expense_id' => $tx->expense_id,
+                'expense_category' => $tx->expense?->category,
             ]),
             'meta' => [
                 'current_page' => $transactions->currentPage(),

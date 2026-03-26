@@ -11,6 +11,7 @@ class CompanyAccountTransaction extends Model
         'tenant_id',
         'company_account_id',
         'sale_id',
+        'expense_id',
         'type',
         'amount',
         'transaction_date',
@@ -31,6 +32,11 @@ class CompanyAccountTransaction extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function expense(): BelongsTo
+    {
+        return $this->belongsTo(Expense::class);
     }
 
     public function tenant(): BelongsTo

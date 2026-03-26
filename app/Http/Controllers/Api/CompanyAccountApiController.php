@@ -5,15 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransfer;
+use App\Models\Expense;
 use App\Services\CompanyAccountService;
+use App\Services\ExpenseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class CompanyAccountApiController extends Controller
 {
-    public function __construct(private readonly CompanyAccountService $companyAccountService)
-    {
+    public function __construct(
+        private readonly CompanyAccountService $companyAccountService,
+        private readonly ExpenseService $expenseService,
+    ) {
     }
 
     public function meta(): JsonResponse
@@ -168,6 +172,66 @@ class CompanyAccountApiController extends Controller
             'destination_account_id' => ['required', 'integer', 'different:source_account_id', 'exists:company_accounts,id'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'transfer_date' => ['required', 'date'],
+            'reference_number' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    // ─── Expenses ────────────────────────────────────────────────────────────
+
+    public function expenses(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->integer('per_page', 10), 50);
+
+        return response()->json($this->expenseService->expenses(app('tenant')->id, $perPage));
+    }
+
+    public function showExpense(Expense $expense): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->expenseService->showExpense($expense, app('tenant')->id),
+        ]);
+    }
+
+    public function storeExpense(Request $request): JsonResponse
+    {
+        $validated = $request->validate($this->expenseRules());
+
+        $expense = $this->expenseService->storeExpense(app('tenant')->id, $validated);
+
+        return response()->json([
+            'message' => 'Expense recorded successfully.',
+            'data' => ['id' => $expense->id],
+        ], 201);
+    }
+
+    public function updateExpense(Request $request, Expense $expense): JsonResponse
+    {
+        $validated = $request->validate($this->expenseRules());
+
+        $this->expenseService->updateExpense($expense, app('tenant')->id, $validated);
+
+        return response()->json([
+            'message' => 'Expense updated successfully.',
+        ]);
+    }
+
+    public function destroyExpense(Expense $expense): JsonResponse
+    {
+        $this->expenseService->destroyExpense($expense, app('tenant')->id);
+
+        return response()->json([
+            'message' => 'Expense deleted successfully.',
+        ]);
+    }
+
+    private function expenseRules(): array
+    {
+        return [
+            'company_account_id' => ['required', 'integer', 'exists:company_accounts,id'],
+            'category' => ['required', 'string', 'max:255'],
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'expense_date' => ['required', 'date'],
             'reference_number' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
