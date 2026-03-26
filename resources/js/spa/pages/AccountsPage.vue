@@ -53,9 +53,9 @@
                     <div v-if="accounts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</div>
                 </div>
 
-                    <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block app-table-scroll">
                     <table class="w-full">
-                        <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Opening</th>
@@ -127,9 +127,9 @@
                     <div v-if="transfers.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</div>
                 </div>
 
-                    <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block app-table-scroll">
                     <table class="w-full">
-                        <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">From</th>
@@ -203,9 +203,9 @@
                     <div v-if="expenses.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</div>
                 </div>
 
-                    <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block app-table-scroll">
                     <table class="w-full">
-                        <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Category</th>
@@ -278,9 +278,9 @@
                     <div v-if="transactions.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transactions found.</div>
                 </div>
 
-                    <div class="hidden md:block overflow-x-auto">
+                    <div class="hidden md:block app-table-scroll">
                     <table class="w-full">
-                        <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Account</th>

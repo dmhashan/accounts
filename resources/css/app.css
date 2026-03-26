@@ -155,4 +155,18 @@
     .app-page-pagination {
         @apply mt-3 shrink-0 border-t border-secondary-200/70 pt-3 dark:border-secondary-700/70;
     }
+
+    .app-table-scroll {
+        @apply min-h-0 overflow-auto;
+        max-height: clamp(16rem, calc(100dvh - 20rem), 44rem);
+    }
+
+    .app-table-head-sticky {
+        @apply sticky top-0 z-10;
+    }
+
+    .app-widget-content-scroll {
+        @apply min-h-0 flex-1 overflow-auto;
+        overscroll-behavior: contain;
+    }
 }

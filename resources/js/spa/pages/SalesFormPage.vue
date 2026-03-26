@@ -1,5 +1,5 @@
 <template>
-    <section class="pb-24">
+    <section class="flex h-full min-h-0 flex-col overflow-y-auto pb-24">
         <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -87,58 +87,29 @@
             {{ errorMessage }}
         </div>
 
-        <form @submit.prevent="handleFormSubmit">
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-                <div class="xl:col-span-7 bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4">
+        <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
+            <div class="grid min-h-0 flex-1 grid-cols-2 gap-2 md:gap-4">
+                <div class="flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Products</h3>
-                        <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                            <button
-                                type="button"
-                                class="px-3 py-2"
-                                :class="catalogView === 'grid' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
-                                title="Grid"
-                                aria-label="Grid"
-                                @click="catalogView = 'grid'"
-                            >
-                                <LayoutGrid class="h-4 w-4" />
-                            </button>
-                            <button
-                                type="button"
-                                class="px-3 py-2"
-                                :class="catalogView === 'list' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
-                                title="List"
-                                aria-label="List"
-                                @click="catalogView = 'list'"
-                            >
-                                <List class="h-4 w-4" />
-                            </button>
+                    </div>
+                    <div class="min-h-0 flex-1 overflow-y-auto pr-1">
+                        <div class="space-y-2">
+                            <article v-for="variation in variationOptions" :key="variation.id" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2 md:p-3 flex items-center justify-between gap-2 md:gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-xs md:text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ variation.label }}</p>
+                                    <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}</p>
+                                </div>
+                                <button type="button" class="px-2 py-1.5 md:px-3 text-xs md:text-sm rounded-lg border border-secondary-300 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800" :disabled="variation.available_stock <= 0" @click="addVariationToCart(variation)">Add</button>
+                            </article>
                         </div>
-                    </div>
-                    <div v-if="catalogView === 'grid'" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
-                        <article v-for="variation in variationOptions" :key="variation.id" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2">
-                            <p class="text-xs font-semibold text-secondary-900 dark:text-white line-clamp-2">{{ variation.label }}</p>
-                            <p class="text-[11px] text-secondary-500 dark:text-secondary-400 mt-1">Stock: {{ variation.available_stock }}</p>
-                            <p class="text-[11px] text-secondary-700 dark:text-secondary-300 mt-1">{{ money(variationPrice(variation)) }}</p>
-                            <button type="button" class="mt-2 w-full px-2 py-1.5 text-xs rounded-lg border border-secondary-300 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800" :disabled="variation.available_stock <= 0" @click="addVariationToCart(variation)">Add</button>
-                        </article>
-                    </div>
-
-                    <div v-else class="space-y-2">
-                        <article v-for="variation in variationOptions" :key="variation.id" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3 flex items-center justify-between gap-3">
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ variation.label }}</p>
-                                <p class="text-xs text-secondary-500 dark:text-secondary-400">Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}</p>
-                            </div>
-                            <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-secondary-300 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800" :disabled="variation.available_stock <= 0" @click="addVariationToCart(variation)">Add</button>
-                        </article>
                     </div>
                 </div>
 
-                <div class="xl:col-span-5 bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4">
+                <div class="flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">Cart</h3>
 
-                    <div class="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
+                    <div class="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1">
                         <article v-for="item in form.items" :key="item.key" class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3">
                             <div class="flex items-start justify-between gap-2">
                                 <div>
@@ -161,22 +132,10 @@
                         <div v-if="form.items.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No items in cart.</div>
                     </div>
 
-                    <div class="mt-4 space-y-2 border-t border-secondary-200 dark:border-secondary-700 pt-3 text-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="text-secondary-500 dark:text-secondary-400">Paid Amount</span>
-                            <span v-if="!isEdit" class="font-semibold text-secondary-900 dark:text-white">Set by action</span>
-                            <span v-else-if="form.payment_method === 'member_wallet'" class="font-semibold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</span>
-                            <input v-else v-model.number="form.paid_amount" type="number" min="0" step="0.01" class="w-36 px-2 py-1.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-right">
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-secondary-500 dark:text-secondary-400">Balance</span>
-                            <span class="font-semibold" :class="balanceAmount < 0 ? 'text-red-600 dark:text-red-400' : 'text-secondary-900 dark:text-white'">{{ money(balanceAmount) }}</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <div class="sticky bottom-0 z-10 mt-4 bg-white/95 dark:bg-secondary-900/95 backdrop-blur border border-secondary-200 dark:border-secondary-700 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <div class="sticky bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-10 mt-8 flex items-center justify-between gap-3 rounded-xl border border-secondary-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-secondary-700 dark:bg-secondary-900/95 md:bottom-3">
                 <div>
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">Grand Total</p>
                     <p class="text-xl font-bold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</p>
@@ -251,7 +210,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Globe, House, LayoutGrid, List } from 'lucide-vue-next';
+import { Globe, House } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 
@@ -268,7 +227,6 @@ const members = ref([]);
 const memberSearch = ref('');
 const customerDropdownOpen = ref(false);
 const customerSelectorRef = ref(null);
-const catalogView = ref('list');
 const walletLoading = ref(false);
 const walletBalance = ref(0);
 const companyAccounts = ref([]);
@@ -323,14 +281,6 @@ const showReferenceField = computed(() => {
 
 const totalAmount = computed(() => {
     return form.value.items.reduce((sum, item) => sum + itemSubtotal(item), 0);
-});
-
-const balanceAmount = computed(() => {
-    const paid = form.value.payment_method === 'member_wallet'
-        ? totalAmount.value
-        : Number(form.value.paid_amount || 0);
-
-    return paid - totalAmount.value;
 });
 
 const submitDisabled = computed(() => {

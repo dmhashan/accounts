@@ -65,9 +65,9 @@
                     <div v-if="sales.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</div>
                 </div>
 
-                <div class="hidden md:block overflow-x-auto">
+                <div class="hidden md:block app-table-scroll">
                     <table class="w-full">
-                        <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                        <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Sale ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Customer</th>
