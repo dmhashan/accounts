@@ -14,7 +14,7 @@
                 <button
                     type="button"
                     class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                    :class="activeTab === 'outstanding' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+                    :class="activeTab === 'outstanding' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
                     @click="switchTab('outstanding')"
                 >
                     Outstanding Sales
@@ -22,7 +22,7 @@
                 <button
                     type="button"
                     class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                    :class="activeTab === 'paid' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+                    :class="activeTab === 'paid' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
                     @click="switchTab('paid')"
                 >
                     Paid Sales

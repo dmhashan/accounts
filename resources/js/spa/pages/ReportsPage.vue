@@ -1,6 +1,24 @@
 <template>
-    <section>
-        <div class="max-w-5xl mx-auto">
+    <section class="space-y-4 md:space-y-6">
+            <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Reports</p>
+                        <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Reports & Analytics</h2>
+                        <p class="text-sm text-secondary-500 dark:text-secondary-400">Advanced analytics and reporting features are in development.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+                        :disabled="loading"
+                        @click="loadOverview"
+                    >
+                        {{ loading ? 'Refreshing...' : 'Refresh Overview' }}
+                    </button>
+                </div>
+            </div>
+
             <div class="app-surface rounded-2xl p-6 md:p-10">
                 <div class="text-center">
                     <div class="mx-auto h-20 w-20 md:h-24 md:w-24 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center mb-6">
@@ -23,7 +41,6 @@
                     </article>
                 </div>
             </div>
-        </div>
     </section>
 </template>
 
@@ -33,13 +50,18 @@ import { apiRequest } from '../composables/useApiClient';
 
 const features = ref([]);
 const errorMessage = ref('');
+const loading = ref(false);
 
 async function loadOverview() {
+    loading.value = true;
+
     try {
         const response = await apiRequest('/api/reports/overview');
         features.value = response.features || [];
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load report overview.';
+    } finally {
+        loading.value = false;
     }
 }
 

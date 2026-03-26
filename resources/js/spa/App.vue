@@ -10,8 +10,6 @@
         <AppMobileDrawer :open="mobileMenuOpen" @close="mobileMenuOpen = false" />
 
         <div class="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-            <AppHeader @open-menu="mobileMenuOpen = true" />
-
             <div v-if="routeLoader.loading" class="h-1 app-surface-soft border-x-0 border-b-0 border-t-0">
                 <div class="h-1 w-1/3 bg-gradient-to-r from-primary-500 via-red-400 to-orange-500 animate-pulse"></div>
             </div>
@@ -27,7 +25,6 @@
 
 <script setup>
 import { ref } from 'vue';
-import AppHeader from './layout/AppHeader.vue';
 import AppSidebar from './layout/AppSidebar.vue';
 import AppMobileDrawer from './layout/AppMobileDrawer.vue';
 import AppBottomNav from './layout/AppBottomNav.vue';

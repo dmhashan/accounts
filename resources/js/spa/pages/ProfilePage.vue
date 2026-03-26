@@ -1,5 +1,24 @@
 <template>
     <section class="max-w-6xl mx-auto space-y-4 md:space-y-5">
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Profile</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Account Profile</h2>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">View your account and linked member details.</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+                    :disabled="loading"
+                    @click="loadProfile"
+                >
+                    {{ loading ? 'Refreshing...' : 'Refresh Profile' }}
+                </button>
+            </div>
+        </div>
+
         <div v-if="errorMessage" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>

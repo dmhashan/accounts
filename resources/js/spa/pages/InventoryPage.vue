@@ -7,11 +7,14 @@
                     <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Inventory Management</h2>
                     <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage products and stock entries via REST API.</p>
                 </div>
+                <RouterLink :to="tabCta.to" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110">
+                    {{ tabCta.label }}
+                </RouterLink>
             </div>
 
             <div class="mt-4 inline-flex rounded-xl app-surface-soft p-1">
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'products' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'products'">Products</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'stock' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'stock'">Stock</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'products' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'products'">Products</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'stock' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'stock'">Stock</button>
             </div>
         </div>
 
@@ -20,10 +23,6 @@
         </div>
 
         <div v-if="activeTab === 'products'" class="space-y-4">
-            <div class="flex justify-end">
-                <RouterLink to="/inventory/products/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Add Product</RouterLink>
-            </div>
-
             <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="product in products" :key="product.id" class="p-4">
@@ -77,10 +76,6 @@
         </div>
 
         <div v-if="activeTab === 'stock'" class="space-y-4">
-            <div class="flex justify-end">
-                <RouterLink to="/inventory/stock/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Add Stock Entry</RouterLink>
-            </div>
-
             <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="entry in stockEntries" :key="entry.id" class="p-4 space-y-2">
@@ -155,7 +150,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
 import { apiRequest } from '../composables/useApiClient';
@@ -173,6 +168,20 @@ const productMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 
 const stockMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const productPerPage = ref(10);
 const stockPerPage = ref(10);
+
+const tabCta = computed(() => {
+    if (activeTab.value === 'stock') {
+        return {
+            to: '/inventory/stock/new',
+            label: 'Add Stock Entry',
+        };
+    }
+
+    return {
+        to: '/inventory/products/new',
+        label: 'Add Product',
+    };
+});
 
 function money(value) {
     return Number(value || 0).toFixed(2);

@@ -97,15 +97,15 @@
                     </div>
 
                     <div class="overflow-x-auto -mx-1 px-1">
-                        <div role="tablist" aria-label="Sales detail sections" class="inline-flex min-w-full md:min-w-0 rounded-lg bg-secondary-100 dark:bg-secondary-800 p-1 gap-1">
+                        <div role="tablist" aria-label="Sales detail sections" class="inline-flex min-w-full md:min-w-0 rounded-xl app-surface-soft p-1 gap-1">
                             <button
                                 v-for="tab in detailTabs"
                                 :key="tab.key"
                                 type="button"
                                 role="tab"
-                                class="px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors"
+                                class="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors"
                                 :class="activeDetailTab === tab.key
-                                    ? 'bg-primary-600 text-white shadow-sm'
+                                    ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm'
                                     : 'text-secondary-700 dark:text-secondary-300 hover:bg-white dark:hover:bg-secondary-700'"
                                 :aria-selected="activeDetailTab === tab.key"
                                 @click="activeDetailTab = tab.key"

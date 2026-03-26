@@ -7,13 +7,16 @@
                     <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Accounts Management</h2>
                     <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage company cash and bank accounts, then move balances between them.</p>
                 </div>
+                <RouterLink v-if="tabCta" :to="tabCta.to" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110">
+                    {{ tabCta.label }}
+                </RouterLink>
             </div>
 
             <div class="mt-4 inline-flex flex-wrap rounded-xl app-surface-soft p-1">
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'expenses' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'expenses' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
             </div>
         </div>
 
@@ -22,10 +25,6 @@
         </div>
 
         <div v-if="activeTab === 'accounts'" class="space-y-4">
-            <div class="flex justify-end">
-                <RouterLink to="/accounts/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Add Account</RouterLink>
-            </div>
-
             <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="account in accounts" :key="account.id" class="p-4 space-y-2">
@@ -93,10 +92,6 @@
         </div>
 
         <div v-if="activeTab === 'transfers'" class="space-y-4">
-            <div class="flex justify-end">
-                <RouterLink to="/accounts/transfers/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">New Transfer</RouterLink>
-            </div>
-
             <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="transfer in transfers" :key="transfer.id" class="p-4 space-y-2">
@@ -171,10 +166,6 @@
         </div>
 
         <div v-if="activeTab === 'expenses'" class="space-y-4">
-            <div class="flex justify-end">
-                <RouterLink to="/accounts/expenses/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Record Expense</RouterLink>
-            </div>
-
             <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="expense in expenses" :key="expense.id" class="p-4 space-y-2">
@@ -319,7 +310,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
 import { apiRequest } from '../composables/useApiClient';
@@ -345,6 +336,31 @@ const accountPerPage = ref(10);
 const transferPerPage = ref(10);
 const expensePerPage = ref(10);
 const transactionPerPage = ref(10);
+
+const tabCta = computed(() => {
+    if (activeTab.value === 'transactions') {
+        return null;
+    }
+
+    if (activeTab.value === 'transfers') {
+        return {
+            to: '/accounts/transfers/new',
+            label: 'New Transfer',
+        };
+    }
+
+    if (activeTab.value === 'expenses') {
+        return {
+            to: '/accounts/expenses/new',
+            label: 'Record Expense',
+        };
+    }
+
+    return {
+        to: '/accounts/new',
+        label: 'Add Account',
+    };
+});
 
 function money(value) {
     return Number(value || 0).toFixed(2);
