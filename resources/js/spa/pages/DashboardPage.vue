@@ -5,11 +5,11 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
-            <article class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-5 md:p-6 shadow-sm">
+            <article class="app-surface rounded-2xl p-5 md:p-6">
                 <h3 class="text-sm font-medium text-secondary-500 dark:text-secondary-400">Stock Summary - Product Availability</h3>
 
                 <template v-if="stockSummary.can_view">
-                    <div class="mt-4 border border-secondary-200 dark:border-secondary-700 rounded-lg overflow-hidden">
+                    <div class="mt-4 border border-secondary-200 dark:border-secondary-700 rounded-xl overflow-hidden">
                         <div v-if="loading" class="px-3 py-3 text-sm text-secondary-500 dark:text-secondary-400">
                             Loading variation availability...
                         </div>
@@ -40,7 +40,7 @@
                 <p v-else class="mt-3 text-sm text-secondary-500 dark:text-secondary-400">You do not have permission to view stock summary.</p>
             </article>
 
-            <article class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-5 md:p-6 shadow-sm">
+            <article class="app-surface rounded-2xl p-5 md:p-6">
                 <h3 class="text-sm font-medium text-secondary-500 dark:text-secondary-400">Daily Sales Summary</h3>
 
                 <template v-if="dailySalesSummary.can_view">
@@ -49,7 +49,7 @@
 
                     <RouterLink
                         to="/stats"
-                        class="mt-4 inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                        class="mt-4 inline-flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-primary-500 to-primary-700 text-white transition-all hover:brightness-110"
                     >
                         Open Sales Stats
                     </RouterLink>

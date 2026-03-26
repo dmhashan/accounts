@@ -1,92 +1,95 @@
 <template>
     <section>
-        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 mb-4 md:mb-6">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Sales Stats</h2>
-                <p class="text-secondary-600 dark:text-secondary-400 text-sm">Detailed transaction, customer-wise, and product-wise sales analytics.</p>
-            </div>
-
-            <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full xl:w-auto" @submit.prevent="loadStats">
-                <label class="block">
-                    <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">Range Type</span>
-                    <select
-                        v-model="filters.range_type"
-                        class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                        @change="handleRangeTypeChange"
-                    >
-                        <option value="date">Date</option>
-                        <option value="week">Week</option>
-                        <option value="month">Month</option>
-                        <option value="year">Year</option>
-                    </select>
-                </label>
-
-                <label class="block">
-                    <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">{{ rangeValueLabel }}</span>
-                    <input
-                        v-if="filters.range_type !== 'year'"
-                        v-model="filters.range_value"
-                        :type="filters.range_type"
-                        required
-                        class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                    >
-                    <input
-                        v-else
-                        v-model="filters.range_value"
-                        type="number"
-                        min="1970"
-                        max="9999"
-                        required
-                        class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                    >
-                </label>
-
-                <div class="block">
-                    <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">Period</span>
-                    <p class="mt-1 px-3 py-2 border border-secondary-200 dark:border-secondary-700 rounded-lg bg-secondary-50 dark:bg-secondary-800/40 text-sm text-secondary-700 dark:text-secondary-300 whitespace-nowrap">
-                        {{ stats.range_label || 'Select a period' }}
-                    </p>
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Analytics</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Sales Stats</h2>
+                    <p class="text-secondary-600 dark:text-secondary-400 text-sm">Detailed transaction, customer-wise, and product-wise sales analytics.</p>
                 </div>
 
-                <button
-                    type="submit"
-                    :disabled="loading"
-                    class="self-end px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
-                >
-                    {{ loading ? 'Loading...' : 'Apply' }}
-                </button>
-            </form>
+                <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full xl:w-auto" @submit.prevent="loadStats">
+                    <label class="block">
+                        <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">Range Type</span>
+                        <select
+                            v-model="filters.range_type"
+                            class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
+                            @change="handleRangeTypeChange"
+                        >
+                            <option value="date">Date</option>
+                            <option value="week">Week</option>
+                            <option value="month">Month</option>
+                            <option value="year">Year</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">{{ rangeValueLabel }}</span>
+                        <input
+                            v-if="filters.range_type !== 'year'"
+                            v-model="filters.range_value"
+                            :type="filters.range_type"
+                            required
+                            class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
+                        >
+                        <input
+                            v-else
+                            v-model="filters.range_value"
+                            type="number"
+                            min="1970"
+                            max="9999"
+                            required
+                            class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
+                        >
+                    </label>
+
+                    <div class="block">
+                        <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">Period</span>
+                        <p class="mt-1 px-3 py-2 rounded-xl app-surface-soft text-sm text-secondary-700 dark:text-secondary-300 whitespace-nowrap">
+                            {{ stats.range_label || 'Select a period' }}
+                        </p>
+                    </div>
+
+                    <button
+                        type="submit"
+                        :disabled="loading"
+                        class="self-end px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all hover:brightness-110"
+                    >
+                        {{ loading ? 'Loading...' : 'Apply' }}
+                    </button>
+                </form>
+            </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
 
-        <div v-if="!stats.can_view" class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-5 md:p-6 text-sm text-secondary-500 dark:text-secondary-400">
+        <div v-if="!stats.can_view" class="app-surface rounded-2xl p-5 md:p-6 text-sm text-secondary-500 dark:text-secondary-400">
             You do not have permission to view sales stats.
         </div>
 
         <template v-else>
             <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
-                <article class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4">
+                <article class="app-surface rounded-2xl p-4">
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">Transactions</p>
                     <p class="mt-1 text-lg md:text-xl font-semibold text-secondary-900 dark:text-white">{{ loading ? '-' : formatNumber(stats.transactions) }}</p>
                 </article>
-                <article class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4">
+                <article class="app-surface rounded-2xl p-4">
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">Gross Amount</p>
                     <p class="mt-1 text-lg md:text-xl font-semibold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(stats.gross_amount) }}</p>
                 </article>
-                <article class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4">
+                <article class="app-surface rounded-2xl p-4">
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">Paid Amount</p>
                     <p class="mt-1 text-lg md:text-xl font-semibold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(stats.paid_amount) }}</p>
                 </article>
-                <article class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4">
+                <article class="app-surface rounded-2xl p-4">
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">Outstanding</p>
                     <p class="mt-1 text-lg md:text-xl font-semibold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(stats.outstanding_amount) }}</p>
                 </article>
             </div>
 
-            <article class="mt-4 bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-5 shadow-sm">
+            <article class="mt-4 app-surface rounded-2xl p-4 md:p-5">
                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-secondary-900 dark:text-white">Sales Details</h3>

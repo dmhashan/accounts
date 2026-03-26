@@ -1,35 +1,38 @@
 <template>
     <section>
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">User Management</h2>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400">All user records are loaded via REST API.</p>
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Users</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">User Management</h2>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">All user records are loaded via REST API.</p>
+                </div>
+                <RouterLink
+                    v-if="permissions.create"
+                    to="/users/new"
+                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110"
+                >
+                    Add User
+                </RouterLink>
             </div>
-            <RouterLink
-                v-if="permissions.create"
-                to="/users/new"
-                class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-            >
-                Add User
-            </RouterLink>
-        </div>
 
-        <div class="mb-4 flex gap-2">
-            <input
-                v-model="search"
-                type="text"
-                placeholder="Search users by name or email"
-                class="w-full md:max-w-md px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
-                @keyup.enter="loadUsers(1)"
-            />
-            <button type="button" class="px-4 py-2 rounded-lg border border-secondary-300 dark:border-secondary-700 text-sm" @click="loadUsers(1)">Search</button>
+            <div class="mt-4 flex flex-col md:flex-row gap-2">
+                <input
+                    v-model="search"
+                    type="text"
+                    placeholder="Search users by name or email"
+                    class="w-full md:flex-1 px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
+                    @keyup.enter="loadUsers(1)"
+                />
+                <button type="button" class="px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-sm font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800" @click="loadUsers(1)">Search</button>
+            </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
 
-        <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+        <div class="app-surface rounded-2xl overflow-hidden">
             <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading users...</div>
 
             <template v-else>

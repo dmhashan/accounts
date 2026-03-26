@@ -1,17 +1,20 @@
 <template>
     <section>
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 md:mb-6">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Accounts Management</h2>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage company cash and bank accounts, then move balances between them.</p>
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Accounts</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Accounts Management</h2>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage company cash and bank accounts, then move balances between them.</p>
+                </div>
             </div>
-        </div>
 
-        <div class="mb-4 inline-flex flex-wrap rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-            <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'accounts' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
-            <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'transfers' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
-            <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'expenses' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
-            <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'transactions' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
+            <div class="mt-4 inline-flex flex-wrap rounded-xl app-surface-soft p-1">
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'expenses' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
+            </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
@@ -20,10 +23,10 @@
 
         <div v-if="activeTab === 'accounts'" class="space-y-4">
             <div class="flex justify-end">
-                <RouterLink to="/accounts/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm">Add Account</RouterLink>
+                <RouterLink to="/accounts/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Add Account</RouterLink>
             </div>
 
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+            <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="account in accounts" :key="account.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
@@ -91,10 +94,10 @@
 
         <div v-if="activeTab === 'transfers'" class="space-y-4">
             <div class="flex justify-end">
-                <RouterLink to="/accounts/transfers/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm">New Transfer</RouterLink>
+                <RouterLink to="/accounts/transfers/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">New Transfer</RouterLink>
             </div>
 
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+            <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="transfer in transfers" :key="transfer.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
@@ -169,10 +172,10 @@
 
         <div v-if="activeTab === 'expenses'" class="space-y-4">
             <div class="flex justify-end">
-                <RouterLink to="/accounts/expenses/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm">Record Expense</RouterLink>
+                <RouterLink to="/accounts/expenses/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Record Expense</RouterLink>
             </div>
 
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+            <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="expense in expenses" :key="expense.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
@@ -246,7 +249,7 @@
         </div>
 
         <div v-if="activeTab === 'transactions'" class="space-y-4">
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+            <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="tx in transactions" :key="tx.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">

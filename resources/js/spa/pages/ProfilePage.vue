@@ -4,7 +4,7 @@
             {{ errorMessage }}
         </div>
 
-        <article class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+        <article class="app-surface rounded-2xl overflow-hidden">
             <div class="bg-gradient-to-r from-primary-500 to-primary-700 px-4 py-5 md:px-6 md:py-6">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4 md:gap-5">
                     <div class="h-16 w-16 md:h-20 md:w-20 rounded-full bg-white/20 border border-white/40 overflow-hidden flex items-center justify-center">
@@ -55,7 +55,7 @@
 
                 <template v-else>
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5">
-                        <article class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-5">
+                        <article class="app-surface-soft rounded-xl p-4 md:p-5">
                             <h3 class="text-sm font-semibold text-secondary-900 dark:text-white mb-3">Personal Information</h3>
                             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                 <div>
@@ -93,7 +93,7 @@
                             </dl>
                         </article>
 
-                        <article class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-5">
+                        <article class="app-surface-soft rounded-xl p-4 md:p-5">
                             <h3 class="text-sm font-semibold text-secondary-900 dark:text-white mb-3">Membership Details</h3>
                             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                 <div>
@@ -131,7 +131,7 @@
                             </dl>
                         </article>
 
-                        <article v-if="member?.comment" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 md:p-5 xl:col-span-2">
+                        <article v-if="member?.comment" class="app-surface-soft rounded-xl p-4 md:p-5 xl:col-span-2">
                             <h3 class="text-sm font-semibold text-secondary-900 dark:text-white mb-2">Notes</h3>
                             <p class="text-sm text-secondary-700 dark:text-secondary-300 whitespace-pre-line">{{ member.comment }}</p>
                         </article>

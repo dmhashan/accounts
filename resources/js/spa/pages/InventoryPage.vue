@@ -1,15 +1,18 @@
 <template>
     <section>
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 md:mb-6">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Inventory Management</h2>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage products and stock entries via REST API.</p>
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Inventory</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Inventory Management</h2>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage products and stock entries via REST API.</p>
+                </div>
             </div>
-        </div>
 
-        <div class="mb-4 inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-            <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'products' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'products'">Products</button>
-            <button type="button" class="px-4 py-2 text-sm font-medium" :class="activeTab === 'stock' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'" @click="activeTab = 'stock'">Stock</button>
+            <div class="mt-4 inline-flex rounded-xl app-surface-soft p-1">
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'products' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'products'">Products</button>
+                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'stock' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'stock'">Stock</button>
+            </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
@@ -18,10 +21,10 @@
 
         <div v-if="activeTab === 'products'" class="space-y-4">
             <div class="flex justify-end">
-                <RouterLink to="/inventory/products/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm">Add Product</RouterLink>
+                <RouterLink to="/inventory/products/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Add Product</RouterLink>
             </div>
 
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+            <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="product in products" :key="product.id" class="p-4">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ product.name }}</p>
@@ -75,10 +78,10 @@
 
         <div v-if="activeTab === 'stock'" class="space-y-4">
             <div class="flex justify-end">
-                <RouterLink to="/inventory/stock/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm">Add Stock Entry</RouterLink>
+                <RouterLink to="/inventory/stock/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white text-sm font-semibold">Add Stock Entry</RouterLink>
             </div>
 
-            <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+            <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="entry in stockEntries" :key="entry.id" class="p-4 space-y-2">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ entry.product_name }} - {{ entry.variation_name }}</p>

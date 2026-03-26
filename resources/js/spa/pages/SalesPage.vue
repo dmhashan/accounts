@@ -1,37 +1,40 @@
 <template>
     <section>
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Sales History</h2>
-                <p class="text-secondary-600 dark:text-secondary-400 text-sm">Recent sales transactions loaded via REST API.</p>
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Sales</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Sales History</h2>
+                    <p class="text-secondary-600 dark:text-secondary-400 text-sm">Recent sales transactions loaded via REST API.</p>
+                </div>
+                <RouterLink v-if="permissions.create" to="/sales/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110">New Sale</RouterLink>
             </div>
-            <RouterLink v-if="permissions.create" to="/sales/new" class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">New Sale</RouterLink>
-        </div>
 
-        <div class="mb-4 inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden bg-white dark:bg-secondary-900">
-            <button
-                type="button"
-                class="px-4 py-2 text-sm font-medium transition-colors"
-                :class="activeTab === 'outstanding' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800'"
-                @click="switchTab('outstanding')"
-            >
-                Outstanding Sales
-            </button>
-            <button
-                type="button"
-                class="px-4 py-2 text-sm font-medium transition-colors"
-                :class="activeTab === 'paid' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800'"
-                @click="switchTab('paid')"
-            >
-                Paid Sales
-            </button>
+            <div class="mt-4 inline-flex rounded-xl app-surface-soft p-1">
+                <button
+                    type="button"
+                    class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
+                    :class="activeTab === 'outstanding' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+                    @click="switchTab('outstanding')"
+                >
+                    Outstanding Sales
+                </button>
+                <button
+                    type="button"
+                    class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
+                    :class="activeTab === 'paid' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+                    @click="switchTab('paid')"
+                >
+                    Paid Sales
+                </button>
+            </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
 
-        <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+        <div class="app-surface rounded-2xl overflow-hidden">
             <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading sales...</div>
 
             <template v-else>
@@ -107,7 +110,7 @@
 
         <div v-if="payNowModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/45" @click="closePayNowModal"></div>
-            <div class="relative z-10 w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4 md:p-5 shadow-xl">
+            <div class="relative z-10 w-full max-w-md rounded-2xl app-surface p-4 md:p-5">
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Pay Outstanding Sale</h3>
@@ -117,14 +120,14 @@
                 </div>
 
                 <div class="mt-4 space-y-3">
-                    <div class="rounded-lg bg-secondary-50 dark:bg-secondary-800/60 px-3 py-2 text-sm text-secondary-700 dark:text-secondary-200">
+                    <div class="rounded-xl app-surface-soft px-3 py-2 text-sm text-secondary-700 dark:text-secondary-200">
                         <p>Total: <span class="font-semibold">{{ money(selectedSale?.total_amount) }}</span></p>
                         <p>Customer: <span class="font-semibold">{{ selectedSale?.customer_name || 'Walk-in' }}</span></p>
                     </div>
 
                     <div>
                         <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
-                        <select v-model.number="selectedAccountId" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                        <select v-model.number="selectedAccountId" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800">
                             <option :value="null">Select account</option>
                             <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
                                 {{ account.label || account.name }}
@@ -134,8 +137,8 @@
                 </div>
 
                 <div class="mt-5 flex items-center justify-end gap-2">
-                    <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNowModal">Cancel</button>
-                    <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50" :disabled="payingSale || !selectedAccountId || !selectedSale" @click="markSelectedSaleAsPaid">
+                    <button type="button" class="px-4 py-2 text-sm rounded-xl border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNowModal">Cancel</button>
+                    <button type="button" class="px-4 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white disabled:opacity-50" :disabled="payingSale || !selectedAccountId || !selectedSale" @click="markSelectedSaleAsPaid">
                         {{ payingSale ? 'Processing...' : 'Confirm Payment' }}
                     </button>
                 </div>

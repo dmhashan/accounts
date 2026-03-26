@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ app('tenant')->name }} - App</title>
+    <script>
+        (function () {
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var savedTheme = localStorage.theme;
+            var shouldUseDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+
+            document.documentElement.classList.toggle('dark', shouldUseDark);
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/spa/main.js'])
 </head>
 <body class="font-sans antialiased bg-background-light dark:bg-background-dark">

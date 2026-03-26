@@ -48,3 +48,98 @@
     --color-background-dark-900: #0a0a0a;
     --color-background-dark-950: #000000;
 }
+
+@layer base {
+    :root {
+        color-scheme: light;
+        --shell-bg: #f3f6f4;
+        --shell-bg-accent: #dde7e2;
+        --surface-card: #ffffff;
+        --surface-glass: rgba(255, 255, 255, 0.72);
+        --surface-border: #d9e1dd;
+        --surface-muted: #eef3f0;
+        --surface-shadow: 0 22px 40px -30px rgba(15, 23, 42, 0.45);
+        --text-strong: #0f172a;
+        --text-muted: #4b5563;
+        --ring-color: rgba(220, 38, 38, 0.35);
+    }
+
+    .dark {
+        color-scheme: dark;
+        --shell-bg: #03080d;
+        --shell-bg-accent: #1b2a22;
+        --surface-card: #0b1220;
+        --surface-glass: rgba(8, 15, 28, 0.76);
+        --surface-border: #233247;
+        --surface-muted: #111c2d;
+        --surface-shadow: 0 24px 44px -32px rgba(2, 6, 23, 0.88);
+        --text-strong: #f8fafc;
+        --text-muted: #94a3b8;
+        --ring-color: rgba(248, 113, 113, 0.42);
+    }
+
+    html,
+    body,
+    #spa-root {
+        min-height: 100%;
+    }
+
+    body {
+        background:
+            radial-gradient(1400px circle at -12% -18%, color-mix(in srgb, var(--shell-bg-accent) 54%, transparent), transparent 62%),
+            radial-gradient(1200px circle at 104% 4%, color-mix(in srgb, var(--color-primary-300) 18%, transparent), transparent 66%),
+            linear-gradient(180deg, var(--shell-bg), color-mix(in srgb, var(--shell-bg) 78%, #0f172a 22%));
+        color: var(--text-strong);
+    }
+
+    *:focus-visible {
+        outline: 2px solid transparent;
+        box-shadow: 0 0 0 3px var(--ring-color);
+    }
+}
+
+@layer components {
+    .app-shell {
+        @apply min-h-screen;
+    }
+
+    .app-surface {
+        background: var(--surface-card);
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--surface-shadow);
+    }
+
+    .app-surface-soft {
+        background: var(--surface-muted);
+        border: 1px solid color-mix(in srgb, var(--surface-border) 88%, transparent);
+    }
+
+    .app-glass {
+        background: var(--surface-glass);
+        border: 1px solid color-mix(in srgb, var(--surface-border) 84%, transparent);
+        backdrop-filter: blur(16px);
+    }
+
+    .app-nav-link {
+        @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200;
+        color: var(--text-muted);
+    }
+
+    .app-nav-link:hover {
+        background: color-mix(in srgb, var(--surface-muted) 86%, transparent);
+        color: var(--text-strong);
+    }
+
+    .app-nav-link-active {
+        @apply text-white;
+        background: linear-gradient(96deg, var(--color-primary-500), var(--color-primary-700));
+        box-shadow: 0 10px 20px -14px rgba(220, 38, 38, 0.82);
+    }
+
+    .app-gradient-title {
+        background: linear-gradient(90deg, var(--text-strong), color-mix(in srgb, var(--text-strong) 58%, #ef4444 42%));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+}

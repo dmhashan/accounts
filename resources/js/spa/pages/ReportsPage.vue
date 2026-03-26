@@ -1,7 +1,7 @@
 <template>
     <section>
         <div class="max-w-5xl mx-auto">
-            <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 md:p-10">
+            <div class="app-surface rounded-2xl p-6 md:p-10">
                 <div class="text-center">
                     <div class="mx-auto h-20 w-20 md:h-24 md:w-24 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center mb-6">
                         <svg class="h-10 w-10 md:h-12 md:w-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,7 +17,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    <article v-for="feature in features" :key="feature.title" class="p-5 md:p-6 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
+                    <article v-for="feature in features" :key="feature.title" class="p-5 md:p-6 app-surface-soft rounded-xl">
                         <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">{{ feature.title }}</h3>
                         <p class="mt-2 text-sm text-secondary-600 dark:text-secondary-400">{{ feature.description }}</p>
                     </article>

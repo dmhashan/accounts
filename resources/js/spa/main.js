@@ -3,6 +3,19 @@ import App from './App.vue';
 import router from './router';
 import { apiRequest } from './composables/useApiClient';
 
+function initializeTheme() {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.theme;
+    const shouldUseDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+
+    if (shouldUseDark) {
+        document.documentElement.classList.add('dark');
+        return;
+    }
+
+    document.documentElement.classList.remove('dark');
+}
+
 function parseContext(value) {
     try {
         return value ? JSON.parse(value) : {};
@@ -14,6 +27,8 @@ function parseContext(value) {
 const root = document.getElementById('spa-root');
 
 if (root) {
+    initializeTheme();
+
     const context = parseContext(root.dataset.context);
     const app = createApp(App);
 

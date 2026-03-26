@@ -1,45 +1,48 @@
 <template>
     <section>
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Member Management</h2>
-                <p class="text-sm text-secondary-500 dark:text-secondary-400">All member records are loaded via REST API.</p>
+        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Members</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Member Management</h2>
+                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Browse and manage member records via REST API.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        :disabled="exporting"
+                        @click="exportGoogleContacts"
+                    >
+                        {{ exporting ? 'Exporting...' : 'Export to Google Contact' }}
+                    </button>
+                    <RouterLink
+                        v-if="permissions.create"
+                        to="/members/new"
+                        class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110"
+                    >
+                        Add Member
+                    </RouterLink>
+                </div>
             </div>
-            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <button
-                    type="button"
-                    class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                    :disabled="exporting"
-                    @click="exportGoogleContacts"
-                >
-                    {{ exporting ? 'Exporting...' : 'Export to Google Contact' }}
-                </button>
-                <RouterLink
-                    v-if="permissions.create"
-                    to="/members/new"
-                    class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                >
-                    Add Member
-                </RouterLink>
-            </div>
-        </div>
 
-        <div class="mb-4 flex gap-2">
-            <input
-                v-model="search"
-                type="text"
-                placeholder="Search members by id, name, email, or phone"
-                class="w-full md:max-w-md px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
-                @keyup.enter="loadMembers(1)"
-            />
-            <button type="button" class="px-4 py-2 rounded-lg border border-secondary-300 dark:border-secondary-700 text-sm" @click="loadMembers(1)">Search</button>
+            <div class="mt-4 flex flex-col md:flex-row gap-2">
+                <input
+                    v-model="search"
+                    type="text"
+                    placeholder="Search members by id, name, email, or phone"
+                    class="w-full md:flex-1 px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
+                    @keyup.enter="loadMembers(1)"
+                />
+                <button type="button" class="px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-sm font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800" @click="loadMembers(1)">Search</button>
+            </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
 
-        <div class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+        <div class="app-surface rounded-2xl overflow-hidden">
             <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading members...</div>
 
             <template v-else>
