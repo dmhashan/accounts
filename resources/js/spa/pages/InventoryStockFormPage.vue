@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section class="flex h-full min-h-0 flex-col overflow-y-auto pb-8">
         <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
