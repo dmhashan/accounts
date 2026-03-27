@@ -5,28 +5,27 @@
         </div>
 
         <div class="min-h-0 flex flex-1 flex-col">
-            <div class="app-page-scroll">
-                <article v-if="hasAnySummaryPermission" class="app-surface rounded-2xl p-5 md:p-6 min-h-[20rem] max-h-[30rem] flex flex-col">
+            <div class="app-page-scroll flex flex-col min-h-0">
+                <article v-if="hasAnySummaryPermission" class="app-surface rounded-2xl p-5 md:p-6 min-h-[20rem] flex flex-1 flex-col min-h-0">
                     <h3 class="shrink-0 text-sm font-medium text-secondary-500 dark:text-secondary-400">Dashboard Summary</h3>
 
-                    <div class="mt-4 app-widget-content-scroll space-y-4">
-                        <section v-if="dailySalesSummary.can_view" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4">
-                            <h4 class="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500 dark:text-secondary-400">Daily Sales Summary</h4>
-                            <p class="mt-2 text-3xl font-bold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(dailySalesSummary.gross_amount) }}</p>
-                            <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">Gross Sales · {{ dailySalesSummary.date || 'Today' }}</p>
+                    <div class="mt-4 app-widget-content-scroll flex min-h-0 flex-col gap-4">
+                        <RouterLink
+                            v-if="dailySalesSummary.can_view"
+                            to="/stats"
+                            class="group block shrink-0 rounded-xl border border-secondary-200 p-4 transition-all hover:border-primary-300 hover:bg-primary-50/40 dark:border-secondary-700 dark:hover:border-primary-600 dark:hover:bg-primary-900/20"
+                        >
+                            <div class="flex flex-col items-center justify-center text-center">
+                                <h4 class="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500 dark:text-secondary-400">Daily Sales Summary</h4>
+                                <p class="mt-2 text-3xl font-bold text-secondary-900 dark:text-white">{{ loading ? '-' : formatMoney(dailySalesSummary.gross_amount) }}</p>
+                                <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">Gross Sales · {{ dailySalesSummary.date || 'Today' }}</p>
+                            </div>
+                        </RouterLink>
 
-                            <RouterLink
-                                to="/stats"
-                                class="mt-4 inline-flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-primary-500 to-primary-700 text-white transition-all hover:brightness-110"
-                            >
-                                Open Sales Stats
-                            </RouterLink>
-                        </section>
-
-                        <section v-if="stockSummary.can_view" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4">
+                        <section v-if="stockSummary.can_view" class="flex min-h-0 flex-1 flex-col rounded-xl border border-secondary-200 dark:border-secondary-700 p-4">
                             <h4 class="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500 dark:text-secondary-400">Stock Summary - Product Availability</h4>
 
-                            <div class="mt-3 rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                            <div class="mt-3 flex min-h-0 flex-1 flex-col rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
                                 <div v-if="loading" class="px-3 py-3 text-sm text-secondary-500 dark:text-secondary-400">
                                     Loading variation availability...
                                 </div>
@@ -35,7 +34,7 @@
                                     No variation stock found.
                                 </div>
 
-                                <ul v-else class="max-h-[12rem] overflow-auto divide-y divide-secondary-200 dark:divide-secondary-700">
+                                <ul v-else class="min-h-0 flex-1 max-h-[calc(100dvh-380px)] overflow-auto divide-y divide-secondary-200 dark:divide-secondary-700">
                                     <li
                                         v-for="item in stockSummary.variation_availability"
                                         :key="item.variation_id"
