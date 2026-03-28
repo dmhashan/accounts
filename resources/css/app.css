@@ -156,6 +156,10 @@
         @apply mt-3 shrink-0 border-t border-secondary-200/70 pt-3 dark:border-secondary-700/70;
     }
 
+    .app-page-header-compact {
+        @apply mb-3 rounded-2xl p-3 sm:p-4 md:mb-4 md:p-4;
+    }
+
     .app-table-scroll {
         @apply min-h-0 overflow-auto;
         max-height: clamp(16rem, calc(100dvh - 20rem), 44rem);

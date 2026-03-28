@@ -1,6 +1,6 @@
 <template>
     <section class="app-page-frame">
-        <div class="app-surface rounded-2xl p-4 sm:p-5 md:p-6 mb-4 md:mb-6">
+        <div class="app-surface app-page-header-compact">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
                     <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Members</p>
