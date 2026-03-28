@@ -1,9 +1,9 @@
 <template>
     <div
         v-if="show"
-        class="flex w-full flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end"
+        class="flex w-full items-center justify-end gap-2 flex-nowrap overflow-x-auto"
     >
-        <div class="flex items-center justify-end gap-2 flex-nowrap overflow-x-auto max-w-full sm:w-auto">
+        <div class="shrink-0 flex items-center justify-end gap-2 flex-nowrap max-w-full">
             <button
                 type="button"
                 class="px-3 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-700 disabled:opacity-40"
@@ -13,7 +13,7 @@
                 ←
             </button>
 
-            <div class="flex items-center gap-1 flex-nowrap">
+            <div class="hidden items-center gap-1 flex-nowrap sm:flex">
                 <button
                     v-for="page in availablePages"
                     :key="page"
@@ -39,27 +39,29 @@
             </button>
         </div>
 
-        <div class="flex items-center justify-end gap-2 text-sm whitespace-nowrap overflow-x-auto max-w-full sm:w-auto sm:ml-2">
-            <label class="text-secondary-500 dark:text-secondary-400">Go to</label>
+        <div class="shrink-0 flex items-center justify-end gap-2 text-sm whitespace-nowrap max-w-full">
+            <span class="text-secondary-500 dark:text-secondary-400 sm:hidden">Page {{ currentPage }} / {{ lastPage }}</span>
+
+            <label class="hidden text-secondary-500 dark:text-secondary-400 sm:inline">Go to</label>
             <input
                 v-model.number="goToPage"
                 type="number"
                 min="1"
                 :max="lastPage"
-                class="w-20 px-2 py-1.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900"
+                class="hidden w-20 px-2 py-1.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900 sm:block"
                 :disabled="disabled"
                 @keyup.enter="submitGoto"
             >
             <button
                 type="button"
-                class="px-3 py-1.5 rounded-lg border border-secondary-300 dark:border-secondary-700"
+                class="hidden px-3 py-1.5 rounded-lg border border-secondary-300 dark:border-secondary-700 sm:inline-flex"
                 :disabled="disabled"
                 @click="submitGoto"
             >
                 Go
             </button>
 
-            <label class="ml-2 text-secondary-500 dark:text-secondary-400">Limit</label>
+            <label class="text-secondary-500 dark:text-secondary-400 sm:ml-2">Limit</label>
             <select
                 v-model.number="selectedLimit"
                 class="px-2 py-1.5 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900"
