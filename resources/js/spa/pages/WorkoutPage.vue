@@ -60,13 +60,11 @@
         </div>
 
         <div v-if="activeTab === 'exercises'" class="min-h-0 flex flex-1 flex-col">
-            <div class="mb-3">
-                <input
+            <div class="mb-4">
+                <AppSearchField
                     v-model="exerciseSearch"
-                    type="text"
                     placeholder="Search exercises by name or status"
-                    class="w-full rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm"
-                >
+                />
             </div>
 
             <div class="app-page-scroll">
@@ -121,13 +119,11 @@
         </div>
 
         <div v-else-if="activeTab === 'programs'" class="min-h-0 flex flex-1 flex-col">
-            <div class="mb-3">
-                <input
+            <div class="mb-4">
+                <AppSearchField
                     v-model="programSearch"
-                    type="text"
                     placeholder="Search programs by title, level, status, duration"
-                    class="w-full rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm"
-                >
+                />
             </div>
 
             <div class="app-page-scroll">
@@ -253,6 +249,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();
