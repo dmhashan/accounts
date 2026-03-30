@@ -2,12 +2,7 @@
     <section>
         <AppPageHeader>
             <template #cta-slot>
-                <RouterLink
-                    to="/profile"
-                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110"
-                >
-                    Open Profile
-                </RouterLink>
+                <AppHeaderAction to="/profile" :icon="UserCircle2" label="Open Profile" />
             </template>
         </AppPageHeader>
 
@@ -20,5 +15,7 @@
 </template>
 
 <script setup>
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import { UserCircle2 } from 'lucide-vue-next';
 </script>

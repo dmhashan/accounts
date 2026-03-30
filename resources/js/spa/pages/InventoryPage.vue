@@ -2,16 +2,18 @@
     <section class="app-page-frame">
         <AppPageHeader>
             <template #cta-slot>
-                <RouterLink :to="tabCta.to" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110">
-                    {{ tabCta.label }}
-                </RouterLink>
+                <AppHeaderAction :to="tabCta.to" :icon="tabCta.icon" :label="tabCta.label" />
             </template>
 
             <template #extra-slot>
-                <div class="inline-flex rounded-xl app-surface-soft p-1">
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'products' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'products'">Products</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'stock' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'stock'">Stock</button>
-            </div>
+                <div class="space-y-3">
+                    <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingProducts || loadingStock" @search="triggerActiveSearch" />
+
+                    <div class="inline-flex rounded-xl app-surface-soft p-1">
+                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'products' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'products'">Products</button>
+                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'stock' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'stock'">Stock</button>
+                    </div>
+                </div>
             </template>
         </AppPageHeader>
 
@@ -23,7 +25,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="product in products" :key="product.id" class="p-4">
+                    <article v-for="product in filteredProducts" :key="product.id" class="p-4">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ product.name }}</p>
                         <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">Variations: {{ product.variations_count }}</p>
                         <div class="mt-2 flex gap-3 text-sm">
@@ -31,7 +33,7 @@
                             <button type="button" class="text-red-600 dark:text-red-400" @click="removeProduct(product)">Delete</button>
                         </div>
                     </article>
-                    <div v-if="products.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No products found.</div>
+                    <div v-if="filteredProducts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No products found.</div>
                 </div>
 
                     <div class="hidden md:block app-table-scroll">
@@ -45,7 +47,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="product in products" :key="product.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                            <tr v-for="product in filteredProducts" :key="product.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">#{{ product.id }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ product.name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ product.variations_count }}</td>
@@ -54,7 +56,7 @@
                                     <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeProduct(product)">Delete</button>
                                 </td>
                             </tr>
-                            <tr v-if="products.length === 0">
+                            <tr v-if="filteredProducts.length === 0">
                                 <td colspan="4" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No products found.</td>
                             </tr>
                         </tbody>
@@ -80,7 +82,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="entry in stockEntries" :key="entry.id" class="p-4 space-y-2">
+                    <article v-for="entry in filteredStockEntries" :key="entry.id" class="p-4 space-y-2">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ entry.product_name }} - {{ entry.variation_name }}</p>
                         <div class="grid grid-cols-2 gap-2 text-xs">
                             <div><span class="text-secondary-500 dark:text-secondary-400">Qty:</span> {{ entry.quantity }}</div>
@@ -94,7 +96,7 @@
                             <button type="button" class="text-red-600 dark:text-red-400" @click="removeStock(entry)">Delete</button>
                         </div>
                     </article>
-                    <div v-if="stockEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</div>
+                    <div v-if="filteredStockEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</div>
                 </div>
 
                     <div class="hidden md:block app-table-scroll">
@@ -113,7 +115,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="entry in stockEntries" :key="entry.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                            <tr v-for="entry in filteredStockEntries" :key="entry.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.product_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.variation_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.quantity }}</td>
@@ -130,7 +132,7 @@
                                     <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeStock(entry)">Delete</button>
                                 </td>
                             </tr>
-                            <tr v-if="stockEntries.length === 0">
+                            <tr v-if="filteredStockEntries.length === 0">
                                 <td colspan="9" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</td>
                             </tr>
                         </tbody>
@@ -157,8 +159,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { PackagePlus, PackageSearch } from 'lucide-vue-next';
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();
@@ -168,6 +173,7 @@ const errorMessage = ref('');
 
 const products = ref([]);
 const stockEntries = ref([]);
+const search = ref('');
 const loadingProducts = ref(false);
 const loadingStock = ref(false);
 const productMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
@@ -179,18 +185,55 @@ const tabCta = computed(() => {
     if (activeTab.value === 'stock') {
         return {
             to: '/inventory/stock/new',
+            icon: PackageSearch,
             label: 'Add Stock Entry',
         };
     }
 
     return {
         to: '/inventory/products/new',
+        icon: PackagePlus,
         label: 'Add Product',
     };
 });
 
+const normalizedSearch = computed(() => search.value.trim().toLowerCase());
+
+const filteredProducts = computed(() => {
+    if (!normalizedSearch.value) return products.value;
+
+    return products.value.filter((product) => {
+        return [product.id, product.name, product.variations_count]
+            .some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
+    });
+});
+
+const filteredStockEntries = computed(() => {
+    if (!normalizedSearch.value) return stockEntries.value;
+
+    return stockEntries.value.filter((entry) => {
+        return [
+            entry.product_name,
+            entry.variation_name,
+            entry.quantity,
+            entry.available,
+            entry.manufacturing_date,
+            entry.expiry_date,
+        ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
+    });
+});
+
 function money(value) {
     return Number(value || 0).toFixed(2);
+}
+
+function triggerActiveSearch() {
+    if (activeTab.value === 'products') {
+        loadProducts(1);
+        return;
+    }
+
+    loadStock(1);
 }
 
 async function loadProducts(page = 1) {

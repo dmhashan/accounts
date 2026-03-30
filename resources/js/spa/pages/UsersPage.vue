@@ -2,26 +2,11 @@
     <section class="app-page-frame">
         <AppPageHeader>
             <template #cta-slot>
-                <RouterLink
-                    v-if="permissions.create"
-                    to="/users/new"
-                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110"
-                >
-                    Add User
-                </RouterLink>
+                <AppHeaderAction v-if="permissions.create" to="/users/new" :icon="UserPlus" label="Add User" />
             </template>
 
             <template #extra-slot>
-                <div class="flex flex-col md:flex-row gap-2">
-                    <input
-                        v-model="search"
-                        type="text"
-                        placeholder="Search users by name or email"
-                        class="w-full md:flex-1 px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
-                        @keyup.enter="loadUsers(1)"
-                    />
-                    <button type="button" class="px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-sm font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800" @click="loadUsers(1)">Search</button>
-                </div>
+                <AppSearchField v-model="search" placeholder="Search users by name or email" :disabled="loading" @search="loadUsers(1)" />
             </template>
         </AppPageHeader>
 
@@ -143,7 +128,10 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import AppPagination from '../components/AppPagination.vue';
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppSearchField from '../components/AppSearchField.vue';
+import { UserPlus } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 

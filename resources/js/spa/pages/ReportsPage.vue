@@ -8,14 +8,7 @@
                         <p class="text-sm text-secondary-500 dark:text-secondary-400">Advanced analytics and reporting features are in development.</p>
                     </div>
 
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
-                        :disabled="loading"
-                        @click="loadOverview"
-                    >
-                        {{ loading ? 'Refreshing...' : 'Refresh Overview' }}
-                    </button>
+                    <AppHeaderAction :icon="RefreshCw" :label="loading ? 'Refreshing...' : 'Refresh Overview'" :disabled="loading" @click="loadOverview" />
                 </div>
             </div>
 
@@ -46,6 +39,8 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { RefreshCw } from 'lucide-vue-next';
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const features = ref([]);

@@ -2,13 +2,11 @@
     <section class="app-page-frame">
         <AppPageHeader>
             <template #cta-slot>
-                <RouterLink
-                    v-if="allowRoleCreate"
-                    to="/roles/new"
-                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110"
-                >
-                    Add Role
-                </RouterLink>
+                <AppHeaderAction v-if="allowRoleCreate" to="/roles/new" :icon="ShieldPlus" label="Add Role" />
+            </template>
+
+            <template #extra-slot>
+                <AppSearchField v-model="search" placeholder="Search roles by name, description, or slug" :disabled="loading" @search="loadRoles(1)" />
             </template>
         </AppPageHeader>
 
@@ -19,7 +17,7 @@
         <div class="min-h-0 flex flex-1 flex-col">
             <div class="app-page-scroll">
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                    <article v-for="role in roles" :key="role.id" class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-5 md:p-6">
+                    <article v-for="role in filteredRoles" :key="role.id" class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-5 md:p-6">
                         <div class="flex items-start justify-between gap-2">
                             <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">{{ role.name }}</h3>
                             <span v-if="!role.is_editable" class="px-2 py-1 text-xs bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300 rounded">Predefined</span>
@@ -37,7 +35,7 @@
                     </article>
                 </div>
 
-                <div v-if="!loading && roles.length === 0" class="mt-4 text-sm text-secondary-500 dark:text-secondary-400">No roles found.</div>
+                <div v-if="!loading && filteredRoles.length === 0" class="mt-4 text-sm text-secondary-500 dark:text-secondary-400">No roles found.</div>
             </div>
 
             <div class="app-page-pagination">
@@ -56,17 +54,35 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AppPagination from '../components/AppPagination.vue';
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppSearchField from '../components/AppSearchField.vue';
+import { ShieldPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 
 const loading = ref(false);
 const roles = ref([]);
 const errorMessage = ref('');
 const allowRoleCreate = ref(false);
+const search = ref('');
 const meta = ref({ current_page: 1, last_page: 1, per_page: 12, total: 0 });
 const perPage = ref(12);
+
+const filteredRoles = computed(() => {
+    const query = search.value.trim().toLowerCase();
+
+    if (!query) {
+        return roles.value;
+    }
+
+    return roles.value.filter((role) => {
+        return [role.name, role.slug, role.description]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(query));
+    });
+});
 
 function pluralize(count, noun) {
     return count === 1 ? noun : `${noun}s`;

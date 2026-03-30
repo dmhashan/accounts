@@ -2,28 +2,32 @@
     <section class="app-page-frame">
         <AppPageHeader>
             <template #cta-slot>
-                <RouterLink v-if="permissions.create" to="/sales/new" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110">New Sale</RouterLink>
+                <AppHeaderAction v-if="permissions.create" to="/sales/new" :icon="ReceiptText" label="New Sale" />
             </template>
 
             <template #extra-slot>
-                <div class="inline-flex rounded-xl app-surface-soft p-1">
-                <button
-                    type="button"
-                    class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                    :class="activeTab === 'outstanding' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                    @click="switchTab('outstanding')"
-                >
-                    Outstanding Sales
-                </button>
-                <button
-                    type="button"
-                    class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                    :class="activeTab === 'paid' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                    @click="switchTab('paid')"
-                >
-                    Paid Sales
-                </button>
-            </div>
+                <div class="space-y-3">
+                    <AppSearchField v-model="search" placeholder="Search sale id, customer, item, or date" :disabled="loading" @search="loadSales(1)" />
+
+                    <div class="inline-flex rounded-xl app-surface-soft p-1">
+                        <button
+                            type="button"
+                            class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
+                            :class="activeTab === 'outstanding' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+                            @click="switchTab('outstanding')"
+                        >
+                            Outstanding Sales
+                        </button>
+                        <button
+                            type="button"
+                            class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
+                            :class="activeTab === 'paid' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+                            @click="switchTab('paid')"
+                        >
+                            Paid Sales
+                        </button>
+                    </div>
+                </div>
             </template>
         </AppPageHeader>
 
@@ -38,7 +42,7 @@
 
             <template v-else>
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="sale in sales" :key="sale.id" class="p-4 space-y-2">
+                    <article v-for="sale in filteredSales" :key="sale.id" class="p-4 space-y-2">
                         <div class="flex justify-between items-start gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">#{{ sale.id }} • {{ sale.customer_name || 'Walk-in' }}</p>
@@ -59,7 +63,7 @@
                         </ul>
                     </article>
 
-                    <div v-if="sales.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</div>
+                    <div v-if="filteredSales.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</div>
                 </div>
 
                 <div class="hidden md:block app-table-scroll">
@@ -76,7 +80,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="sale in sales" :key="sale.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                            <tr v-for="sale in filteredSales" :key="sale.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">#{{ sale.id }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ sale.customer_name || 'Walk-in' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 capitalize">{{ sale.customer_type }}</td>
@@ -98,7 +102,7 @@
                                     <button v-if="permissions.delete && !sale.is_paid" type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium" @click="removeSale(sale.id)">Delete</button>
                                 </td>
                             </tr>
-                            <tr v-if="sales.length === 0">
+                            <tr v-if="filteredSales.length === 0">
                                 <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No sales recorded.</td>
                             </tr>
                         </tbody>
@@ -162,9 +166,12 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AppPagination from '../components/AppPagination.vue';
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppSearchField from '../components/AppSearchField.vue';
+import { ReceiptText } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 
@@ -172,6 +179,7 @@ const context = useAppContext();
 const sales = ref([]);
 const loading = ref(false);
 const errorMessage = ref('');
+const search = ref('');
 const meta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
 const perPage = ref(15);
 const activeTab = ref('outstanding');
@@ -184,6 +192,28 @@ const permissions = ref({
     create: Boolean(context.permissions?.salesCreate),
     edit: Boolean(context.permissions?.salesEdit),
     delete: Boolean(context.permissions?.salesDelete),
+});
+
+const filteredSales = computed(() => {
+    const query = search.value.trim().toLowerCase();
+
+    if (!query) {
+        return sales.value;
+    }
+
+    return sales.value.filter((sale) => {
+        const items = Array.isArray(sale.items)
+            ? sale.items.map((item) => `${item.product_name || ''} ${item.variation_name || ''}`).join(' ')
+            : '';
+
+        return [
+            sale.id,
+            sale.customer_name,
+            sale.customer_type,
+            sale.created_at,
+            items,
+        ].some((value) => String(value || '').toLowerCase().includes(query));
+    });
 });
 
 function money(value) {

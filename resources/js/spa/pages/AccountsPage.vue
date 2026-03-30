@@ -2,18 +2,20 @@
     <section class="app-page-frame">
         <AppPageHeader>
             <template #cta-slot>
-                <RouterLink v-if="tabCta" :to="tabCta.to" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110">
-                    {{ tabCta.label }}
-                </RouterLink>
+                <AppHeaderAction v-if="tabCta" :to="tabCta.to" :icon="tabCta.icon" :label="tabCta.label" />
             </template>
 
             <template #extra-slot>
-                <div class="inline-flex flex-wrap rounded-xl app-surface-soft p-1">
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'expenses' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
-            </div>
+                <div class="space-y-3">
+                    <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingAccounts || loadingTransfers || loadingExpenses || loadingTransactions" @search="triggerActiveSearch" />
+
+                    <div class="inline-flex flex-wrap rounded-xl app-surface-soft p-1">
+                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
+                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
+                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'expenses' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
+                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
+                    </div>
+                </div>
             </template>
         </AppPageHeader>
 
@@ -25,7 +27,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="account in accounts" :key="account.id" class="p-4 space-y-2">
+                    <article v-for="account in filteredAccounts" :key="account.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ account.name }}</p>
@@ -47,7 +49,7 @@
                             <button type="button" class="text-red-600 dark:text-red-400" @click="removeAccount(account)">Delete</button>
                         </div>
                     </article>
-                    <div v-if="accounts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</div>
+                    <div v-if="filteredAccounts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</div>
                 </div>
 
                     <div class="hidden md:block app-table-scroll">
@@ -61,7 +63,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="account in accounts" :key="account.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                            <tr v-for="account in filteredAccounts" :key="account.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ account.name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(account.opening_balance) }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ money(account.current_balance) }}</td>
@@ -70,7 +72,7 @@
                                     <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeAccount(account)">Delete</button>
                                 </td>
                             </tr>
-                            <tr v-if="accounts.length === 0">
+                            <tr v-if="filteredAccounts.length === 0">
                                 <td colspan="4" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</td>
                             </tr>
                         </tbody>
@@ -96,7 +98,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="transfer in transfers" :key="transfer.id" class="p-4 space-y-2">
+                    <article v-for="transfer in filteredTransfers" :key="transfer.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ transfer.source_account_name }} to {{ transfer.destination_account_name }}</p>
@@ -121,7 +123,7 @@
                             <button type="button" class="text-red-600 dark:text-red-400" @click="removeTransfer(transfer)">Delete</button>
                         </div>
                     </article>
-                    <div v-if="transfers.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</div>
+                    <div v-if="filteredTransfers.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</div>
                 </div>
 
                     <div class="hidden md:block app-table-scroll">
@@ -137,7 +139,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="transfer in transfers" :key="transfer.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                            <tr v-for="transfer in filteredTransfers" :key="transfer.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ transfer.transfer_date || '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ transfer.source_account_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ transfer.destination_account_name }}</td>
@@ -148,7 +150,7 @@
                                     <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeTransfer(transfer)">Delete</button>
                                 </td>
                             </tr>
-                            <tr v-if="transfers.length === 0">
+                            <tr v-if="filteredTransfers.length === 0">
                                 <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</td>
                             </tr>
                         </tbody>
@@ -174,7 +176,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="expense in expenses" :key="expense.id" class="p-4 space-y-2">
+                    <article v-for="expense in filteredExpenses" :key="expense.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ expense.category }}</p>
@@ -197,7 +199,7 @@
                             <button type="button" class="text-red-600 dark:text-red-400" @click="removeExpense(expense)">Delete</button>
                         </div>
                     </article>
-                    <div v-if="expenses.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</div>
+                    <div v-if="filteredExpenses.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</div>
                 </div>
 
                     <div class="hidden md:block app-table-scroll">
@@ -214,7 +216,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="expense in expenses" :key="expense.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                            <tr v-for="expense in filteredExpenses" :key="expense.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.expense_date || '-' }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ expense.category }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.account_name }}</td>
@@ -226,7 +228,7 @@
                                     <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeExpense(expense)">Delete</button>
                                 </td>
                             </tr>
-                            <tr v-if="expenses.length === 0">
+                            <tr v-if="filteredExpenses.length === 0">
                                 <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</td>
                             </tr>
                         </tbody>
@@ -252,7 +254,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="tx in transactions" :key="tx.id" class="p-4 space-y-2">
+                    <article v-for="tx in filteredTransactions" :key="tx.id" class="p-4 space-y-2">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ tx.account_name }}</p>
@@ -272,7 +274,7 @@
 
                         <p v-if="tx.notes" class="text-xs text-secondary-600 dark:text-secondary-300">{{ tx.notes }}</p>
                     </article>
-                    <div v-if="transactions.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transactions found.</div>
+                    <div v-if="filteredTransactions.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transactions found.</div>
                 </div>
 
                     <div class="hidden md:block app-table-scroll">
@@ -289,7 +291,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                            <tr v-for="tx in filteredTransactions" :key="tx.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.transaction_date || '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ tx.account_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ formatType(tx.type) }}</td>
@@ -298,7 +300,7 @@
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.reference_number || '-' }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white text-right">{{ money(tx.amount) }}</td>
                             </tr>
-                            <tr v-if="transactions.length === 0">
+                            <tr v-if="filteredTransactions.length === 0">
                                 <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No transactions found.</td>
                             </tr>
                         </tbody>
@@ -325,8 +327,11 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { ArrowRightLeft, Landmark, ReceiptText } from 'lucide-vue-next';
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();
@@ -337,6 +342,7 @@ const accounts = ref([]);
 const transfers = ref([]);
 const expenses = ref([]);
 const transactions = ref([]);
+const search = ref('');
 const errorMessage = ref('');
 const loadingAccounts = ref(false);
 const loadingTransfers = ref(false);
@@ -359,6 +365,7 @@ const tabCta = computed(() => {
     if (activeTab.value === 'transfers') {
         return {
             to: '/accounts/transfers/new',
+            icon: ArrowRightLeft,
             label: 'New Transfer',
         };
     }
@@ -366,14 +373,73 @@ const tabCta = computed(() => {
     if (activeTab.value === 'expenses') {
         return {
             to: '/accounts/expenses/new',
+            icon: ReceiptText,
             label: 'Record Expense',
         };
     }
 
     return {
         to: '/accounts/new',
+        icon: Landmark,
         label: 'Add Account',
     };
+});
+
+const normalizedSearch = computed(() => search.value.trim().toLowerCase());
+
+const filteredAccounts = computed(() => {
+    if (!normalizedSearch.value) return accounts.value;
+
+    return accounts.value.filter((account) => {
+        return [account.name, account.description, account.opening_balance, account.current_balance]
+            .some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
+    });
+});
+
+const filteredTransfers = computed(() => {
+    if (!normalizedSearch.value) return transfers.value;
+
+    return transfers.value.filter((transfer) => {
+        return [
+            transfer.source_account_name,
+            transfer.destination_account_name,
+            transfer.reference_number,
+            transfer.transfer_date,
+            transfer.notes,
+            transfer.amount,
+        ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
+    });
+});
+
+const filteredExpenses = computed(() => {
+    if (!normalizedSearch.value) return expenses.value;
+
+    return expenses.value.filter((expense) => {
+        return [
+            expense.account_name,
+            expense.category,
+            expense.reference_number,
+            expense.expense_date,
+            expense.notes,
+            expense.amount,
+        ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
+    });
+});
+
+const filteredTransactions = computed(() => {
+    if (!normalizedSearch.value) return transactions.value;
+
+    return transactions.value.filter((transaction) => {
+        return [
+            transaction.account_name,
+            transaction.transaction_date,
+            transaction.reference_number,
+            transaction.sale_reference,
+            transaction.sale_customer,
+            transaction.type,
+            transaction.amount,
+        ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
+    });
 });
 
 function money(value) {
@@ -382,6 +448,25 @@ function money(value) {
 
 function formatType(type) {
     return type ? type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '-';
+}
+
+function triggerActiveSearch() {
+    if (activeTab.value === 'accounts') {
+        loadAccounts(1);
+        return;
+    }
+
+    if (activeTab.value === 'transfers') {
+        loadTransfers(1);
+        return;
+    }
+
+    if (activeTab.value === 'expenses') {
+        loadExpenses(1);
+        return;
+    }
+
+    loadTransactions(1);
 }
 
 

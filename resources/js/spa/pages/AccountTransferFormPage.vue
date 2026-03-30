@@ -2,9 +2,7 @@
     <section>
         <AppPageHeader :show-back="true">
             <template #cta-slot>
-                <RouterLink :to="{ path: '/accounts', query: { tab: 'transfers' } }" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 text-sm font-semibold transition-all hover:bg-secondary-50 dark:hover:bg-secondary-800">
-                    Transfers
-                </RouterLink>
+                <AppHeaderAction :to="{ path: '/accounts', query: { tab: 'transfers' } }" :icon="ArrowRightLeft" label="Transfers" variant="secondary" />
             </template>
         </AppPageHeader>
 
@@ -70,6 +68,8 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { ArrowRightLeft } from 'lucide-vue-next';
+import AppHeaderAction from '../components/AppHeaderAction.vue';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 
