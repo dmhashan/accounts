@@ -35,7 +35,7 @@ class AppContextService
                 'salesDelete' => $user->hasPermission('sales.delete'),
                 'stats' => $user->hasPermission('sales.process'),
                 'profile' => $user->hasPermission('member.profile.view') || $user->hasRole('member'),
-                'workout' => $user->hasPermission('member.workout.view'),
+                'workout' => $user->hasPermission('member.workout.view') || $user->hasPermission('workouts.manage'),
                 'diet' => $user->hasPermission('member.diet.view'),
                 'payments' => $user->hasPermission('member.payments.view'),
                 'attendance' => $user->hasPermission('member.attendance.view'),

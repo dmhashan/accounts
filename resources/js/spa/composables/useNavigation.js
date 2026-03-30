@@ -10,6 +10,10 @@ import {
     FileText,
     Settings,
     CircleUserRound,
+    Dumbbell,
+    Salad,
+    WalletCards,
+    CalendarCheck2,
 } from 'lucide-vue-next';
 import { useAppContext } from './useAppContext';
 
@@ -25,6 +29,10 @@ const ICONS = {
     reports: FileText,
     settings: Settings,
     profile: CircleUserRound,
+    workout: Dumbbell,
+    diet: Salad,
+    payments: WalletCards,
+    attendance: CalendarCheck2,
 };
 
 export function useNavigation() {
@@ -43,11 +51,11 @@ export function useNavigation() {
         if (context.permissions?.stats)     items.push({ label: 'Sales Stats', shortLabel: 'Stats',  path: '/stats',     icon: ICONS.stats });
         if (context.permissions?.reports)   items.push({ label: 'Reports',   shortLabel: 'Reports',  path: '/reports',   icon: ICONS.reports });
         if (context.permissions?.settings)  items.push({ label: 'Settings',  shortLabel: 'Settings', path: '/settings',  icon: ICONS.settings });
+        if (context.permissions?.workout)   items.push({ label: 'Workout',   shortLabel: 'Workout',  path: '/workout',   icon: ICONS.workout });
+        if (context.permissions?.diet)      items.push({ label: 'Diet',      shortLabel: 'Diet',     path: '/diet',      icon: ICONS.diet });
+        if (context.permissions?.payments)  items.push({ label: 'Payments',  shortLabel: 'Payments', path: '/payments',  icon: ICONS.payments });
+        if (context.permissions?.attendance) items.push({ label: 'Attendance', shortLabel: 'Attend', path: '/attendance', icon: ICONS.attendance });
         if (context.permissions?.profile)   items.push({ label: 'Profile',   shortLabel: 'Profile',  path: '/profile',   icon: ICONS.profile });
-        // if (context.permissions?.workout) items.push({ label: 'Workout', path: '/workout' });
-        // if (context.permissions?.diet) items.push({ label: 'Diet', path: '/diet' });
-        // if (context.permissions?.payments) items.push({ label: 'Payments', path: '/payments' });
-        // if (context.permissions?.attendance) items.push({ label: 'Attendance', path: '/attendance' });
 
         return items;
     });
