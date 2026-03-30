@@ -3,9 +3,7 @@
         <div class="app-surface app-page-header-compact">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Sales</p>
                     <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">{{ isEdit ? 'Edit Sale' : 'New Sale' }}</h2>
-                    <p class="text-sm text-secondary-500 dark:text-secondary-400">{{ isEdit ? 'Edit and update sale details.' : 'POS checkout with live stock and pricing.' }}</p>
                 </div>
                 <RouterLink to="/sales" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 text-sm font-semibold transition-all hover:bg-secondary-50 dark:hover:bg-secondary-800">
                     ← Sales History
@@ -88,7 +86,7 @@
         </div>
 
         <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
-            <div class="grid min-h-0 flex-1 grid-cols-12 gap-2 md:gap-4">
+            <div class="grid md:min-h-[calc(100vh-280px)] min-h-[calc(100vh-360px)] flex-1 grid-cols-12 gap-2 md:gap-4">
                 <div class="col-span-5 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Products</h3>
@@ -164,7 +162,7 @@
                 </div>
             </div>
 
-            <div class="sticky bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-10 mt-8 flex items-center justify-between gap-3 rounded-xl border border-secondary-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-secondary-700 dark:bg-secondary-900/95 md:bottom-3">
+            <div class="sticky top-300 z-10 mt-8 flex items-center justify-between gap-3 rounded-xl border border-secondary-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-secondary-700 dark:bg-secondary-900/95">
                 <div>
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">Grand Total</p>
                     <p class="text-xl font-bold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</p>
