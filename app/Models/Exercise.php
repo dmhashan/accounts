@@ -11,12 +11,11 @@ class Exercise extends Model
     protected $fillable = [
         'tenant_id',
         'name',
-        'muscle_group',
-        'category',
-        'equipment',
-        'difficulty',
-        'description',
         'status',
+        'default_sets',
+        'default_reps',
+        'default_tempo',
+        'default_rest',
     ];
 
     public function tenant(): BelongsTo
@@ -27,5 +26,10 @@ class Exercise extends Model
     public function dayExercises(): HasMany
     {
         return $this->hasMany(WorkoutDayExercise::class);
+    }
+
+    public function variations(): HasMany
+    {
+        return $this->hasMany(ExerciseVariation::class)->orderBy('id');
     }
 }

@@ -3,17 +3,133 @@
 namespace App\Services;
 
 use App\Models\Exercise;
+use App\Models\ExerciseVariation;
 use App\Models\WorkoutDayExercise;
 use App\Models\WorkoutProgram;
+use App\Models\WorkoutProgramAssignment;
 use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutProgramExtra;
+use App\Models\Member;
+use Illuminate\Support\Carbon;
 
 class WorkoutProgramService
 {
+    public function assignmentMembers(int $tenantId, int $perPage, string $search = ''): array
+    {
+        $members = Member::query()
+            ->where('tenant_id', $tenantId)
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($innerQuery) use ($search) {
+                    $innerQuery->where('member_id', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone_number', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('name')
+            ->paginate($perPage);
+
+        return [
+            'data' => collect($members->items())->map(fn (Member $member) => [
+                'id' => $member->id,
+                'member_id' => $member->member_id,
+                'name' => $member->name,
+                'email' => $member->email,
+                'phone_number' => $member->phone_number,
+            ]),
+            'meta' => [
+                'current_page' => $members->currentPage(),
+                'last_page' => $members->lastPage(),
+                'per_page' => $members->perPage(),
+                'total' => $members->total(),
+            ],
+        ];
+    }
+
+    public function programAssignments(int $tenantId, int $perPage): array
+    {
+        $assignments = WorkoutProgramAssignment::query()
+            ->where('tenant_id', $tenantId)
+            ->with([
+                'member:id,name,member_id,email,phone_number',
+                'sourceProgram:id,title',
+                'assignedProgram:id,title',
+                'creator:id,name',
+            ])
+            ->orderByDesc('effective_date')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        return [
+            'data' => collect($assignments->items())->map(fn (WorkoutProgramAssignment $assignment) => $this->serializeAssignment($assignment)),
+            'meta' => [
+                'current_page' => $assignments->currentPage(),
+                'last_page' => $assignments->lastPage(),
+                'per_page' => $assignments->perPage(),
+                'total' => $assignments->total(),
+            ],
+        ];
+    }
+
+    public function storeProgramAssignments(int $tenantId, ?int $createdBy, array $validated): array
+    {
+        $sourceProgram = WorkoutProgram::query()->findOrFail((int) $validated['program_id']);
+        $this->ensureProgramTenant($sourceProgram, $tenantId);
+
+        $assignedProgram = $this->resolveAssignedProgramWithSnapshot($sourceProgram, $tenantId, $createdBy, $validated);
+
+        $created = [];
+        foreach ($validated['member_ids'] as $memberId) {
+            $member = Member::query()->findOrFail((int) $memberId);
+            $this->ensureMemberTenant($member, $tenantId);
+
+            $created[] = WorkoutProgramAssignment::query()->create([
+                'tenant_id' => $tenantId,
+                'member_id' => $member->id,
+                'source_program_id' => $sourceProgram->id,
+                'assigned_program_id' => $assignedProgram->id,
+                'effective_date' => $validated['effective_date'],
+                'created_by' => $createdBy,
+            ]);
+        }
+
+        return [
+            'count' => count($created),
+            'ids' => collect($created)->pluck('id')->values(),
+        ];
+    }
+
+    public function updateProgramAssignment(WorkoutProgramAssignment $assignment, int $tenantId, ?int $updatedBy, array $validated): void
+    {
+        $this->ensureAssignmentTenant($assignment, $tenantId);
+
+        $sourceProgram = WorkoutProgram::query()->findOrFail((int) $validated['program_id']);
+        $this->ensureProgramTenant($sourceProgram, $tenantId);
+
+        $member = Member::query()->findOrFail((int) $validated['member_id']);
+        $this->ensureMemberTenant($member, $tenantId);
+
+        $assignedProgram = $this->resolveAssignedProgramWithSnapshot($sourceProgram, $tenantId, $updatedBy, $validated);
+
+        $assignment->update([
+            'member_id' => $member->id,
+            'source_program_id' => $sourceProgram->id,
+            'assigned_program_id' => $assignedProgram->id,
+            'effective_date' => $validated['effective_date'],
+        ]);
+    }
+
+    public function destroyProgramAssignment(WorkoutProgramAssignment $assignment, int $tenantId): void
+    {
+        $this->ensureAssignmentTenant($assignment, $tenantId);
+        $assignment->delete();
+    }
+
     public function exercises(int $tenantId, int $perPage): array
     {
         $exercises = Exercise::query()
             ->where('tenant_id', $tenantId)
+            ->with('variations')
             ->orderBy('name')
             ->paginate($perPage);
 
@@ -31,22 +147,26 @@ class WorkoutProgramService
     public function showExercise(Exercise $exercise, int $tenantId): array
     {
         $this->ensureExerciseTenant($exercise, $tenantId);
+        $exercise->load('variations');
 
         return $this->serializeExercise($exercise);
     }
 
     public function storeExercise(int $tenantId, array $validated): Exercise
     {
-        return Exercise::create([
+        $exercise = Exercise::create([
             'tenant_id' => $tenantId,
             'name' => trim($validated['name']),
-            'muscle_group' => trim($validated['muscle_group']),
-            'category' => $validated['category'],
-            'equipment' => filled($validated['equipment'] ?? null) ? trim((string) $validated['equipment']) : null,
-            'difficulty' => $validated['difficulty'],
-            'description' => filled($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
+            'default_sets' => (int) $validated['default_sets'],
+            'default_reps' => trim((string) $validated['default_reps']),
+            'default_tempo' => trim((string) $validated['default_tempo']),
+            'default_rest' => (int) $validated['default_rest'],
         ]);
+
+        $this->syncExerciseVariations($exercise, $validated['variations'] ?? []);
+
+        return $exercise;
     }
 
     public function updateExercise(Exercise $exercise, int $tenantId, array $validated): void
@@ -55,13 +175,14 @@ class WorkoutProgramService
 
         $exercise->update([
             'name' => trim($validated['name']),
-            'muscle_group' => trim($validated['muscle_group']),
-            'category' => $validated['category'],
-            'equipment' => filled($validated['equipment'] ?? null) ? trim((string) $validated['equipment']) : null,
-            'difficulty' => $validated['difficulty'],
-            'description' => filled($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'status' => $validated['status'],
+            'default_sets' => (int) $validated['default_sets'],
+            'default_reps' => trim((string) $validated['default_reps']),
+            'default_tempo' => trim((string) $validated['default_tempo']),
+            'default_rest' => (int) $validated['default_rest'],
         ]);
+
+        $this->syncExerciseVariations($exercise, $validated['variations'] ?? []);
     }
 
     public function destroyExercise(Exercise $exercise, int $tenantId): void
@@ -170,7 +291,6 @@ class WorkoutProgramService
 
         return $day->dayExercises()->create([
             'exercise_id' => $validated['exercise_id'],
-            'display_name' => filled($validated['display_name'] ?? null) ? trim((string) $validated['display_name']) : null,
             'w1_w3_exercise' => trim($validated['w1_w3_exercise']),
             'w2_w4_exercise' => trim($validated['w2_w4_exercise']),
             'sets' => $validated['sets'],
@@ -188,7 +308,6 @@ class WorkoutProgramService
 
         $dayExercise->update([
             'exercise_id' => $validated['exercise_id'],
-            'display_name' => filled($validated['display_name'] ?? null) ? trim((string) $validated['display_name']) : null,
             'w1_w3_exercise' => trim($validated['w1_w3_exercise']),
             'w2_w4_exercise' => trim($validated['w2_w4_exercise']),
             'sets' => $validated['sets'],
@@ -232,7 +351,7 @@ class WorkoutProgramService
             'creator:id,name',
             'days' => fn ($query) => $query->orderBy('day_number'),
             'days.dayExercises' => fn ($query) => $query->orderBy('exercise_order'),
-            'days.dayExercises.exercise:id,name,muscle_group,category,difficulty,status',
+            'days.dayExercises.exercise:id,name,status',
             'extras',
         ]);
 
@@ -256,7 +375,6 @@ class WorkoutProgramService
                             'id' => $item->id,
                             'exercise_id' => $item->exercise_id,
                             'exercise_name' => $item->exercise?->name,
-                            'display_name' => $item->display_name,
                             'w1_w3_exercise' => $item->w1_w3_exercise,
                             'w2_w4_exercise' => $item->w2_w4_exercise,
                             'sets' => (int) $item->sets,
@@ -301,7 +419,7 @@ class WorkoutProgramService
                     'title' => $day->title,
                     'exercises' => $day->dayExercises->map(function (WorkoutDayExercise $item) {
                         return [
-                            'name' => $item->display_name ?: ($item->exercise?->name ?? 'Exercise'),
+                            'name' => $item->exercise?->name ?? 'Exercise',
                             'W1/W3' => $item->w1_w3_exercise,
                             'W2/W4' => $item->w2_w4_exercise,
                             'sets' => (int) $item->sets,
@@ -339,15 +457,49 @@ class WorkoutProgramService
         return [
             'id' => $exercise->id,
             'name' => $exercise->name,
-            'muscle_group' => $exercise->muscle_group,
-            'category' => $exercise->category,
-            'equipment' => $exercise->equipment,
-            'difficulty' => $exercise->difficulty,
-            'description' => $exercise->description,
             'status' => $exercise->status,
+            'default_sets' => (int) $exercise->default_sets,
+            'default_reps' => $exercise->default_reps,
+            'default_tempo' => $exercise->default_tempo,
+            'default_rest' => (int) $exercise->default_rest,
+            'variations' => $exercise->variations->map(fn (ExerciseVariation $variation) => [
+                'id' => $variation->id,
+                'variation_name' => $variation->variation_name,
+            ])->values(),
             'created_at' => optional($exercise->created_at)->format('Y-m-d H:i'),
             'updated_at' => optional($exercise->updated_at)->format('Y-m-d H:i'),
         ];
+    }
+
+    private function syncExerciseVariations(Exercise $exercise, array $variationPayload): void
+    {
+        $existingIds = $exercise->variations()->pluck('id')->all();
+        $keepIds = [];
+
+        foreach ($variationPayload as $variation) {
+            $data = [
+                'variation_name' => trim((string) $variation['variation_name']),
+            ];
+
+            $variationId = isset($variation['id']) ? (int) $variation['id'] : null;
+
+            if ($variationId) {
+                $row = $exercise->variations()->where('id', $variationId)->first();
+                if ($row) {
+                    $row->update($data);
+                    $keepIds[] = $variationId;
+                }
+                continue;
+            }
+
+            $created = $exercise->variations()->create($data);
+            $keepIds[] = $created->id;
+        }
+
+        $deleteIds = array_diff($existingIds, $keepIds);
+        if (!empty($deleteIds)) {
+            $exercise->variations()->whereIn('id', $deleteIds)->delete();
+        }
     }
 
     private function serializeExtra(WorkoutProgramExtra $extra): array
@@ -364,6 +516,100 @@ class WorkoutProgramService
             'duration_minutes' => $extra->duration_minutes !== null ? (int) $extra->duration_minutes : null,
             'cardio_type' => $extra->cardio_type,
         ];
+    }
+
+    private function serializeAssignment(WorkoutProgramAssignment $assignment): array
+    {
+        return [
+            'id' => $assignment->id,
+            'member_id' => $assignment->member_id,
+            'member_name' => $assignment->member?->name,
+            'member_code' => $assignment->member?->member_id,
+            'member_email' => $assignment->member?->email,
+            'member_phone' => $assignment->member?->phone_number,
+            'source_program_id' => $assignment->source_program_id,
+            'source_program_title' => $assignment->sourceProgram?->title,
+            'assigned_program_id' => $assignment->assigned_program_id,
+            'assigned_program_title' => $assignment->assignedProgram?->title,
+            'effective_date' => optional($assignment->effective_date)->format('Y-m-d'),
+            'created_by' => $assignment->created_by,
+            'created_by_name' => $assignment->creator?->name,
+            'created_at' => optional($assignment->created_at)->format('Y-m-d H:i'),
+        ];
+    }
+
+    private function resolveAssignedProgramWithSnapshot(WorkoutProgram $sourceProgram, int $tenantId, ?int $createdBy, array $payload): WorkoutProgram
+    {
+        $titleOverride = trim((string) ($payload['program_title_override'] ?? ''));
+        $descriptionOverrideRaw = $payload['program_description_override'] ?? null;
+        $descriptionOverride = $descriptionOverrideRaw === null ? null : trim((string) $descriptionOverrideRaw);
+
+        $sourceTitle = trim((string) $sourceProgram->title);
+        $sourceDescription = $sourceProgram->description === null ? null : trim((string) $sourceProgram->description);
+
+        $isTitleModified = $titleOverride !== '' && $titleOverride !== $sourceTitle;
+        $isDescriptionModified = $descriptionOverride !== $sourceDescription;
+
+        if (!$isTitleModified && !$isDescriptionModified) {
+            return $sourceProgram;
+        }
+
+        $sourceProgram->load([
+            'days' => fn ($query) => $query->orderBy('day_number'),
+            'days.dayExercises' => fn ($query) => $query->orderBy('exercise_order'),
+            'extras',
+        ]);
+
+        $timestamp = Carbon::now()->format('Ymd_His');
+        $baseTitle = $titleOverride !== '' ? $titleOverride : $sourceTitle;
+        $snapshotTitle = sprintf('%s (%s)', $baseTitle, $timestamp);
+
+        $clonedProgram = WorkoutProgram::query()->create([
+            'tenant_id' => $tenantId,
+            'title' => $snapshotTitle,
+            'description' => $descriptionOverride,
+            'duration_weeks' => $sourceProgram->duration_weeks,
+            'days_per_week' => $sourceProgram->days_per_week,
+            'level' => $sourceProgram->level,
+            'status' => $sourceProgram->status,
+            'created_by' => $createdBy,
+        ]);
+
+        foreach ($sourceProgram->days as $day) {
+            $clonedDay = $clonedProgram->days()->create([
+                'day_number' => $day->day_number,
+                'title' => $day->title,
+            ]);
+
+            foreach ($day->dayExercises as $exercise) {
+                $clonedDay->dayExercises()->create([
+                    'exercise_id' => $exercise->exercise_id,
+                    'w1_w3_exercise' => $exercise->w1_w3_exercise,
+                    'w2_w4_exercise' => $exercise->w2_w4_exercise,
+                    'sets' => $exercise->sets,
+                    'reps' => $exercise->reps,
+                    'tempo' => $exercise->tempo,
+                    'rest_seconds' => $exercise->rest_seconds,
+                    'exercise_order' => $exercise->exercise_order,
+                ]);
+            }
+        }
+
+        foreach ($sourceProgram->extras as $extra) {
+            $clonedProgram->extras()->create([
+                'type' => $extra->type,
+                'exercise_name' => $extra->exercise_name,
+                'sets' => $extra->sets,
+                'reps_or_time' => $extra->reps_or_time,
+                'rest' => $extra->rest,
+                'notes' => $extra->notes,
+                'frequency_per_week' => $extra->frequency_per_week,
+                'duration_minutes' => $extra->duration_minutes,
+                'cardio_type' => $extra->cardio_type,
+            ]);
+        }
+
+        return $clonedProgram;
     }
 
     private function normalizeExtraPayload(array $validated): array
@@ -456,6 +702,20 @@ class WorkoutProgramService
 
         if (!$exists) {
             abort(422, 'Invalid exercise selection.');
+        }
+    }
+
+    private function ensureAssignmentTenant(WorkoutProgramAssignment $assignment, int $tenantId): void
+    {
+        if ($assignment->tenant_id !== $tenantId) {
+            abort(404);
+        }
+    }
+
+    private function ensureMemberTenant(Member $member, int $tenantId): void
+    {
+        if ($member->tenant_id !== $tenantId) {
+            abort(422, 'Invalid member selection.');
         }
     }
 }

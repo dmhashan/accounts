@@ -12,11 +12,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('muscle_group');
-            $table->enum('category', ['compound', 'isolation']);
-            $table->string('equipment')->nullable();
-            $table->enum('difficulty', ['beginner', 'intermediate', 'advanced']);
-            $table->text('description')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 

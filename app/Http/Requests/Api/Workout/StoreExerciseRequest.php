@@ -23,12 +23,14 @@ class StoreExerciseRequest extends FormRequest
                 'max:255',
                 Rule::unique('exercises')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
-            'muscle_group' => ['required', 'string', 'max:255'],
-            'category' => ['required', Rule::in(['compound', 'isolation'])],
-            'equipment' => ['nullable', 'string', 'max:255'],
-            'difficulty' => ['required', Rule::in(['beginner', 'intermediate', 'advanced'])],
-            'description' => ['nullable', 'string', 'max:3000'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'default_sets' => ['required', 'integer', 'gt:0'],
+            'default_reps' => ['required', 'string', 'max:100'],
+            'default_tempo' => ['required', 'string', 'max:100'],
+            'default_rest' => ['required', 'integer', 'min:0'],
+            'variations' => ['nullable', 'array'],
+            'variations.*.id' => ['nullable', 'integer'],
+            'variations.*.variation_name' => ['required_with:variations', 'string', 'max:255'],
         ];
     }
 }

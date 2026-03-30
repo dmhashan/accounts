@@ -4,15 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Workout\StoreWorkoutDayExerciseRequest;
+use App\Http\Requests\Api\Workout\StoreWorkoutProgramAssignmentRequest;
 use App\Http\Requests\Api\Workout\StoreWorkoutProgramDayRequest;
 use App\Http\Requests\Api\Workout\StoreWorkoutProgramExtraRequest;
 use App\Http\Requests\Api\Workout\StoreWorkoutProgramRequest;
 use App\Http\Requests\Api\Workout\UpdateWorkoutDayExerciseRequest;
+use App\Http\Requests\Api\Workout\UpdateWorkoutProgramAssignmentRequest;
 use App\Http\Requests\Api\Workout\UpdateWorkoutProgramDayRequest;
 use App\Http\Requests\Api\Workout\UpdateWorkoutProgramExtraRequest;
 use App\Http\Requests\Api\Workout\UpdateWorkoutProgramRequest;
 use App\Models\WorkoutDayExercise;
 use App\Models\WorkoutProgram;
+use App\Models\WorkoutProgramAssignment;
 use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutProgramExtra;
 use App\Services\WorkoutProgramService;
@@ -145,6 +148,57 @@ class WorkoutProgramApiController extends Controller
             'Customer workout view fetched successfully.',
             $this->workoutProgramService->getCustomerView($program->id)
         );
+    }
+
+    public function assignmentIndex(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->integer('per_page', 10), 100);
+
+        return $this->success(
+            'Workout program assignments fetched successfully.',
+            $this->workoutProgramService->programAssignments(app('tenant')->id, $perPage)
+        );
+    }
+
+    public function assignmentMembers(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->integer('per_page', 15), 50);
+        $search = trim((string) $request->query('search', ''));
+
+        return $this->success(
+            'Workout assignment members fetched successfully.',
+            $this->workoutProgramService->assignmentMembers(app('tenant')->id, $perPage, $search)
+        );
+    }
+
+    public function assignmentStore(StoreWorkoutProgramAssignmentRequest $request): JsonResponse
+    {
+        $result = $this->workoutProgramService->storeProgramAssignments(
+            app('tenant')->id,
+            $request->user()?->id,
+            $request->validated()
+        );
+
+        return $this->success('Workout program assignments created successfully.', $result, 201);
+    }
+
+    public function assignmentUpdate(UpdateWorkoutProgramAssignmentRequest $request, WorkoutProgramAssignment $assignment): JsonResponse
+    {
+        $this->workoutProgramService->updateProgramAssignment(
+            $assignment,
+            app('tenant')->id,
+            $request->user()?->id,
+            $request->validated()
+        );
+
+        return $this->success('Workout program assignment updated successfully.');
+    }
+
+    public function assignmentDestroy(WorkoutProgramAssignment $assignment): JsonResponse
+    {
+        $this->workoutProgramService->destroyProgramAssignment($assignment, app('tenant')->id);
+
+        return $this->success('Workout program assignment deleted successfully.');
     }
 
     private function success(string $message, mixed $data = null, int $statusCode = 200): JsonResponse

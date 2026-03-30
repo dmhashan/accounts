@@ -10,7 +10,6 @@ class WorkoutDayExercise extends Model
     protected $fillable = [
         'day_id',
         'exercise_id',
-        'display_name',
         'w1_w3_exercise',
         'w2_w4_exercise',
         'sets',

@@ -24,6 +24,10 @@ const ReportsPage = () => import('./pages/ReportsPage.vue');
 const SettingsPage = () => import('./pages/SettingsPage.vue');
 const ProfilePage = () => import('./pages/ProfilePage.vue');
 const WorkoutPage = () => import('./pages/WorkoutPage.vue');
+const WorkoutExerciseFormPage = () => import('./pages/WorkoutExerciseFormPage.vue');
+const WorkoutProgramFormPage = () => import('./pages/WorkoutProgramFormPage.vue');
+const WorkoutProgramAssignmentFormPage = () => import('./pages/WorkoutProgramAssignmentFormPage.vue');
+const WorkoutProgramAssignmentEditPage = () => import('./pages/WorkoutProgramAssignmentEditPage.vue');
 const DietPage = () => import('./pages/DietPage.vue');
 const PaymentsPage = () => import('./pages/PaymentsPage.vue');
 const AttendancePage = () => import('./pages/AttendancePage.vue');
@@ -61,6 +65,12 @@ const routes = [
     { path: '/settings', component: SettingsPage, meta: { title: 'Settings' } },
     { path: '/profile', component: ProfilePage, meta: { title: 'My Profile' } },
     { path: '/workout', component: WorkoutPage, meta: { title: 'Workout' } },
+    { path: '/workout/exercises/new', component: WorkoutExerciseFormPage, meta: { title: 'New Exercise' } },
+    { path: '/workout/exercises/:id/edit', component: WorkoutExerciseFormPage, meta: { title: 'Edit Exercise' } },
+    { path: '/workout/programs/new', component: WorkoutProgramFormPage, meta: { title: 'New Workout Program' } },
+    { path: '/workout/programs/:id/edit', component: WorkoutProgramFormPage, meta: { title: 'Edit Workout Program' } },
+    { path: '/workout/assignments/new', component: WorkoutProgramAssignmentFormPage, meta: { title: 'Assign Workout Program' } },
+        { path: '/workout/assignments/:id/edit', component: WorkoutProgramAssignmentEditPage, meta: { title: 'Edit Assignment' } },
     { path: '/diet', component: DietPage, meta: { title: 'Diet' } },
     { path: '/payments', component: PaymentsPage, meta: { title: 'Payments' } },
     { path: '/attendance', component: AttendancePage, meta: { title: 'Attendance' } },
