@@ -1,13 +1,7 @@
 <template>
     <section>
-        <div class="app-surface app-page-header-compact">
-            <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Analytics</p>
-                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Sales Stats</h2>
-                    <p class="text-secondary-600 dark:text-secondary-400 text-sm">Detailed transaction, customer-wise, and product-wise sales analytics.</p>
-                </div>
-
+        <AppPageHeader>
+            <template #extra-slot>
                 <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full xl:w-auto" @submit.prevent="loadStats">
                     <label class="block">
                         <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">Range Type</span>
@@ -58,8 +52,8 @@
                         {{ loading ? 'Loading...' : 'Apply' }}
                     </button>
                 </form>
-            </div>
-        </div>
+            </template>
+        </AppPageHeader>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
@@ -249,6 +243,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const loading = ref(false);

@@ -1,12 +1,7 @@
 <template>
     <section class="app-page-frame">
-        <div class="app-surface app-page-header-compact">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Users</p>
-                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">User Management</h2>
-                    <p class="text-sm text-secondary-500 dark:text-secondary-400">All user records are loaded via REST API.</p>
-                </div>
+        <AppPageHeader>
+            <template #cta-slot>
                 <RouterLink
                     v-if="permissions.create"
                     to="/users/new"
@@ -14,19 +9,21 @@
                 >
                     Add User
                 </RouterLink>
-            </div>
+            </template>
 
-            <div class="mt-4 flex flex-col md:flex-row gap-2">
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Search users by name or email"
-                    class="w-full md:flex-1 px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
-                    @keyup.enter="loadUsers(1)"
-                />
-                <button type="button" class="px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-sm font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800" @click="loadUsers(1)">Search</button>
-            </div>
-        </div>
+            <template #extra-slot>
+                <div class="flex flex-col md:flex-row gap-2">
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search users by name or email"
+                        class="w-full md:flex-1 px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
+                        @keyup.enter="loadUsers(1)"
+                    />
+                    <button type="button" class="px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-sm font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800" @click="loadUsers(1)">Search</button>
+                </div>
+            </template>
+        </AppPageHeader>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
@@ -146,6 +143,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import AppPagination from '../components/AppPagination.vue';
+import AppPageHeader from '../components/AppPageHeader.vue';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 

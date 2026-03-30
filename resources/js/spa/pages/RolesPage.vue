@@ -1,13 +1,7 @@
 <template>
     <section class="app-page-frame">
-        <div class="app-surface app-page-header-compact">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Roles</p>
-                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Role Management</h2>
-                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage roles and permissions through SPA data loading.</p>
-                </div>
-
+        <AppPageHeader>
+            <template #cta-slot>
                 <RouterLink
                     v-if="allowRoleCreate"
                     to="/roles/new"
@@ -15,8 +9,8 @@
                 >
                     Add Role
                 </RouterLink>
-            </div>
-        </div>
+            </template>
+        </AppPageHeader>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
@@ -64,6 +58,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import AppPagination from '../components/AppPagination.vue';
+import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const loading = ref(false);

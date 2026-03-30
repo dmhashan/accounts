@@ -1,24 +1,21 @@
 <template>
     <section class="app-page-frame">
-        <div class="app-surface app-page-header-compact">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Accounts</p>
-                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Accounts Management</h2>
-                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Manage company cash and bank accounts, then move balances between them.</p>
-                </div>
+        <AppPageHeader>
+            <template #cta-slot>
                 <RouterLink v-if="tabCta" :to="tabCta.to" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white font-semibold transition-all hover:brightness-110">
                     {{ tabCta.label }}
                 </RouterLink>
-            </div>
+            </template>
 
-            <div class="mt-4 inline-flex flex-wrap rounded-xl app-surface-soft p-1">
+            <template #extra-slot>
+                <div class="inline-flex flex-wrap rounded-xl app-surface-soft p-1">
                 <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
                 <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
                 <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'expenses' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
                 <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
             </div>
-        </div>
+            </template>
+        </AppPageHeader>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
@@ -329,6 +326,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
+import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();

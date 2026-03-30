@@ -1,12 +1,7 @@
 <template>
     <section class="app-page-frame">
-        <div class="app-surface app-page-header-compact">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400">Members</p>
-                    <h2 class="text-xl md:text-2xl font-bold text-secondary-900 dark:text-white">Member Management</h2>
-                    <p class="text-sm text-secondary-500 dark:text-secondary-400">Browse and manage member records via REST API.</p>
-                </div>
+        <AppPageHeader>
+            <template #cta-slot>
                 <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                     <button
                         type="button"
@@ -24,19 +19,21 @@
                         Add Member
                     </RouterLink>
                 </div>
-            </div>
+            </template>
 
-            <div class="mt-4 flex flex-col md:flex-row gap-2">
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Search members by id, name, email, or phone"
-                    class="w-full md:flex-1 px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
-                    @keyup.enter="loadMembers(1)"
-                />
-                <button type="button" class="px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-sm font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800" @click="loadMembers(1)">Search</button>
-            </div>
-        </div>
+            <template #extra-slot>
+                <div class="flex flex-col md:flex-row gap-2">
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search members by id, name, email, or phone"
+                        class="w-full md:flex-1 px-4 py-2.5 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-900 text-secondary-900 dark:text-white"
+                        @keyup.enter="loadMembers(1)"
+                    />
+                    <button type="button" class="px-4 py-2.5 rounded-xl border border-secondary-300 dark:border-secondary-700 text-sm font-semibold hover:bg-secondary-50 dark:hover:bg-secondary-800" @click="loadMembers(1)">Search</button>
+                </div>
+            </template>
+        </AppPageHeader>
 
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
@@ -153,6 +150,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
+import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const router = useRouter();
