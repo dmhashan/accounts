@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -10,6 +11,11 @@ return new class extends Migration
     {
         if (!Schema::hasTable('workout_day_exercises')) {
             return;
+        }
+
+        // SQLite can keep a stale index definition from earlier column refactors.
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::statement('DROP INDEX IF EXISTS exercises_tenant_muscle_idx');
         }
 
         if (Schema::hasColumn('workout_day_exercises', 'display_name')) {

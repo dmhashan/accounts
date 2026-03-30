@@ -26,6 +26,15 @@ return new class extends Migration
 
         if (Schema::hasTable('exercises')) {
             if (Schema::hasColumn('exercises', 'muscle_group')) {
+                // Drop dependent index first to keep SQLite schema rewrites valid.
+                try {
+                    Schema::table('exercises', function (Blueprint $table) {
+                        $table->dropIndex('exercises_tenant_muscle_idx');
+                    });
+                } catch (\Throwable $e) {
+                    // Index might already be absent in some environments.
+                }
+
                 Schema::table('exercises', function (Blueprint $table) {
                     $table->dropColumn('muscle_group');
                 });
@@ -68,6 +77,14 @@ return new class extends Migration
                 Schema::table('exercises', function (Blueprint $table) {
                     $table->string('muscle_group')->nullable()->after('name');
                 });
+
+                try {
+                    Schema::table('exercises', function (Blueprint $table) {
+                        $table->index(['tenant_id', 'muscle_group'], 'exercises_tenant_muscle_idx');
+                    });
+                } catch (\Throwable $e) {
+                    // Ignore if index already exists.
+                }
             }
 
             if (!Schema::hasColumn('exercises', 'category')) {
