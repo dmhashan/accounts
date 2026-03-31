@@ -122,7 +122,7 @@
             <div class="mb-4">
                 <AppSearchField
                     v-model="programSearch"
-                    placeholder="Search programs by title, level, status, duration"
+                    placeholder="Search programs by title or duration"
                 />
             </div>
 
@@ -133,11 +133,8 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ program.title }}</p>
-                                    <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ program.duration_weeks }} weeks • {{ program.days_per_week }} days/week • {{ program.level }}</p>
+                                    <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ program.duration_weeks }} weeks</p>
                                 </div>
-                                <span class="rounded-full px-2 py-1 text-[11px] font-semibold" :class="program.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-secondary-200 text-secondary-700 dark:bg-secondary-700 dark:text-secondary-300'">
-                                    {{ program.status }}
-                                </span>
                             </div>
                             <div class="flex flex-wrap gap-3 text-sm">
                                 <button type="button" class="text-primary-600 dark:text-primary-400" @click="openProgramForm(program.id)">Manage</button>
@@ -153,9 +150,6 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Title</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Duration</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Days/Week</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Level</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Status</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                                 </tr>
                             </thead>
@@ -163,16 +157,13 @@
                                 <tr v-for="program in filteredPrograms" :key="program.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
                                     <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ program.title }}</td>
                                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ program.duration_weeks }} weeks</td>
-                                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ program.days_per_week }}</td>
-                                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ program.level }}</td>
-                                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ program.status }}</td>
                                     <td class="px-6 py-4 text-right text-sm">
                                         <button type="button" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3" @click="openProgramForm(program.id)">Manage</button>
                                         <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeProgram(program)">Delete</button>
                                     </td>
                                 </tr>
                                 <tr v-if="filteredPrograms.length === 0">
-                                    <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No programs found.</td>
+                                    <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No programs found.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -284,7 +275,7 @@ const filteredPrograms = computed(() => {
     if (!query) return programs.value;
 
     return programs.value.filter((item) => {
-        return [item.title, item.level, item.status, item.duration_weeks, item.days_per_week]
+        return [item.title, item.duration_weeks]
             .some((value) => String(value || '').toLowerCase().includes(query));
     });
 });

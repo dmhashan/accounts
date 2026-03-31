@@ -13,9 +13,6 @@ class WorkoutProgram extends Model
         'title',
         'description',
         'duration_weeks',
-        'days_per_week',
-        'level',
-        'status',
         'created_by',
     ];
 

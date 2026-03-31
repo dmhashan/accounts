@@ -206,9 +206,6 @@ class WorkoutProgramService
                 'title' => $program->title,
                 'description' => $program->description,
                 'duration_weeks' => (int) $program->duration_weeks,
-                'days_per_week' => (int) $program->days_per_week,
-                'level' => $program->level,
-                'status' => $program->status,
                 'created_by' => $program->created_by,
                 'created_by_name' => $program->creator?->name,
                 'days_count' => $program->days_count,
@@ -231,9 +228,6 @@ class WorkoutProgramService
             'title' => trim($validated['title']),
             'description' => filled($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'duration_weeks' => $validated['duration_weeks'],
-            'days_per_week' => $validated['days_per_week'],
-            'level' => $validated['level'],
-            'status' => $validated['status'],
             'created_by' => $createdBy,
         ]);
     }
@@ -246,9 +240,6 @@ class WorkoutProgramService
             'title' => trim($validated['title']),
             'description' => filled($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'duration_weeks' => $validated['duration_weeks'],
-            'days_per_week' => $validated['days_per_week'],
-            'level' => $validated['level'],
-            'status' => $validated['status'],
         ]);
     }
 
@@ -360,9 +351,6 @@ class WorkoutProgramService
             'title' => $program->title,
             'description' => $program->description,
             'duration_weeks' => (int) $program->duration_weeks,
-            'days_per_week' => (int) $program->days_per_week,
-            'level' => $program->level,
-            'status' => $program->status,
             'created_by' => $program->created_by,
             'created_by_name' => $program->creator?->name,
             'days' => $program->days->map(function (WorkoutProgramDay $day) {
@@ -569,9 +557,6 @@ class WorkoutProgramService
             'title' => $snapshotTitle,
             'description' => $descriptionOverride,
             'duration_weeks' => $sourceProgram->duration_weeks,
-            'days_per_week' => $sourceProgram->days_per_week,
-            'level' => $sourceProgram->level,
-            'status' => $sourceProgram->status,
             'created_by' => $createdBy,
         ]);
 

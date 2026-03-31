@@ -194,23 +194,10 @@
                             <p class="mt-2 text-sm text-slate-600">Prepared by {{ currentUserFullName }}</p>
                         </div>
                         <div class="rounded-3xl bg-slate-950 px-5 py-5 text-white">
-                            <p class="text-xs uppercase tracking-[0.18em] text-slate-300">Program Summary</p>
-                            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                            <div class="text-sm">
                                 <div>
                                     <p class="text-slate-400">Duration</p>
                                     <p class="font-semibold">{{ builderForm.duration_weeks || 0 }} weeks</p>
-                                </div>
-                                <div>
-                                    <p class="text-slate-400">Days/Week</p>
-                                    <p class="font-semibold">{{ builderForm.days_per_week || 0 }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-slate-400">Level</p>
-                                    <p class="font-semibold capitalize">{{ builderForm.level }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-slate-400">Status</p>
-                                    <p class="font-semibold capitalize">{{ builderForm.status }}</p>
                                 </div>
                             </div>
                         </div>
@@ -364,9 +351,6 @@ function defaultProgramForm() {
         title: '',
         description: '',
         duration_weeks: 4,
-        days_per_week: 4,
-        level: 'beginner',
-        status: 'active',
     };
 }
 
@@ -509,9 +493,6 @@ function hydrateBuilder(program) {
         title: program.title || '',
         description: program.description || '',
         duration_weeks: Number(program.duration_weeks || 4),
-        days_per_week: Number(program.days_per_week || 4),
-        level: program.level || 'beginner',
-        status: program.status || 'active',
     };
 
     builderDays.value = (program.days || []).map((day) => ({
@@ -610,9 +591,6 @@ function normalizeProgramPayload() {
         title: builderForm.value.title,
         description: builderForm.value.description,
         duration_weeks: Number(builderForm.value.duration_weeks || 1),
-        days_per_week: Number(builderForm.value.days_per_week || 1),
-        level: builderForm.value.level,
-        status: builderForm.value.status,
     };
 }
 
