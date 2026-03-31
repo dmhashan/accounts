@@ -107,6 +107,7 @@
         background: var(--surface-card);
         border: 1px solid var(--surface-border);
         box-shadow: var(--surface-shadow);
+        overflow-y: scroll;
     }
 
     .app-surface-soft {
