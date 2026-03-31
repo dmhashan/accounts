@@ -185,13 +185,13 @@
         </div>
 
         <div v-else class="app-page-scroll bg-secondary-100/80 dark:bg-secondary-950 p-4 md:p-6 rounded-2xl">
-            <div class="mx-auto w-full max-w-4xl rounded-[2rem] bg-white text-slate-900 shadow-2xl shadow-slate-900/10 print:shadow-none">
+            <div class="workout-program-print-root mx-auto w-full max-w-4xl rounded-[2rem] bg-white text-slate-900 shadow-2xl shadow-slate-900/10 print:shadow-none">
                 <div class="border-b border-slate-200 px-6 py-6 md:px-10">
                     <div class="grid gap-4 md:grid-cols-[1.2fr_0.8fr] md:items-end">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Online Coaching</p>
-                            <h2 class="mt-2 text-2xl md:text-4xl font-bold tracking-tight">{{ builderForm.title || 'Workout Program Title' }}</h2>
-                            <p class="mt-2 text-sm text-slate-600">{{ builderForm.description || 'Structured professional workout program preview.' }}</p>
+                            <p class="mt-2 text-sm text-slate-600">Workout Program</p>
+                            <h2 class="text-2xl md:text-4xl font-bold tracking-tight">{{ previewProgramTitle }}</h2>
+                            <p class="mt-2 text-sm text-slate-600">Prepared by {{ currentUserFullName }}</p>
                         </div>
                         <div class="rounded-3xl bg-slate-950 px-5 py-5 text-white">
                             <p class="text-xs uppercase tracking-[0.18em] text-slate-300">Program Summary</p>
@@ -316,10 +316,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
@@ -327,6 +328,7 @@ import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();
 const router = useRouter();
+const context = useAppContext();
 const isEdit = computed(() => Boolean(route.params.id));
 
 const builderTab = ref('builder');
@@ -349,6 +351,8 @@ const orderedBuilderDays = computed(() => {
 const previewDays = computed(() => orderedBuilderDays.value);
 const previewCoreExtras = computed(() => meaningfulCoreExtras(builderCoreExtras.value));
 const previewCardioExtras = computed(() => meaningfulCardioExtras(builderCardioExtras.value));
+const currentUserFullName = computed(() => String(context?.user?.name || 'User').trim() || 'User');
+const previewProgramTitle = computed(() => String(builderForm.value.title || '').trim() || 'Workout Program Title');
 
 function nextLocalKey(prefix) {
     localKeySeed.value += 1;
@@ -797,14 +801,54 @@ async function saveProgramBuilder() {
 
 function printBuilderPreview() {
     builderTab.value = 'preview';
+    document.body.classList.add('printing-workout-program');
     window.setTimeout(() => window.print(), 100);
 }
 
+function handleAfterPrint() {
+    document.body.classList.remove('printing-workout-program');
+}
+
 onMounted(async () => {
+    window.addEventListener('afterprint', handleAfterPrint);
+
     try {
         await Promise.all([loadExercises(), loadProgram()]);
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load workout program data.';
     }
 });
+
+onBeforeUnmount(() => {
+    window.removeEventListener('afterprint', handleAfterPrint);
+    document.body.classList.remove('printing-workout-program');
+});
 </script>
+
+<style>
+@media print {
+    body.printing-workout-program * {
+        visibility: hidden;
+    }
+
+    body.printing-workout-program .workout-program-print-root,
+    body.printing-workout-program .workout-program-print-root * {
+        visibility: visible;
+    }
+
+    body.printing-workout-program .workout-program-print-root {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+}
+</style>
