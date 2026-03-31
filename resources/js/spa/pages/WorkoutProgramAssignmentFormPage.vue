@@ -14,26 +14,15 @@
                     <h3 class="text-sm font-semibold text-secondary-900 dark:text-white">Program Details</h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">Workout Program</label>
-                            <select
-                                v-model="form.program_id"
-                                class="w-full rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm"
-                                required
-                            >
+                        <AppFormField label="Workout Program" :required="true">
+                            <AppFormSelect v-model="form.program_id" required>
                                 <option value="">— Select program —</option>
                                 <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.title }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">Effective Date</label>
-                            <input
-                                v-model="form.effective_date"
-                                type="date"
-                                class="w-full rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm"
-                                required
-                            >
-                        </div>
+                            </AppFormSelect>
+                        </AppFormField>
+                        <AppFormField label="Effective Date" :required="true">
+                            <AppFormInput v-model="form.effective_date" type="date" required />
+                        </AppFormField>
                     </div>
                 </div>
 
@@ -41,13 +30,12 @@
                 <div class="app-surface rounded-2xl p-4 space-y-3">
                     <h3 class="text-sm font-semibold text-secondary-900 dark:text-white">Select Members</h3>
 
-                    <input
+                    <AppFormInput
                         v-model="memberSearchQuery"
                         type="text"
                         placeholder="Search members by name or code..."
-                        class="w-full rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm"
                         @input="searchMembers"
-                    >
+                    />
 
                     <div v-if="memberOptions.length > 0" class="max-h-52 overflow-y-auto rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 divide-y divide-secondary-100 dark:divide-secondary-700">
                         <button
@@ -100,6 +88,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const router = useRouter();
 

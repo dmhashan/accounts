@@ -3,39 +3,31 @@
         <AppPageHeader>
             <template #extra-slot>
                 <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full xl:w-auto" @submit.prevent="loadStats">
-                    <label class="block">
-                        <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">Range Type</span>
-                        <select
-                            v-model="filters.range_type"
-                            class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                            @change="handleRangeTypeChange"
-                        >
+                    <AppFormField label="Range Type">
+                        <AppFormSelect v-model="filters.range_type" @change="handleRangeTypeChange">
                             <option value="date">Date</option>
                             <option value="week">Week</option>
                             <option value="month">Month</option>
                             <option value="year">Year</option>
-                        </select>
-                    </label>
+                        </AppFormSelect>
+                    </AppFormField>
 
-                    <label class="block">
-                        <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">{{ rangeValueLabel }}</span>
-                        <input
+                    <AppFormField :label="rangeValueLabel">
+                        <AppFormInput
                             v-if="filters.range_type !== 'year'"
                             v-model="filters.range_value"
                             :type="filters.range_type"
                             required
-                            class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                        >
-                        <input
+                        />
+                        <AppFormInput
                             v-else
                             v-model="filters.range_value"
                             type="number"
                             min="1970"
                             max="9999"
                             required
-                            class="mt-1 w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                        >
-                    </label>
+                        />
+                    </AppFormField>
 
                     <div class="block">
                         <span class="text-xs font-medium text-secondary-600 dark:text-secondary-400">Period</span>
@@ -245,6 +237,9 @@
 import { computed, onMounted, ref } from 'vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const loading = ref(false);
 const errorMessage = ref('');

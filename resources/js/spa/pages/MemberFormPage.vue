@@ -9,74 +9,58 @@
         <form class="app-surface rounded-2xl p-5 md:p-6 space-y-4" @submit.prevent="submit">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm mb-1">First Name</label>
-                    <input v-model="form.first_name" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Last Name</label>
-                    <input v-model="form.last_name" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Username</label>
-                    <input v-model="form.username" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Gender</label>
-                    <select v-model="form.gender" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                <AppFormField label="First Name" :required="true">
+                    <AppFormInput v-model="form.first_name" required />
+                </AppFormField>
+                <AppFormField label="Last Name" :required="true">
+                    <AppFormInput v-model="form.last_name" required />
+                </AppFormField>
+                <AppFormField label="Username" :required="true">
+                    <AppFormInput v-model="form.username" required />
+                </AppFormField>
+                <AppFormField label="Gender" :required="true">
+                    <AppFormSelect v-model="form.gender" required>
                         <option value="">Select gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Email</label>
-                    <input v-model="form.email" type="email" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Phone Number</label>
-                    <input v-model="form.phone_number" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">NIC</label>
-                    <input v-model="form.nic" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Date of Birth</label>
-                    <input v-model="form.date_of_birth" type="date" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Age</label>
-                    <input v-model="form.age" type="number" min="1" max="120" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Member Role</label>
-                    <input v-model="form.member_role" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Payment Plan</label>
-                    <input v-model="form.payment_plan" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Price</label>
-                    <input v-model="form.price" type="number" step="0.01" min="0" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Admission Fee</label>
-                    <input v-model="form.admission_fee" type="number" step="0.01" min="0" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Joined Date</label>
-                    <input v-model="form.joined_date" type="date" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm mb-1">Address</label>
-                    <textarea v-model="form.address" rows="2" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"></textarea>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm mb-1">Comment</label>
-                    <textarea v-model="form.comment" rows="2" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"></textarea>
-                </div>
+                    </AppFormSelect>
+                </AppFormField>
+                <AppFormField label="Email" :required="true">
+                    <AppFormInput v-model="form.email" type="email" required />
+                </AppFormField>
+                <AppFormField label="Phone Number" :required="true">
+                    <AppFormInput v-model="form.phone_number" required />
+                </AppFormField>
+                <AppFormField label="NIC" :optional="true">
+                    <AppFormInput v-model="form.nic" />
+                </AppFormField>
+                <AppFormField label="Date of Birth" :required="true">
+                    <AppFormInput v-model="form.date_of_birth" type="date" required />
+                </AppFormField>
+                <AppFormField label="Age" :required="true">
+                    <AppFormInput v-model="form.age" type="number" min="1" max="120" required />
+                </AppFormField>
+                <AppFormField label="Member Role" :required="true">
+                    <AppFormInput v-model="form.member_role" required />
+                </AppFormField>
+                <AppFormField label="Payment Plan" :required="true">
+                    <AppFormInput v-model="form.payment_plan" required />
+                </AppFormField>
+                <AppFormField label="Price" :required="true">
+                    <AppFormInput v-model="form.price" type="number" step="0.01" min="0" required />
+                </AppFormField>
+                <AppFormField label="Admission Fee" :optional="true">
+                    <AppFormInput v-model="form.admission_fee" type="number" step="0.01" min="0" />
+                </AppFormField>
+                <AppFormField label="Joined Date" :required="true">
+                    <AppFormInput v-model="form.joined_date" type="date" required />
+                </AppFormField>
+                <AppFormField label="Address" class="md:col-span-2" :optional="true">
+                    <AppFormTextarea v-model="form.address" rows="2" />
+                </AppFormField>
+                <AppFormField label="Comment" class="md:col-span-2" :optional="true">
+                    <AppFormTextarea v-model="form.comment" rows="2" />
+                </AppFormField>
             </div>
 
             <div class="flex justify-end">
@@ -93,6 +77,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();
 const router = useRouter();

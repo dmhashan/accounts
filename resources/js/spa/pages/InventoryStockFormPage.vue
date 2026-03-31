@@ -8,51 +8,43 @@
 
         <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="save">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Product</label>
-                    <select v-model.number="form.product_id" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                <AppFormField label="Product" :required="true">
+                    <AppFormSelect v-model.number="form.product_id" required>
                         <option :value="null">Select product</option>
                         <option v-for="product in productsMeta" :key="product.id" :value="product.id">{{ product.name }}</option>
-                    </select>
-                </div>
+                    </AppFormSelect>
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Variation</label>
-                    <select v-model.number="form.product_variation_id" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                <AppFormField label="Variation" :required="true">
+                    <AppFormSelect v-model.number="form.product_variation_id" required>
                         <option :value="null">Select variation</option>
                         <option v-for="variation in filteredVariations" :key="variation.id" :value="variation.id">{{ variation.label }}</option>
-                    </select>
-                </div>
+                    </AppFormSelect>
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Quantity</label>
-                    <input v-model.number="form.quantity" type="number" min="0" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Quantity" :required="true">
+                    <AppFormInput v-model.number="form.quantity" type="number" min="0" required />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Purchasing Price</label>
-                    <input v-model.number="form.purchasing_price" type="number" min="0" step="0.01" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Purchasing Price" :required="true">
+                    <AppFormInput v-model.number="form.purchasing_price" type="number" min="0" step="0.01" required />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Local Selling Price</label>
-                    <input v-model.number="form.local_selling_price" type="number" min="0" step="0.01" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Local Selling Price" :required="true">
+                    <AppFormInput v-model.number="form.local_selling_price" type="number" min="0" step="0.01" required />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Foreign Selling Price</label>
-                    <input v-model.number="form.foreign_selling_price" type="number" min="0" step="0.01" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Foreign Selling Price" :required="true">
+                    <AppFormInput v-model.number="form.foreign_selling_price" type="number" min="0" step="0.01" required />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Manufacturing Date</label>
-                    <input v-model="form.manufacturing_date" type="date" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Manufacturing Date" :optional="true">
+                    <AppFormInput v-model="form.manufacturing_date" type="date" />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Expiry Date</label>
-                    <input v-model="form.expiry_date" type="date" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Expiry Date" :optional="true">
+                    <AppFormInput v-model="form.expiry_date" type="date" />
+                </AppFormField>
             </div>
 
             <div class="mt-4 flex flex-col sm:flex-row gap-2">
@@ -75,6 +67,9 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const route = useRoute();
 const router = useRouter();

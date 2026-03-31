@@ -38,12 +38,11 @@
 
                     <div v-if="customerDropdownOpen" class="absolute z-20 mt-1 w-full bg-white dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg shadow-lg overflow-hidden">
                         <div class="p-2 border-b border-secondary-200 dark:border-secondary-700">
-                            <input
+                            <AppFormInput
                                 v-model="memberSearch"
                                 type="text"
                                 placeholder="Search customer..."
-                                class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"
-                            >
+                            />
                         </div>
 
                         <div class="max-h-64 overflow-y-auto py-1">
@@ -85,12 +84,11 @@
                         <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Products</h3>
                     </div>
                     <div class="mb-3">
-                        <input
+                        <AppFormInput
                             v-model="productSearch"
                             type="text"
                             placeholder="Search product..."
-                            class="w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm dark:border-secondary-700 dark:bg-secondary-800"
-                        >
+                        />
                     </div>
                     <div class="min-h-0 flex-1 overflow-y-auto pr-1">
                         <div class="space-y-2">
@@ -201,13 +199,14 @@
                 </div>
 
                 <div class="mt-4">
-                    <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
-                    <select v-model.number="selectedPayNowAccountId" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                        <option :value="null">Select account</option>
-                        <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
-                            {{ account.label || account.name }}
-                        </option>
-                    </select>
+                    <AppFormField label="Company Account">
+                        <AppFormSelect v-model.number="selectedPayNowAccountId">
+                            <option :value="null">Select account</option>
+                            <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
+                                {{ account.label || account.name }}
+                            </option>
+                        </AppFormSelect>
+                    </AppFormField>
                     <p v-if="companyAccounts.length === 0" class="mt-2 text-sm text-red-600 dark:text-red-400">No company account found. Add one before using Pay Now.</p>
                 </div>
 
@@ -234,6 +233,9 @@ import { Globe, House } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const router = useRouter();
 const route = useRoute();

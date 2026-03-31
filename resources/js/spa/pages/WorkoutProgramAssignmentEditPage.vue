@@ -18,25 +18,14 @@
             <form class="app-surface rounded-2xl p-4 md:p-5 space-y-4" @submit.prevent="submit">
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">Workout Program</label>
-                        <select
-                            v-model="form.program_id"
-                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm"
-                            required
-                        >
+                    <AppFormField label="Workout Program" :required="true">
+                        <AppFormSelect v-model="form.program_id" required>
                             <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.title }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-secondary-600 dark:text-secondary-400 mb-1">Effective Date</label>
-                        <input
-                            v-model="form.effective_date"
-                            type="date"
-                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-sm"
-                            required
-                        >
-                    </div>
+                        </AppFormSelect>
+                    </AppFormField>
+                    <AppFormField label="Effective Date" :required="true">
+                        <AppFormInput v-model="form.effective_date" type="date" required />
+                    </AppFormField>
                 </div>
 
                 <div v-if="formError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
@@ -68,6 +57,9 @@ import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const route = useRoute();
 const router = useRouter();

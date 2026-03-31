@@ -32,8 +32,12 @@
                 <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
                     <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">Program Details</h4>
                     <div class="mt-3 grid gap-3 md:grid-cols-2">
-                        <input v-model="builderForm.title" type="text" placeholder="Program title" class="md:col-span-2 px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900" required>
-                        <textarea v-model="builderForm.description" rows="4" placeholder="Program description" class="md:col-span-2 px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900"></textarea>
+                        <AppFormField label="Program Title" class="md:col-span-2" :required="true">
+                            <AppFormInput v-model="builderForm.title" type="text" placeholder="Program title" required />
+                        </AppFormField>
+                        <AppFormField label="Description" class="md:col-span-2" :optional="true">
+                            <AppFormTextarea v-model="builderForm.description" rows="4" placeholder="Program description" />
+                        </AppFormField>
                     </div>
                 </article>
 
@@ -50,8 +54,12 @@
                         <article v-for="(day, dayIndex) in orderedBuilderDays" :key="day.localKey" class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 overflow-hidden">
                             <div class="border-b border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800 px-4 py-3 flex items-center justify-between gap-3">
                                 <div class="grid flex-1 gap-2 md:grid-cols-[120px_1fr]">
-                                    <input v-model.number="day.day_number" type="number" min="1" max="7" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900" placeholder="Day #">
-                                    <input v-model="day.title" type="text" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900" placeholder="Day title (Push / Pull / Legs)">
+                                    <AppFormField label="Day Number">
+                                        <AppFormInput v-model.number="day.day_number" type="number" min="1" max="7" placeholder="Day #" />
+                                    </AppFormField>
+                                    <AppFormField label="Day Title">
+                                        <AppFormInput v-model="day.title" type="text" placeholder="Day title (Push / Pull / Legs)" />
+                                    </AppFormField>
                                 </div>
                                 <button type="button" class="text-sm font-semibold text-red-600 dark:text-red-400" @click="removeBuilderDay(dayIndex)">Remove</button>
                             </div>
@@ -69,24 +77,38 @@
                                             <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeExerciseRow(day, rowIndex)">Remove</button>
                                         </div>
                                         <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
-                                            <select v-model.number="row.exercise_id" class="xl:col-span-2 px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900" @change="handleExerciseChange(row)">
-                                                <option :value="null">Select exercise</option>
-                                                <option v-for="exercise in exercises" :key="exercise.id" :value="exercise.id">{{ exercise.name }}</option>
-                                            </select>
-                                            <select v-model="row.w1_w3_exercise" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900" :disabled="!row.exercise_id">
-                                                <option value="">W1 / W3 Variation</option>
-                                                <option v-for="variation in getExerciseVariationOptions(row)" :key="`${row.localKey}-w13-${variation.id}`" :value="variation.variation_name">{{ variation.variation_name }}</option>
-                                            </select>
-                                            <select v-model="row.w2_w4_exercise" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900" :disabled="!row.exercise_id">
-                                                <option value="">W2 / W4 Variation</option>
-                                                <option v-for="variation in getExerciseVariationOptions(row)" :key="`${row.localKey}-w24-${variation.id}`" :value="variation.variation_name">{{ variation.variation_name }}</option>
-                                            </select>
-                                            <input v-model.number="row.sets" type="number" min="1" placeholder="Sets" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900">
+                                            <AppFormField label="Exercise" class="xl:col-span-2">
+                                                <AppFormSelect v-model.number="row.exercise_id" @change="handleExerciseChange(row)">
+                                                    <option :value="null">Select exercise</option>
+                                                    <option v-for="exercise in exercises" :key="exercise.id" :value="exercise.id">{{ exercise.name }}</option>
+                                                </AppFormSelect>
+                                            </AppFormField>
+                                            <AppFormField label="Week 1 / 3">
+                                                <AppFormSelect v-model="row.w1_w3_exercise" :disabled="!row.exercise_id">
+                                                    <option value="">W1 / W3 Variation</option>
+                                                    <option v-for="variation in getExerciseVariationOptions(row)" :key="`${row.localKey}-w13-${variation.id}`" :value="variation.variation_name">{{ variation.variation_name }}</option>
+                                                </AppFormSelect>
+                                            </AppFormField>
+                                            <AppFormField label="Week 2 / 4">
+                                                <AppFormSelect v-model="row.w2_w4_exercise" :disabled="!row.exercise_id">
+                                                    <option value="">W2 / W4 Variation</option>
+                                                    <option v-for="variation in getExerciseVariationOptions(row)" :key="`${row.localKey}-w24-${variation.id}`" :value="variation.variation_name">{{ variation.variation_name }}</option>
+                                                </AppFormSelect>
+                                            </AppFormField>
+                                            <AppFormField label="Sets">
+                                                <AppFormInput v-model.number="row.sets" type="number" min="1" placeholder="Sets" />
+                                            </AppFormField>
                                         </div>
                                         <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-3">
-                                            <input v-model="row.reps" type="text" placeholder="Reps" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900">
-                                            <input v-model="row.tempo" type="text" placeholder="Tempo" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900">
-                                            <input v-model.number="row.rest_seconds" type="number" min="0" placeholder="Rest Seconds" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900">
+                                            <AppFormField label="Reps">
+                                                <AppFormInput v-model="row.reps" type="text" placeholder="Reps" />
+                                            </AppFormField>
+                                            <AppFormField label="Tempo">
+                                                <AppFormInput v-model="row.tempo" type="text" placeholder="Tempo" />
+                                            </AppFormField>
+                                            <AppFormField label="Rest Seconds">
+                                                <AppFormInput v-model.number="row.rest_seconds" type="number" min="0" placeholder="Rest Seconds" />
+                                            </AppFormField>
                                         </div>
                                     </div>
                                 </div>
@@ -108,13 +130,23 @@
                                 <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">Core Row {{ index + 1 }}</p>
                                 <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeCoreExtra(index)">Remove</button>
                             </div>
-                            <input v-model="item.exercise_name" type="text" placeholder="Exercise name" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                            <AppFormField label="Exercise Name">
+                                <AppFormInput v-model="item.exercise_name" type="text" placeholder="Exercise name" />
+                            </AppFormField>
                             <div class="grid grid-cols-2 gap-2">
-                                <input v-model.number="item.sets" type="number" min="1" placeholder="Sets" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                                <input v-model="item.reps_or_time" type="text" placeholder="Reps / Time" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                                <AppFormField label="Sets">
+                                    <AppFormInput v-model.number="item.sets" type="number" min="1" placeholder="Sets" />
+                                </AppFormField>
+                                <AppFormField label="Reps / Time">
+                                    <AppFormInput v-model="item.reps_or_time" type="text" placeholder="Reps / Time" />
+                                </AppFormField>
                             </div>
-                            <input v-model="item.rest" type="text" placeholder="Rest" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                            <textarea v-model="item.notes" rows="2" placeholder="Notes" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"></textarea>
+                            <AppFormField label="Rest" :optional="true">
+                                <AppFormInput v-model="item.rest" type="text" placeholder="Rest" />
+                            </AppFormField>
+                            <AppFormField label="Notes" :optional="true">
+                                <AppFormTextarea v-model="item.notes" rows="2" placeholder="Notes" />
+                            </AppFormField>
                         </div>
                         <p v-if="builderCoreExtras.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No core rows added.</p>
                     </div>
@@ -132,11 +164,19 @@
                                 <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeCardioExtra(index)">Remove</button>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <input v-model.number="item.frequency_per_week" type="number" min="1" max="14" placeholder="Times / Week" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                                <input v-model.number="item.duration_minutes" type="number" min="1" placeholder="Minutes" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                                <AppFormField label="Times / Week">
+                                    <AppFormInput v-model.number="item.frequency_per_week" type="number" min="1" max="14" placeholder="Times / Week" />
+                                </AppFormField>
+                                <AppFormField label="Minutes">
+                                    <AppFormInput v-model.number="item.duration_minutes" type="number" min="1" placeholder="Minutes" />
+                                </AppFormField>
                             </div>
-                            <input v-model="item.cardio_type" type="text" placeholder="Cardio type" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                            <textarea v-model="item.notes" rows="2" placeholder="Notes" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"></textarea>
+                            <AppFormField label="Cardio Type">
+                                <AppFormInput v-model="item.cardio_type" type="text" placeholder="Cardio type" />
+                            </AppFormField>
+                            <AppFormField label="Notes" :optional="true">
+                                <AppFormTextarea v-model="item.notes" rows="2" placeholder="Notes" />
+                            </AppFormField>
                         </div>
                         <p v-if="builderCardioExtras.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No cardio rows added.</p>
                     </div>
@@ -280,6 +320,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();
 const router = useRouter();

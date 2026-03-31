@@ -9,34 +9,29 @@
         <form class="app-surface rounded-2xl p-5 md:p-6 space-y-4" @submit.prevent="submit">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">Name</label>
-                    <input v-model="form.name" type="text" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Name" class="md:col-span-2" :required="true">
+                    <AppFormInput v-model="form.name" type="text" required />
+                </AppFormField>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">Email</label>
-                    <input v-model="form.email" type="email" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Email" class="md:col-span-2" :required="true">
+                    <AppFormInput v-model="form.email" type="email" required />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">Role</label>
-                    <select v-model="form.role_id" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
+                <AppFormField label="Role" :required="true">
+                    <AppFormSelect v-model="form.role_id" required>
                         <option value="">Select role</option>
                         <option v-for="role in roles" :key="role.id" :value="String(role.id)">{{ role.name }}</option>
-                    </select>
-                </div>
+                    </AppFormSelect>
+                </AppFormField>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">Password {{ isEdit ? '(optional)' : '' }}</label>
-                    <input v-model="form.password" type="password" :required="!isEdit" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1 text-secondary-700 dark:text-secondary-300">Confirm Password</label>
-                    <input v-model="form.password_confirmation" type="password" :required="!isEdit" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Password" :required="!isEdit" :optional="isEdit">
+                    <AppFormInput v-model="form.password" type="password" :required="!isEdit" />
+                </AppFormField>
+                <AppFormField label="Confirm Password" :required="!isEdit" :optional="isEdit">
+                    <AppFormInput v-model="form.password_confirmation" type="password" :required="!isEdit" />
+                </AppFormField>
             </div>
 
             <div class="flex justify-end">
@@ -53,6 +48,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const route = useRoute();
 const router = useRouter();

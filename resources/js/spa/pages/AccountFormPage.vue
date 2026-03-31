@@ -8,20 +8,17 @@
 
         <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Account Name</label>
-                    <input v-model="form.name" type="text" required maxlength="255" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Account Name" class="md:col-span-2" :required="true">
+                    <AppFormInput v-model="form.name" type="text" required maxlength="255" />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Opening Balance</label>
-                    <input v-model="form.opening_balance" type="number" step="0.01" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
+                <AppFormField label="Opening Balance">
+                    <AppFormInput v-model="form.opening_balance" type="number" step="0.01" />
+                </AppFormField>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Description</label>
-                    <textarea v-model="form.description" rows="4" maxlength="1000" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"></textarea>
-                </div>
+                <AppFormField label="Description" class="md:col-span-2" :optional="true">
+                    <AppFormTextarea v-model="form.description" rows="4" maxlength="1000" />
+                </AppFormField>
             </div>
 
             <div class="mt-5 flex items-center justify-end gap-2">
@@ -39,6 +36,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();
 const router = useRouter();

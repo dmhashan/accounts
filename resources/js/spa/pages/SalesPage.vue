@@ -142,15 +142,14 @@
                         <p>Customer: <span class="font-semibold">{{ selectedSale?.customer_name || 'Walk-in' }}</span></p>
                     </div>
 
-                    <div>
-                        <label class="block text-sm text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
-                        <select v-model.number="selectedAccountId" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-xl bg-white dark:bg-secondary-800">
+                    <AppFormField label="Company Account">
+                        <AppFormSelect v-model.number="selectedAccountId">
                             <option :value="null">Select account</option>
                             <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
                                 {{ account.label || account.name }}
                             </option>
-                        </select>
-                    </div>
+                        </AppFormSelect>
+                    </AppFormField>
                 </div>
 
                 <div class="mt-5 flex items-center justify-end gap-2">
@@ -169,6 +168,8 @@
 import { computed, onMounted, ref } from 'vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import { ReceiptText } from 'lucide-vue-next';

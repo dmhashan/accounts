@@ -1,5 +1,8 @@
 <x-guest-layout>
     <x-slot name="title">Forgot Password - {{ app('tenant')->name }}</x-slot>
+    @php
+        $baseInputClass = 'block h-12 w-full rounded-2xl border border-secondary-300 bg-white px-4 text-sm text-secondary-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-secondary-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10';
+    @endphp
     
     <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div class="max-w-md w-full">
@@ -43,7 +46,7 @@
                     <div>
                         <label for="email" class="block text-sm font-medium text-secondary-700 mb-2">Email Address</label>
                         <input id="email" name="email" type="email" required autofocus
-                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                               class="{{ $baseInputClass }}"
                                placeholder="you@example.com" value="{{ old('email') }}">
                     </div>
 

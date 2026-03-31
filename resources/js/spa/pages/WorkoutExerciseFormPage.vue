@@ -8,18 +8,30 @@
 
         <form class="app-surface rounded-2xl p-4 md:p-5 grid gap-3" @submit.prevent="submit">
             <div class="grid gap-3 md:grid-cols-2">
-                <input v-model="form.name" type="text" placeholder="Exercise Name" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800" required>
-                <select v-model="form.status" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800" required>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                </select>
+                <AppFormField label="Exercise Name" :required="true">
+                    <AppFormInput v-model="form.name" type="text" placeholder="Exercise Name" required />
+                </AppFormField>
+                <AppFormField label="Status" :required="true">
+                    <AppFormSelect v-model="form.status" required>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </AppFormSelect>
+                </AppFormField>
             </div>
 
             <div class="grid gap-2 md:grid-cols-4">
-                <input v-model.number="form.default_sets" type="number" min="1" placeholder="Default Sets" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800" required>
-                <input v-model="form.default_reps" type="text" placeholder="Default Reps" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800" required>
-                <input v-model="form.default_tempo" type="text" placeholder="Default Tempo" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800" required>
-                <input v-model.number="form.default_rest" type="number" min="0" placeholder="Default Rest" class="px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800" required>
+                <AppFormField label="Default Sets" :required="true">
+                    <AppFormInput v-model.number="form.default_sets" type="number" min="1" placeholder="Default Sets" required />
+                </AppFormField>
+                <AppFormField label="Default Reps" :required="true">
+                    <AppFormInput v-model="form.default_reps" type="text" placeholder="Default Reps" required />
+                </AppFormField>
+                <AppFormField label="Default Tempo" :required="true">
+                    <AppFormInput v-model="form.default_tempo" type="text" placeholder="Default Tempo" required />
+                </AppFormField>
+                <AppFormField label="Default Rest" :required="true">
+                    <AppFormInput v-model.number="form.default_rest" type="number" min="0" placeholder="Default Rest" required />
+                </AppFormField>
             </div>
 
             <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4 space-y-3">
@@ -34,7 +46,7 @@
                             <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">Variation {{ index + 1 }}</p>
                             <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeVariation(index)">Remove</button>
                         </div>
-                        <input v-model="variation.variation_name" type="text" placeholder="Variation Name" class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-900" required>
+                        <AppFormInput v-model="variation.variation_name" type="text" placeholder="Variation Name" class="dark:bg-secondary-900" required />
                     </div>
                 </div>
 
@@ -54,6 +66,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const route = useRoute();
 const router = useRouter();

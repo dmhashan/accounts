@@ -8,18 +8,15 @@
 
         <form class="app-surface rounded-2xl p-5 md:p-6 mb-4" @submit.prevent="saveRole">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm mb-1">Name</label>
-                    <input v-model="role.name" :disabled="!role.is_editable" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div>
-                    <label class="block text-sm mb-1">Slug</label>
-                    <input v-model="role.slug" :disabled="!role.is_editable" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm mb-1">Description</label>
-                    <textarea v-model="role.description" rows="2" :disabled="!role.is_editable" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800"></textarea>
-                </div>
+                <AppFormField label="Name">
+                    <AppFormInput v-model="role.name" :disabled="!role.is_editable" />
+                </AppFormField>
+                <AppFormField label="Slug">
+                    <AppFormInput v-model="role.slug" :disabled="!role.is_editable" />
+                </AppFormField>
+                <AppFormField label="Description" class="md:col-span-2" :optional="true">
+                    <AppFormTextarea v-model="role.description" rows="2" :disabled="!role.is_editable" />
+                </AppFormField>
             </div>
             <div class="mt-4 flex justify-end">
                 <button type="submit" :disabled="!role.is_editable || savingRole" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50">
@@ -64,6 +61,9 @@ import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();
 const router = useRouter();

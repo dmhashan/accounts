@@ -1,5 +1,8 @@
 <x-guest-layout>
     <x-slot name="title">Login - {{ app('tenant')->name }}</x-slot>
+    @php
+        $baseInputClass = 'block h-12 w-full rounded-2xl border border-secondary-300 bg-white px-4 text-sm text-secondary-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-secondary-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10';
+    @endphp
     
     <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div class="max-w-md w-full">
@@ -25,7 +28,7 @@
                     <div>
                         <label for="login" class="block text-sm font-medium text-secondary-700 mb-2">Username or Email</label>
                         <input id="login" name="login" type="text" required autofocus
-                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('login') border-red-300 @enderror"
+                               class="{{ $baseInputClass }} @error('login') border-red-300 focus:border-red-300 focus:ring-red-100 @enderror"
                                placeholder="john.doe or you@example.com" value="{{ old('login') }}">
                         @error('login')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -35,7 +38,7 @@
                     <div>
                         <label for="password" class="block text-sm font-medium text-secondary-700 mb-2">Password</label>
                         <input id="password" name="password" type="password" required
-                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('password') border-red-300 @enderror"
+                               class="{{ $baseInputClass }} @error('password') border-red-300 focus:border-red-300 focus:ring-red-100 @enderror"
                                placeholder="••••••••">
                         @error('password')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -56,12 +59,12 @@
 
                 <div class="space-y-3">
                     <a href="{{ route('auth.social.redirect', 'google') }}"
-                        class="w-full inline-flex items-center justify-center py-3.5 px-4 border border-secondary-300 text-secondary-900 font-semibold rounded-lg hover:bg-secondary-50 transition-colors">
+                        class="w-full inline-flex items-center justify-center py-3.5 px-4 border border-secondary-300 text-secondary-900 font-semibold rounded-2xl hover:bg-secondary-50 transition-colors">
                         Continue with Google
                     </a>
 
                     <a href="{{ route('auth.social.redirect', 'apple') }}"
-                        class="w-full inline-flex items-center justify-center py-3.5 px-4 bg-secondary-900 hover:bg-secondary-800 text-white font-semibold rounded-lg transition-colors">
+                        class="w-full inline-flex items-center justify-center py-3.5 px-4 bg-secondary-900 hover:bg-secondary-800 text-white font-semibold rounded-2xl transition-colors">
                         Continue with Apple
                     </a>
                 </div>

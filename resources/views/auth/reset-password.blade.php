@@ -1,5 +1,8 @@
 <x-guest-layout>
     <x-slot name="title">Reset Password - {{ app('tenant')->name }}</x-slot>
+    @php
+        $baseInputClass = 'block h-12 w-full rounded-2xl border border-secondary-300 bg-white px-4 text-sm text-secondary-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-secondary-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10';
+    @endphp
     
     <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div class="max-w-md w-full">
@@ -31,14 +34,14 @@
                     <div>
                         <label for="email_display" class="block text-sm font-medium text-secondary-700 mb-2">Email Address</label>
                         <input id="email_display" type="email" disabled
-                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg bg-secondary-50 text-secondary-500"
+                               class="{{ $baseInputClass }} bg-secondary-50 text-secondary-500"
                                value="{{ $email }}">
                     </div>
 
                     <div>
                         <label for="password" class="block text-sm font-medium text-secondary-700 mb-2">New Password</label>
                         <input id="password" name="password" type="password" required
-                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                               class="{{ $baseInputClass }}"
                                placeholder="••••••••">
                         @include('components.password-criteria', ['passwordId' => 'password', 'confirmId' => 'password_confirmation'])
                     </div>
@@ -46,7 +49,7 @@
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium text-secondary-700 mb-2">Confirm New Password</label>
                         <input id="password_confirmation" name="password_confirmation" type="password" required
-                               class="block w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                               class="{{ $baseInputClass }}"
                                placeholder="••••••••">
                     </div>
 

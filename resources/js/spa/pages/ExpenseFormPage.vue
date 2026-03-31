@@ -8,38 +8,34 @@
 
         <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Account <span class="text-red-500">*</span></label>
-                    <select v-model="form.company_account_id" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white">
+                <AppFormField label="Account" :required="true">
+                    <AppFormSelect v-model="form.company_account_id" required>
                         <option value="">Select account</option>
                         <option v-for="account in accounts" :key="account.id" :value="String(account.id)">
                             {{ account.name }} &bull; {{ money(account.current_balance) }}
                         </option>
-                    </select>
-                </div>
+                    </AppFormSelect>
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Category <span class="text-red-500">*</span></label>
-                    <input
+                <AppFormField label="Category" :required="true">
+                    <AppFormInput
                         v-if="form.category_custom"
                         v-model="form.category"
                         type="text"
                         required
                         maxlength="255"
                         placeholder="Enter custom category"
-                        class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
                     />
-                    <select
+                    <AppFormSelect
                         v-else
                         v-model="form.category"
                         required
-                        class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
                         @change="handleCategoryChange"
                     >
                         <option value="">Select category</option>
                         <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
                         <option value="__other__">Other (custom)</option>
-                    </select>
+                    </AppFormSelect>
                     <button
                         v-if="form.category_custom"
                         type="button"
@@ -48,27 +44,23 @@
                     >
                         Choose from list
                     </button>
-                </div>
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Amount <span class="text-red-500">*</span></label>
-                    <input v-model="form.amount" type="number" min="0.01" step="0.01" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white">
-                </div>
+                <AppFormField label="Amount" :required="true">
+                    <AppFormInput v-model="form.amount" type="number" min="0.01" step="0.01" required />
+                </AppFormField>
 
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Expense Date <span class="text-red-500">*</span></label>
-                    <input v-model="form.expense_date" type="date" required class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white">
-                </div>
+                <AppFormField label="Expense Date" :required="true">
+                    <AppFormInput v-model="form.expense_date" type="date" required />
+                </AppFormField>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Reference <span class="text-xs text-secondary-400">(optional)</span></label>
-                    <input v-model="form.reference_number" type="text" maxlength="255" placeholder="Invoice number, receipt ID, etc." class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white">
-                </div>
+                <AppFormField label="Reference" class="md:col-span-2" help="Invoice number, receipt ID, etc." :optional="true">
+                    <AppFormInput v-model="form.reference_number" type="text" maxlength="255" placeholder="Invoice number, receipt ID, etc." />
+                </AppFormField>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Notes <span class="text-xs text-secondary-400">(optional)</span></label>
-                    <textarea v-model="form.notes" rows="3" maxlength="1000" class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"></textarea>
-                </div>
+                <AppFormField label="Notes" class="md:col-span-2" :optional="true">
+                    <AppFormTextarea v-model="form.notes" rows="3" maxlength="1000" />
+                </AppFormField>
             </div>
 
             <div class="mt-5 flex items-center justify-end gap-2">
@@ -86,6 +78,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();
 const router = useRouter();
