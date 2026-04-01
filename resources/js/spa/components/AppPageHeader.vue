@@ -1,5 +1,5 @@
 <template>
-    <div class="app-surface app-page-header-compact">
+    <div class="app-page-header-compact">
         <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
                 <!-- Back button -->

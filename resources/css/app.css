@@ -158,6 +158,9 @@
     }
 
     .app-page-header-compact {
+        background: var(--surface-card);
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--surface-shadow);
         @apply mb-3 rounded-2xl p-3 sm:p-4 md:mb-4 md:p-4;
     }
 
