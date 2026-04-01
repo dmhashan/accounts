@@ -282,8 +282,8 @@ class WorkoutProgramService
 
         return $day->dayExercises()->create([
             'exercise_id' => $validated['exercise_id'],
-            'w1_w3_exercise' => trim($validated['w1_w3_exercise']),
-            'w2_w4_exercise' => trim($validated['w2_w4_exercise']),
+            'w1_w3_exercise' => trim((string) ($validated['w1_w3_exercise'] ?? '')),
+            'w2_w4_exercise' => trim((string) ($validated['w2_w4_exercise'] ?? '')),
             'sets' => $validated['sets'],
             'reps' => trim($validated['reps']),
             'tempo' => trim($validated['tempo']),
@@ -299,8 +299,8 @@ class WorkoutProgramService
 
         $dayExercise->update([
             'exercise_id' => $validated['exercise_id'],
-            'w1_w3_exercise' => trim($validated['w1_w3_exercise']),
-            'w2_w4_exercise' => trim($validated['w2_w4_exercise']),
+            'w1_w3_exercise' => trim((string) ($validated['w1_w3_exercise'] ?? '')),
+            'w2_w4_exercise' => trim((string) ($validated['w2_w4_exercise'] ?? '')),
             'sets' => $validated['sets'],
             'reps' => trim($validated['reps']),
             'tempo' => trim($validated['tempo']),

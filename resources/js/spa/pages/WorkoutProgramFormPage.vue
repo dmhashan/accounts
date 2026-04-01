@@ -370,7 +370,7 @@ function handleExerciseChange(row) {
     if (exercise) {
         row.sets = Number(exercise.default_sets || 1);
         row.reps = exercise.default_reps || '';
-        row.tempo = exercise.default_tempo || '';
+        row.tempo = exercise.default_tempo || '3-1-1-0';
         row.rest_seconds = Number(exercise.default_rest || 0);
     }
 
@@ -594,7 +594,9 @@ async function saveProgramBuilder() {
         }
 
         const originalDays = new Map((originalProgramSnapshot.value?.days || []).map((day) => [day.id, day]));
-        const savedDayIds = [];
+        // Track which original day IDs are still present in the builder (so we only delete days
+        // that were explicitly removed, not days that failed validation checks).
+        const builderDayIds = new Set(builderDays.value.filter((d) => d.id).map((d) => d.id));
 
         for (const day of orderedBuilderDays.value) {
             if (!day.title || !day.day_number) {
@@ -616,11 +618,11 @@ async function saveProgramBuilder() {
                 day.id = dayId;
             }
 
-            savedDayIds.push(dayId);
-
             const originalExerciseIds = new Set((originalDays.get(dayId)?.exercises || []).map((item) => item.id));
-            const currentExerciseIds = [];
-            const rows = orderedExerciseRows(day.exercises).filter((row) => row.exercise_id && row.w1_w3_exercise && row.w2_w4_exercise && row.reps && row.tempo);
+            // Pre-populate with all exercise IDs still present in the day's UI rows so that
+            // only explicitly-removed exercises are deleted, not those that failed the filter.
+            const currentExerciseIds = day.exercises.filter((r) => r.id).map((r) => r.id);
+            const rows = orderedExerciseRows(day.exercises).filter((row) => row.exercise_id && row.reps && row.tempo);
 
             for (let index = 0; index < rows.length; index += 1) {
                 const row = rows[index];
@@ -631,7 +633,6 @@ async function saveProgramBuilder() {
                         method: 'put',
                         data: payload,
                     });
-                    currentExerciseIds.push(row.id);
                 } else {
                     const response = await apiRequest(`/api/workout-program-days/${dayId}/exercises`, {
                         method: 'post',
@@ -652,7 +653,7 @@ async function saveProgramBuilder() {
         }
 
         for (const originalDay of originalProgramSnapshot.value?.days || []) {
-            if (!savedDayIds.includes(originalDay.id)) {
+            if (!builderDayIds.has(originalDay.id)) {
                 await apiRequest(`/api/workout-program-days/${originalDay.id}`, {
                     method: 'delete',
                 });

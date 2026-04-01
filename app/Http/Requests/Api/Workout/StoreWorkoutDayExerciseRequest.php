@@ -17,11 +17,11 @@ class StoreWorkoutDayExerciseRequest extends FormRequest
     {
         return [
             'exercise_id' => ['required', 'integer', 'exists:exercises,id'],
-            'w1_w3_exercise' => ['required', 'string', 'max:255'],
-            'w2_w4_exercise' => ['required', 'string', 'max:255'],
+            'w1_w3_exercise' => ['nullable', 'string', 'max:255'],
+            'w2_w4_exercise' => ['nullable', 'string', 'max:255'],
             'sets' => ['required', 'integer', 'gt:0'],
             'reps' => ['required', 'string', 'max:100'],
-            'tempo' => ['required', 'regex:/^\\d+-\\d+-\\d+-\\d+$/'],
+            'tempo' => ['required', 'string', 'max:50'],
             'rest_seconds' => ['required', 'integer', 'min:0'],
             'exercise_order' => ['required', 'integer', 'min:1'],
         ];
