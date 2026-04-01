@@ -18,10 +18,15 @@
                 </AppFormField>
 
                 <AppFormField label="Role" :required="true">
-                    <AppFormSelect v-model="form.role_id" required>
-                        <option value="">Select role</option>
-                        <option v-for="role in roles" :key="role.id" :value="String(role.id)">{{ role.name }}</option>
-                    </AppFormSelect>
+                    <AppSearchableDropdown
+                        v-model="form.role_id"
+                        :options="[{ id: '', label: 'Select role' }, ...roles.map(role => ({ id: String(role.id), label: role.name }))]"
+                        :option-label="option => option.label"
+                        :option-key="option => option.id"
+                        placeholder="Select role"
+                        no-results-text="No roles found."
+                        required
+                    />
                 </AppFormField>
             </div>
 
@@ -50,7 +55,7 @@ import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 
 const route = useRoute();
 const router = useRouter();

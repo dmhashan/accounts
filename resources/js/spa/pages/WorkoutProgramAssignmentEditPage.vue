@@ -19,9 +19,15 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <AppFormField label="Workout Program" :required="true">
-                        <AppFormSelect v-model="form.program_id" required>
-                            <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.title }}</option>
-                        </AppFormSelect>
+                        <AppSearchableDropdown
+                            v-model="form.program_id"
+                            :options="programs.map(p => ({ id: p.id, label: p.title }))"
+                            :option-label="option => option.label"
+                            :option-key="option => option.id"
+                            placeholder="Select program"
+                            no-results-text="No programs found."
+                            required
+                        />
                     </AppFormField>
                     <AppFormField label="Effective Date" :required="true">
                         <AppFormInput v-model="form.effective_date" type="date" required />
@@ -59,7 +65,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 
 const route = useRoute();
 const router = useRouter();

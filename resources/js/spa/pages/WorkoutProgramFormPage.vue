@@ -78,22 +78,37 @@
                                         </div>
                                         <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
                                             <AppFormField label="Exercise" class="xl:col-span-2">
-                                                <AppFormSelect v-model.number="row.exercise_id" @change="handleExerciseChange(row)">
-                                                    <option :value="null">Select exercise</option>
-                                                    <option v-for="exercise in exercises" :key="exercise.id" :value="exercise.id">{{ exercise.name }}</option>
-                                                </AppFormSelect>
+                                                <AppSearchableDropdown
+                                                    v-model="row.exercise_id"
+                                                    :options="[{ id: null, label: 'Select exercise' }, ...exercises.map(e => ({ id: e.id, label: e.name }))]"
+                                                    :option-label="option => option.label"
+                                                    :option-key="option => option.id"
+                                                    placeholder="Select exercise"
+                                                    no-results-text="No exercises found."
+                                                    @update:modelValue="() => handleExerciseChange(row)"
+                                                />
                                             </AppFormField>
                                             <AppFormField label="Week 1 / 3">
-                                                <AppFormSelect v-model="row.w1_w3_exercise" :disabled="!row.exercise_id">
-                                                    <option value="">W1 / W3 Variation</option>
-                                                    <option v-for="variation in getExerciseVariationOptions(row)" :key="`${row.localKey}-w13-${variation.id}`" :value="variation.variation_name">{{ variation.variation_name }}</option>
-                                                </AppFormSelect>
+                                                <AppSearchableDropdown
+                                                    v-model="row.w1_w3_exercise"
+                                                    :options="[{ id: '', label: 'W1 / W3 Variation' }, ...getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))]"
+                                                    :option-label="option => option.label"
+                                                    :option-key="option => option.id"
+                                                    placeholder="W1 / W3 Variation"
+                                                    no-results-text="No variations found."
+                                                    :disabled="!row.exercise_id"
+                                                />
                                             </AppFormField>
                                             <AppFormField label="Week 2 / 4">
-                                                <AppFormSelect v-model="row.w2_w4_exercise" :disabled="!row.exercise_id">
-                                                    <option value="">W2 / W4 Variation</option>
-                                                    <option v-for="variation in getExerciseVariationOptions(row)" :key="`${row.localKey}-w24-${variation.id}`" :value="variation.variation_name">{{ variation.variation_name }}</option>
-                                                </AppFormSelect>
+                                                <AppSearchableDropdown
+                                                    v-model="row.w2_w4_exercise"
+                                                    :options="[{ id: '', label: 'W2 / W4 Variation' }, ...getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))]"
+                                                    :option-label="option => option.label"
+                                                    :option-key="option => option.id"
+                                                    placeholder="W2 / W4 Variation"
+                                                    no-results-text="No variations found."
+                                                    :disabled="!row.exercise_id"
+                                                />
                                             </AppFormField>
                                             <AppFormField label="Sets">
                                                 <AppFormInput v-model.number="row.sets" type="number" min="1" placeholder="Sets" />
@@ -310,7 +325,7 @@ import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();

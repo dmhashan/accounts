@@ -19,11 +19,20 @@
                     <AppFormInput v-model="form.username" required />
                 </AppFormField>
                 <AppFormField label="Gender" :required="true">
-                    <AppFormSelect v-model="form.gender" required>
-                        <option value="">Select gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                    </AppFormSelect>
+                    <AppSearchableDropdown
+                        v-model="form.gender"
+                        :options="[
+                            { id: '', label: 'Select gender' },
+                            { id: 'male', label: 'Male' },
+                            { id: 'female', label: 'Female' }
+                        ]"
+                        :option-label="option => option.label"
+                        :option-key="option => option.id"
+                        placeholder="Select gender"
+                        no-results-text="No gender found."
+                        :searchable="false"
+                        required
+                    />
                 </AppFormField>
                 <AppFormField label="Email" :required="true">
                     <AppFormInput v-model="form.email" type="email" required />
@@ -79,7 +88,7 @@ import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();

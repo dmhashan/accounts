@@ -12,10 +12,19 @@
                     <AppFormInput v-model="form.name" type="text" placeholder="Exercise Name" required />
                 </AppFormField>
                 <AppFormField label="Status" :required="true">
-                    <AppFormSelect v-model="form.status" required>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </AppFormSelect>
+                    <AppSearchableDropdown
+                        v-model="form.status"
+                        :options="[
+                            { id: 'active', label: 'Active' },
+                            { id: 'inactive', label: 'Inactive' }
+                        ]"
+                        :option-label="option => option.label"
+                        :option-key="option => option.id"
+                        placeholder="Select status"
+                        no-results-text="No status found."
+                        :searchable="false"
+                        required
+                    />
                 </AppFormField>
             </div>
 
@@ -68,7 +77,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 
 const route = useRoute();
 const router = useRouter();

@@ -26,48 +26,17 @@
                     </button>
                 </div>
 
-                <div ref="customerSelectorRef" class="relative shrink-0 w-[240px] md:w-auto md:flex-1 md:min-w-0 md:max-w-md">
-                    <button
-                        type="button"
-                        class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-left flex items-center justify-between"
-                        @click="customerDropdownOpen = !customerDropdownOpen"
-                    >
-                        <span class="truncate">{{ selectedMember?.label || 'Walk-in (optional)' }}</span>
-                        <span class="text-secondary-500">▾</span>
-                    </button>
-
-                    <div v-if="customerDropdownOpen" class="absolute z-20 mt-1 w-full bg-white dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg shadow-lg overflow-hidden">
-                        <div class="p-2 border-b border-secondary-200 dark:border-secondary-700">
-                            <AppFormInput
-                                v-model="memberSearch"
-                                type="text"
-                                placeholder="Search customer..."
-                            />
-                        </div>
-
-                        <div class="max-h-64 overflow-y-auto py-1">
-                            <button
-                                type="button"
-                                class="w-full px-3 py-2 text-sm text-left hover:bg-secondary-100 dark:hover:bg-secondary-800"
-                                @click="selectCustomer(null)"
-                            >
-                                Walk-in (optional)
-                            </button>
-                            <button
-                                v-for="member in filteredMembers"
-                                :key="member.id"
-                                type="button"
-                                class="w-full px-3 py-2 text-sm text-left hover:bg-secondary-100 dark:hover:bg-secondary-800"
-                                @click="selectCustomer(member.id)"
-                            >
-                                {{ member.label }}
-                            </button>
-
-                            <p v-if="filteredMembers.length === 0" class="px-3 py-3 text-sm text-secondary-500 dark:text-secondary-400">
-                                No customers found.
-                            </p>
-                        </div>
-                    </div>
+                <div class="shrink-0 w-[240px] md:w-auto md:flex-1 md:min-w-0 md:max-w-md">
+                    <AppSearchableDropdown
+                        v-model="form.customer_member_id"
+                        :options="[{ id: null, label: 'Walk-in (optional)' }, ...members]"
+                        :option-label="option => option.label"
+                        :option-key="option => option.id"
+                        placeholder="Walk-in (optional)"
+                        search-placeholder="Search customer..."
+                        no-results-text="No customers found."
+                        @update:modelValue="selectCustomer"
+                    />
                 </div>
                 </div>
             </template>
@@ -236,6 +205,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -248,9 +218,7 @@ const errorMessage = ref('');
 const variationOptions = ref([]);
 const productSearch = ref('');
 const members = ref([]);
-const memberSearch = ref('');
-const customerDropdownOpen = ref(false);
-const customerSelectorRef = ref(null);
+// Removed: memberSearch, customerDropdownOpen, customerSelectorRef
 const activeProductId = ref(null);
 const activeCartKey = ref(null);
 const cartListRef = ref(null);
@@ -504,19 +472,9 @@ function selectPaymentMethod(method) {
 
 function selectCustomer(memberId) {
     form.value.customer_member_id = memberId;
-    customerDropdownOpen.value = false;
-    memberSearch.value = '';
 }
 
-function handleDocumentClick(event) {
-    if (!customerDropdownOpen.value) {
-        return;
-    }
-
-    if (customerSelectorRef.value && !customerSelectorRef.value.contains(event.target)) {
-        customerDropdownOpen.value = false;
-    }
-}
+// Removed: handleDocumentClick
 
 async function loadWalletBalance() {
     if (!selectedMember.value || form.value.payment_method !== 'member_wallet') {
@@ -694,8 +652,6 @@ function closePayNowModal() {
 }
 
 onMounted(() => {
-    document.addEventListener('click', handleDocumentClick);
-
     if (!hasActionPermission.value) {
         errorMessage.value = isEdit.value
             ? 'You do not have permission to edit sales.'
@@ -708,8 +664,6 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('click', handleDocumentClick);
-
     if (productUiTimer) {
         clearTimeout(productUiTimer);
     }
