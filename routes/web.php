@@ -11,10 +11,10 @@ Route::get('/', function () {
     // Check if multitenancy is bypassed
     if (!config('app.multitenancy_enabled', true)) {
         $bypassDomain = config('app.multitenancy_bypass_domain');
-        
+
         if ($bypassDomain) {
             $tenant = Tenant::where('domain', $bypassDomain)->first();
-            
+
             if ($tenant) {
                 app()->instance('tenant', $tenant);
 
@@ -30,27 +30,27 @@ Route::get('/', function () {
                 return view('tenant-landing', ['tenant' => $tenant]);
             }
         }
-        
+
         return view('product-landing-page');
     }
-    
+
     $host = request()->getHost();
     $baseDomain = config('app.domain', 'localhost');
-    
+
     // Extract subdomain from host
     $subdomain = str_replace('.' . $baseDomain, '', $host);
-    
+
     // If no subdomain (e.g., just localhost), show landing page
     if ($subdomain === $baseDomain) {
         return view('product-landing-page');
     }
-    
+
     $tenant = Tenant::where('domain', $subdomain)->first();
-    
+
     if (!$tenant) {
         return view('product-landing-page');
     }
-    
+
     // If tenant exists, store it and show tenant landing page
     app()->instance('tenant', $tenant);
 
@@ -62,7 +62,7 @@ Route::get('/', function () {
         $customPagePath = app(TenantLandingPageService::class)->ensureCustomPageExists($tenant);
         return response()->file($customPagePath);
     }
-    
+
     return view('tenant-landing', ['tenant' => $tenant]);
 });
 
@@ -76,11 +76,15 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     Route::get('/auth/{provider}/callback', [\App\Http\Controllers\Auth\SocialAuthController::class, 'callback'])
         ->whereIn('provider', ['google', 'apple'])
         ->name('auth.social.callback');
-    
+
     // Registration routes
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register.form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
-    
+
+    // Public member profile route
+    Route::get('/profile/{username}', [\App\Http\Controllers\MemberController::class, 'publicProfile'])
+        ->name('member.public_profile');
+
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {
         // Members should be redirected to their profile
@@ -89,13 +93,13 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         }
         return redirect('/#/dashboard');
     })->middleware('auth')->name('dashboard');
-    
+
     // User Management routes (requires authentication and permissions)
     Route::middleware(['auth'])->group(function () {
         // Member Profile (for members to view their own profile)
         Route::get('/profile', [\App\Http\Controllers\MemberController::class, 'profile'])
             ->name('member.profile');
-        
+
         // Member-specific routes (Workout, Diet, Payments, Attendance)
         Route::get('/workout-schedule', [\App\Http\Controllers\WorkoutScheduleController::class, 'index'])
             ->name('workout-schedule.index');
@@ -105,13 +109,13 @@ Route::middleware([IdentifyTenant::class])->group(function () {
             ->name('payments.index');
         Route::get('/attendance', [\App\Http\Controllers\AttendanceController::class, 'index'])
             ->name('attendance.index');
-        
+
         // Settings route
         Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])
             ->name('settings.index');
         Route::post('/settings/landing-page', [\App\Http\Controllers\SettingsController::class, 'updateLandingPage'])
             ->name('settings.landing-page.update');
-        
+
         // Reports route
         Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])
             ->middleware('permission:reports.view')
@@ -149,7 +153,7 @@ Route::middleware([IdentifyTenant::class])->group(function () {
                 ->name('destroy');
         });
     });
-    
+
     // Logout route
     Route::post('/logout', function () {
         auth()->logout();
@@ -158,4 +162,3 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         return redirect('/');
     })->name('logout');
 });
-

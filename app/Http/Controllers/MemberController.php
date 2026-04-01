@@ -13,6 +13,56 @@ use Illuminate\Support\Str;
 
 class MemberController extends Controller
 {
+    /**
+     * Show a public profile for a member by username (limited data).
+     */
+    public function publicProfile($username)
+    {
+        $tenant = app('tenant');
+        $member = Member::where('tenant_id', $tenant->id)
+            ->where('username', $username)
+            ->where('is_active', true)
+            ->with('user')
+            ->firstOrFail();
+
+        // Only expose limited fields
+        $publicData = [
+            'name' => $member->name,
+            'username' => $member->username,
+            'gender' => $member->gender,
+            'joined_date' => $member->joined_date,
+            'member_role' => $member->member_role,
+            'email' => $member->email,
+            'phone_number' => $member->phone_number,
+        ];
+
+        // Assigned workout plans with full program details
+        $assignedWorkouts = \App\Models\WorkoutProgramAssignment::with([
+            'assignedProgram.creator',
+            'assignedProgram.days.dayExercises.exercise',
+            'assignedProgram.extras',
+        ])
+            ->where('tenant_id', $tenant->id)
+            ->where('member_id', $member->id)
+            ->orderByDesc('effective_date')
+            ->get();
+
+        // Sales/Finance
+        $sales = \App\Models\Sale::where('tenant_id', $tenant->id)
+            ->where('customer_member_id', $member->id)
+            ->orderByDesc('created_at')
+            ->with('items')
+            ->get();
+        $totalOutstanding = $sales->where('is_paid', false)->sum('balance');
+
+        return view('members.public-profile', [
+            'member' => $member,
+            'publicData' => $publicData,
+            'assignedWorkouts' => $assignedWorkouts,
+            'sales' => $sales,
+            'totalOutstanding' => $totalOutstanding,
+        ]);
+    }
     public function index()
     {
         $members = Member::where('tenant_id', app('tenant')->id)
