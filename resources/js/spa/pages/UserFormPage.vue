@@ -20,7 +20,7 @@
                 <AppFormField label="Role" :required="true">
                     <AppSearchableDropdown
                         v-model="form.role_id"
-                        :options="[{ id: '', label: 'Select role' }, ...roles.map(role => ({ id: String(role.id), label: role.name }))]"
+                        :options="[...roles.map(role => ({ id: String(role.id), label: role.name }))]"
                         :option-label="option => option.label"
                         :option-key="option => option.id"
                         placeholder="Select role"

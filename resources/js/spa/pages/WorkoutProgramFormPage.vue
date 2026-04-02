@@ -80,7 +80,7 @@
                                             <AppFormField label="Exercise" class="xl:col-span-2">
                                                 <AppSearchableDropdown
                                                     v-model="row.exercise_id"
-                                                    :options="[{ id: null, label: 'Select exercise' }, ...exercises.map(e => ({ id: e.id, label: e.name }))]"
+                                                    :options="exercises.map(e => ({ id: e.id, label: e.name }))"
                                                     :option-label="option => option.label"
                                                     :option-key="option => option.id"
                                                     placeholder="Select exercise"
@@ -91,7 +91,7 @@
                                             <AppFormField label="Week 1 / 3">
                                                 <AppSearchableDropdown
                                                     v-model="row.w1_w3_exercise"
-                                                    :options="[{ id: '', label: 'W1 / W3 Variation' }, ...getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))]"
+                                                    :options="getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))"
                                                     :option-label="option => option.label"
                                                     :option-key="option => option.id"
                                                     placeholder="W1 / W3 Variation"
@@ -102,7 +102,7 @@
                                             <AppFormField label="Week 2 / 4">
                                                 <AppSearchableDropdown
                                                     v-model="row.w2_w4_exercise"
-                                                    :options="[{ id: '', label: 'W2 / W4 Variation' }, ...getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))]"
+                                                    :options="getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))"
                                                     :option-label="option => option.label"
                                                     :option-key="option => option.id"
                                                     placeholder="W2 / W4 Variation"

@@ -22,7 +22,6 @@
                     <AppSearchableDropdown
                         v-model="form.gender"
                         :options="[
-                            { id: '', label: 'Select gender' },
                             { id: 'male', label: 'Male' },
                             { id: 'female', label: 'Female' }
                         ]"

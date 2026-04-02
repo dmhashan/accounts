@@ -29,7 +29,7 @@
                 <div class="shrink-0 w-[240px] md:w-auto md:flex-1 md:min-w-0 md:max-w-md">
                     <AppSearchableDropdown
                         v-model="form.customer_member_id"
-                        :options="[{ id: null, label: 'Walk-in (optional)' }, ...members]"
+                        :options="[...members]"
                         :option-label="option => option.label"
                         :option-key="option => option.id"
                         placeholder="Walk-in (optional)"

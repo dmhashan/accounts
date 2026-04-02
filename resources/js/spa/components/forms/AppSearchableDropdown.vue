@@ -2,15 +2,29 @@
   <div ref="dropdownRef" class="relative w-full">
     <AppFormField :label="label" :error="error">
       <button
+        ref="triggerRef"
         type="button"
-        class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-left flex items-center justify-between"
+        class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-left flex items-center gap-1"
         @click="toggleDropdown"
         :disabled="disabled"
       >
-        <span class="truncate">{{ selectedLabel || placeholder }}</span>
-        <span class="text-secondary-500">▾</span>
+        <span class="flex-1 truncate" :class="selectedLabel ? '' : 'text-secondary-400 dark:text-secondary-500'">{{ selectedLabel || placeholder }}</span>
+        <span
+          v-if="clearable && selectedLabel && !disabled"
+          class="flex-shrink-0 flex items-center justify-center w-4 h-4 rounded-full text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+          @click.stop="clearValue"
+          aria-label="Clear selection"
+        >✕</span>
+        <span class="flex-shrink-0 text-secondary-500">▾</span>
       </button>
-      <div v-if="dropdownOpen" class="absolute z-20 mt-1 w-full bg-white dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg shadow-lg overflow-hidden">
+    </AppFormField>
+
+    <Teleport to="body">
+      <div
+        v-if="dropdownOpen"
+        class="fixed z-[9999] bg-white dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg shadow-lg overflow-hidden"
+        :style="dropdownStyle"
+      >
         <div v-if="searchable" class="p-2 border-b border-secondary-200 dark:border-secondary-700">
           <AppFormInput
             v-model="search"
@@ -34,7 +48,7 @@
           </p>
         </div>
       </div>
-    </AppFormField>
+    </Teleport>
   </div>
 </template>
 
@@ -70,6 +84,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  clearable: {
+    type: Boolean,
+    default: false,
+  },
   error: String,
   disabled: Boolean,
   noResultsText: {
@@ -83,6 +101,8 @@ const emit = defineEmits(['update:modelValue']);
 const dropdownOpen = ref(false);
 const search = ref('');
 const dropdownRef = ref(null);
+const triggerRef = ref(null);
+const dropdownStyle = ref({});
 
 const selectedLabel = computed(() => {
   if (props.modelValue == null) return '';
@@ -90,11 +110,28 @@ const selectedLabel = computed(() => {
   return found ? props.optionLabel(found) : '';
 });
 
-const filteredOptions = computed(() => {
-  if (!props.searchable || !search.value.trim()) return props.options;
-  const term = search.value.trim().toLowerCase();
-  return props.options.filter(opt => props.optionLabel(opt).toLowerCase().includes(term));
+const meaningfulOptions = computed(() => {
+  return props.options.filter(opt => {
+    const key = props.optionKey(opt);
+    return key !== null && key !== undefined && key !== '';
+  });
 });
+
+const filteredOptions = computed(() => {
+  if (!props.searchable || !search.value.trim()) return meaningfulOptions.value;
+  const term = search.value.trim().toLowerCase();
+  return meaningfulOptions.value.filter(opt => props.optionLabel(opt).toLowerCase().includes(term));
+});
+
+function computeDropdownStyle() {
+  if (!triggerRef.value) return;
+  const rect = triggerRef.value.getBoundingClientRect();
+  dropdownStyle.value = {
+    top: `${rect.bottom + 4}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+  };
+}
 
 function selectOption(option) {
   emit('update:modelValue', props.optionKey(option));
@@ -102,26 +139,44 @@ function selectOption(option) {
   search.value = '';
 }
 
+function clearValue() {
+  emit('update:modelValue', null);
+}
+
 function toggleDropdown() {
   if (props.disabled) return;
   dropdownOpen.value = !dropdownOpen.value;
-  if (dropdownOpen.value && props.searchable) {
-    search.value = '';
+  if (dropdownOpen.value) {
+    if (props.searchable) search.value = '';
+    computeDropdownStyle();
   }
 }
 
 function handleDocumentClick(event) {
   if (!dropdownOpen.value) return;
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+  if (
+    dropdownRef.value && !dropdownRef.value.contains(event.target) &&
+    triggerRef.value && !triggerRef.value.contains(event.target)
+  ) {
     dropdownOpen.value = false;
   }
 }
 
+function handleScrollOrResize() {
+  if (dropdownOpen.value) {
+    computeDropdownStyle();
+  }
+}
+
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick);
+  document.addEventListener('click', handleDocumentClick, true);
+  window.addEventListener('scroll', handleScrollOrResize, true);
+  window.addEventListener('resize', handleScrollOrResize);
 });
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleDocumentClick);
+  document.removeEventListener('click', handleDocumentClick, true);
+  window.removeEventListener('scroll', handleScrollOrResize, true);
+  window.removeEventListener('resize', handleScrollOrResize);
 });
 
 watch(() => props.modelValue, () => {
