@@ -22,6 +22,7 @@
     <Teleport to="body">
       <div
         v-if="dropdownOpen"
+        ref="panelRef"
         class="fixed z-[9999] bg-white dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg shadow-lg overflow-hidden"
         :style="dropdownStyle"
       >
@@ -102,6 +103,7 @@ const dropdownOpen = ref(false);
 const search = ref('');
 const dropdownRef = ref(null);
 const triggerRef = ref(null);
+const panelRef = ref(null);
 const dropdownStyle = ref({});
 
 const selectedLabel = computed(() => {
@@ -156,7 +158,8 @@ function handleDocumentClick(event) {
   if (!dropdownOpen.value) return;
   if (
     dropdownRef.value && !dropdownRef.value.contains(event.target) &&
-    triggerRef.value && !triggerRef.value.contains(event.target)
+    triggerRef.value && !triggerRef.value.contains(event.target) &&
+    panelRef.value && !panelRef.value.contains(event.target)
   ) {
     dropdownOpen.value = false;
   }
