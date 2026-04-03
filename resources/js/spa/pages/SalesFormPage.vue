@@ -192,13 +192,68 @@
                 </div>
             </div>
         </div>
+
+        <!-- Post-sale success modal -->
+        <div v-if="successModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/50"></div>
+            <div class="relative z-10 w-full max-w-lg rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+                <!-- Header -->
+                <div class="px-5 py-4 border-b border-secondary-200 dark:border-secondary-700 flex items-center gap-3 shrink-0">
+                    <div class="h-9 w-9 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
+                        <CheckCircle class="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
+                            {{ saleResult?.isPaid ? 'Payment Complete' : 'Sale Saved' }}
+                        </h3>
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                            {{ saleResult?.isPaid ? 'Sale has been paid and recorded.' : 'Sale saved as outstanding.' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="overflow-y-auto flex-1 p-5">
+                    <!-- Available Stock — large -->
+                    <div v-if="updatedStockItems.length > 0" class="grid grid-cols-2 gap-2">
+                        <div
+                            v-for="stock in updatedStockItems"
+                            :key="stock.id"
+                            class="rounded-xl bg-secondary-50 dark:bg-secondary-800 px-4 py-3"
+                        >
+                            <p class="text-sm font-medium text-secondary-600 dark:text-secondary-300 leading-tight mb-1 truncate">{{ stock.label }}</p>
+                            <p
+                                class="text-4xl font-bold leading-none"
+                                :class="stock.available_stock > 0 ? 'text-secondary-900 dark:text-white' : 'text-red-500 dark:text-red-400'"
+                            >{{ stock.available_stock }}</p>
+                            <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">units left</p>
+                        </div>
+                    </div>
+                    <p v-else class="text-sm text-secondary-500 dark:text-secondary-400">No stock data available.</p>
+                </div>
+
+                <!-- Footer actions -->
+                <div class="px-5 py-4 border-t border-secondary-200 dark:border-secondary-700 flex items-center gap-2 shrink-0">
+                    <button
+                        type="button"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+                        @click="resetForNewSale"
+                    >New Sale</button>
+                    <button
+                        type="button"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white"
+                        @click="goToSales"
+                    >View Sales</button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Globe, House } from 'lucide-vue-next';
+import { CheckCircle, Globe, House } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -229,6 +284,9 @@ const companyAccounts = ref([]);
 const payNowModalOpen = ref(false);
 const selectedPayNowAccountId = ref(null);
 const saleLocked = ref(false);
+const successModalOpen = ref(false);
+const saleResult = ref(null);
+const soldVariationIds = ref([]);
 
 let rowKey = 0;
 let productUiTimer = null;
@@ -296,6 +354,11 @@ const showReferenceField = computed(() => {
 
 const totalAmount = computed(() => {
     return form.value.items.reduce((sum, item) => sum + itemSubtotal(item), 0);
+});
+
+const updatedStockItems = computed(() => {
+    if (!soldVariationIds.value.length) return [];
+    return variationOptions.value.filter((v) => soldVariationIds.value.includes(v.id));
 });
 
 const submitDisabled = computed(() => {
@@ -603,11 +666,29 @@ async function submitSale(mode = 'update') {
             return;
         }
 
+        // Capture sale info before form is reset
+        const soldItems = form.value.items.map((item) => {
+            const variation = selectedVariation(item.product_variation_id);
+            return {
+                variationId: item.product_variation_id,
+                label: variation?.label || 'Item',
+                quantity: item.quantity,
+                unitPrice: unitPrice(item),
+                subtotal: itemSubtotal(item),
+            };
+        });
+        const capturedTotal = totalAmount.value;
+        const capturedCustomerName = selectedMember.value?.label || form.value.customer_name || null;
+        const capturedCustomerType = form.value.customer_type;
+        const capturedPaymentMethodLabel = paymentMethods.find((m) => m.value === form.value.payment_method)?.label || form.value.payment_method;
+        const capturedIsPaid = mode === 'pay_now';
+
         if (isEdit.value) {
             await apiRequest(`/api/sales/${route.params.id}`, {
                 method: 'put',
                 data: payload,
             });
+            router.push('/sales');
         } else {
             await apiRequest('/api/sales', {
                 method: 'post',
@@ -615,9 +696,22 @@ async function submitSale(mode = 'update') {
             });
 
             payNowModalOpen.value = false;
-        }
 
-        router.push('/sales');
+            // Build result and show success modal
+            saleResult.value = {
+                items: soldItems,
+                totalAmount: capturedTotal,
+                customerName: capturedCustomerName,
+                customerType: capturedCustomerType,
+                paymentMethodLabel: capturedPaymentMethodLabel,
+                isPaid: capturedIsPaid,
+            };
+            soldVariationIds.value = soldItems.map((item) => item.variationId);
+            successModalOpen.value = true;
+
+            // Reload meta in background to get fresh stock numbers
+            loadMeta();
+        }
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to complete sale.';
     } finally {
@@ -649,6 +743,28 @@ function closePayNowModal() {
     }
 
     payNowModalOpen.value = false;
+}
+
+function resetForNewSale() {
+    successModalOpen.value = false;
+    saleResult.value = null;
+    soldVariationIds.value = [];
+    form.value = {
+        customer_name: '',
+        customer_member_id: null,
+        customer_type: 'local',
+        payment_method: 'cash',
+        reference_number: '',
+        paid_amount: 0,
+        items: [],
+    };
+    walletBalance.value = 0;
+    productSearch.value = '';
+    errorMessage.value = '';
+}
+
+function goToSales() {
+    router.push('/sales');
 }
 
 onMounted(() => {
