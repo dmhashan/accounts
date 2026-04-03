@@ -16,6 +16,7 @@ const InventoryStockFormPage = () => import('./pages/InventoryStockFormPage.vue'
 const AccountsPage = () => import('./pages/AccountsPage.vue');
 const AccountFormPage = () => import('./pages/AccountFormPage.vue');
 const AccountTransferFormPage = () => import('./pages/AccountTransferFormPage.vue');
+const ExpensesPage = () => import('./pages/ExpensesPage.vue');
 const ExpenseFormPage = () => import('./pages/ExpenseFormPage.vue');
 const SalesPage = () => import('./pages/SalesPage.vue');
 const SalesFormPage = () => import('./pages/SalesFormPage.vue');
@@ -30,6 +31,7 @@ const WorkoutProgramAssignmentFormPage = () => import('./pages/WorkoutProgramAss
 const WorkoutProgramAssignmentEditPage = () => import('./pages/WorkoutProgramAssignmentEditPage.vue');
 const DietPage = () => import('./pages/DietPage.vue');
 const PaymentsPage = () => import('./pages/PaymentsPage.vue');
+const PaymentFormPage = () => import('./pages/PaymentFormPage.vue');
 const AttendancePage = () => import('./pages/AttendancePage.vue');
 
 const routes = [
@@ -57,6 +59,9 @@ const routes = [
     { path: '/accounts/transfers/:id/edit', component: AccountTransferFormPage, meta: { title: 'Edit Transfer' } },
     { path: '/accounts/expenses/new', component: ExpenseFormPage, meta: { title: 'New Expense' } },
     { path: '/accounts/expenses/:id/edit', component: ExpenseFormPage, meta: { title: 'Edit Expense' } },
+    { path: '/expenses', component: ExpensesPage, meta: { title: 'Expenses' } },
+    { path: '/expenses/new', component: ExpenseFormPage, meta: { title: 'New Expense' } },
+    { path: '/expenses/:id/edit', component: ExpenseFormPage, meta: { title: 'Edit Expense' } },
     { path: '/sales', component: SalesPage, meta: { title: 'Sales' } },
     { path: '/sales/new', component: SalesFormPage, meta: { title: 'New Sale' } },
     { path: '/sales/:id/edit', component: SalesFormPage, meta: { title: 'Edit Sale' } },
@@ -73,6 +78,8 @@ const routes = [
         { path: '/workout/assignments/:id/edit', component: WorkoutProgramAssignmentEditPage, meta: { title: 'Edit Assignment' } },
     { path: '/diet', component: DietPage, meta: { title: 'Diet' } },
     { path: '/payments', component: PaymentsPage, meta: { title: 'Payments' } },
+    { path: '/payments/new', component: PaymentFormPage, meta: { title: 'New Payment' } },
+    { path: '/payments/:id/edit', component: PaymentFormPage, meta: { title: 'Edit Payment' } },
     { path: '/attendance', component: AttendancePage, meta: { title: 'Attendance' } },
 ];
 

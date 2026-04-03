@@ -10,8 +10,8 @@ class CompanyAccountTransaction extends Model
     protected $fillable = [
         'tenant_id',
         'company_account_id',
-        'sale_id',
-        'expense_id',
+        'model_name',
+        'reference_id',
         'type',
         'amount',
         'transaction_date',
@@ -27,16 +27,6 @@ class CompanyAccountTransaction extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(CompanyAccount::class, 'company_account_id');
-    }
-
-    public function sale(): BelongsTo
-    {
-        return $this->belongsTo(Sale::class);
-    }
-
-    public function expense(): BelongsTo
-    {
-        return $this->belongsTo(Expense::class);
     }
 
     public function tenant(): BelongsTo

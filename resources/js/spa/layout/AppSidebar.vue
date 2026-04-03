@@ -97,6 +97,18 @@ function toggleTheme() {
 }
 
 function isActive(path) {
+    if (path === '/settings') {
+        return route.path === '/settings' || route.path.startsWith('/users') || route.path.startsWith('/roles');
+    }
+    if (path === '/reports') {
+        return route.path === '/reports' || route.path === '/stats';
+    }
+    if (path === '/expenses') {
+        return route.path.startsWith('/expenses');
+    }
+    if (path === '/payments') {
+        return route.path.startsWith('/payments');
+    }
     return route.path === path;
 }
 </script>

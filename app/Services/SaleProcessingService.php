@@ -384,16 +384,17 @@ class SaleProcessingService
 
         CompanyAccountTransaction::updateOrCreate(
             [
-                'sale_id' => $sale->id,
-                'type' => 'sale_payment',
+                'model_name'   => 'sale',
+                'reference_id' => $sale->id,
             ],
             [
-                'tenant_id' => $tenantId,
+                'tenant_id'          => $tenantId,
                 'company_account_id' => $sale->account_id,
-                'amount' => (float) $sale->total_amount,
-                'transaction_date' => $transactionDate ?? optional($sale->created_at)->toDateString() ?? Carbon::today()->toDateString(),
-                'reference_number' => $sale->reference_number,
-                'notes' => 'Sale payment for sale #'.$sale->id,
+                'type'               => 'sale_payment',
+                'amount'             => (float) $sale->total_amount,
+                'transaction_date'   => $transactionDate ?? optional($sale->created_at)->toDateString() ?? Carbon::today()->toDateString(),
+                'reference_number'   => $sale->reference_number,
+                'notes'              => 'Sale payment for sale #'.$sale->id,
             ]
         );
     }

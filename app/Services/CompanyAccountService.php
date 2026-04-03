@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransaction;
 use App\Models\CompanyAccountTransfer;
+use App\Models\Expense;
+use App\Models\MemberPayment;
+use App\Models\Sale;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -104,36 +107,71 @@ class CompanyAccountService
     {
         $transactions = CompanyAccountTransaction::query()
             ->where('tenant_id', $tenantId)
-            ->with([
-                'account:id,name',
-                'sale:id,reference_number,customer_name,total_amount',
-                'expense:id,category',
-            ])
+            ->with(['account:id,name'])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
+        $items = collect($transactions->items());
+
+        // Collect reference IDs per model type
+        $saleIds    = $items->where('model_name', 'sale')->pluck('reference_id')->filter()->unique()->values();
+        $expenseIds = $items->where('model_name', 'expense')->pluck('reference_id')->filter()->unique()->values();
+        $paymentIds = $items->where('model_name', 'payment')->pluck('reference_id')->filter()->unique()->values();
+
+        // Load related records in bulk
+        $sales    = $saleIds->isNotEmpty()
+            ? Sale::whereIn('id', $saleIds)->get(['id', 'reference_number', 'customer_name'])->keyBy('id')
+            : collect();
+        $expenses = $expenseIds->isNotEmpty()
+            ? Expense::whereIn('id', $expenseIds)->get(['id', 'category'])->keyBy('id')
+            : collect();
+        $payments = $paymentIds->isNotEmpty()
+            ? MemberPayment::whereIn('id', $paymentIds)
+                ->with('member:id,first_name,last_name,name')
+                ->get(['id', 'member_id'])
+                ->keyBy('id')
+            : collect();
+
         return [
-            'data' => collect($transactions->items())->map(fn (CompanyAccountTransaction $tx) => [
-                'id' => $tx->id,
-                'type' => $tx->type,
-                'amount' => $tx->amount,
-                'transaction_date' => $tx->transaction_date?->toDateString(),
-                'reference_number' => $tx->reference_number,
-                'notes' => $tx->notes,
-                'account_name' => $tx->account?->name,
-                'sale_id' => $tx->sale_id,
-                'sale_reference' => $tx->sale?->reference_number,
-                'sale_customer' => $tx->sale?->customer_name,
-                'sale_total' => $tx->sale?->total_amount,
-                'expense_id' => $tx->expense_id,
-                'expense_category' => $tx->expense?->category,
-            ]),
+            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments) {
+                $sourceReference = null;
+                $customer = null;
+
+                if ($tx->model_name === 'sale' && $tx->reference_id) {
+                    $sale = $sales->get($tx->reference_id);
+                    $sourceReference = $sale?->reference_number;
+                    $customer = $sale?->customer_name;
+                } elseif ($tx->model_name === 'expense' && $tx->reference_id) {
+                    $expense = $expenses->get($tx->reference_id);
+                    $sourceReference = $expense?->category;
+                } elseif ($tx->model_name === 'payment' && $tx->reference_id) {
+                    $payment = $payments->get($tx->reference_id);
+                    if ($payment?->member) {
+                        $m = $payment->member;
+                        $customer = trim(($m->first_name ?? '') . ' ' . ($m->last_name ?? '')) ?: ($m->name ?? null);
+                    }
+                }
+
+                return [
+                    'id'               => $tx->id,
+                    'type'             => $tx->type,
+                    'model_name'       => $tx->model_name,
+                    'reference_id'     => $tx->reference_id,
+                    'amount'           => $tx->amount,
+                    'transaction_date' => $tx->transaction_date?->toDateString(),
+                    'reference_number' => $tx->reference_number,
+                    'notes'            => $tx->notes,
+                    'account_name'     => $tx->account?->name,
+                    'source_reference' => $sourceReference,
+                    'customer'         => $customer,
+                ];
+            }),
             'meta' => [
                 'current_page' => $transactions->currentPage(),
-                'last_page' => $transactions->lastPage(),
-                'per_page' => $transactions->perPage(),
-                'total' => $transactions->total(),
+                'last_page'    => $transactions->lastPage(),
+                'per_page'     => $transactions->perPage(),
+                'total'        => $transactions->total(),
             ],
         ];
     }

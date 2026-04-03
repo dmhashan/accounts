@@ -170,7 +170,8 @@ class SalesApiTest extends ApiRouteTestCase
         ]);
 
         $this->assertDatabaseHas('company_account_transactions', [
-            'sale_id' => $saleId,
+            'model_name' => 'sale',
+            'reference_id' => $saleId,
             'company_account_id' => $account->id,
             'type' => 'sale_payment',
             'amount' => 300,
@@ -357,7 +358,8 @@ class SalesApiTest extends ApiRouteTestCase
         ]);
 
         $this->assertDatabaseHas('company_account_transactions', [
-            'sale_id' => $saleId,
+            'model_name' => 'sale',
+            'reference_id' => $saleId,
             'company_account_id' => $account->id,
             'type' => 'sale_payment',
             'amount' => 100,
@@ -388,7 +390,8 @@ class SalesApiTest extends ApiRouteTestCase
         ]))->assertCreated()->json('data.id');
 
         $this->assertDatabaseHas('company_account_transactions', [
-            'sale_id' => $saleId,
+            'model_name' => 'sale',
+            'reference_id' => $saleId,
             'company_account_id' => $account->id,
             'amount' => 125,
         ]);

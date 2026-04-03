@@ -7,12 +7,11 @@
 
             <template #extra-slot>
                 <div class="space-y-3">
-                    <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingAccounts || loadingTransfers || loadingExpenses || loadingTransactions" @search="triggerActiveSearch" />
+                    <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingAccounts || loadingTransfers || loadingTransactions" @search="triggerActiveSearch" />
 
                     <div class="inline-flex flex-wrap rounded-xl app-surface-soft p-1">
                         <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
                         <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
-                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'expenses' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'expenses'">Expenses</button>
                         <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
                     </div>
                 </div>
@@ -172,84 +171,6 @@
             </div>
         </div>
 
-        <div v-if="activeTab === 'expenses'" class="min-h-0 flex flex-1 flex-col">
-            <div class="app-page-scroll">
-                <div class="app-surface rounded-2xl overflow-hidden">
-                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="expense in filteredExpenses" :key="expense.id" class="p-4 space-y-2">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ expense.category }}</p>
-                                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">{{ expense.account_name }}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm font-semibold text-red-600 dark:text-red-400">-{{ money(expense.amount) }}</p>
-                                <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ expense.expense_date || '-' }}</p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div v-if="expense.reference_number" class="col-span-2"><span class="text-secondary-500 dark:text-secondary-400">Reference:</span> {{ expense.reference_number }}</div>
-                        </div>
-
-                        <p v-if="expense.notes" class="text-xs text-secondary-600 dark:text-secondary-300">{{ expense.notes }}</p>
-
-                        <div class="mt-2 flex gap-3 text-sm">
-                            <RouterLink :to="`/accounts/expenses/${expense.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                            <button type="button" class="text-red-600 dark:text-red-400" @click="removeExpense(expense)">Delete</button>
-                        </div>
-                    </article>
-                    <div v-if="filteredExpenses.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</div>
-                </div>
-
-                    <div class="hidden md:block app-table-scroll">
-                    <table class="w-full">
-                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Account</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Reference</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Notes</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Amount</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="expense in filteredExpenses" :key="expense.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.expense_date || '-' }}</td>
-                                <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ expense.category }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.account_name }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.reference_number || '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 max-w-xs truncate">{{ expense.notes || '-' }}</td>
-                                <td class="px-6 py-4 text-sm font-medium text-red-600 dark:text-red-400 text-right">-{{ money(expense.amount) }}</td>
-                                <td class="px-6 py-4 text-right text-sm">
-                                    <RouterLink :to="`/accounts/expenses/${expense.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3">Edit</RouterLink>
-                                    <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeExpense(expense)">Delete</button>
-                                </td>
-                            </tr>
-                            <tr v-if="filteredExpenses.length === 0">
-                                <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="app-page-pagination">
-                <AppPagination
-                    :current-page="expenseMeta.current_page"
-                    :last-page="expenseMeta.last_page"
-                    :per-page="expensePerPage"
-                    :total="expenseMeta.total"
-                    :disabled="loadingExpenses"
-                    @page-change="handleExpensePageChange"
-                    @limit-change="handleExpenseLimitChange"
-                />
-            </div>
-        </div>
-
         <div v-if="activeTab === 'transactions'" class="min-h-0 flex flex-1 flex-col">
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
@@ -267,8 +188,13 @@
                         </div>
 
                         <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div v-if="tx.sale_reference"><span class="text-secondary-500 dark:text-secondary-400">Sale Ref:</span> {{ tx.sale_reference }}</div>
-                            <div v-if="tx.sale_customer"><span class="text-secondary-500 dark:text-secondary-400">Customer:</span> {{ tx.sale_customer }}</div>
+                            <div v-if="tx.model_name" class="col-span-2">
+                                <span class="text-secondary-500 dark:text-secondary-400">Record:</span>
+                                <RouterLink :to="sourceRecordPath(tx)" class="ml-1 text-primary-600 dark:text-primary-400 hover:underline">
+                                    {{ sourceRecordLabel(tx) }}
+                                </RouterLink>
+                            </div>
+                            <div v-if="tx.customer"><span class="text-secondary-500 dark:text-secondary-400">Customer:</span> {{ tx.customer }}</div>
                             <div v-if="tx.reference_number" class="col-span-2"><span class="text-secondary-500 dark:text-secondary-400">Reference:</span> {{ tx.reference_number }}</div>
                         </div>
 
@@ -284,7 +210,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Account</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Sale Ref</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Record</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Customer</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Reference</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Amount</th>
@@ -295,8 +221,11 @@
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.transaction_date || '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ tx.account_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ formatType(tx.type) }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.sale_reference || '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.sale_customer || '-' }}</td>
+                                <td class="px-6 py-4 text-sm">
+                                    <RouterLink v-if="tx.model_name" :to="sourceRecordPath(tx)" class="text-primary-600 dark:text-primary-400 hover:underline">{{ sourceRecordLabel(tx) }}</RouterLink>
+                                    <span v-else>-</span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.customer || '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ tx.reference_number || '-' }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white text-right">{{ money(tx.amount) }}</td>
                             </tr>
@@ -327,7 +256,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowRightLeft, Landmark, ReceiptText } from 'lucide-vue-next';
+import { ArrowRightLeft, Landmark } from 'lucide-vue-next';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -336,25 +265,21 @@ import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();
 
-const validTabs = ['accounts', 'transfers', 'expenses', 'transactions'];
+const validTabs = ['accounts', 'transfers', 'transactions'];
 const activeTab = ref(validTabs.includes(route.query.tab) ? route.query.tab : 'accounts');
 const accounts = ref([]);
 const transfers = ref([]);
-const expenses = ref([]);
 const transactions = ref([]);
 const search = ref('');
 const errorMessage = ref('');
 const loadingAccounts = ref(false);
 const loadingTransfers = ref(false);
-const loadingExpenses = ref(false);
 const loadingTransactions = ref(false);
 const accountMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const transferMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
-const expenseMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const transactionMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const accountPerPage = ref(10);
 const transferPerPage = ref(10);
-const expensePerPage = ref(10);
 const transactionPerPage = ref(10);
 
 const tabCta = computed(() => {
@@ -367,14 +292,6 @@ const tabCta = computed(() => {
             to: '/accounts/transfers/new',
             icon: ArrowRightLeft,
             label: 'New Transfer',
-        };
-    }
-
-    if (activeTab.value === 'expenses') {
-        return {
-            to: '/accounts/expenses/new',
-            icon: ReceiptText,
-            label: 'Record Expense',
         };
     }
 
@@ -411,20 +328,6 @@ const filteredTransfers = computed(() => {
     });
 });
 
-const filteredExpenses = computed(() => {
-    if (!normalizedSearch.value) return expenses.value;
-
-    return expenses.value.filter((expense) => {
-        return [
-            expense.account_name,
-            expense.category,
-            expense.reference_number,
-            expense.expense_date,
-            expense.notes,
-            expense.amount,
-        ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
-    });
-});
 
 const filteredTransactions = computed(() => {
     if (!normalizedSearch.value) return transactions.value;
@@ -434,8 +337,8 @@ const filteredTransactions = computed(() => {
             transaction.account_name,
             transaction.transaction_date,
             transaction.reference_number,
-            transaction.sale_reference,
-            transaction.sale_customer,
+            transaction.source_reference,
+            transaction.customer,
             transaction.type,
             transaction.amount,
         ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
@@ -450,6 +353,20 @@ function formatType(type) {
     return type ? type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '-';
 }
 
+function sourceRecordPath(tx) {
+    if (tx.model_name === 'sale') return `/sales/${tx.reference_id}/edit`;
+    if (tx.model_name === 'expense') return `/expenses/${tx.reference_id}/edit`;
+    if (tx.model_name === 'payment') return `/payments/${tx.reference_id}/edit`;
+    return '#';
+}
+
+function sourceRecordLabel(tx) {
+    if (tx.model_name === 'sale') return tx.source_reference ? `Sale • ${tx.source_reference}` : `Sale #${tx.reference_id}`;
+    if (tx.model_name === 'expense') return tx.source_reference ? `Expense • ${tx.source_reference}` : `Expense #${tx.reference_id}`;
+    if (tx.model_name === 'payment') return `Payment #${tx.reference_id}`;
+    return '-';
+}
+
 function triggerActiveSearch() {
     if (activeTab.value === 'accounts') {
         loadAccounts(1);
@@ -458,11 +375,6 @@ function triggerActiveSearch() {
 
     if (activeTab.value === 'transfers') {
         loadTransfers(1);
-        return;
-    }
-
-    if (activeTab.value === 'expenses') {
-        loadExpenses(1);
         return;
     }
 
@@ -550,7 +462,7 @@ async function loadAll() {
     errorMessage.value = '';
 
     try {
-        await Promise.all([loadAccounts(), loadTransfers(), loadExpenses(), loadTransactions()]);
+        await Promise.all([loadAccounts(), loadTransfers(), loadTransactions()]);
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load account data.';
     }
@@ -585,21 +497,6 @@ async function removeTransfer(transfer) {
     }
 }
 
-async function removeExpense(expense) {
-    if (!window.confirm(`Delete expense "${expense.category}"?`)) {
-        return;
-    }
-
-    try {
-        await apiRequest(`/api/accounts/expenses/${expense.id}`, { method: 'delete' });
-        await Promise.all([
-            loadAccounts(accountMeta.value.current_page),
-            loadExpenses(expenseMeta.value.current_page),
-        ]);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete expense.';
-    }
-}
 
 function handleAccountPageChange(page) {
     loadAccounts(page);
@@ -619,14 +516,6 @@ function handleTransferLimitChange(limit) {
     loadTransfers(1);
 }
 
-function handleExpensePageChange(page) {
-    loadExpenses(page);
-}
-
-function handleExpenseLimitChange(limit) {
-    expensePerPage.value = Number(limit);
-    loadExpenses(1);
-}
 
 function handleTransactionPageChange(page) {
     loadTransactions(page);

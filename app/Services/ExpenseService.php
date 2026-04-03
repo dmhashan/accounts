@@ -101,7 +101,11 @@ class ExpenseService
             abort(404);
         }
 
-        // The transaction is deleted via cascadeOnDelete on the FK
+        // Delete the associated transaction before deleting the expense
+        CompanyAccountTransaction::where('model_name', 'expense')
+            ->where('reference_id', $lockedExpense->id)
+            ->delete();
+
         $lockedExpense->delete();
     }
 
@@ -109,16 +113,18 @@ class ExpenseService
     {
         // Expenses are debits: stored as negative amounts so they reduce the account balance
         CompanyAccountTransaction::updateOrCreate(
-            ['expense_id' => $expense->id],
             [
-                'tenant_id' => $tenantId,
+                'model_name'   => 'expense',
+                'reference_id' => $expense->id,
+            ],
+            [
+                'tenant_id'          => $tenantId,
                 'company_account_id' => $expense->company_account_id,
-                'sale_id' => null,
-                'type' => 'expense',
-                'amount' => -(float) $expense->amount,
-                'transaction_date' => $expense->expense_date->toDateString(),
-                'reference_number' => $expense->reference_number,
-                'notes' => filled($expense->notes) ? $expense->notes : 'Expense: '.$expense->category,
+                'type'               => 'expense',
+                'amount'             => -(float) $expense->amount,
+                'transaction_date'   => $expense->expense_date->toDateString(),
+                'reference_number'   => $expense->reference_number,
+                'notes'              => filled($expense->notes) ? $expense->notes : 'Expense: '.$expense->category,
             ]
         );
     }

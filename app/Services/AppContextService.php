@@ -29,6 +29,7 @@ class AppContextService
                 'reports' => $user->hasPermission('reports.view'),
                 'inventory' => $user->hasPermission('inventory.manage'),
                 'accounts' => $user->hasPermission('accounts.manage'),
+                'expenses' => $user->hasPermission('accounts.manage'),
                 'sales' => $user->hasPermission('sales.process'),
                 'salesCreate' => $user->hasPermission('sales.create'),
                 'salesEdit' => $user->hasPermission('sales.edit'),
@@ -38,6 +39,7 @@ class AppContextService
                 'workout' => $user->hasPermission('member.workout.view') || $user->hasPermission('workouts.manage'),
                 'diet' => $user->hasPermission('member.diet.view'),
                 'payments' => $user->hasPermission('member.payments.view'),
+                'paymentsManage' => $user->hasPermission('payments.manage'),
                 'attendance' => $user->hasPermission('member.attendance.view'),
             ],
         ];
