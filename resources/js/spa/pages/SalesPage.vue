@@ -44,12 +44,13 @@
                 <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                     <article v-for="sale in filteredSales" :key="sale.id" class="p-4 space-y-2">
                         <div class="flex justify-between items-start gap-3">
-                            <div>
+                            <button type="button" class="flex-1 text-left" @click="openPreviewModal(sale)">
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">#{{ sale.id }} • {{ sale.customer_name || 'Walk-in' }}</p>
                                 <p class="text-xs text-secondary-500 dark:text-secondary-400">{{ sale.created_at }} • {{ sale.customer_type }}</p>
                                 <p class="mt-1 text-xs font-semibold" :class="sale.is_paid ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">{{ sale.is_paid ? 'Paid' : 'Outstanding' }}</p>
-                            </div>
-                            <div class="flex gap-2">
+                            </button>
+                            <div class="flex gap-2 shrink-0">
+                                <button type="button" class="text-secondary-500 dark:text-secondary-400 text-sm" @click="openPreviewModal(sale)">View</button>
                                 <button v-if="permissions.edit && !sale.is_paid" type="button" class="text-emerald-600 dark:text-emerald-400 text-sm" @click="openPayNowModal(sale)">Pay Now</button>
                                 <RouterLink v-if="permissions.edit && !sale.is_paid" :to="`/sales/${sale.id}/edit`" type="button" class="text-primary-600 dark:text-primary-400 text-sm">Edit</RouterLink>
                                 <button v-if="permissions.delete && !sale.is_paid" type="button" class="text-red-600 dark:text-red-400 text-sm" @click="removeSale(sale.id)">Delete</button>
@@ -97,6 +98,7 @@
                                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" :class="sale.is_paid ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'">{{ sale.is_paid ? 'Paid' : 'Outstanding' }}</span>
                                 </td>
                                 <td class="px-6 py-4 text-right space-x-2">
+                                    <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200 text-sm font-medium" @click="openPreviewModal(sale)">View</button>
                                     <button v-if="permissions.edit && !sale.is_paid" type="button" class="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 text-sm font-medium" @click="openPayNowModal(sale)">Pay Now</button>
                                     <RouterLink v-if="permissions.edit && !sale.is_paid" :to="`/sales/${sale.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">Edit</RouterLink>
                                     <button v-if="permissions.delete && !sale.is_paid" type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium" @click="removeSale(sale.id)">Delete</button>
@@ -122,6 +124,24 @@
                     @page-change="handlePageChange"
                     @limit-change="handleLimitChange"
                 />
+            </div>
+        </div>
+
+        <!-- Invoice Preview Modal -->
+        <div v-if="previewModalOpen" class="fixed inset-0 z-40 flex items-start justify-center p-3 sm:p-6 overflow-y-auto" @keydown.escape.window="closePreviewModal">
+            <div class="fixed inset-0 bg-black/45" @click="closePreviewModal"></div>
+            <div class="relative z-10 w-full max-w-2xl my-4">
+                <div class="flex items-center justify-end mb-2">
+                    <button
+                        type="button"
+                        class="p-2 rounded-lg bg-white dark:bg-secondary-800 text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-200 shadow"
+                        @click="closePreviewModal"
+                        aria-label="Close"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <SaleInvoicePreviewCard v-if="previewSale" :sale="previewSale" />
             </div>
         </div>
 
@@ -172,6 +192,7 @@ import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
+import SaleInvoicePreviewCard from '../components/SaleInvoicePreviewCard.vue';
 import { ReceiptText } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
@@ -189,6 +210,8 @@ const payNowModalOpen = ref(false);
 const selectedSale = ref(null);
 const selectedAccountId = ref(null);
 const payingSale = ref(false);
+const previewModalOpen = ref(false);
+const previewSale = ref(null);
 const permissions = ref({
     create: Boolean(context.permissions?.salesCreate),
     edit: Boolean(context.permissions?.salesEdit),
@@ -274,6 +297,16 @@ function switchTab(tab) {
 
     activeTab.value = tab;
     loadSales(1);
+}
+
+function openPreviewModal(sale) {
+    previewSale.value = sale;
+    previewModalOpen.value = true;
+}
+
+function closePreviewModal() {
+    previewModalOpen.value = false;
+    previewSale.value = null;
 }
 
 function openPayNowModal(sale) {

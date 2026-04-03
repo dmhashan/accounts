@@ -66,6 +66,8 @@ class SaleApiController extends Controller
                     'product_name' => $item->product?->name,
                     'variation_name' => $item->variation?->name,
                     'quantity' => $item->quantity,
+                    'unit_price' => (float) $item->unit_price,
+                    'subtotal' => (float) $item->subtotal,
                 ]),
             ]),
             'meta' => [

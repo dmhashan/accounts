@@ -51,9 +51,67 @@ class MemberController extends Controller
         $sales = \App\Models\Sale::where('tenant_id', $tenant->id)
             ->where('customer_member_id', $member->id)
             ->orderByDesc('created_at')
-            ->with('items')
+            ->with(['items.product', 'items.variation'])
             ->get();
         $totalOutstanding = $sales->where('is_paid', false)->sum('balance');
+
+        // Pre-format workout data for Alpine.js preview modals
+        $workoutsData = $assignedWorkouts->map(function ($assignment) {
+            $program = $assignment->assignedProgram;
+            return [
+                'title' => $program->title ?? 'N/A',
+                'duration_weeks' => $program->duration_weeks,
+                'creator_name' => $program->creator->name ?? null,
+                'effective_date' => $assignment->effective_date?->format('Y-m-d'),
+                'days' => ($program->days ?? collect())->map(function ($day) {
+                    return [
+                        'day_number' => $day->day_number,
+                        'title' => $day->title,
+                        'exercises' => $day->dayExercises->map(fn ($ex) => [
+                            'exercise_name' => $ex->exercise->name ?? 'Exercise',
+                            'w1_w3_exercise' => $ex->w1_w3_exercise,
+                            'w2_w4_exercise' => $ex->w2_w4_exercise,
+                            'sets' => $ex->sets,
+                            'reps' => $ex->reps,
+                            'tempo' => $ex->tempo,
+                            'rest_seconds' => $ex->rest_seconds,
+                        ])->values(),
+                    ];
+                })->values(),
+                'extras' => ($program->extras ?? collect())->map(fn ($e) => [
+                    'type' => $e->type,
+                    'exercise_name' => $e->exercise_name,
+                    'sets' => $e->sets,
+                    'reps_or_time' => $e->reps_or_time,
+                    'rest' => $e->rest,
+                    'notes' => $e->notes,
+                    'frequency_per_week' => $e->frequency_per_week,
+                    'duration_minutes' => $e->duration_minutes,
+                    'cardio_type' => $e->cardio_type,
+                ])->values(),
+            ];
+        })->values();
+
+        // Pre-format sales data for Alpine.js preview modals
+        $salesData = $sales->map(fn ($sale) => [
+            'id' => $sale->id,
+            'created_at' => $sale->created_at->format('Y-m-d'),
+            'customer_name' => $sale->customer_name,
+            'customer_type' => $sale->customer_type,
+            'payment_method' => $sale->payment_method,
+            'reference_number' => $sale->reference_number,
+            'total_amount' => number_format($sale->total_amount, 2),
+            'paid_amount' => number_format($sale->paid_amount, 2),
+            'balance' => number_format($sale->balance, 2),
+            'is_paid' => $sale->is_paid,
+            'items' => $sale->items->map(fn ($item) => [
+                'product_name' => $item->product->name ?? '-',
+                'variation_name' => $item->variation->name ?? null,
+                'quantity' => $item->quantity,
+                'unit_price' => number_format($item->unit_price, 2),
+                'subtotal' => number_format($item->subtotal, 2),
+            ])->values(),
+        ])->values();
 
         return view('members.public-profile', [
             'member' => $member,
@@ -61,6 +119,8 @@ class MemberController extends Controller
             'assignedWorkouts' => $assignedWorkouts,
             'sales' => $sales,
             'totalOutstanding' => $totalOutstanding,
+            'workoutsData' => $workoutsData,
+            'salesData' => $salesData,
         ]);
     }
     public function index()
