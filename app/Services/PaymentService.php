@@ -14,8 +14,6 @@ class PaymentService
     {
         $members = Member::query()
             ->where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->where('is_temp', false)
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get(['id', 'first_name', 'last_name', 'name', 'phone_number', 'payment_plan', 'price']);

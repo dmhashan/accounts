@@ -32,12 +32,15 @@
                     </div>
 
                     <AppFormField label="Account" :required="true">
-                        <AppFormSelect v-model="form.company_account_id" required>
-                            <option value="">Select account</option>
-                            <option v-for="account in accounts" :key="account.id" :value="String(account.id)">
-                                {{ account.name }}
-                            </option>
-                        </AppFormSelect>
+                        <AppSearchableDropdown
+                            v-model="form.company_account_id"
+                            :options="accounts"
+                            :option-label="option => option.name"
+                            :option-key="option => option.id"
+                            placeholder="Select account..."
+                            search-placeholder="Search account..."
+                            no-results-text="No accounts found."
+                        />
                     </AppFormField>
 
                     <AppFormField label="Amount" :required="true">
@@ -76,7 +79,6 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const route = useRoute();
@@ -90,7 +92,7 @@ const accounts = ref([]);
 
 const form = ref({
     member_id: null,
-    company_account_id: '',
+    company_account_id: null,
     amount: '',
     payment_date: new Date().toISOString().slice(0, 10),
     reference_number: '',
@@ -121,6 +123,9 @@ async function loadMeta() {
     const response = await apiRequest('/api/payments/meta');
     members.value = response.members || [];
     accounts.value = response.accounts || [];
+    if (!isEdit.value && accounts.value.length > 0) {
+        form.value.company_account_id = accounts.value[0].id;
+    }
 }
 
 async function loadPayment() {
@@ -131,7 +136,7 @@ async function loadPayment() {
 
     form.value = {
         member_id: payment.member_id ?? null,
-        company_account_id: payment.company_account_id ? String(payment.company_account_id) : '',
+        company_account_id: payment.company_account_id ?? null,
         amount: payment.amount != null ? String(payment.amount) : '',
         payment_date: payment.payment_date || new Date().toISOString().slice(0, 10),
         reference_number: payment.reference_number || '',

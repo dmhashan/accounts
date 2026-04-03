@@ -10,12 +10,15 @@
         <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AppFormField label="Account" :required="true">
-                    <AppFormSelect v-model="form.company_account_id" required>
-                        <option value="">Select account</option>
-                        <option v-for="account in accounts" :key="account.id" :value="String(account.id)">
-                            {{ account.name }} &bull; {{ money(account.current_balance) }}
-                        </option>
-                    </AppFormSelect>
+                    <AppSearchableDropdown
+                        v-model="form.company_account_id"
+                        :options="accounts"
+                        :option-label="option => option.name + (option.current_balance != null ? ' • ' + money(option.current_balance) : '')"
+                        :option-key="option => option.id"
+                        placeholder="Select account..."
+                        search-placeholder="Search account..."
+                        no-results-text="No accounts found."
+                    />
                 </AppFormField>
 
                 <AppFormField label="Category" :required="true">
@@ -80,6 +83,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
@@ -109,7 +113,7 @@ const expenseCategories = [
 ];
 
 const form = ref({
-    company_account_id: '',
+    company_account_id: null,
     category: '',
     category_custom: false,
     amount: '',
@@ -137,6 +141,9 @@ function resetCategoryToSelect() {
 async function loadMeta() {
     const response = await apiRequest('/api/accounts/meta');
     accounts.value = response.accounts || [];
+    if (!isEdit.value && accounts.value.length > 0) {
+        form.value.company_account_id = accounts.value[0].id;
+    }
 }
 
 async function loadExpense() {
@@ -150,7 +157,7 @@ async function loadExpense() {
     const isKnownCategory = expenseCategories.includes(expense.category);
 
     form.value = {
-        company_account_id: expense.company_account_id ? String(expense.company_account_id) : '',
+        company_account_id: expense.company_account_id ?? null,
         category: expense.category || '',
         category_custom: !isKnownCategory && Boolean(expense.category),
         amount: expense.amount != null ? String(expense.amount) : '',
