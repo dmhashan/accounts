@@ -9,7 +9,7 @@
 
             <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <AppFormField label="Member" :required="true" class="md:col-span-2">
+                    <AppFormField label="Member" :optional="true" class="md:col-span-2">
                         <AppSearchableDropdown
                             v-model="form.member_id"
                             :options="members"
@@ -105,7 +105,7 @@ const selectedMember = computed(() => {
 });
 
 const submitDisabled = computed(() => {
-    return submitting.value || !form.value.member_id || !form.value.company_account_id || !form.value.amount;
+    return submitting.value || !form.value.company_account_id || !form.value.amount;
 });
 
 function money(value) {

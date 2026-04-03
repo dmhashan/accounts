@@ -68,7 +68,7 @@ class PaymentApiController extends Controller
     private function rules(): array
     {
         return [
-            'member_id' => ['required', 'integer', 'exists:members,id'],
+            'member_id' => ['nullable', 'integer', 'exists:members,id'],
             'company_account_id' => ['required', 'integer', 'exists:company_accounts,id'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'payment_date' => ['required', 'date'],

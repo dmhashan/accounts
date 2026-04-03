@@ -90,12 +90,14 @@ class PaymentService
     public function storePayment(int $tenantId, array $validated): MemberPayment
     {
         return DB::transaction(function () use ($tenantId, $validated) {
-            $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
+            if (!empty($validated['member_id'])) {
+                $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
+            }
             $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
 
             $payment = MemberPayment::create([
                 'tenant_id' => $tenantId,
-                'member_id' => $validated['member_id'],
+                'member_id' => $validated['member_id'] ?? null,
                 'company_account_id' => $validated['company_account_id'],
                 'amount' => $validated['amount'],
                 'payment_date' => $validated['payment_date'],
@@ -121,11 +123,13 @@ class PaymentService
                 abort(404);
             }
 
-            $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
+            if (!empty($validated['member_id'])) {
+                $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
+            }
             $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
 
             $lockedPayment->update([
-                'member_id' => $validated['member_id'],
+                'member_id' => $validated['member_id'] ?? null,
                 'company_account_id' => $validated['company_account_id'],
                 'amount' => $validated['amount'],
                 'payment_date' => $validated['payment_date'],
