@@ -32,11 +32,13 @@ class Member extends Model
         'comment',
         'is_active',
         'is_verified',
+        'is_temp',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_verified' => 'boolean',
+        'is_temp' => 'boolean',
         'date_of_birth' => 'date',
         'joined_date' => 'date',
         'admission_fee' => 'decimal:2',

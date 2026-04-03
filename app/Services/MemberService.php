@@ -19,10 +19,11 @@ class MemberService
         ];
     }
 
-    public function index(int $tenantId, User $currentUser, int $perPage, string $search): array
+    public function index(int $tenantId, User $currentUser, int $perPage, string $search, ?bool $isTemp = null): array
     {
         $members = Member::query()
             ->where('tenant_id', $tenantId)
+            ->when($isTemp !== null, fn ($q) => $q->where('is_temp', $isTemp))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
                     $innerQuery->where('member_id', 'like', "%{$search}%")
@@ -49,6 +50,7 @@ class MemberService
                     'phone_number' => $member->phone_number,
                     'is_active' => (bool) $member->is_active,
                     'is_verified' => (bool) $member->is_verified,
+                    'is_temp' => (bool) $member->is_temp,
                 ];
             }),
             'meta' => [
@@ -172,6 +174,21 @@ class MemberService
         ]);
     }
 
+    public function storeTemp(Tenant $tenant, array $validated): Member
+    {
+        $firstName = trim($validated['first_name'] ?? '');
+        $lastName = trim($validated['last_name'] ?? '');
+
+        $validated['member_id'] = Member::generateMemberId();
+        $validated['tenant_id'] = $tenant->id;
+        $validated['name'] = trim("$firstName $lastName") ?: $firstName ?: $lastName;
+        $validated['is_active'] = true;
+        $validated['is_verified'] = false;
+        $validated['is_temp'] = true;
+
+        return Member::create($validated);
+    }
+
     public function store(Tenant $tenant, array $validated): Member
     {
         $validated['member_id'] = Member::generateMemberId();
@@ -226,6 +243,7 @@ class MemberService
             'comment' => $member->comment,
             'is_active' => (bool) $member->is_active,
             'is_verified' => (bool) $member->is_verified,
+            'is_temp' => (bool) $member->is_temp,
             'created_at' => optional($member->created_at)->toDateString(),
         ];
     }

@@ -9,6 +9,7 @@ Route::middleware(['auth', 'permission:users.view'])->group(function () {
     Route::get('/members/export/google-contacts', [MemberApiController::class, 'exportGoogleContacts']);
     Route::get('/members/{member}', [MemberApiController::class, 'show']);
     Route::post('/members', [MemberApiController::class, 'store'])->middleware('permission:users.create');
+    Route::post('/members/temp', [MemberApiController::class, 'storeTemp'])->middleware('permission:users.create');
     Route::put('/members/{member}', [MemberApiController::class, 'update'])->middleware('permission:users.edit');
     Route::patch('/members/{member}/toggle-status', [MemberApiController::class, 'toggleStatus'])->middleware('permission:users.edit');
     Route::patch('/members/{member}/toggle-verification', [MemberApiController::class, 'toggleVerification'])->middleware('permission:users.edit');

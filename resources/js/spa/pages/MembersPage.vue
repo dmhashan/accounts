@@ -3,8 +3,9 @@
         <AppPageHeader>
             <template #cta-slot>
                 <div class="flex flex-row gap-2 w-full lg:w-auto">
-                    <AppHeaderAction :icon="Download" :label="exporting ? 'Exporting...' : 'Export to Google Contact'" variant="secondary" :disabled="exporting" @click="exportGoogleContacts" />
-                    <AppHeaderAction v-if="permissions.create" to="/members/new" :icon="UserRoundPlus" label="Add Member" />
+                    <AppHeaderAction v-if="activeTab === 'members'" :icon="Download" :label="exporting ? 'Exporting...' : 'Export to Google Contact'" variant="secondary" :disabled="exporting" @click="exportGoogleContacts" />
+                    <AppHeaderAction v-if="permissions.create && activeTab === 'temp'" variant="secondary" :icon="Clock" label="Add Temp Member" @click="tempModalOpen = true" />
+                    <AppHeaderAction v-if="permissions.create && activeTab === 'members'" to="/members/new" :icon="UserRoundPlus" label="Add Member" />
                 </div>
             </template>
 
@@ -18,11 +19,36 @@
         </div>
 
         <div class="min-h-0 flex flex-1 flex-col">
+            <!-- Tabs -->
+            <div class="flex border-b border-secondary-200 dark:border-secondary-700 mb-3 shrink-0">
+                <button
+                    type="button"
+                    class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                    :class="activeTab === 'members'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
+                    @click="switchTab('members')"
+                >
+                    Members
+                </button>
+                <button
+                    type="button"
+                    class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                    :class="activeTab === 'temp'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
+                    @click="switchTab('temp')"
+                >
+                    Temp Members
+                </button>
+            </div>
+
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading members...</div>
 
                     <template v-else>
+                        <!-- Mobile cards -->
                         <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                             <article
                                 v-for="member in members"
@@ -45,7 +71,7 @@
                                             <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
                                                 {{ member.is_active ? 'Active' : 'Inactive' }}
                                             </span>
-                                            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
+                                            <span v-if="activeTab === 'members'" class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
                                                 {{ member.is_verified ? 'Verified' : 'Unverified' }}
                                             </span>
                                         </div>
@@ -62,6 +88,7 @@
                             <div v-if="members.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No members found.</div>
                         </div>
 
+                        <!-- Desktop table -->
                         <div class="hidden md:block app-table-scroll">
                             <table class="w-full">
                                 <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
@@ -89,7 +116,7 @@
                                                 <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
                                                     {{ member.is_active ? 'Active' : 'Inactive' }}
                                                 </span>
-                                                <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
+                                                <span v-if="activeTab === 'members'" class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
                                                     {{ member.is_verified ? 'Verified' : 'Unverified' }}
                                                 </span>
                                             </div>
@@ -122,6 +149,12 @@
             </div>
         </div>
     </section>
+
+    <TempMemberFormModal
+        v-if="tempModalOpen"
+        @close="tempModalOpen = false"
+        @created="onTempMemberCreated"
+    />
 </template>
 
 <script setup>
@@ -131,7 +164,8 @@ import AppPagination from '../components/AppPagination.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
-import { Download, UserRoundPlus } from 'lucide-vue-next';
+import TempMemberFormModal from '../components/TempMemberFormModal.vue';
+import { Clock, Download, UserRoundPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 
 const router = useRouter();
@@ -143,6 +177,25 @@ const search = ref('');
 const permissions = ref({ create: false, edit: false, delete: false });
 const meta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
 const perPage = ref(15);
+const tempModalOpen = ref(false);
+const activeTab = ref('members');
+
+function switchTab(tab) {
+    if (activeTab.value === tab) return;
+    activeTab.value = tab;
+    search.value = '';
+    perPage.value = 15;
+    loadMembers(1);
+}
+
+function onTempMemberCreated(memberId) {
+    tempModalOpen.value = false;
+    if (memberId) {
+        router.push(`/members/${memberId}`);
+    } else {
+        loadMembers(1);
+    }
+}
 
 function capitalize(value = '') {
     return value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
@@ -180,13 +233,14 @@ async function loadMembers(page = 1) {
     errorMessage.value = '';
 
     try {
-        const response = await apiRequest('/api/members', {
-            params: {
-                page,
-                per_page: perPage.value,
-                search: search.value,
-            },
-        });
+        const params = {
+            page,
+            per_page: perPage.value,
+            search: search.value,
+            is_temp: activeTab.value === 'temp' ? '1' : '0',
+        };
+
+        const response = await apiRequest('/api/members', { params });
 
         members.value = response.data || [];
         permissions.value = response.permissions || permissions.value;

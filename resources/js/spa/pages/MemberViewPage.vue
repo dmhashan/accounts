@@ -98,6 +98,10 @@
                                     {{ member.is_verified ? 'Verified' : 'Unverified' }}
                                 </span>
 
+                                <span v-if="member.is_temp" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 border border-orange-200">
+                                    Temp
+                                </span>
+
                                 <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/20 text-white">
                                     {{ displayValue(member.member_role) }}
                                 </span>

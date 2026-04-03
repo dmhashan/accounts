@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section class="app-page-frame">
         <AppPageHeader>
             <template #extra-slot>
                 <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full xl:w-auto" @submit.prevent="loadStats">
@@ -47,6 +47,7 @@
             </template>
         </AppPageHeader>
 
+        <div class="app-page-scroll">
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
@@ -230,6 +231,7 @@
                 </div>
             </article>
         </template>
+        </div>
     </section>
 </template>
 

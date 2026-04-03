@@ -1,15 +1,17 @@
 <template>
-    <section>
+    <section class="app-page-frame">
         <AppPageHeader>
             <template #cta-slot>
                 <AppHeaderAction to="/profile" :icon="UserCircle2" label="Open Profile" />
             </template>
         </AppPageHeader>
 
+        <div class="app-page-scroll">
         <div class="app-surface rounded-2xl p-6 md:p-8">
             <div class="mt-4 rounded-xl app-surface-soft p-4">
                 <p class="text-sm text-secondary-700 dark:text-secondary-300">This route is reserved for upcoming native Vue + REST implementation.</p>
             </div>
+        </div>
         </div>
     </section>
 </template>

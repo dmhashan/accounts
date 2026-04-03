@@ -1,11 +1,12 @@
 <template>
-    <section>
+    <section class="app-page-frame">
         <AppPageHeader :show-back="true">
             <template #cta-slot>
                 <AppHeaderAction :to="{ path: '/accounts', query: { tab: 'transfers' } }" :icon="ArrowRightLeft" label="Transfers" variant="secondary" />
             </template>
         </AppPageHeader>
 
+        <div class="app-page-scroll">
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
             {{ errorMessage }}
         </div>
@@ -57,6 +58,7 @@
                 </button>
             </div>
         </form>
+        </div>
     </section>
 </template>
 

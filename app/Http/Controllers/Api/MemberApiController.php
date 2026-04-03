@@ -30,8 +30,9 @@ class MemberApiController extends Controller
         $currentUser = $request->user();
         $perPage = min((int) $request->integer('per_page', 15), 50);
         $search = trim((string) $request->query('search', ''));
+        $isTemp = $request->has('is_temp') ? filter_var($request->query('is_temp'), FILTER_VALIDATE_BOOLEAN) : null;
 
-        return response()->json($this->memberService->index($tenant->id, $currentUser, $perPage, $search));
+        return response()->json($this->memberService->index($tenant->id, $currentUser, $perPage, $search, $isTemp));
     }
 
     public function exportGoogleContacts(): StreamedResponse
@@ -82,6 +83,40 @@ class MemberApiController extends Controller
 
         return response()->json([
             'message' => 'Member created successfully.',
+            'data' => ['id' => $member->id],
+        ], 201);
+    }
+
+    public function storeTemp(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $validated = $request->validate([
+            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
+            'phone_number' => ['nullable', 'string', 'max:20'],
+            'email' => [
+                'nullable',
+                'email',
+                Rule::unique('members')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+        ]);
+
+        $firstName = trim($validated['first_name'] ?? '');
+        $lastName = trim($validated['last_name'] ?? '');
+
+        if ($firstName === '' && $lastName === '') {
+            return response()->json([
+                'message' => 'Either first name or last name is required.',
+                'errors' => ['first_name' => ['Either first name or last name is required.']],
+            ], 422);
+        }
+
+        $member = $this->memberService->storeTemp($tenant, $validated);
+
+        return response()->json([
+            'message' => 'Temporary member created successfully.',
             'data' => ['id' => $member->id],
         ], 201);
     }
