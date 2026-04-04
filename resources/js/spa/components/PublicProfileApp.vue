@@ -131,9 +131,6 @@
                 ════════════════════════════════════════════ -->
                 <div v-show="activeNav === 'workout'">
                     <div class="flex items-center gap-3 pt-12 pb-6">
-                        <button type="button" class="w-9 h-9 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors" @click="activeNav = 'home'">
-                            <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                        </button>
                         <h1 class="text-xl font-bold text-gray-900">Workout Plans</h1>
                     </div>
                     <div v-if="!workoutsData.length" class="flex flex-col items-center justify-center py-20 gap-3 text-gray-300">
@@ -168,9 +165,6 @@
                 ════════════════════════════════════════════ -->
                 <div v-show="activeNav === 'transactions'">
                     <div class="flex items-center gap-3 pt-12 pb-6">
-                        <button type="button" class="w-9 h-9 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors" @click="activeNav = 'home'">
-                            <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                        </button>
                         <h1 class="text-xl font-bold text-gray-900">Transactions</h1>
                         <span v-if="parseFloat(meta.total_outstanding) > 0" class="ml-auto shrink-0 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-full">
                             Due: {{ meta.total_outstanding }}
@@ -208,11 +202,6 @@
                      PROFILE VIEW
                 ════════════════════════════════════════════ -->
                 <div v-show="activeNav === 'profile'">
-                    <!-- Header -->
-                    <div class="flex items-center justify-between pt-12 pb-2">
-                        <h1 class="text-xl font-bold text-gray-900">Profile</h1>
-                    </div>
-
                     <!-- Avatar block -->
                     <div class="flex flex-col items-center pb-6 pt-4">
                         <div class="w-24 h-24 rounded-full bg-gray-900 flex items-center justify-center text-3xl font-bold text-white select-none shadow-md border-4 border-white">
