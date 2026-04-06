@@ -434,7 +434,13 @@ class SaleProcessingService
 
         $due = number_format(abs((float) $sale->balance), 2);
         $ref = $sale->reference_number ? ' (Ref: '.$sale->reference_number.')' : '';
-        $message = "Outstanding payment for Sale #{$sale->id}: LKR {$due}{$ref}. Please settle soon.";
+
+        $totalOutstanding = Sale::where('customer_member_id', $sale->customer_member_id)
+            ->where('is_paid', false)
+            ->sum('balance');
+        $totalDue = number_format(abs((float) $totalOutstanding), 2);
+
+        $message = "Outstanding for Sale #{$sale->id}: LKR {$due}{$ref}. Total outstanding: LKR {$totalDue}. Please settle soon.";
 
         $this->smsService->send($phone, $message);
     }
