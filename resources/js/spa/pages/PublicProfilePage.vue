@@ -32,6 +32,7 @@
                         :meta="meta"
                         :greeting="greeting"
                         :first-name="firstName"
+                        :last-name="lastName"
                         :initials="initials"
                         :workouts-data="workoutsData"
                         :sales-data="salesData"
@@ -240,6 +241,11 @@ const initials = computed(() => {
 
 const firstName = computed(() => {
     return (meta.value.name || '').trim().split(/\s+/)[0] || meta.value.name || '';
+});
+
+const lastName = computed(() => {
+    const parts = (meta.value.name || '').trim().split(/\s+/);
+    return parts.length > 1 ? parts.slice(1).join(' ') : '';
 });
 
 const greeting = computed(() => {

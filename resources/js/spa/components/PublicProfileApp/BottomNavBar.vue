@@ -54,7 +54,7 @@ const IconProfile = {
 const navTabs = [
     { key: 'home',         label: 'Home',         icon: IconHome },
     { key: 'workout',      label: 'Workout',       icon: IconWorkout },
-    { key: 'transactions', label: 'Transactions',  icon: IconTransactions },
+    { key: 'transactions', label: 'Payments',  icon: IconTransactions },
     { key: 'profile',      label: 'Profile',       icon: IconProfile },
 ];
 </script>

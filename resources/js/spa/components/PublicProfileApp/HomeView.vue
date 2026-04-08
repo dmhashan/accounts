@@ -4,7 +4,7 @@
         <div class="flex items-center justify-between pt-12 pb-6">
             <div>
                 <p class="text-sm text-gray-400 leading-none mb-1">{{ greeting }},</p>
-                <h1 class="text-2xl font-bold text-gray-900 leading-tight tracking-tight">{{ firstName }}</h1>
+                <h1 class="text-2xl font-bold text-gray-900 leading-tight tracking-tight">{{ firstName }} {{ lastName }}</h1>
                 <p class="text-xs text-gray-400 mt-0.5">Welcome to {{ meta.tenant_name }}</p>
             </div>
             <div class="w-11 h-11 rounded-2xl bg-gray-900 flex items-center justify-center text-sm font-bold text-white select-none shadow-sm">
@@ -12,15 +12,7 @@
             </div>
         </div>
 
-        <!-- Outstanding balance card -->
-        <div v-if="parseFloat(meta.total_outstanding) > 0" class="mb-5 bg-white rounded-3xl px-6 py-5 shadow-sm border border-gray-100">
-            <p class="text-xs text-gray-400 mb-1">Total outstanding</p>
-            <p class="text-3xl font-bold text-gray-900 tracking-tight">{{ meta.total_outstanding }}</p>
-            <div class="mt-1 inline-flex items-center gap-1 bg-red-50 text-red-500 text-xs font-semibold px-2 py-0.5 rounded-full">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
-                Unpaid balance
-            </div>
-        </div>
+
 
         <!-- Latest Workout Plan -->
         <section v-if="workoutsData.length" class="mb-5">
@@ -71,24 +63,40 @@
             </button>
         </section>
 
-        <!-- Transactions preview -->
+        <!-- Payments section -->
         <section v-if="salesData.length" class="mb-5">
+
+            <!-- Sub-heading -->
             <div class="flex items-center justify-between mb-3">
-                <h2 class="text-base font-bold text-gray-900">Transactions</h2>
-                <button v-if="salesData.length > 10" type="button" class="text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors" @click="$emit('navigate', 'transactions')">
-                    See all
-                </button>
+                <h2 class="text-base font-bold text-gray-900">Payments</h2>
             </div>
+
+            <!-- Outstanding total card — red, centered -->
+            <div v-if="outstandingSales.length" class="mb-3 rounded-3xl overflow-hidden" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);">
+                <div class="relative px-6 py-6 flex flex-col items-center text-center overflow-hidden">
+                    <!-- decorative blobs -->
+                    <div class="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none"></div>
+                    <div class="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-white/10 pointer-events-none"></div>
+
+                    <p class="text-xs font-semibold text-red-100 uppercase tracking-widest mb-2">Total outstanding</p>
+                    <p class="text-5xl font-extrabold text-white tracking-tight leading-none">{{ String(meta.total_outstanding).replace(/^-/, '') }}</p>
+                </div>
+            </div>
+
+            <!-- Last 3 records (outstanding + paid) -->
             <div class="bg-white rounded-3xl overflow-hidden divide-y divide-gray-50 shadow-sm border border-gray-100">
                 <button
-                    v-for="(sale, i) in salesData.slice(0, 10)"
+                    v-for="(sale, i) in salesData.slice(0, 3)"
                     :key="i"
                     type="button"
                     class="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none text-left"
                     @click="$emit('open-sale', sale)"
                 >
-                    <div class="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-100">
-                        <svg style="width:18px;height:18px" class="text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m-6-8h6M5 8h.01M5 12h.01M5 16h.01M9 4H4a1 1 0 00-1 1v14a1 1 0 001 1h16a1 1 0 001-1V5a1 1 0 00-1-1h-5"/></svg>
+                    <div
+                        class="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center"
+                        :class="!sale.is_paid ? 'bg-red-50' : 'bg-gray-100'"
+                    >
+                        <svg style="width:18px;height:18px" :class="!sale.is_paid ? 'text-red-400' : 'text-gray-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m-6-8h6M5 8h.01M5 12h.01M5 16h.01M9 4H4a1 1 0 00-1 1v14a1 1 0 001 1h16a1 1 0 001-1V5a1 1 0 00-1-1h-5"/></svg>
                     </div>
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-semibold text-gray-900">Invoice #{{ sale.id }}</p>
@@ -101,8 +109,14 @@
                     </div>
                 </button>
             </div>
-            <button v-if="salesData.length > 10" type="button" class="mt-3 w-full py-3.5 text-sm font-bold bg-gray-900 text-white rounded-2xl hover:bg-gray-800 active:bg-black transition-colors" @click="$emit('navigate', 'transactions')">
-                View all {{ salesData.length }} transactions
+
+            <button
+                v-if="salesData.length > 3"
+                type="button"
+                class="mt-3 w-full py-3.5 text-sm font-bold bg-gray-900 text-white rounded-2xl hover:bg-gray-800 active:bg-black transition-colors"
+                @click="$emit('navigate', 'transactions')"
+            >
+                View all {{ salesData.length }} payments
             </button>
         </section>
 
@@ -115,14 +129,19 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue';
+
+const props = defineProps({
     meta:         { type: Object,  default: () => ({}) },
     greeting:     { type: String,  default: '' },
     firstName:    { type: String,  default: '' },
+    lastName:     { type: String,  default: '' },
     initials:     { type: String,  default: '' },
     workoutsData: { type: Array,   default: () => [] },
     salesData:    { type: Array,   default: () => [] },
 });
 
 defineEmits(['open-workout', 'open-sale', 'navigate']);
+
+const outstandingSales = computed(() => props.salesData.filter(s => !s.is_paid));
 </script>
