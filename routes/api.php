@@ -19,4 +19,5 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
     require __DIR__.'/api/sales.php';
     require __DIR__.'/api/workouts.php';
     require __DIR__.'/api/payments.php';
+    require __DIR__.'/api/notifications.php';
 });

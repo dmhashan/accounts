@@ -41,6 +41,7 @@ class AppContextService
                 'payments' => $user->hasPermission('member.payments.view'),
                 'paymentsManage' => $user->hasPermission('payments.manage'),
                 'attendance' => $user->hasPermission('member.attendance.view'),
+                'notifications' => $user->hasPermission('notifications.send'),
             ],
         ];
     }

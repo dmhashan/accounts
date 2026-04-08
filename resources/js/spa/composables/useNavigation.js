@@ -14,6 +14,7 @@ import {
     WalletCards,
     CalendarCheck2,
     ReceiptText,
+    BellRing,
 } from 'lucide-vue-next';
 import { useAppContext } from './useAppContext';
 
@@ -33,6 +34,7 @@ const ICONS = {
     diet: Salad,
     payments: WalletCards,
     attendance: CalendarCheck2,
+    notifications: BellRing,
 };
 
 export function useNavigation() {
@@ -53,8 +55,9 @@ export function useNavigation() {
         if (context.permissions?.settings)       items.push({ label: 'Settings',  shortLabel: 'Settings', path: '/settings',  icon: ICONS.settings });
         if (context.permissions?.workout)        items.push({ label: 'Workout',   shortLabel: 'Workout',  path: '/workout',   icon: ICONS.workout });
         if (context.permissions?.diet)           items.push({ label: 'Diet',      shortLabel: 'Diet',     path: '/diet',      icon: ICONS.diet });
-        if (context.permissions?.attendance)     items.push({ label: 'Attendance', shortLabel: 'Attend', path: '/attendance', icon: ICONS.attendance });
-        if (context.permissions?.profile)        items.push({ label: 'Profile',   shortLabel: 'Profile',  path: '/profile',   icon: ICONS.profile });
+        if (context.permissions?.attendance)     items.push({ label: 'Attendance',    shortLabel: 'Attend',  path: '/attendance',    icon: ICONS.attendance });
+        if (context.permissions?.notifications)  items.push({ label: 'Notifications', shortLabel: 'Notify',  path: '/notifications', icon: ICONS.notifications });
+        if (context.permissions?.profile)        items.push({ label: 'Profile',       shortLabel: 'Profile', path: '/profile',       icon: ICONS.profile });
 
         return items;
     });

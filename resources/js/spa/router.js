@@ -33,6 +33,9 @@ const DietPage = () => import('./pages/DietPage.vue');
 const PaymentsPage = () => import('./pages/PaymentsPage.vue');
 const PaymentFormPage = () => import('./pages/PaymentFormPage.vue');
 const AttendancePage = () => import('./pages/AttendancePage.vue');
+const NotificationsPage = () => import('./pages/NotificationsPage.vue');
+const NotificationFormPage = () => import('./pages/NotificationFormPage.vue');
+const NotificationViewPage = () => import('./pages/NotificationViewPage.vue');
 
 const routes = [
     { path: '/', redirect: '/dashboard' },
@@ -81,6 +84,10 @@ const routes = [
     { path: '/payments/new', component: PaymentFormPage, meta: { title: 'New Payment' } },
     { path: '/payments/:id/edit', component: PaymentFormPage, meta: { title: 'Edit Payment' } },
     { path: '/attendance', component: AttendancePage, meta: { title: 'Attendance' } },
+    { path: '/notifications', component: NotificationsPage, meta: { title: 'Notifications' } },
+    { path: '/notifications/new', component: NotificationFormPage, meta: { title: 'New Notification' } },
+    { path: '/notifications/:id', component: NotificationViewPage, meta: { title: 'Notification' } },
+    { path: '/notifications/:id/edit', component: NotificationFormPage, meta: { title: 'Edit Notification' } },
 ];
 
 const router = createRouter({
