@@ -1,7 +1,121 @@
 <template>
     <div class="min-h-screen bg-[#f5f5f5] flex flex-col">
 
-        <!-- ── Scrollable body ─────────────────────────────── -->
+        <!-- ══════════════════════════════════════════════════
+             LOADING SCREEN
+        ═══════════════════════════════════════════════════ -->
+        <div v-if="screen === 'loading'" class="flex-1 flex items-center justify-center">
+            <div class="flex flex-col items-center gap-3 text-gray-400">
+                <svg class="w-8 h-8 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"/>
+                </svg>
+                <p class="text-sm">Loading&hellip;</p>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════
+             IDENTIFY SCREEN — enter mobile number
+        ═══════════════════════════════════════════════════ -->
+        <div v-else-if="screen === 'identify'" class="flex-1 flex items-center justify-center px-5">
+            <div class="w-full max-w-sm">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gray-900 mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">Member Portal</h1>
+                    <p class="text-sm text-gray-500 mt-1">{{ tenantName }}</p>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+                    <p class="text-sm text-gray-600 mb-5 text-center">Enter your registered mobile number to continue.</p>
+
+                    <div v-if="error" class="mb-4 px-4 py-3 rounded-2xl bg-red-50 border border-red-100 text-sm text-red-600">
+                        {{ error }}
+                    </div>
+
+                    <form @submit.prevent="requestOtp" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Mobile Number</label>
+                            <input
+                                v-model="phone"
+                                type="tel"
+                                inputmode="tel"
+                                placeholder="e.g. 0771234567"
+                                class="w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                                autocomplete="tel"
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            :disabled="isLoading"
+                            class="w-full py-3.5 rounded-2xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 active:bg-black disabled:opacity-60 transition-colors"
+                        >
+                            <span v-if="isLoading">Sending OTP&hellip;</span>
+                            <span v-else>Send OTP</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════
+             OTP SCREEN — enter the code
+        ═══════════════════════════════════════════════════ -->
+        <div v-else-if="screen === 'otp'" class="flex-1 flex items-center justify-center px-5">
+            <div class="w-full max-w-sm">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gray-900 mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">Verify OTP</h1>
+                    <p class="text-sm text-gray-500 mt-1">Code sent to {{ phone }}</p>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+                    <p class="text-sm text-gray-600 mb-5 text-center">Enter the 6-digit code we sent via SMS.</p>
+
+                    <div v-if="error" class="mb-4 px-4 py-3 rounded-2xl bg-red-50 border border-red-100 text-sm text-red-600">
+                        {{ error }}
+                    </div>
+
+                    <form @submit.prevent="verifyOtp" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Verification Code</label>
+                            <input
+                                v-model="otpCode"
+                                type="text"
+                                inputmode="numeric"
+                                maxlength="6"
+                                placeholder="000000"
+                                class="w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm font-bold text-gray-900 text-center tracking-[0.5em] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                                autocomplete="one-time-code"
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            :disabled="isLoading || otpCode.length < 6"
+                            class="w-full py-3.5 rounded-2xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 active:bg-black disabled:opacity-60 transition-colors"
+                        >
+                            <span v-if="isLoading">Verifying&hellip;</span>
+                            <span v-else>Verify &amp; Continue</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="w-full py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+                            @click="backToIdentify"
+                        >
+                            Change number
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Scrollable body (profile screens) ──────────── -->
+        <template v-else>
         <main class="flex-1 overflow-y-auto pb-28">
             <div class="max-w-lg mx-auto px-5">
 
@@ -293,6 +407,17 @@
                             </div>
                         </div>
                     </section>
+
+                    <!-- Logout -->
+                    <section class="mb-6">
+                        <button
+                            type="button"
+                            class="w-full py-3.5 rounded-2xl border border-red-200 bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 active:bg-red-200 transition-colors"
+                            @click="logout"
+                        >
+                            Sign out
+                        </button>
+                    </section>
                 </div>
 
             </div>
@@ -346,34 +471,146 @@
                 </div>
             </div>
         </Teleport>
+    </template>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue';
+import { ref, computed, h, onMounted } from 'vue';
 import WorkoutProgramPreviewCard from './WorkoutProgramPreviewCard.vue';
 import SaleInvoicePreviewCard from './SaleInvoicePreviewCard.vue';
 
-const props = defineProps({
-    workoutsData: { type: Array, default: () => [] },
-    salesData:    { type: Array, default: () => [] },
-    meta:         { type: Object, required: true },
-});
+const MEMBER_ID_KEY = 'public_profile_member_id';
 
-// ── State ──────────────────────────────────────────────────
+// ── Identification state ───────────────────────────────────
+const screen    = ref('loading'); // 'loading' | 'identify' | 'otp' | 'profile'
+const phone     = ref('');
+const otpCode   = ref('');
+const error     = ref('');
+const isLoading = ref(false);
+
+// ── Profile data ───────────────────────────────────────────
+const workoutsData = ref([]);
+const salesData    = ref([]);
+const meta         = ref({});
+
+const tenantName = computed(() => window.__tenantName || '');
+
+// ── Nav state ──────────────────────────────────────────────
 const activeNav     = ref('home');
 const activeWorkout = ref(null);
 const activeSale    = ref(null);
 
+// ── Bootstrap ──────────────────────────────────────────────
+onMounted(async () => {
+    const memberId = localStorage.getItem(MEMBER_ID_KEY);
+    if (memberId) {
+        await loadProfile(memberId);
+    } else {
+        screen.value = 'identify';
+    }
+});
+
+// ── CSRF helper ────────────────────────────────────────────
+function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
+// ── Identification actions ─────────────────────────────────
+async function requestOtp() {
+    error.value = '';
+    isLoading.value = true;
+    try {
+        const res = await fetch('/api/public/request-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-XSRF-TOKEN': getCsrfToken(),
+            },
+            body: JSON.stringify({ phone_number: phone.value }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            error.value = data.message || 'Something went wrong.';
+            return;
+        }
+        error.value = '';
+        screen.value = 'otp';
+    } catch {
+        error.value = 'Network error. Please try again.';
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+async function verifyOtp() {
+    error.value = '';
+    isLoading.value = true;
+    try {
+        const res = await fetch('/api/public/verify-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-XSRF-TOKEN': getCsrfToken(),
+            },
+            body: JSON.stringify({ phone_number: phone.value, otp: otpCode.value }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            error.value = data.message || 'Invalid OTP.';
+            return;
+        }
+        localStorage.setItem(MEMBER_ID_KEY, data.member_id);
+        await loadProfile(data.member_id);
+    } catch {
+        error.value = 'Network error. Please try again.';
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+async function loadProfile(memberId) {
+    isLoading.value = true;
+    try {
+        const res = await fetch(`/api/public/member-profile/${memberId}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) {
+            localStorage.removeItem(MEMBER_ID_KEY);
+            screen.value = 'identify';
+            return;
+        }
+        const data = await res.json();
+        meta.value         = data.meta;
+        workoutsData.value = data.workouts;
+        salesData.value    = data.sales;
+        screen.value       = 'profile';
+    } catch {
+        localStorage.removeItem(MEMBER_ID_KEY);
+        screen.value = 'identify';
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+function backToIdentify() {
+    otpCode.value = '';
+    error.value   = '';
+    screen.value  = 'identify';
+}
+
 // ── Computed ───────────────────────────────────────────────
 const initials = computed(() => {
-    const parts = (props.meta.name || '').trim().split(/\s+/);
+    const parts = (meta.value.name || '').trim().split(/\s+/);
     if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     return (parts[0]?.[0] ?? '?').toUpperCase();
 });
 
 const firstName = computed(() => {
-    return (props.meta.name || '').trim().split(/\s+/)[0] || props.meta.name || '';
+    return (meta.value.name || '').trim().split(/\s+/)[0] || meta.value.name || '';
 });
 
 const greeting = computed(() => {
@@ -422,5 +659,17 @@ function closeSale()           { activeSale.value = null; }
 function capitalize(val) {
     if (!val) return '-';
     return val.charAt(0).toUpperCase() + val.slice(1);
+}
+
+function logout() {
+    localStorage.removeItem(MEMBER_ID_KEY);
+    meta.value         = {};
+    workoutsData.value = [];
+    salesData.value    = [];
+    phone.value        = '';
+    otpCode.value      = '';
+    error.value        = '';
+    activeNav.value    = 'home';
+    screen.value       = 'identify';
 }
 </script>

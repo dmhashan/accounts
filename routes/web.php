@@ -81,9 +81,14 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register.form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
 
-    // Public member profile route
+    // Public member profile route (username-based, kept for backwards compatibility)
     Route::get('/profile/{username}', [\App\Http\Controllers\MemberController::class, 'publicProfile'])
         ->name('member.public_profile');
+
+    // Public member portal (phone + OTP identification)
+    Route::get('/profile', function () {
+        return view('members.public-profile');
+    })->name('member.portal');
 
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {
@@ -96,10 +101,6 @@ Route::middleware([IdentifyTenant::class])->group(function () {
 
     // User Management routes (requires authentication and permissions)
     Route::middleware(['auth'])->group(function () {
-        // Member Profile (for members to view their own profile)
-        Route::get('/profile', [\App\Http\Controllers\MemberController::class, 'profile'])
-            ->name('member.profile');
-
         // Member-specific routes (Workout, Diet, Payments, Attendance)
         Route::get('/workout-schedule', [\App\Http\Controllers\WorkoutScheduleController::class, 'index'])
             ->name('workout-schedule.index');
