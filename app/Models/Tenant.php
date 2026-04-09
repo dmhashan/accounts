@@ -21,4 +21,17 @@ class Tenant extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    /**
+     * Returns the public member profile portal URL for this tenant.
+     */
+    public function profileUrl(): string
+    {
+        if (config('app.multitenancy_enabled', true)) {
+            $scheme = parse_url(config('app.url'), PHP_URL_SCHEME) ?? 'https';
+            return "{$scheme}://{$this->domain}." . config('app.domain') . '/profile';
+        }
+
+        return rtrim(config('app.url'), '/') . '/profile';
+    }
 }

@@ -41,7 +41,8 @@ class PublicProfileController extends Controller
 
         Cache::put($cacheKey, $otp, now()->addMinutes(10));
 
-        app(SmsService::class)->send($phone, "Your {$tenant->name} verification code is: {$otp}");
+        $profileUrl = $tenant->profileUrl();
+        app(SmsService::class)->send($phone, "Your {$tenant->name} verification code is: {$otp}. Access your profile: {$profileUrl}");
 
         return response()->json(['message' => 'OTP sent successfully.']);
     }

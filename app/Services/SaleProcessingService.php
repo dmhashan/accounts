@@ -414,7 +414,9 @@ class SaleProcessingService
 
         $ref = $sale->reference_number ? ' (Ref: '.$sale->reference_number.')' : '';
         $amount = number_format((float) $sale->total_amount, 2);
-        $message = "Payment received for Sale #{$sale->id}: LKR {$amount}{$ref}. Thank you!";
+        $tenant = app('tenant');
+        $profileUrl = $tenant->profileUrl();
+        $message = "Payment received for Sale #{$sale->id}: LKR {$amount}{$ref}. Thank you! View your account: {$profileUrl}";
 
         $this->smsService->send($phone, $message);
     }
@@ -440,7 +442,9 @@ class SaleProcessingService
             ->sum('balance');
         $totalDue = number_format(abs((float) $totalOutstanding), 2);
 
-        $message = "Outstanding for Sale #{$sale->id}: LKR {$due}{$ref}. Total outstanding: LKR {$totalDue}. Please settle soon.";
+        $tenant = app('tenant');
+        $profileUrl = $tenant->profileUrl();
+        $message = "Outstanding for Sale #{$sale->id}: LKR {$due}{$ref}. Total outstanding: LKR {$totalDue}. Please settle soon. View your account: {$profileUrl}";
 
         $this->smsService->send($phone, $message);
     }
