@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Member;
+use App\Models\MemberActivityLog;
 use App\Models\Sale;
 use App\Models\WorkoutProgramAssignment;
 use App\Services\SmsService;
@@ -77,15 +78,22 @@ class PublicProfileController extends Controller
 
         Cache::forget($cacheKey);
 
-        return response()->json(['member_id' => $member->id]);
+        $token = (string) \Illuminate\Support\Str::uuid();
+        Cache::put("pp_token:{$token}", [
+            'member_id' => $member->id,
+            'tenant_id' => $tenant->id,
+        ], now()->addMonths(3));
+
+        return response()->json(['token' => $token]);
     }
 
     /**
      * Return the full public profile data for a given member ID.
      */
-    public function getProfile(Request $request, $memberId)
+    public function getProfile(Request $request)
     {
-        $tenant = app('tenant');
+        $tenant   = app('tenant');
+        $memberId = $request->input('_pp_member_id');
 
         $member = Member::where('tenant_id', $tenant->id)
             ->where('id', $memberId)
@@ -185,5 +193,51 @@ class PublicProfileController extends Controller
             'workouts' => $workoutsData,
             'sales'    => $salesData,
         ]);
+    }
+
+    /**
+     * Record a public-profile activity event (fire-and-forget).
+     * No member authentication required — tenant context is enough.
+     */
+    public function logActivity(Request $request)
+    {
+        $request->validate([
+            'session_id'    => 'required|string|max:64',
+            'event_type'    => 'required|string|max:50',
+            'member_id'     => 'nullable|integer',
+            'section'       => 'nullable|string|max:100',
+            'screen_width'  => 'nullable|integer|min:1|max:9999',
+            'screen_height' => 'nullable|integer|min:1|max:9999',
+            'metadata'      => 'nullable|array',
+        ]);
+
+        $tenant = app('tenant');
+        $ua     = $request->userAgent() ?? '';
+        $parsed = MemberActivityLog::parseUserAgent($ua);
+
+        // Validate member_id belongs to this tenant before storing
+        $memberId = null;
+        if ($request->filled('member_id')) {
+            $exists   = Member::where('tenant_id', $tenant->id)->where('id', $request->member_id)->exists();
+            $memberId = $exists ? (int) $request->member_id : null;
+        }
+
+        MemberActivityLog::create([
+            'tenant_id'     => $tenant->id,
+            'member_id'     => $memberId,
+            'session_id'    => $request->session_id,
+            'event_type'    => $request->event_type,
+            'section'       => $request->section,
+            'ip_address'    => $request->ip(),
+            'user_agent'    => $ua,
+            'device_type'   => $parsed['device_type'],
+            'browser'       => $parsed['browser'],
+            'os'            => $parsed['os'],
+            'screen_width'  => $request->screen_width,
+            'screen_height' => $request->screen_height,
+            'metadata'      => $request->metadata,
+        ]);
+
+        return response()->json(['ok' => true]);
     }
 }

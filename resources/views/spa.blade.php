@@ -57,7 +57,7 @@
                 'inventoryStock' => route('inventory.stock.index'),
                 'sales' => route('sales.index'),
                 'salesCreate' => route('sales.create'),
-                'profile' => route('member.profile'),
+                'profile' => route('member.portal'),
                 'workout' => route('workout-schedule.index'),
                 'diet' => route('diet-plan.index'),
                 'payments' => route('payments.index'),

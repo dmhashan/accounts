@@ -36,6 +36,7 @@ const AttendancePage = () => import('./pages/AttendancePage.vue');
 const NotificationsPage = () => import('./pages/NotificationsPage.vue');
 const NotificationFormPage = () => import('./pages/NotificationFormPage.vue');
 const NotificationViewPage = () => import('./pages/NotificationViewPage.vue');
+const MemberActivityPage = () => import('./pages/MemberActivityPage.vue');
 
 const routes = [
     { path: '/', redirect: '/dashboard' },
@@ -88,6 +89,7 @@ const routes = [
     { path: '/notifications/new', component: NotificationFormPage, meta: { title: 'New Notification' } },
     { path: '/notifications/:id', component: NotificationViewPage, meta: { title: 'Notification' } },
     { path: '/notifications/:id/edit', component: NotificationFormPage, meta: { title: 'Edit Notification' } },
+    { path: '/activity', component: MemberActivityPage, meta: { title: 'Activity Logs' } },
 ];
 
 const router = createRouter({

@@ -117,14 +117,50 @@ import BottomNavBar     from '../components/PublicProfileApp/BottomNavBar.vue';
 import WorkoutProgramPreviewCard from '../components/WorkoutProgramPreviewCard.vue';
 import SaleInvoicePreviewCard    from '../components/SaleInvoicePreviewCard.vue';
 
-const MEMBER_ID_KEY = 'public_profile_member_id';
+const MEMBER_ID_KEY  = 'public_profile_member_id';
+const SESSION_ID_KEY = 'pp_session_id';
+
+// ── Activity tracking ──────────────────────────────────────
+function getSessionId() {
+    let sid = sessionStorage.getItem(SESSION_ID_KEY);
+    if (!sid) {
+        sid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Math.random().toString(36).slice(2) + Date.now().toString(36);
+        sessionStorage.setItem(SESSION_ID_KEY, sid);
+    }
+    return sid;
+}
+
+function track(eventType, extra = {}) {
+    const payload = {
+        session_id:    getSessionId(),
+        event_type:    eventType,
+        screen_width:  window.screen?.width  || null,
+        screen_height: window.screen?.height || null,
+        ...extra,
+    };
+    const headers = {
+        'Content-Type':     'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-XSRF-TOKEN':     getCsrfToken(),
+    };
+    if (currentToken.value) headers['X-PP-Token'] = currentToken.value;
+    // Fire-and-forget — intentionally not awaited to avoid blocking UI
+    fetch('/api/public/activity', {
+        method:  'POST',
+        headers,
+        body: JSON.stringify(payload),
+    }).catch(() => { /* silent — tracking must never affect UX */ });
+}
 
 // ── Auth state ─────────────────────────────────────────────
-const screen    = ref('loading'); // 'loading' | 'identify' | 'otp' | 'profile'
-const phone     = ref('');
-const otpCode   = ref('');
-const error     = ref('');
-const isLoading = ref(false);
+const screen        = ref('loading'); // 'loading' | 'identify' | 'otp' | 'profile'
+const phone         = ref('');
+const otpCode       = ref('');
+const error         = ref('');
+const isLoading     = ref(false);
+const currentToken  = ref(null);
 
 // ── Profile data ───────────────────────────────────────────
 const workoutsData = ref([]);
@@ -140,11 +176,14 @@ const activeSale    = ref(null);
 
 // ── Bootstrap ──────────────────────────────────────────────
 onMounted(async () => {
-    const memberId = localStorage.getItem(MEMBER_ID_KEY);
-    if (memberId) {
-        await loadProfile(memberId);
+    const token = localStorage.getItem(MEMBER_ID_KEY);
+    if (token) {
+        currentToken.value = token;
+        await loadProfile(token);
+        track('session_resume');
     } else {
         screen.value = 'identify';
+        track('session_start');
     }
 });
 
@@ -170,6 +209,7 @@ async function requestOtp() {
         });
         const data = await res.json();
         if (!res.ok) { error.value = data.message || 'Something went wrong.'; return; }
+        track('otp_requested');
         screen.value = 'otp';
     } catch {
         error.value = 'Network error. Please try again.';
@@ -193,8 +233,10 @@ async function verifyOtp() {
         });
         const data = await res.json();
         if (!res.ok) { error.value = data.message || 'Invalid OTP.'; return; }
-        localStorage.setItem(MEMBER_ID_KEY, data.member_id);
-        await loadProfile(data.member_id);
+        currentToken.value = data.token;
+        localStorage.setItem(MEMBER_ID_KEY, data.token);
+        track('otp_verified');
+        await loadProfile(data.token);
     } catch {
         error.value = 'Network error. Please try again.';
     } finally {
@@ -202,14 +244,18 @@ async function verifyOtp() {
     }
 }
 
-async function loadProfile(memberId) {
+async function loadProfile(token) {
     isLoading.value = true;
     try {
-        const res = await fetch(`/api/public/member-profile/${memberId}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        const res = await fetch('/api/public/member-profile', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-PP-Token':       token,
+            },
         });
         if (!res.ok) {
             localStorage.removeItem(MEMBER_ID_KEY);
+            currentToken.value = null;
             screen.value = 'identify';
             return;
         }
@@ -220,6 +266,7 @@ async function loadProfile(memberId) {
         screen.value       = 'profile';
     } catch {
         localStorage.removeItem(MEMBER_ID_KEY);
+        currentToken.value = null;
         screen.value = 'identify';
     } finally {
         isLoading.value = false;
@@ -263,7 +310,9 @@ function openSale(sale)        { activeSale.value = sale; }
 function closeSale()           { activeSale.value = null; }
 
 function logout() {
+    track('logout');
     localStorage.removeItem(MEMBER_ID_KEY);
+    currentToken.value = null;
     meta.value         = {};
     workoutsData.value = [];
     salesData.value    = [];
