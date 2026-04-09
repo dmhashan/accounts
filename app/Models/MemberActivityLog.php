@@ -12,7 +12,6 @@ class MemberActivityLog extends Model
         'member_id',
         'session_id',
         'event_type',
-        'section',
         'ip_address',
         'user_agent',
         'device_type',

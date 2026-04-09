@@ -204,8 +204,6 @@ class PublicProfileController extends Controller
         $request->validate([
             'session_id'    => 'required|string|max:64',
             'event_type'    => 'required|string|max:50',
-            'member_id'     => 'nullable|integer',
-            'section'       => 'nullable|string|max:100',
             'screen_width'  => 'nullable|integer|min:1|max:9999',
             'screen_height' => 'nullable|integer|min:1|max:9999',
             'metadata'      => 'nullable|array',
@@ -215,11 +213,14 @@ class PublicProfileController extends Controller
         $ua     = $request->userAgent() ?? '';
         $parsed = MemberActivityLog::parseUserAgent($ua);
 
-        // Validate member_id belongs to this tenant before storing
+        // Resolve member from the PP token header (same logic as ResolvePpToken middleware)
         $memberId = null;
-        if ($request->filled('member_id')) {
-            $exists   = Member::where('tenant_id', $tenant->id)->where('id', $request->member_id)->exists();
-            $memberId = $exists ? (int) $request->member_id : null;
+        $token    = $request->header('X-PP-Token');
+        if ($token) {
+            $cached = \Illuminate\Support\Facades\Cache::get("pp_token:{$token}");
+            if ($cached && $cached['tenant_id'] === $tenant->id) {
+                $memberId = $cached['member_id'];
+            }
         }
 
         MemberActivityLog::create([
@@ -227,7 +228,6 @@ class PublicProfileController extends Controller
             'member_id'     => $memberId,
             'session_id'    => $request->session_id,
             'event_type'    => $request->event_type,
-            'section'       => $request->section,
             'ip_address'    => $request->ip(),
             'user_agent'    => $ua,
             'device_type'   => $parsed['device_type'],

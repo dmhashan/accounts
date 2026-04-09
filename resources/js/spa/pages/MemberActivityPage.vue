@@ -110,7 +110,6 @@
                                             {{ log.member_name }}
                                             <span class="text-xs text-secondary-400 dark:text-secondary-500 font-normal ml-1">{{ log.member_ref_id }}</span>
                                         </p>
-                                        <p v-if="log.section" class="text-xs text-secondary-500 dark:text-secondary-400">Section: {{ log.section }}</p>
                                         <div class="text-xs text-secondary-400 dark:text-secondary-500 flex flex-wrap gap-x-3 gap-y-0.5">
                                             <span v-if="log.browser">{{ log.browser }}</span>
                                             <span v-if="log.os">{{ log.os }}</span>
@@ -142,7 +141,6 @@
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300 whitespace-nowrap">Date / Time</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Member</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Event</th>
-                                    <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Section</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Device</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Browser / OS</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">IP Address</th>
@@ -168,9 +166,6 @@
                                                 {{ formatEventType(log.event_type) }}
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-secondary-600 dark:text-secondary-400 max-w-[140px] truncate">
-                                            {{ log.section || '—' }}
-                                        </td>
                                         <td class="px-4 py-3">
                                             <span v-if="log.device_type" class="px-2 py-0.5 text-xs rounded-full" :class="deviceBadgeClass(log.device_type)">
                                                 {{ capitalize(log.device_type) }}
@@ -192,7 +187,7 @@
                                     </tr>
                                     <!-- Expanded detail row -->
                                     <tr v-if="expandedId === log.id" class="bg-secondary-50 dark:bg-secondary-800/30">
-                                        <td colspan="8" class="px-6 py-3">
+                                        <td colspan="7" class="px-6 py-3">
                                             <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-secondary-600 dark:text-secondary-400">
                                                 <span><strong class="text-secondary-700 dark:text-secondary-300">Session:</strong> {{ log.session_id }}</span>
                                                 <span v-if="log.metadata"><strong class="text-secondary-700 dark:text-secondary-300">Metadata:</strong> {{ JSON.stringify(log.metadata) }}</span>

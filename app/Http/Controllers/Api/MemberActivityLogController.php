@@ -105,7 +105,7 @@ class MemberActivityLogController extends Controller
 
             fputcsv($handle, [
                 'Date/Time', 'Member ID', 'Member Name', 'Session ID',
-                'Event Type', 'Section', 'Device Type', 'Browser', 'OS',
+                'Event Type', 'Device Type', 'Browser', 'OS',
                 'Screen Resolution', 'IP Address', 'User Agent',
             ]);
 
@@ -124,7 +124,6 @@ class MemberActivityLogController extends Controller
                         $memberName,
                         $log->session_id,
                         $log->event_type,
-                        $log->section ?? '',
                         $log->device_type ?? '',
                         $log->browser ?? '',
                         $log->os ?? '',
@@ -152,7 +151,6 @@ class MemberActivityLogController extends Controller
             'id'              => $log->id,
             'session_id'      => $log->session_id,
             'event_type'      => $log->event_type,
-            'section'         => $log->section,
             'device_type'     => $log->device_type,
             'browser'         => $log->browser,
             'os'              => $log->os,
