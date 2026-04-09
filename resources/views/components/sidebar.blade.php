@@ -21,7 +21,7 @@
     <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         @if(auth()->user()->hasPermission('member.profile.view'))
         <!-- Member Navigation -->
-        <a href="{{ route('member.profile') }}" class="flex items-center px-4 py-3 text-sm font-medium {{ request()->routeIs('member.profile') ? 'text-white bg-gradient-to-r from-primary-500 to-primary-700' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700' }} rounded-lg transition-colors">
+        <a href="{{ route('member.portal') }}" class="flex items-center px-4 py-3 text-sm font-medium {{ request()->routeIs('member.portal') ? 'text-white bg-gradient-to-r from-primary-500 to-primary-700' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700' }} rounded-lg transition-colors">
             <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
