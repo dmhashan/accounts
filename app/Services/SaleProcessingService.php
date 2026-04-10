@@ -9,13 +9,16 @@ use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
+use App\Services\AuditService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class SaleProcessingService
 {
-    public function __construct(private readonly SmsService $smsService)
-    {
+    public function __construct(
+        private readonly SmsService $smsService,
+        private readonly AuditService $auditService,
+    ) {
     }
 
     public function create(int $tenantId, array $validated): Sale
@@ -169,10 +172,10 @@ class SaleProcessingService
                     $query->whereDate('expiry_date', '>=', $today)
                         ->orWhereNull('expiry_date');
                 })
-                ->sum('quantity');
+                ->sum('display_quantity');
 
             if ($item['quantity'] > $available) {
-                abort(422, 'Insufficient stock for '.$variation->product->name.' - '.$variation->name);
+                abort(422, 'Insufficient display stock for '.$variation->product->name.' - '.$variation->name);
             }
 
             $priceEntry = StockEntry::query()
@@ -312,8 +315,27 @@ class SaleProcessingService
                     break;
                 }
 
-                $deduct = min($entry->quantity, $remaining);
-                $entry->update(['quantity' => $entry->quantity - $deduct]);
+                $deduct = min($entry->display_quantity, $remaining);
+                if ($deduct <= 0) {
+                    continue;
+                }
+
+                $before = [
+                    'quantity' => (int) $entry->quantity,
+                    'display_quantity' => (int) $entry->display_quantity,
+                ];
+
+                $entry->update([
+                    'quantity' => $entry->quantity - $deduct,
+                    'display_quantity' => $entry->display_quantity - $deduct,
+                ]);
+
+                $this->auditService->log($tenantId, 'sale_deducted', $entry, $before, [
+                    'quantity' => (int) $entry->quantity,
+                    'display_quantity' => (int) $entry->display_quantity,
+                    'deducted' => $deduct,
+                ]);
+
                 $remaining -= $deduct;
             }
         }
@@ -342,8 +364,20 @@ class SaleProcessingService
                     break;
                 }
 
-                $toRestore = $remaining;
-                $entry->increment('quantity', $toRestore);
+                $before = [
+                    'quantity' => (int) $entry->quantity,
+                    'display_quantity' => (int) $entry->display_quantity,
+                ];
+
+                $entry->increment('quantity', $remaining);
+                $entry->increment('display_quantity', $remaining);
+
+                $this->auditService->log($tenantId, 'sale_restored', $entry, $before, [
+                    'quantity' => (int) $entry->fresh()->quantity,
+                    'display_quantity' => (int) $entry->fresh()->display_quantity,
+                    'restored' => $remaining,
+                ]);
+
                 $remaining = 0;
             }
         }

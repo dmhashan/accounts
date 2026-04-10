@@ -180,6 +180,7 @@ class InventoryApiController extends Controller
             'product_id' => ['required', 'exists:products,id'],
             'product_variation_id' => ['required', 'exists:product_variations,id'],
             'quantity' => ['required', 'integer', 'min:1'],
+            'display_quantity' => ['nullable', 'integer', 'min:0'],
             'manufacturing_date' => ['nullable', 'date'],
             'expiry_date' => ['nullable', 'date', 'after:manufacturing_date'],
             'purchasing_price' => ['required', 'numeric', 'min:0'],
@@ -212,6 +213,7 @@ class InventoryApiController extends Controller
             'product_id' => ['required', 'exists:products,id'],
             'product_variation_id' => ['required', 'exists:product_variations,id'],
             'quantity' => ['required', 'integer', 'min:0'],
+            'display_quantity' => ['nullable', 'integer', 'min:0'],
             'manufacturing_date' => ['nullable', 'date'],
             'expiry_date' => ['nullable', 'date', 'after:manufacturing_date'],
             'purchasing_price' => ['required', 'numeric', 'min:0'],
@@ -238,5 +240,44 @@ class InventoryApiController extends Controller
         return response()->json([
             'message' => 'Stock entry deleted successfully.',
         ]);
+    }
+
+    public function display(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->integer('per_page', 10), 50);
+
+        return response()->json($this->inventoryService->stock(app('tenant')->id, $perPage));
+    }
+
+    public function releaseToDisplay(Request $request, StockEntry $stock): JsonResponse
+    {
+        $validated = $request->validate([
+            'display_quantity' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $error = $this->inventoryService->releaseToDisplay(
+            $stock,
+            app('tenant')->id,
+            (int) $validated['display_quantity'],
+        );
+
+        if ($error) {
+            return response()->json(['message' => $error], 422);
+        }
+
+        return response()->json([
+            'message' => 'Display quantity updated successfully.',
+            'data' => [
+                'id' => $stock->id,
+                'display_quantity' => (int) $stock->display_quantity,
+            ],
+        ]);
+    }
+
+    public function auditLogs(): JsonResponse
+    {
+        $logs = $this->inventoryService->stockAuditLogs(app('tenant')->id);
+
+        return response()->json(['data' => $logs]);
     }
 }

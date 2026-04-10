@@ -28,6 +28,8 @@ class AppContextService
                 'settings' => $user->hasPermission('settings.manage'),
                 'reports' => $user->hasPermission('reports.view'),
                 'inventory' => $user->hasPermission('inventory.manage'),
+                'inventoryStock' => $user->hasPermission('inventory.stock'),
+                'inventoryDisplay' => $user->hasPermission('inventory.display'),
                 'accounts' => $user->hasPermission('accounts.manage'),
                 'expenses' => $user->hasPermission('accounts.manage'),
                 'sales' => $user->hasPermission('sales.process'),

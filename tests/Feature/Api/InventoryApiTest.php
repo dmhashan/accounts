@@ -97,7 +97,7 @@ class InventoryApiTest extends ApiRouteTestCase
 
     public function test_inventory_stock_routes_cover_list_show_create_update_and_delete(): void
     {
-        $this->actingAsUser(['inventory.manage']);
+        $this->actingAsUser(['inventory.manage', 'inventory.stock']);
 
         $product = $this->createProduct(['name' => 'Stock Product']);
         $variation = $this->createVariation($product, ['name' => 'Stock Variation']);

@@ -4,12 +4,17 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductVariation;
+use App\Models\AuditLog;
 use App\Models\StockEntry;
 use Illuminate\Support\Carbon;
 
 class InventoryService
 {
     private const LOW_STOCK_THRESHOLD = 5;
+
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
 
     public function meta(int $tenantId): array
     {
@@ -239,16 +244,18 @@ class InventoryService
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        $availableTotals = StockEntry::query()
+        $displayTotals = StockEntry::query()
             ->where('tenant_id', $tenantId)
-            ->whereDate('expiry_date', '>=', $today)
+            ->where(function ($query) use ($today) {
+                $query->whereDate('expiry_date', '>=', $today)->orWhereNull('expiry_date');
+            })
             ->groupBy('product_variation_id')
-            ->selectRaw('product_variation_id, SUM(quantity) as total')
+            ->selectRaw('product_variation_id, SUM(display_quantity) as total')
             ->pluck('total', 'product_variation_id');
 
         return [
-            'data' => collect($stockEntries->items())->map(function (StockEntry $entry) use ($availableTotals) {
-                $available = (int) ($availableTotals[$entry->product_variation_id] ?? 0);
+            'data' => collect($stockEntries->items())->map(function (StockEntry $entry) use ($displayTotals) {
+                $displayTotal = (int) ($displayTotals[$entry->product_variation_id] ?? 0);
 
                 return [
                     'id' => $entry->id,
@@ -257,8 +264,9 @@ class InventoryService
                     'product_variation_id' => $entry->product_variation_id,
                     'variation_name' => $entry->variation?->name,
                     'quantity' => (int) $entry->quantity,
-                    'available' => $available,
-                    'is_low_stock' => $available > 0 && $available <= self::LOW_STOCK_THRESHOLD,
+                    'display_quantity' => (int) $entry->display_quantity,
+                    'available' => $displayTotal,
+                    'is_low_stock' => $displayTotal > 0 && $displayTotal <= self::LOW_STOCK_THRESHOLD,
                     'manufacturing_date' => optional($entry->manufacturing_date)->format('Y-m-d'),
                     'expiry_date' => optional($entry->expiry_date)->format('Y-m-d'),
                     'purchasing_price' => (float) $entry->purchasing_price,
@@ -285,6 +293,7 @@ class InventoryService
             'product_id' => $stock->product_id,
             'product_variation_id' => $stock->product_variation_id,
             'quantity' => (int) $stock->quantity,
+            'display_quantity' => (int) $stock->display_quantity,
             'manufacturing_date' => optional($stock->manufacturing_date)->format('Y-m-d'),
             'expiry_date' => optional($stock->expiry_date)->format('Y-m-d'),
             'purchasing_price' => (float) $stock->purchasing_price,
@@ -304,16 +313,29 @@ class InventoryService
             ];
         }
 
+        $displayQty = (int) ($validated['display_quantity'] ?? 0);
+        if ($displayQty > (int) $validated['quantity']) {
+            return ['error' => 'Display quantity cannot exceed total stock quantity.'];
+        }
+
         $stock = StockEntry::create([
             'tenant_id' => $tenantId,
             'product_id' => $product->id,
             'product_variation_id' => $variation->id,
             'quantity' => $validated['quantity'],
+            'display_quantity' => $displayQty,
             'manufacturing_date' => $validated['manufacturing_date'] ?? null,
             'expiry_date' => $validated['expiry_date'] ?? null,
             'purchasing_price' => $validated['purchasing_price'],
             'local_selling_price' => $validated['local_selling_price'],
             'foreign_selling_price' => $validated['foreign_selling_price'],
+        ]);
+
+        $this->auditService->log($tenantId, 'created', $stock, null, [
+            'quantity' => (int) $stock->quantity,
+            'display_quantity' => (int) $stock->display_quantity,
+            'product_id' => $stock->product_id,
+            'product_variation_id' => $stock->product_variation_id,
         ]);
 
         return [
@@ -332,15 +354,39 @@ class InventoryService
             return 'Selected variation does not belong to the selected product.';
         }
 
+        $newQty = (int) $validated['quantity'];
+        $newDisplayQty = isset($validated['display_quantity']) ? (int) $validated['display_quantity'] : (int) $stock->display_quantity;
+
+        if ($newDisplayQty > $newQty) {
+            return 'Display quantity cannot exceed total stock quantity.';
+        }
+
+        $before = [
+            'quantity' => (int) $stock->quantity,
+            'display_quantity' => (int) $stock->display_quantity,
+            'purchasing_price' => (float) $stock->purchasing_price,
+            'local_selling_price' => (float) $stock->local_selling_price,
+            'foreign_selling_price' => (float) $stock->foreign_selling_price,
+        ];
+
         $stock->update([
             'product_id' => $product->id,
             'product_variation_id' => $variation->id,
-            'quantity' => $validated['quantity'],
+            'quantity' => $newQty,
+            'display_quantity' => $newDisplayQty,
             'manufacturing_date' => $validated['manufacturing_date'] ?? null,
             'expiry_date' => $validated['expiry_date'] ?? null,
             'purchasing_price' => $validated['purchasing_price'],
             'local_selling_price' => $validated['local_selling_price'],
             'foreign_selling_price' => $validated['foreign_selling_price'],
+        ]);
+
+        $this->auditService->log($tenantId, 'updated', $stock, $before, [
+            'quantity' => (int) $stock->quantity,
+            'display_quantity' => (int) $stock->display_quantity,
+            'purchasing_price' => (float) $stock->purchasing_price,
+            'local_selling_price' => (float) $stock->local_selling_price,
+            'foreign_selling_price' => (float) $stock->foreign_selling_price,
         ]);
 
         return null;
@@ -349,7 +395,43 @@ class InventoryService
     public function destroyStock(StockEntry $stock, int $tenantId): void
     {
         $this->ensureStockTenant($stock, $tenantId);
+
+        $before = [
+            'quantity' => (int) $stock->quantity,
+            'display_quantity' => (int) $stock->display_quantity,
+        ];
+
+        $this->auditService->log($tenantId, 'deleted', $stock, $before, null);
+
         $stock->delete();
+    }
+
+    public function releaseToDisplay(StockEntry $stock, int $tenantId, int $displayQuantity): ?string
+    {
+        $this->ensureStockTenant($stock, $tenantId);
+
+        if ($displayQuantity < 0) {
+            return 'Display quantity cannot be negative.';
+        }
+
+        if ($displayQuantity > (int) $stock->quantity) {
+            return 'Display quantity cannot exceed total stock quantity of ' . $stock->quantity . '.';
+        }
+
+        $before = ['display_quantity' => (int) $stock->display_quantity];
+
+        $stock->update(['display_quantity' => $displayQuantity]);
+
+        $this->auditService->log($tenantId, 'display_released', $stock, $before, [
+            'display_quantity' => (int) $stock->display_quantity,
+        ]);
+
+        return null;
+    }
+
+    public function stockAuditLogs(int $tenantId): array
+    {
+        return $this->auditService->recent($tenantId, StockEntry::class, 100);
     }
 
     private function ensureProductTenant(Product $product, int $tenantId): void

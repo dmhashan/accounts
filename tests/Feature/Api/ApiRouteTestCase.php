@@ -173,7 +173,7 @@ abstract class ApiRouteTestCase extends TestCase
 
     protected function createStockEntry(Product $product, ProductVariation $variation, array $attributes = []): StockEntry
     {
-        return StockEntry::create(array_merge([
+        $data = array_merge([
             'tenant_id' => $this->tenant->id,
             'product_id' => $product->id,
             'product_variation_id' => $variation->id,
@@ -183,7 +183,14 @@ abstract class ApiRouteTestCase extends TestCase
             'purchasing_price' => 100,
             'local_selling_price' => 150,
             'foreign_selling_price' => 200,
-        ], $attributes));
+        ], $attributes);
+
+        // Default display_quantity to quantity so test sales can operate on stock
+        if (!array_key_exists('display_quantity', $data)) {
+            $data['display_quantity'] = $data['quantity'];
+        }
+
+        return StockEntry::create($data);
     }
 
     protected function createSale(array $attributes = []): Sale

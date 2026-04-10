@@ -12,6 +12,7 @@ class StockEntry extends Model
         'product_id',
         'product_variation_id',
         'quantity',
+        'display_quantity',
         'manufacturing_date',
         'expiry_date',
         'purchasing_price',

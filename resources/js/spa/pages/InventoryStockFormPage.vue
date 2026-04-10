@@ -26,6 +26,11 @@
                     <AppFormInput v-model.number="form.quantity" type="number" min="0" required />
                 </AppFormField>
 
+                <AppFormField label="Display Quantity" :optional="true">
+                    <AppFormInput v-model.number="form.display_quantity" type="number" min="0" :max="form.quantity" />
+                    <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">How many to release to the display shelf immediately (max: {{ form.quantity }}).</p>
+                </AppFormField>
+
                 <AppFormField label="Purchasing Price" :required="true">
                     <AppFormInput v-model.number="form.purchasing_price" type="number" min="0" step="0.01" required />
                 </AppFormField>
@@ -84,6 +89,7 @@ const form = ref({
     product_id: null,
     product_variation_id: null,
     quantity: 1,
+    display_quantity: 0,
     manufacturing_date: '',
     expiry_date: '',
     purchasing_price: 0,
@@ -130,6 +136,7 @@ async function loadStockEntry() {
         product_id: response.data.product_id,
         product_variation_id: response.data.product_variation_id,
         quantity: response.data.quantity,
+        display_quantity: response.data.display_quantity,
         manufacturing_date: response.data.manufacturing_date || '',
         expiry_date: response.data.expiry_date || '',
         purchasing_price: response.data.purchasing_price,
@@ -157,6 +164,7 @@ async function save() {
             product_id: Number(form.value.product_id),
             product_variation_id: Number(form.value.product_variation_id),
             quantity: Number(form.value.quantity),
+            display_quantity: Number(form.value.display_quantity ?? 0),
             manufacturing_date: form.value.manufacturing_date || null,
             expiry_date: form.value.expiry_date || null,
             purchasing_price: Number(form.value.purchasing_price),

@@ -51,7 +51,7 @@ class SaleMetaService
                     ->orWhereNull('expiry_date');
             })
             ->groupBy('product_variation_id')
-            ->selectRaw('product_variation_id, SUM(quantity) as total')
+            ->selectRaw('product_variation_id, SUM(display_quantity) as total')
             ->pluck('total', 'product_variation_id');
 
         $priceMap = StockEntry::query()
