@@ -37,6 +37,10 @@ const NotificationsPage = () => import('./pages/NotificationsPage.vue');
 const NotificationFormPage = () => import('./pages/NotificationFormPage.vue');
 const NotificationViewPage = () => import('./pages/NotificationViewPage.vue');
 const MemberActivityPage = () => import('./pages/MemberActivityPage.vue');
+const ReconciliationPage = () => import('./pages/ReconciliationPage.vue');
+const ReconciliationFormPage = () => import('./pages/ReconciliationFormPage.vue');
+const ReconciliationComparisonPage = () => import('./pages/ReconciliationComparisonPage.vue');
+const ReconciliationConfigPage = () => import('./pages/ReconciliationConfigPage.vue');
 
 const routes = [
     { path: '/', redirect: '/dashboard' },
@@ -90,6 +94,12 @@ const routes = [
     { path: '/notifications/:id', component: NotificationViewPage, meta: { title: 'Notification' } },
     { path: '/notifications/:id/edit', component: NotificationFormPage, meta: { title: 'Edit Notification' } },
     { path: '/activity', component: MemberActivityPage, meta: { title: 'Activity Logs' } },
+    { path: '/reconciliation', component: ReconciliationPage, meta: { title: 'Reconciliation' } },
+    { path: '/reconciliation/open', component: ReconciliationFormPage, meta: { title: 'Open Reconciliation' } },
+    { path: '/reconciliation/close/:id', component: ReconciliationFormPage, meta: { title: 'Close Reconciliation' } },
+    { path: '/reconciliation/comparison/:id', component: ReconciliationComparisonPage, meta: { title: 'Reconciliation Comparison' } },
+    { path: '/reconciliation/sessions/:id', component: ReconciliationComparisonPage, meta: { title: 'Reconciliation Session' } },
+    { path: '/reconciliation/config', component: ReconciliationConfigPage, meta: { title: 'Reconciliation Config' } },
 ];
 
 const router = createRouter({
