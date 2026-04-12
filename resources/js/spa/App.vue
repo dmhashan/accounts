@@ -22,6 +22,21 @@
 
             <AppBottomNav @open-menu="mobileMenuOpen = true" />
         </div>
+
+        <!-- Calculator FAB -->
+        <button
+            type="button"
+            aria-label="Open calculator"
+            class="fixed right-4 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] lg:bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-500/30 text-white transition-transform hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+            @click="calculatorOpen = true"
+        >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+        </button>
+
+        <CalculatorModal v-if="calculatorOpen" @close="calculatorOpen = false" />
     </div>
 </template>
 
@@ -30,7 +45,9 @@ import { ref } from 'vue';
 import AppSidebar from './layout/AppSidebar.vue';
 import AppMobileDrawer from './layout/AppMobileDrawer.vue';
 import AppBottomNav from './layout/AppBottomNav.vue';
+import CalculatorModal from './components/CalculatorModal.vue';
 import { routeLoader } from './routeLoader';
 
 const mobileMenuOpen = ref(false);
+const calculatorOpen = ref(false);
 </script>
