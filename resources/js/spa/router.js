@@ -36,6 +36,9 @@ const AttendancePage = () => import('./pages/AttendancePage.vue');
 const NotificationsPage = () => import('./pages/NotificationsPage.vue');
 const NotificationFormPage = () => import('./pages/NotificationFormPage.vue');
 const NotificationViewPage = () => import('./pages/NotificationViewPage.vue');
+const EventsPage = () => import('./pages/EventsPage.vue');
+const EventFormPage = () => import('./pages/EventFormPage.vue');
+const EventDetailPage = () => import('./pages/EventDetailPage.vue');
 const MemberActivityPage = () => import('./pages/MemberActivityPage.vue');
 const ReconciliationPage = () => import('./pages/ReconciliationPage.vue');
 const ReconciliationFormPage = () => import('./pages/ReconciliationFormPage.vue');
@@ -93,6 +96,10 @@ const routes = [
     { path: '/notifications/new', component: NotificationFormPage, meta: { title: 'New Notification' } },
     { path: '/notifications/:id', component: NotificationViewPage, meta: { title: 'Notification' } },
     { path: '/notifications/:id/edit', component: NotificationFormPage, meta: { title: 'Edit Notification' } },
+    { path: '/events', component: EventsPage, meta: { title: 'Events' } },
+    { path: '/events/new', component: EventFormPage, meta: { title: 'New Event' } },
+    { path: '/events/:id', component: EventDetailPage, meta: { title: 'Event' } },
+    { path: '/events/:id/edit', component: EventFormPage, meta: { title: 'Edit Event' } },
     { path: '/activity', component: MemberActivityPage, meta: { title: 'Activity Logs' } },
     { path: '/reconciliation', component: ReconciliationPage, meta: { title: 'Reconciliation' } },
     { path: '/reconciliation/open', component: ReconciliationFormPage, meta: { title: 'Open Reconciliation' } },

@@ -44,6 +44,7 @@ class AppContextService
                 'paymentsManage' => $user->hasPermission('payments.manage'),
                 'attendance' => $user->hasPermission('member.attendance.view'),
                 'notifications'            => $user->hasPermission('notifications.send'),
+                'events'                   => $user->hasPermission('events.manage'),
                 'activity'                => $user->hasPermission('activity.view'),
                 'reconciliationPerform'   => $user->hasPermission('reconciliation.perform'),
                 'reconciliationManage'    => $user->hasPermission('reconciliation.manage'),

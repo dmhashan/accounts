@@ -62,6 +62,56 @@
                 </div>
             </button>
         </section>
+<!-- Upcoming Events section -->
+        <section v-if="eventsLoading || upcomingEvents.length" class="mb-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-base font-bold text-gray-900">Upcoming Events</h2>
+            </div>
+
+            <!-- Skeleton -->
+            <div v-if="eventsLoading" class="space-y-3">
+                <div v-for="i in 2" :key="i" class="bg-white rounded-3xl p-5 animate-pulse">
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-2xl bg-gray-100 flex-shrink-0"></div>
+                        <div class="flex-1">
+                            <div class="h-3 bg-gray-100 rounded-full w-3/5 mb-3"></div>
+                            <div class="h-3 bg-gray-100 rounded-full w-2/5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event cards -->
+            <div v-else class="space-y-3">
+                <router-link
+                    v-for="event in upcomingEvents"
+                    :key="event.id"
+                    :to="`/event/${event.slug}`"
+                    class="block bg-white rounded-3xl px-5 py-4 shadow-sm border border-gray-100 hover:bg-gray-50 active:scale-[0.99] transition-all"
+                >
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-2xl bg-gray-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-gray-900 leading-snug truncate">{{ event.name }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ formatEventDateTime(event.start_datetime) }}</p>
+                            <p v-if="event.venue" class="text-xs text-gray-400 mt-0.5 truncate">{{ event.venue }}</p>
+                        </div>
+                        <div class="flex flex-col items-end flex-shrink-0 gap-1">
+                            <span v-if="event.ticket_fee > 0" class="text-sm font-bold text-gray-900">${{ event.ticket_fee.toFixed(2) }}</span>
+                            <span v-else class="text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Free</span>
+                            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </div>
+                </router-link>
+            </div>
+        </section>
 
         <!-- Payments section -->
         <section v-if="salesData.length" class="mb-5">
@@ -119,7 +169,6 @@
                 View all {{ salesData.length }} payments
             </button>
         </section>
-
         <!-- No data at all -->
         <div v-if="!workoutsData.length && !salesData.length" class="flex flex-col items-center justify-center py-20 gap-3 text-gray-300">
             <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
@@ -129,7 +178,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const props = defineProps({
@@ -147,4 +196,29 @@ defineEmits(['open-workout', 'open-sale']);
 const router = useRouter();
 
 const outstandingSales = computed(() => props.salesData.filter(s => !s.is_paid));
+
+// ── Upcoming events (lazy loaded) ────────────────────────
+const upcomingEvents = ref([]);
+const eventsLoading  = ref(true);
+
+onMounted(async () => {
+    try {
+        const res = await fetch('/api/public/upcoming-events?per_page=3');
+        if (res.ok) {
+            const data = await res.json();
+            upcomingEvents.value = data.data ?? [];
+        }
+    } catch {
+        // silently ignore — non-critical section
+    }
+    eventsLoading.value = false;
+});
+
+function formatEventDateTime(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString(undefined, {
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    });
+}
 </script>

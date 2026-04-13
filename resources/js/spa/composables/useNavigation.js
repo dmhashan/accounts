@@ -17,6 +17,7 @@ import {
     BellRing,
     Activity,
     ClipboardCheck,
+    CalendarDays,
 } from 'lucide-vue-next';
 import { useAppContext } from './useAppContext';
 
@@ -37,6 +38,7 @@ const ICONS = {
     payments:      WalletCards,
     attendance:    CalendarCheck2,
     notifications: BellRing,
+    events:        CalendarDays,
     activity:      Activity,
     reconciliation: ClipboardCheck,
 };
@@ -61,6 +63,7 @@ export function useNavigation() {
         if (context.permissions?.diet)           items.push({ label: 'Diet',      shortLabel: 'Diet',     path: '/diet',      icon: ICONS.diet });
         if (context.permissions?.attendance)     items.push({ label: 'Attendance',    shortLabel: 'Attend',  path: '/attendance',    icon: ICONS.attendance });
         if (context.permissions?.notifications)  items.push({ label: 'Notifications', shortLabel: 'Notify',   path: '/notifications', icon: ICONS.notifications });
+        if (context.permissions?.events)          items.push({ label: 'Events',        shortLabel: 'Events',   path: '/events',        icon: ICONS.events });
         if (context.permissions?.activity)               items.push({ label: 'Activity Logs',  shortLabel: 'Activity',      path: '/activity',        icon: ICONS.activity });
         if (context.permissions?.reconciliationPerform || context.permissions?.reconciliationManage)
             items.push({ label: 'Reconciliation', shortLabel: 'Reconcile', path: '/reconciliation', icon: ICONS.reconciliation });

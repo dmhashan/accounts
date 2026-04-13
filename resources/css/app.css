@@ -177,4 +177,66 @@
         @apply min-h-0 flex-1 overflow-auto;
         overscroll-behavior: contain;
     }
+
+    /* ── Public Profile App ─────────────────────────────────── */
+    .pp-input {
+        display: block;
+        width: 100%;
+        background-color: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.625rem 0.875rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: #111827;
+        outline: none;
+        box-shadow: none;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .pp-input::placeholder {
+        color: #9ca3af;
+    }
+
+    .pp-input:focus {
+        border-color: #f87171;
+        box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+        outline: none;
+    }
+
+    .pp-input[readonly] {
+        background-color: #f9fafb;
+        color: #6b7280;
+        cursor: default;
+    }
+
+    .pp-textarea {
+        display: block;
+        width: 100%;
+        background-color: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.625rem 0.875rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: #111827;
+        outline: none;
+        box-shadow: none;
+        resize: none;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .pp-textarea::placeholder {
+        color: #9ca3af;
+    }
+
+    .pp-textarea:focus {
+        border-color: #f87171;
+        box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+        outline: none;
+    }
 }

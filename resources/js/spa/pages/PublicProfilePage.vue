@@ -84,7 +84,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 import LoadingScreen    from '../components/PublicProfileApp/LoadingScreen.vue';
 import IdentifyScreen   from '../components/PublicProfileApp/IdentifyScreen.vue';
@@ -148,8 +148,12 @@ const tenantName = computed(() => window.__tenantName || '');
 
 // ── Nav state ──────────────────────────────────────────────
 const router        = useRouter();
+const route         = useRoute();
 const activeWorkout = ref(null);
 const activeSale    = ref(null);
+
+// Event pages are publicly accessible — no OTP required
+const isEventPage = computed(() => route.path.startsWith('/event/'));
 
 // ── Bootstrap ──────────────────────────────────────────────
 onMounted(async () => {
@@ -158,6 +162,10 @@ onMounted(async () => {
         currentToken.value = token;
         await loadProfile(token);
         track('session_resume');
+    } else if (isEventPage.value) {
+        // Event pages are public — skip OTP login
+        screen.value = 'profile';
+        track('session_start');
     } else {
         screen.value = 'identify';
         track('session_start');

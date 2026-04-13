@@ -109,6 +109,12 @@ function isActive(path) {
     if (path === '/payments') {
         return route.path.startsWith('/payments');
     }
+    if (path === '/notifications') {
+        return route.path.startsWith('/notifications');
+    }
+    if (path === '/events') {
+        return route.path.startsWith('/events');
+    }
     return route.path === path;
 }
 </script>

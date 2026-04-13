@@ -20,6 +20,7 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
     require __DIR__.'/api/workouts.php';
     require __DIR__.'/api/payments.php';
     require __DIR__.'/api/notifications.php';
+    require __DIR__.'/api/events.php';
     require __DIR__.'/api/public-profile.php';
     require __DIR__.'/api/activity.php';
     require __DIR__.'/api/reconciliation.php';

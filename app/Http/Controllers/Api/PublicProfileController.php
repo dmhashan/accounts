@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BulkNotification;
 use App\Models\Member;
 use App\Models\MemberActivityLog;
 use App\Models\Sale;
 use App\Models\WorkoutProgramAssignment;
+use App\Services\EventService;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -197,6 +199,139 @@ class PublicProfileController extends Controller
     }
 
     /**
+     * Return public event details by slug. No authentication required.
+     */
+    public function showEvent(Request $request, string $slug)
+    {
+        $tenant = app('tenant');
+        $event  = app(EventService::class)->publicEvent($slug, $tenant->id);
+
+        if (! $event) {
+            return response()->json(['message' => 'Event not found.'], 404);
+        }
+
+        return response()->json($event);
+    }
+
+    /**
+     * Register for an event. No authentication required; member resolved from optional PP token.
+     */
+    public function registerEvent(Request $request, string $slug)
+    {
+        $tenant = app('tenant');
+
+        $event = \App\Models\Event::where('tenant_id', $tenant->id)
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $event) {
+            return response()->json(['message' => 'Event not found or registration is closed.'], 404);
+        }
+
+        $validated = $request->validate([
+            'first_name'     => ['required', 'string', 'max:100'],
+            'last_name'      => ['required', 'string', 'max:100'],
+            'email'          => ['nullable', 'email', 'max:150'],
+            'phone'          => ['nullable', 'string', 'max:30'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
+            'guests'         => ['nullable', 'array', 'max:20'],
+            'guests.*.first_name' => ['required', 'string', 'max:100'],
+            'guests.*.last_name'  => ['required', 'string', 'max:100'],
+            'guests.*.notes'      => ['nullable', 'string', 'max:500'],
+        ]);
+
+        // Resolve optional member from PP token header
+        $memberId = null;
+        $token    = $request->header('X-PP-Token');
+        if ($token) {
+            $cached = Cache::get("pp_token:{$token}");
+            if ($cached && $cached['tenant_id'] === $tenant->id) {
+                $memberId = $cached['member_id'];
+            }
+        }
+
+        // Block duplicate registrations for logged-in members
+        if ($memberId) {
+            $existing = app(EventService::class)->getMyRegistration($event, $memberId);
+            if ($existing) {
+                return response()->json(['message' => 'You have already registered for this event.'], 409);
+            }
+        }
+
+        $registration = app(EventService::class)->register($event, $tenant->id, $validated, $memberId);
+
+        return response()->json([
+            'message' => 'Registration successful.',
+            'data'    => app(EventService::class)->toRegistrationItem($registration->load('guests')),
+        ], 201);
+    }
+
+    /**
+     * Return sent notifications addressed to the authenticated member.
+     */
+    public function getNotifications(Request $request)
+    {
+        $tenant   = app('tenant');
+        $memberId = $request->input('_pp_member_id');
+        $page     = max(1, (int) $request->input('page', 1));
+        $perPage  = min(max(1, (int) $request->input('per_page', 15)), 50);
+
+        $notifications = BulkNotification::where('tenant_id', $tenant->id)
+            ->where('status', 'sent')
+            ->whereHas('recipients', fn ($q) => $q->where('member_id', $memberId))
+            ->orderByDesc('sent_at')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => collect($notifications->items())->map(fn ($n) => [
+                'id'      => $n->id,
+                'title'   => $n->name,
+                'message' => $n->message,
+                'sent_at' => $n->sent_at?->toDateTimeString(),
+            ])->values(),
+            'meta' => [
+                'current_page' => $notifications->currentPage(),
+                'last_page'    => $notifications->lastPage(),
+                'total'        => $notifications->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * Return upcoming active events for public display (no auth required).
+     */
+    public function getUpcomingEvents(Request $request)
+    {
+        $tenant  = app('tenant');
+        $page    = max(1, (int) $request->input('page', 1));
+        $perPage = min(max(1, (int) $request->input('per_page', 10)), 50);
+
+        $events = \App\Models\Event::where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->where('start_datetime', '>', now())
+            ->orderBy('start_datetime')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => collect($events->items())->map(fn ($e) => [
+                'id'             => $e->id,
+                'name'           => $e->name,
+                'slug'           => $e->slug,
+                'start_datetime' => $e->start_datetime->toDateTimeString(),
+                'end_datetime'   => $e->end_datetime?->toDateTimeString(),
+                'venue'          => $e->venue,
+                'ticket_fee'     => (float) $e->ticket_fee,
+            ])->values(),
+            'meta' => [
+                'current_page' => $events->currentPage(),
+                'last_page'    => $events->lastPage(),
+                'total'        => $events->total(),
+            ],
+        ]);
+    }
+
+    /**
      * Record a public-profile activity event (fire-and-forget).
      * No member authentication required — tenant context is enough.
      */
@@ -240,5 +375,70 @@ class PublicProfileController extends Controller
         ]);
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Return the authenticated member's registration for an event, if any.
+     */
+    public function getMyEventRegistration(Request $request, string $slug)
+    {
+        $tenant   = app('tenant');
+        $memberId = $request->input('_pp_member_id');
+
+        $event = \App\Models\Event::where('tenant_id', $tenant->id)
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $event) {
+            return response()->json(['message' => 'Event not found.'], 404);
+        }
+
+        $registration = app(EventService::class)->getMyRegistration($event, $memberId);
+
+        if (! $registration) {
+            return response()->json(['data' => null]);
+        }
+
+        return response()->json(['data' => app(EventService::class)->toRegistrationItem($registration)]);
+    }
+
+    /**
+     * Update the authenticated member's existing registration for an event.
+     */
+    public function updateMyEventRegistration(Request $request, string $slug)
+    {
+        $tenant   = app('tenant');
+        $memberId = $request->input('_pp_member_id');
+
+        $event = \App\Models\Event::where('tenant_id', $tenant->id)
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $event) {
+            return response()->json(['message' => 'Event not found.'], 404);
+        }
+
+        $registration = app(EventService::class)->getMyRegistration($event, $memberId);
+
+        if (! $registration) {
+            return response()->json(['message' => 'No registration found to update.'], 404);
+        }
+
+        $validated = $request->validate([
+            'notes'               => ['nullable', 'string', 'max:1000'],
+            'guests'              => ['nullable', 'array', 'max:20'],
+            'guests.*.first_name' => ['required', 'string', 'max:100'],
+            'guests.*.last_name'  => ['required', 'string', 'max:100'],
+            'guests.*.notes'      => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $updated = app(EventService::class)->updateRegistration($registration, $event, $validated);
+
+        return response()->json([
+            'message' => 'Registration updated.',
+            'data'    => app(EventService::class)->toRegistrationItem($updated),
+        ]);
     }
 }
