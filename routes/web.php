@@ -81,14 +81,17 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register.form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
 
-    // Public member profile route (username-based, kept for backwards compatibility)
-    Route::get('/profile/{username}', [\App\Http\Controllers\MemberController::class, 'publicProfile'])
-        ->name('member.public_profile');
-
-    // Public member portal (phone + OTP identification)
+    // Public member portal (phone + OTP identification) — SPA root and sub-routes
     Route::get('/profile', function () {
         return view('members.public-profile');
     })->name('member.portal');
+    Route::get('/profile/workout',      fn() => view('members.public-profile'));
+    Route::get('/profile/transactions', fn() => view('members.public-profile'));
+    Route::get('/profile/profile',      fn() => view('members.public-profile'));
+
+    // Public member profile route (username-based, kept for backwards compatibility)
+    Route::get('/profile/{username}', [\App\Http\Controllers\MemberController::class, 'publicProfile'])
+        ->name('member.public_profile');
 
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {

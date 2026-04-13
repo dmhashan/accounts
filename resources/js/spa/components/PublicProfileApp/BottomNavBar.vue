@@ -6,12 +6,12 @@
                 :key="tab.key"
                 type="button"
                 class="flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors focus:outline-none"
-                :class="activeNav === tab.key ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'"
-                @click="$emit('navigate', tab.key)"
+                :class="isActive(tab) ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'"
+                @click="router.push(tab.path)"
             >
                 <component :is="tab.icon" class="w-5 h-5" />
                 <span class="text-[10px] font-semibold leading-none">{{ tab.label }}</span>
-                <span v-if="activeNav === tab.key" class="w-5 h-0.5 rounded-full bg-red-500 mt-0.5"></span>
+                <span v-if="isActive(tab)" class="w-5 h-0.5 rounded-full bg-red-500 mt-0.5"></span>
                 <span v-else class="w-5 h-0.5 mt-0.5"></span>
             </button>
         </div>
@@ -20,12 +20,14 @@
 
 <script setup>
 import { h } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-defineProps({
-    activeNav: { type: String, default: 'home' },
-});
+const route  = useRoute();
+const router = useRouter();
 
-defineEmits(['navigate']);
+function isActive(tab) {
+    return route.path === tab.path;
+}
 
 const IconHome = {
     render: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', class: 'w-5 h-5' }, [
@@ -52,9 +54,9 @@ const IconProfile = {
 };
 
 const navTabs = [
-    { key: 'home',         label: 'Home',         icon: IconHome },
-    { key: 'workout',      label: 'Workout',       icon: IconWorkout },
-    { key: 'transactions', label: 'Payments',  icon: IconTransactions },
-    { key: 'profile',      label: 'Profile',       icon: IconProfile },
+    { key: 'home',         path: '/',             label: 'Home',     icon: IconHome },
+    { key: 'workout',      path: '/workout',       label: 'Workout',  icon: IconWorkout },
+    { key: 'transactions', path: '/transactions',  label: 'Payments', icon: IconTransactions },
+    { key: 'profile',      path: '/profile',       label: 'Profile',  icon: IconProfile },
 ];
 </script>

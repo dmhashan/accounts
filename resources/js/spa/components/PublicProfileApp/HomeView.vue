@@ -18,7 +18,7 @@
         <section v-if="workoutsData.length" class="mb-5">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-base font-bold text-gray-900">Workout Plan</h2>
-                <button v-if="workoutsData.length > 1" type="button" class="text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors" @click="$emit('navigate', 'workout')">
+                <button v-if="workoutsData.length > 1" type="button" class="text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors" @click="router.push('/workout')">
                     See all ({{ workoutsData.length }})
                 </button>
             </div>
@@ -114,7 +114,7 @@
                 v-if="salesData.length > 3"
                 type="button"
                 class="mt-3 w-full py-3.5 text-sm font-bold bg-gray-900 text-white rounded-2xl hover:bg-gray-800 active:bg-black transition-colors"
-                @click="$emit('navigate', 'transactions')"
+                @click="router.push('/transactions')"
             >
                 View all {{ salesData.length }} payments
             </button>
@@ -130,6 +130,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 
 const props = defineProps({
     meta:         { type: Object,  default: () => ({}) },
@@ -141,7 +142,9 @@ const props = defineProps({
     salesData:    { type: Array,   default: () => [] },
 });
 
-defineEmits(['open-workout', 'open-sale', 'navigate']);
+defineEmits(['open-workout', 'open-sale']);
+
+const router = useRouter();
 
 const outstandingSales = computed(() => props.salesData.filter(s => !s.is_paid));
 </script>

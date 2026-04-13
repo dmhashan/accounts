@@ -27,46 +27,26 @@
             <main class="flex-1 overflow-y-auto pb-28">
                 <div class="max-w-lg mx-auto px-5">
 
-                    <HomeView
-                        v-show="activeNav === 'home'"
-                        :meta="meta"
-                        :greeting="greeting"
-                        :first-name="firstName"
-                        :last-name="lastName"
-                        :initials="initials"
-                        :workouts-data="workoutsData"
-                        :sales-data="salesData"
-                        @open-workout="openWorkout"
-                        @open-sale="openSale"
-                        @navigate="activeNav = $event"
-                    />
-
-                    <WorkoutView
-                        v-show="activeNav === 'workout'"
-                        :workouts-data="workoutsData"
-                        @open-workout="openWorkout"
-                    />
-
-                    <TransactionsView
-                        v-show="activeNav === 'transactions'"
-                        :meta="meta"
-                        :sales-data="salesData"
-                        @open-sale="openSale"
-                    />
-
-                    <ProfileView
-                        v-show="activeNav === 'profile'"
-                        :meta="meta"
-                        :initials="initials"
-                        :workouts-data="workoutsData"
-                        :sales-data="salesData"
-                        @logout="logout"
-                    />
+                    <router-view v-slot="{ Component }">
+                        <component
+                            :is="Component"
+                            :meta="meta"
+                            :greeting="greeting"
+                            :first-name="firstName"
+                            :last-name="lastName"
+                            :initials="initials"
+                            :workouts-data="workoutsData"
+                            :sales-data="salesData"
+                            @open-workout="openWorkout"
+                            @open-sale="openSale"
+                            @logout="logout"
+                        />
+                    </router-view>
 
                 </div>
             </main>
 
-            <BottomNavBar :active-nav="activeNav" @navigate="activeNav = $event" />
+            <BottomNavBar />
 
             <!-- ── Workout Preview Modal ──────────────────────── -->
             <Teleport to="body">
@@ -104,14 +84,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 import LoadingScreen    from '../components/PublicProfileApp/LoadingScreen.vue';
 import IdentifyScreen   from '../components/PublicProfileApp/IdentifyScreen.vue';
 import OtpScreen        from '../components/PublicProfileApp/OtpScreen.vue';
-import HomeView         from '../components/PublicProfileApp/HomeView.vue';
-import WorkoutView      from '../components/PublicProfileApp/WorkoutView.vue';
-import TransactionsView from '../components/PublicProfileApp/TransactionsView.vue';
-import ProfileView      from '../components/PublicProfileApp/ProfileView.vue';
 import BottomNavBar     from '../components/PublicProfileApp/BottomNavBar.vue';
 
 import WorkoutProgramPreviewCard from '../components/WorkoutProgramPreviewCard.vue';
@@ -170,7 +147,7 @@ const meta         = ref({});
 const tenantName = computed(() => window.__tenantName || '');
 
 // ── Nav state ──────────────────────────────────────────────
-const activeNav     = ref('home');
+const router        = useRouter();
 const activeWorkout = ref(null);
 const activeSale    = ref(null);
 
@@ -319,7 +296,7 @@ function logout() {
     phone.value        = '';
     otpCode.value      = '';
     error.value        = '';
-    activeNav.value    = 'home';
+    router.push('/');
     screen.value       = 'identify';
 }
 </script>
