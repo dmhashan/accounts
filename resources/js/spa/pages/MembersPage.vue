@@ -10,42 +10,42 @@
             </template>
 
             <template #extra-slot>
-                <AppSearchField v-model="search" placeholder="Search members by id, name, email, or phone" :disabled="loading" @search="loadMembers(1)" />
+                <div class="space-y-3">
+                    <AppSearchField v-model="search" placeholder="Search members by id, name, email, or phone" :disabled="loading" @search="loadMembers(1)" />
+
+                    <div class="app-tabs">
+                        <button type="button" class="app-tab-btn" :class="activeTab === 'members' ? 'app-tab-btn-active' : ''" @click="switchTab('members')">
+                            Members
+                        </button>
+                        <button type="button" class="app-tab-btn" :class="activeTab === 'temp' ? 'app-tab-btn-active' : ''" @click="switchTab('temp')">
+                            Temp Members
+                        </button>
+                    </div>
+                </div>
             </template>
         </AppPageHeader>
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        <div v-if="errorMessage" class="app-alert app-alert-error">
             {{ errorMessage }}
         </div>
 
         <div class="min-h-0 flex flex-1 flex-col">
-            <!-- Tabs -->
-            <div class="flex border-b border-secondary-200 dark:border-secondary-700 mb-3 shrink-0">
-                <button
-                    type="button"
-                    class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-                    :class="activeTab === 'members'
-                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                        : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
-                    @click="switchTab('members')"
-                >
-                    Members
-                </button>
-                <button
-                    type="button"
-                    class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-                    :class="activeTab === 'temp'
-                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                        : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
-                    @click="switchTab('temp')"
-                >
-                    Temp Members
-                </button>
-            </div>
-
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
-                    <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading members...</div>
+
+                    <!-- Skeleton loading -->
+                    <template v-if="loading">
+                        <div class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                            <div v-for="i in 6" :key="i" class="p-4 flex items-center gap-3">
+                                <div class="app-skeleton h-10 w-10 rounded-full shrink-0"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="app-skeleton h-3.5 w-40 rounded"></div>
+                                    <div class="app-skeleton h-3 w-56 rounded"></div>
+                                </div>
+                                <div class="app-skeleton h-5 w-14 rounded-full shrink-0"></div>
+                            </div>
+                        </div>
+                    </template>
 
                     <template v-else>
                         <!-- Mobile cards -->
@@ -53,39 +53,42 @@
                             <article
                                 v-for="member in members"
                                 :key="member.id"
-                                class="p-4 space-y-3 cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                                class="p-4 flex items-center gap-3 cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
                                 role="link"
                                 tabindex="0"
                                 @click="openMember(member.id)"
                                 @keydown.enter.prevent="openMember(member.id)"
                                 @keydown.space.prevent="openMember(member.id)"
                             >
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="text-xs text-secondary-500 dark:text-secondary-400">ID: {{ member.member_id }}</p>
-                                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                                            <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</p>
-                                            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="genderBadgeClass(member)">
-                                                {{ capitalize(member.gender) || 'N/A' }}
-                                            </span>
-                                            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
-                                                {{ member.is_active ? 'Active' : 'Inactive' }}
-                                            </span>
-                                            <span v-if="activeTab === 'members'" class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
-                                                {{ member.is_verified ? 'Verified' : 'Unverified' }}
-                                            </span>
-                                        </div>
-                                        <div class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs">
-                                            <p class="text-secondary-500 dark:text-secondary-400">
-                                                {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
-                                            </p>
-                                            <span class="font-semibold text-primary-600 dark:text-primary-400">View details</span>
-                                        </div>
-                                    </div>
+                                <!-- Avatar -->
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-primary-500/20">
+                                    {{ memberInitials(member) }}
                                 </div>
+
+                                <!-- Info -->
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</p>
+                                        <AppBadge :color="member.gender === 'male' ? 'indigo' : member.gender === 'female' ? 'purple' : 'secondary'">
+                                            {{ capitalize(member.gender) || 'N/A' }}
+                                        </AppBadge>
+                                        <AppBadge :color="member.is_active ? 'green' : 'red'">
+                                            {{ member.is_active ? 'Active' : 'Inactive' }}
+                                        </AppBadge>
+                                        <AppBadge v-if="activeTab === 'members'" :color="member.is_verified ? 'blue' : 'amber'">
+                                            {{ member.is_verified ? 'Verified' : 'Unverified' }}
+                                        </AppBadge>
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400 truncate">
+                                        {{ member.member_id }} · {{ member.phone_number || member.email || 'No contact' }}
+                                    </p>
+                                </div>
+
+                                <!-- Chevron -->
+                                <ChevronRight class="h-4 w-4 text-secondary-400 shrink-0" :stroke-width="2" />
                             </article>
 
-                            <div v-if="members.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No members found.</div>
+                            <AppEmptyState v-if="members.length === 0" :icon="Users" title="No members found" description="Try adjusting your search or add a new member." />
                         </div>
 
                         <!-- Desktop table -->
@@ -93,41 +96,58 @@
                             <table class="w-full">
                                 <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Member</th>
+                                        <th class="app-table-th">Member</th>
+                                        <th class="app-table-th">ID</th>
+                                        <th class="app-table-th">Contact</th>
+                                        <th class="app-table-th">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
                                     <tr
                                         v-for="member in members"
                                         :key="member.id"
-                                        class="cursor-pointer transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+                                        class="app-table-row cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
                                         role="link"
                                         tabindex="0"
                                         @click="openMember(member.id)"
                                         @keydown.enter.prevent="openMember(member.id)"
                                         @keydown.space.prevent="openMember(member.id)"
                                     >
-                                        <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ member.member_id }}</td>
-                                        <td class="px-6 py-4">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</span>
-                                                <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="genderBadgeClass(member)">{{ capitalize(member.gender) || 'N/A' }}</span>
-                                                <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'">
+                                        <td class="app-table-td">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-primary-500/20">
+                                                    {{ memberInitials(member) }}
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</p>
+                                                    <div class="mt-0.5 flex flex-wrap gap-1">
+                                                        <AppBadge :color="member.gender === 'male' ? 'indigo' : member.gender === 'female' ? 'purple' : 'secondary'">
+                                                            {{ capitalize(member.gender) || 'N/A' }}
+                                                        </AppBadge>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="app-table-td text-secondary-500 dark:text-secondary-400 text-xs">{{ member.member_id }}</td>
+                                        <td class="app-table-td text-secondary-600 dark:text-secondary-300 text-xs">
+                                            <div>{{ member.phone_number || '—' }}</div>
+                                            <div class="text-secondary-400 dark:text-secondary-500">{{ member.email || '—' }}</div>
+                                        </td>
+                                        <td class="app-table-td">
+                                            <div class="flex flex-wrap gap-1.5">
+                                                <AppBadge :color="member.is_active ? 'green' : 'red'">
                                                     {{ member.is_active ? 'Active' : 'Inactive' }}
-                                                </span>
-                                                <span v-if="activeTab === 'members'" class="px-2 py-0.5 text-[11px] font-semibold rounded-full" :class="member.is_verified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'">
+                                                </AppBadge>
+                                                <AppBadge v-if="activeTab === 'members'" :color="member.is_verified ? 'blue' : 'amber'">
                                                     {{ member.is_verified ? 'Verified' : 'Unverified' }}
-                                                </span>
+                                                </AppBadge>
                                             </div>
-                                            <div class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
-                                                {{ member.phone_number || 'N/A' }} • {{ member.email || 'N/A' }}
-                                            </div>
-                                            <div class="mt-2 text-xs font-semibold text-primary-600 dark:text-primary-400">Open member details</div>
                                         </td>
                                     </tr>
                                     <tr v-if="members.length === 0">
-                                        <td colspan="2" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No members found.</td>
+                                        <td colspan="4">
+                                            <AppEmptyState :icon="Users" title="No members found" description="Try adjusting your search or add a new member." />
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -164,8 +184,10 @@ import AppPagination from '../components/AppPagination.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
+import AppBadge from '../components/AppBadge.vue';
+import AppEmptyState from '../components/AppEmptyState.vue';
 import TempMemberFormModal from '../components/TempMemberFormModal.vue';
-import { Clock, Download, UserRoundPlus } from 'lucide-vue-next';
+import { ChevronRight, Clock, Download, Users, UserRoundPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 
 const router = useRouter();
@@ -199,6 +221,15 @@ function onTempMemberCreated(memberId) {
 
 function capitalize(value = '') {
     return value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
+}
+
+function memberInitials(member) {
+    const first = (member.first_name || '').trim();
+    const last = (member.last_name || '').trim();
+    if (first || last) {
+        return `${first[0] || ''}${last[0] || ''}`.toUpperCase();
+    }
+    return (member.name || '?')[0].toUpperCase();
 }
 
 function memberFullName(member) {
