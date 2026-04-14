@@ -42,7 +42,8 @@
                                         </p>
                                         <p class="mt-0.5 text-xs text-secondary-400 dark:text-secondary-500">
                                             {{ ev.registrations_count }} registered
-                                            <template v-if="ev.ticket_fee > 0"> &bull; {{ formatFee(ev.ticket_fee) }} / person</template>
+                                            <template v-if="ev.total_paid > 0"> &bull; <span class="text-green-600 dark:text-green-400">{{ formatFee(ev.total_paid) }} paid</span></template>
+                                            <template v-if="ev.total_outstanding > 0"> &bull; <span class="text-amber-600 dark:text-amber-400">{{ formatFee(ev.total_outstanding) }} outstanding</span></template>
                                         </p>
                                     </div>
                                     <div class="flex gap-2 shrink-0 text-sm">
@@ -61,7 +62,8 @@
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Name</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Date & Venue</th>
                                     <th class="px-4 py-3 text-center font-semibold text-secondary-700 dark:text-secondary-300">Registered</th>
-                                    <th class="px-4 py-3 text-right font-semibold text-secondary-700 dark:text-secondary-300">Ticket Fee</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-secondary-700 dark:text-secondary-300">Paid</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-secondary-700 dark:text-secondary-300">Outstanding</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Status</th>
                                     <th class="px-4 py-3 text-right font-semibold text-secondary-700 dark:text-secondary-300">Actions</th>
                                 </tr>
@@ -77,7 +79,8 @@
                                         <div v-if="ev.venue" class="text-xs text-secondary-400">{{ ev.venue }}</div>
                                     </td>
                                     <td class="px-4 py-3 text-center text-secondary-600 dark:text-secondary-400">{{ ev.registrations_count }}</td>
-                                    <td class="px-4 py-3 text-right text-secondary-600 dark:text-secondary-400 whitespace-nowrap">{{ formatFee(ev.ticket_fee) }}</td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap font-medium" :class="ev.total_paid > 0 ? 'text-green-600 dark:text-green-400' : 'text-secondary-400 dark:text-secondary-500'">{{ ev.total_paid > 0 ? formatFee(ev.total_paid) : '—' }}</td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap font-medium" :class="ev.total_outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-secondary-400 dark:text-secondary-500'">{{ ev.total_outstanding > 0 ? formatFee(ev.total_outstanding) : '—' }}</td>
                                     <td class="px-4 py-3">
                                         <span class="px-2 py-0.5 text-xs font-semibold rounded-full" :class="ev.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-secondary-100 text-secondary-600 dark:bg-secondary-700 dark:text-secondary-400'">
                                             {{ ev.is_active ? 'Active' : 'Inactive' }}

@@ -14,6 +14,8 @@ class EventService
         $query = Event::where('tenant_id', $tenantId)
             ->when($search !== '', fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->withCount('registrations')
+            ->withSum(['registrations as total_paid' => fn ($q) => $q->where('is_paid', true)], 'total_fee')
+            ->withSum(['registrations as total_outstanding' => fn ($q) => $q->where('is_paid', false)], 'total_fee')
             ->orderByDesc('start_datetime');
 
         $paginator = $query->paginate($perPage);
@@ -203,6 +205,8 @@ class EventService
             'additional_ticket_fee' => (float) $event->additional_ticket_fee,
             'is_active'             => $event->is_active,
             'registrations_count'   => $event->registrations_count ?? 0,
+            'total_paid'            => (float) ($event->total_paid ?? 0),
+            'total_outstanding'     => (float) ($event->total_outstanding ?? 0),
         ];
     }
 
