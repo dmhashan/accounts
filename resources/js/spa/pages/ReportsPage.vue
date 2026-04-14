@@ -3,23 +3,6 @@
         <AppPageHeader>
             <template #extra-slot>
                 <div class="space-y-3">
-                    <div class="inline-flex flex-wrap rounded-xl app-surface-soft p-1">
-                        <button
-                            v-for="tab in mainTabs"
-                            :key="tab.key"
-                            type="button"
-                            class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                            :class="activeTab === tab.key ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                            @click="switchTab(tab.key)"
-                        >
-                            {{ tab.label }}
-                            <span
-                                class="ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px]"
-                                :class="activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-white dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300'"
-                            >{{ statsLoading ? '-' : formatNumber(tab.count) }}</span>
-                        </button>
-                    </div>
-
                     <!-- Filters -->
                     <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full xl:w-auto" @submit.prevent="loadStats">
                         <AppFormField label="Range Type">
@@ -256,7 +239,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
@@ -268,7 +251,7 @@ const route = useRoute();
 const router = useRouter();
 
 const VALID_TABS = ['stats', 'customers', 'products'];
-const activeTab = ref(VALID_TABS.includes(route.query.tab) ? route.query.tab : 'stats');
+const activeTab = ref(route.path === '/reports/customers' ? 'customers' : route.path === '/reports/products' ? 'products' : 'stats');
 
 const mainTabs = computed(() => [
     { key: 'stats', label: 'Transaction List', count: stats.value.transaction_list.length },
@@ -278,8 +261,15 @@ const mainTabs = computed(() => [
 
 function switchTab(tab) {
     activeTab.value = tab;
-    router.replace({ query: { tab } });
 }
+
+watch(
+    () => route.path,
+    (path) => {
+        const newTab = path === '/reports/customers' ? 'customers' : path === '/reports/products' ? 'products' : 'stats';
+        if (activeTab.value !== newTab) switchTab(newTab);
+    }
+);
 
 // ── Sales Stats ───────────────────────────────────────────────────────────────
 const statsLoading = ref(false);

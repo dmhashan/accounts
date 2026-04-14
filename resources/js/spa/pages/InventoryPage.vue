@@ -6,16 +6,7 @@
             </template>
 
             <template #extra-slot>
-                <div class="space-y-3">
-                    <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingProducts || loadingStock" @search="triggerActiveSearch" />
-
-                    <div class="inline-flex rounded-xl app-surface-soft p-1">
-                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'products' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'products'">Products</button>
-                        <button v-if="context.permissions?.inventoryStock" type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'stock' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'stock'">Stock</button>
-                        <button v-if="context.permissions?.inventoryDisplay" type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'display' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'display'">Display</button>
-                        <button v-if="context.permissions?.inventoryStock || context.permissions?.inventoryDisplay" type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'audit' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'audit'">Audit</button>
-                    </div>
-                </div>
+                <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingProducts || loadingStock" @search="triggerActiveSearch" />
             </template>
         </AppPageHeader>
 
@@ -335,7 +326,7 @@ import { useAppContext } from '../composables/useAppContext';
 const route = useRoute();
 const context = useAppContext();
 
-const activeTab = ref(route.query.tab === 'stock' ? 'stock' : route.query.tab === 'display' ? 'display' : route.query.tab === 'audit' ? 'audit' : 'products');
+const activeTab = ref(route.path === '/inventory/stock' ? 'stock' : route.path === '/inventory/display' ? 'display' : route.path === '/inventory/audit' ? 'audit' : 'products');
 const errorMessage = ref('');
 
 const products = ref([]);
@@ -625,6 +616,14 @@ watch(activeTab, (tab) => {
         loadDisplay(1);
     }
 });
+
+watch(
+    () => route.path,
+    (path) => {
+        const newTab = path === '/inventory/stock' ? 'stock' : path === '/inventory/display' ? 'display' : path === '/inventory/audit' ? 'audit' : 'products';
+        if (activeTab.value !== newTab) activeTab.value = newTab;
+    }
+);
 
 onMounted(() => {
     loadAll();

@@ -6,15 +6,7 @@
             </template>
 
             <template #extra-slot>
-                <div class="space-y-3">
-                    <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingAccounts || loadingTransfers || loadingTransactions" @search="triggerActiveSearch" />
-
-                    <div class="inline-flex flex-wrap rounded-xl app-surface-soft p-1">
-                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'accounts' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'accounts'">Accounts</button>
-                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transfers' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transfers'">Transfers</button>
-                        <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors" :class="activeTab === 'transactions' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'" @click="activeTab = 'transactions'">Transactions</button>
-                    </div>
-                </div>
+                <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingAccounts || loadingTransfers || loadingTransactions" @search="triggerActiveSearch" />
             </template>
         </AppPageHeader>
 
@@ -266,7 +258,7 @@ import { apiRequest } from '../composables/useApiClient';
 const route = useRoute();
 
 const validTabs = ['accounts', 'transfers', 'transactions'];
-const activeTab = ref(validTabs.includes(route.query.tab) ? route.query.tab : 'accounts');
+const activeTab = ref(route.path === '/accounts/transfers' ? 'transfers' : route.path === '/accounts/transactions' ? 'transactions' : 'accounts');
 const accounts = ref([]);
 const transfers = ref([]);
 const transactions = ref([]);
@@ -527,9 +519,10 @@ function handleTransactionLimitChange(limit) {
 }
 
 watch(
-    () => route.query.tab,
-    (tab) => {
-        activeTab.value = validTabs.includes(tab) ? tab : 'accounts';
+    () => route.path,
+    (path) => {
+        const newTab = path === '/accounts/transfers' ? 'transfers' : path === '/accounts/transactions' ? 'transactions' : 'accounts';
+        if (activeTab.value !== newTab) activeTab.value = newTab;
     }
 );
 

@@ -1,34 +1,6 @@
 <template>
     <section class="app-page-frame">
         <AppPageHeader title="Workout Manager">
-            <template #extra-slot>
-                <div class="inline-flex rounded-xl app-surface-soft p-1">
-                    <button
-                        type="button"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                        :class="activeTab === 'exercises' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                        @click="activeTab = 'exercises'"
-                    >
-                        Exercises
-                    </button>
-                    <button
-                        type="button"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                        :class="activeTab === 'programs' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                        @click="activeTab = 'programs'"
-                    >
-                        Workout Programs
-                    </button>
-                    <button
-                        type="button"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                        :class="activeTab === 'assignments' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                        @click="activeTab = 'assignments'"
-                    >
-                        Assignments
-                    </button>
-                </div>
-            </template>
 
             <template #cta-slot>
                 <RouterLink
@@ -247,7 +219,7 @@ const route = useRoute();
 const router = useRouter();
 const validTabs = ['exercises', 'programs', 'assignments'];
 
-const activeTab = ref(validTabs.includes(route.query.tab) ? route.query.tab : 'programs');
+const activeTab = ref(route.path === '/workout/exercises' ? 'exercises' : route.path === '/workout/assignments' ? 'assignments' : 'programs');
 const loading = ref(false);
 const errorMessage = ref('');
 
@@ -357,20 +329,11 @@ async function removeAssignment(rec) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-watch(activeTab, (tab) => {
-    if (route.query.tab === tab) {
-        return;
-    }
-
-    router.replace({ path: '/workout', query: { ...route.query, tab } });
-});
-
 watch(
-    () => route.query.tab,
-    (tab) => {
-        if (validTabs.includes(tab) && tab !== activeTab.value) {
-            activeTab.value = tab;
-        }
+    () => route.path,
+    (path) => {
+        const newTab = path === '/workout/exercises' ? 'exercises' : path === '/workout/assignments' ? 'assignments' : 'programs';
+        if (validTabs.includes(newTab) && newTab !== activeTab.value) activeTab.value = newTab;
     }
 );
 

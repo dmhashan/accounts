@@ -7,29 +7,12 @@
             </template>
 
             <template #extra-slot>
-                <div class="space-y-3">
-                    <div class="inline-flex flex-wrap rounded-xl app-surface-soft p-1">
-                        <button
-                            type="button"
-                            class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                            :class="activeTab === 'users' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                            @click="switchTab('users')"
-                        >Users</button>
-                        <button
-                            type="button"
-                            class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                            :class="activeTab === 'roles' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                            @click="switchTab('roles')"
-                        >Roles</button>
-                    </div>
-
-                    <AppSearchField
-                        v-model="search"
-                        :placeholder="activeTab === 'users' ? 'Search users by name or email' : 'Search roles by name or description'"
-                        :disabled="loading"
-                        @search="triggerSearch(1)"
-                    />
-                </div>
+                <AppSearchField
+                    v-model="search"
+                    :placeholder="activeTab === 'users' ? 'Search users by name or email' : 'Search roles by name or description'"
+                    :disabled="loading"
+                    @search="triggerSearch(1)"
+                />
             </template>
         </AppPageHeader>
 
@@ -166,7 +149,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { UserPlus, ShieldPlus } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -174,11 +157,18 @@ import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import AppPagination from '../components/AppPagination.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 
 const route = useRoute();
 const router = useRouter();
+const context = useAppContext();
 
-const activeTab = ref(route.query.tab === 'roles' ? 'roles' : 'users');
+const _defaultTab = (() => {
+    if (route.path === '/settings/roles') return 'roles';
+    if (route.path === '/settings' && !context.permissions?.users && context.permissions?.roles) return 'roles';
+    return 'users';
+})();
+const activeTab = ref(_defaultTab);
 const search = ref('');
 const loading = ref(false);
 const errorMessage = ref('');
@@ -258,7 +248,6 @@ function switchTab(tab) {
     activeTab.value = tab;
     search.value = '';
     errorMessage.value = '';
-    router.replace({ query: { tab } });
 
     if (tab === 'users' && users.value.length === 0) loadUsers(1);
     if (tab === 'roles' && roles.value.length === 0) loadRoles(1);
@@ -273,4 +262,12 @@ onMounted(() => {
     loadUsers();
     loadRoles();
 });
+
+watch(
+    () => route.path,
+    (path) => {
+        const newTab = path === '/settings/roles' ? 'roles' : 'users';
+        if (activeTab.value !== newTab) switchTab(newTab);
+    }
+);
 </script>

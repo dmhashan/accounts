@@ -10,18 +10,7 @@
             </template>
 
             <template #extra-slot>
-                <div class="space-y-3">
-                    <AppSearchField v-model="search" placeholder="Search members by id, name, email, or phone" :disabled="loading" @search="loadMembers(1)" />
-
-                    <div class="app-tabs">
-                        <button type="button" class="app-tab-btn" :class="activeTab === 'members' ? 'app-tab-btn-active' : ''" @click="switchTab('members')">
-                            Members
-                        </button>
-                        <button type="button" class="app-tab-btn" :class="activeTab === 'temp' ? 'app-tab-btn-active' : ''" @click="switchTab('temp')">
-                            Temp Members
-                        </button>
-                    </div>
-                </div>
+                <AppSearchField v-model="search" placeholder="Search members by id, name, email, or phone" :disabled="loading" @search="loadMembers(1)" />
             </template>
         </AppPageHeader>
 
@@ -178,8 +167,8 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -189,6 +178,8 @@ import AppEmptyState from '../components/AppEmptyState.vue';
 import TempMemberFormModal from '../components/TempMemberFormModal.vue';
 import { ChevronRight, Clock, Download, Users, UserRoundPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
+
+const route = useRoute();
 
 const router = useRouter();
 const members = ref([]);
@@ -200,7 +191,7 @@ const permissions = ref({ create: false, edit: false, delete: false });
 const meta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
 const perPage = ref(15);
 const tempModalOpen = ref(false);
-const activeTab = ref('members');
+const activeTab = ref(route.path === '/members/temp' ? 'temp' : 'members');
 
 function switchTab(tab) {
     if (activeTab.value === tab) return;
@@ -209,6 +200,14 @@ function switchTab(tab) {
     perPage.value = 15;
     loadMembers(1);
 }
+
+watch(
+    () => route.path,
+    (path) => {
+        const newTab = path === '/members/temp' ? 'temp' : 'members';
+        if (activeTab.value !== newTab) switchTab(newTab);
+    }
+);
 
 function onTempMemberCreated(memberId) {
     tempModalOpen.value = false;

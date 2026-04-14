@@ -50,16 +50,72 @@ export function useNavigation() {
         const items = [];
 
         if (context.permissions?.dashboard) items.push({ label: 'Dashboard', shortLabel: 'Home',     path: '/dashboard', icon: ICONS.dashboard });
-        if (context.permissions?.members)   items.push({ label: 'Members',   shortLabel: 'Members',  path: '/members',   icon: ICONS.members });
-        if (context.permissions?.inventory) items.push({ label: 'Inventory', shortLabel: 'Stock',    path: '/inventory', icon: ICONS.inventory });
-        if (context.permissions?.accounts)       items.push({ label: 'Accounts',  shortLabel: 'Accounts', path: '/accounts',  icon: ICONS.accounts });
+
+        if (context.permissions?.members) items.push({
+            label: 'Members', shortLabel: 'Members', path: '/members', icon: ICONS.members,
+            children: [
+                { label: 'Members', path: '/members' },
+                { label: 'Temp Members', path: '/members/temp' },
+            ],
+        });
+
+        if (context.permissions?.inventory) {
+            const invChildren = [{ label: 'Products', path: '/inventory' }];
+            if (context.permissions?.inventoryStock) invChildren.push({ label: 'Stock', path: '/inventory/stock' });
+            if (context.permissions?.inventoryDisplay) invChildren.push({ label: 'Display', path: '/inventory/display' });
+            if (context.permissions?.inventoryStock || context.permissions?.inventoryDisplay) invChildren.push({ label: 'Audit', path: '/inventory/audit' });
+            items.push({ label: 'Inventory', shortLabel: 'Stock', path: '/inventory', icon: ICONS.inventory, children: invChildren });
+        }
+
+        if (context.permissions?.accounts) items.push({
+            label: 'Accounts', shortLabel: 'Accounts', path: '/accounts', icon: ICONS.accounts,
+            children: [
+                { label: 'Accounts', path: '/accounts' },
+                { label: 'Transfers', path: '/accounts/transfers' },
+                { label: 'Transactions', path: '/accounts/transactions' },
+            ],
+        });
+
         if (context.permissions?.expenses)       items.push({ label: 'Expenses',  shortLabel: 'Expenses', path: '/expenses',  icon: ICONS.expenses });
-        if (context.permissions?.sales)          items.push({ label: 'Sales',     shortLabel: 'Sales',    path: '/sales',     icon: ICONS.sales });
+
+        if (context.permissions?.sales) items.push({
+            label: 'Sales', shortLabel: 'Sales', path: '/sales', icon: ICONS.sales,
+            children: [
+                { label: 'Outstanding', path: '/sales' },
+                { label: 'Paid', path: '/sales/paid' },
+            ],
+        });
+
         if (context.permissions?.paymentsManage) items.push({ label: 'Payments',  shortLabel: 'Payments', path: '/payments',  icon: ICONS.payments });
 
-        if (context.permissions?.reports)        items.push({ label: 'Reports',   shortLabel: 'Reports',  path: '/reports',   icon: ICONS.reports });
-        if (context.permissions?.settings)       items.push({ label: 'Settings',  shortLabel: 'Settings', path: '/settings',  icon: ICONS.settings });
-        if (context.permissions?.workout)        items.push({ label: 'Workout',   shortLabel: 'Workout',  path: '/workout',   icon: ICONS.workout });
+        if (context.permissions?.reports) items.push({
+            label: 'Reports', shortLabel: 'Reports', path: '/reports', icon: ICONS.reports,
+            children: [
+                { label: 'Statistics', path: '/reports' },
+                { label: 'Customers', path: '/reports/customers' },
+                { label: 'Products', path: '/reports/products' },
+            ],
+        });
+
+        if (context.permissions?.settings || context.permissions?.users || context.permissions?.roles) {
+            const settingsChildren = [];
+            if (context.permissions?.users) settingsChildren.push({ label: 'Users', path: '/settings' });
+            if (context.permissions?.roles) settingsChildren.push({ label: 'Roles', path: '/settings/roles' });
+            items.push({
+                label: 'Settings', shortLabel: 'Settings', path: '/settings', icon: ICONS.settings,
+                children: settingsChildren,
+            });
+        }
+
+        if (context.permissions?.workout) items.push({
+            label: 'Workout', shortLabel: 'Workout', path: '/workout', icon: ICONS.workout,
+            children: [
+                { label: 'Programs', path: '/workout' },
+                { label: 'Exercises', path: '/workout/exercises' },
+                { label: 'Assignments', path: '/workout/assignments' },
+            ],
+        });
+
         if (context.permissions?.diet)           items.push({ label: 'Diet',      shortLabel: 'Diet',     path: '/diet',      icon: ICONS.diet });
         if (context.permissions?.attendance)     items.push({ label: 'Attendance',    shortLabel: 'Attend',  path: '/attendance',    icon: ICONS.attendance });
         if (context.permissions?.notifications)  items.push({ label: 'Notifications', shortLabel: 'Notify',   path: '/notifications', icon: ICONS.notifications });
