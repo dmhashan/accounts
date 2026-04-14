@@ -107,7 +107,15 @@
                         <article v-for="reg in registrations" :key="reg.id" class="p-4 space-y-1">
                             <div class="flex items-start justify-between gap-2">
                                 <div>
-                                    <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ reg.first_name }} {{ reg.last_name }}</p>
+                                    <template v-if="reg.member">
+                                        <RouterLink :to="`/members/${reg.member.id}`" class="text-sm font-semibold text-primary-600 dark:text-primary-400 hover:underline">{{ reg.member.name }}</RouterLink>
+                                        <span class="ml-1 text-xs text-secondary-400">({{ reg.member.gender === 'female' ? 'F' : 'M' }})</span>
+                                        <p v-if="reg.member.phone_number" class="text-xs text-secondary-500 dark:text-secondary-400">{{ reg.member.phone_number }}</p>
+                                    </template>
+                                    <template v-else>
+                                        <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ reg.first_name }} {{ reg.last_name }}</p>
+                                        <p v-if="reg.phone" class="text-xs text-secondary-500 dark:text-secondary-400">{{ reg.phone }}</p>
+                                    </template>
                                     <p v-if="reg.guests.length > 0" class="text-xs text-secondary-400">+ {{ reg.guests.length }} guest{{ reg.guests.length !== 1 ? 's' : '' }}</p>
                                 </div>
                                 <div class="text-right shrink-0 space-y-1">
@@ -147,7 +155,17 @@
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
                             <tr v-for="reg in registrations" :key="reg.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors align-top">
-                                <td class="px-4 py-3 font-medium text-secondary-900 dark:text-white">{{ reg.first_name }} {{ reg.last_name }}</td>
+                                <td class="px-4 py-3 align-top">
+                                    <template v-if="reg.member">
+                                        <RouterLink :to="`/members/${reg.member.id}`" class="font-medium text-primary-600 dark:text-primary-400 hover:underline">{{ reg.member.name }}</RouterLink>
+                                        <span class="ml-1 text-xs text-secondary-400">({{ reg.member.gender === 'female' ? 'F' : 'M' }})</span>
+                                        <div v-if="reg.member.phone_number" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">{{ reg.member.phone_number }}</div>
+                                    </template>
+                                    <template v-else>
+                                        <span class="font-medium text-secondary-900 dark:text-white">{{ reg.first_name }} {{ reg.last_name }}</span>
+                                        <div v-if="reg.phone" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">{{ reg.phone }}</div>
+                                    </template>
+                                </td>
                                 <td class="px-4 py-3 text-center text-secondary-600 dark:text-secondary-400">
                                     {{ reg.guests.length > 0 ? reg.guests.length : '—' }}
                                 </td>

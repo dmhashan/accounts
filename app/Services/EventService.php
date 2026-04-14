@@ -80,7 +80,7 @@ class EventService
     public function registrations(Event $event, int $perPage): array
     {
         $paginator = EventRegistration::where('event_id', $event->id)
-            ->with(['member:id,name,member_id', 'guests'])
+            ->with(['member:id,name,member_id,gender,phone_number', 'guests'])
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
@@ -248,7 +248,13 @@ class EventService
             'total_fee'  => (float) $r->total_fee,
             'is_paid'    => (bool) $r->is_paid,
             'paid_at'    => $r->paid_at?->toIso8601String(),
-            'member'     => $r->member ? ['id' => $r->member->id, 'name' => $r->member->name, 'member_id' => $r->member->member_id] : null,
+            'member'     => $r->member ? [
+                'id'           => $r->member->id,
+                'name'         => $r->member->name,
+                'member_id'    => $r->member->member_id,
+                'gender'       => $r->member->gender,
+                'phone_number' => $r->member->phone_number,
+            ] : null,
             'guests'     => $r->guests->map(fn ($g) => ['first_name' => $g->first_name, 'last_name' => $g->last_name, 'fee' => (float) $g->fee, 'notes' => $g->notes])->all(),
             'created_at' => $r->created_at?->toIso8601String(),
         ];
