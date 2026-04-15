@@ -27,7 +27,7 @@
                     <template v-else>
                         <!-- Mobile cards -->
                         <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <article v-for="ev in events" :key="ev.id" class="p-4 space-y-2">
+                            <article v-for="ev in events" :key="ev.id" class="p-4 space-y-2 cursor-pointer" @click="router.push(`/events/${ev.id}`)">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-center gap-2">
@@ -46,10 +46,8 @@
                                             <template v-if="ev.total_outstanding > 0"> &bull; <span class="text-amber-600 dark:text-amber-400">{{ formatFee(ev.total_outstanding) }} outstanding</span></template>
                                         </p>
                                     </div>
-                                    <div class="flex gap-2 shrink-0 text-sm">
-                                        <RouterLink :to="`/events/${ev.id}`" class="text-primary-600 dark:text-primary-400">View</RouterLink>
-                                        <RouterLink :to="`/events/${ev.id}/edit`" class="text-emerald-600 dark:text-emerald-400">Edit</RouterLink>
-                                        <button type="button" class="text-red-600 dark:text-red-400" @click="remove(ev.id)">Delete</button>
+                                    <div class="flex gap-2 shrink-0 text-sm" @click.stop>
+                                        <RouterLink :to="`/events/${ev.id}/registrations`" class="text-emerald-600 dark:text-emerald-400">Registrations</RouterLink>
                                     </div>
                                 </div>
                             </article>
@@ -69,7 +67,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                                <tr v-for="ev in events" :key="ev.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors">
+                                <tr v-for="ev in events" :key="ev.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors cursor-pointer" @click="router.push(`/events/${ev.id}`)">
                                     <td class="px-4 py-3 font-medium text-secondary-900 dark:text-white">
                                         {{ ev.name }}
                                         <span class="ml-1.5 text-xs text-secondary-400 font-mono">/{{ ev.slug }}</span>
@@ -86,10 +84,8 @@
                                             {{ ev.is_active ? 'Active' : 'Inactive' }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3 text-right space-x-3 whitespace-nowrap">
-                                        <RouterLink :to="`/events/${ev.id}`" class="text-primary-600 dark:text-primary-400 hover:underline">View</RouterLink>
-                                        <RouterLink :to="`/events/${ev.id}/edit`" class="text-emerald-600 dark:text-emerald-400 hover:underline">Edit</RouterLink>
-                                        <button type="button" class="text-red-600 dark:text-red-400 hover:underline" @click="remove(ev.id)">Delete</button>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap" @click.stop>
+                                        <RouterLink :to="`/events/${ev.id}/registrations`" class="text-emerald-600 dark:text-emerald-400 hover:underline">Registrations</RouterLink>
                                     </td>
                                 </tr>
                             </tbody>
@@ -105,6 +101,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { CalendarPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -113,6 +110,7 @@ import AppSearchField from '../components/AppSearchField.vue';
 import AppPagination from '../components/AppPagination.vue';
 
 const loading      = ref(false);
+const router       = useRouter();
 const errorMessage = ref('');
 const search       = ref('');
 const events       = ref([]);
@@ -131,16 +129,6 @@ async function load(page = 1) {
         errorMessage.value = 'Failed to load events.';
     } finally {
         loading.value = false;
-    }
-}
-
-async function remove(id) {
-    if (!confirm('Delete this event? All registrations will also be deleted.')) return;
-    try {
-        await apiRequest(`/api/events/${id}`, { method: 'DELETE' });
-        events.value = events.value.filter(e => e.id !== id);
-    } catch (e) {
-        alert(e?.message || 'Failed to delete event.');
     }
 }
 

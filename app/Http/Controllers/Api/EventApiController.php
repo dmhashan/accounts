@@ -70,8 +70,9 @@ class EventApiController extends Controller
         $this->authorizeEvent($event);
 
         $perPage = min((int) $request->integer('per_page', 20), 100);
+        $search  = trim((string) $request->query('search', ''));
 
-        return response()->json($this->service->registrations($event, $perPage));
+        return response()->json($this->service->registrations($event, $perPage, $search));
     }
 
     public function updateRegistration(Request $request, Event $event, EventRegistration $registration): JsonResponse

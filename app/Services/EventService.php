@@ -77,9 +77,21 @@ class EventService
         $event->delete();
     }
 
-    public function registrations(Event $event, int $perPage): array
+    public function registrations(Event $event, int $perPage, string $search = ''): array
     {
         $paginator = EventRegistration::where('event_id', $event->id)
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                      ->orWhere('last_name', 'like', "%{$search}%")
+                      ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
+                      ->orWhere('phone', 'like', "%{$search}%")
+                      ->orWhereHas('member', fn ($mq) => $mq
+                          ->where('name', 'like', "%{$search}%")
+                          ->orWhere('phone_number', 'like', "%{$search}%")
+                      );
+                });
+            })
             ->with(['member:id,name,member_id,gender,phone_number', 'guests'])
             ->orderByDesc('created_at')
             ->paginate($perPage);

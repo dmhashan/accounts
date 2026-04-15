@@ -39,6 +39,7 @@ const NotificationViewPage = () => import('./pages/NotificationViewPage.vue');
 const EventsPage = () => import('./pages/EventsPage.vue');
 const EventFormPage = () => import('./pages/EventFormPage.vue');
 const EventDetailPage = () => import('./pages/EventDetailPage.vue');
+const EventRegistrationsPage = () => import('./pages/EventRegistrationsPage.vue');
 const MemberActivityPage = () => import('./pages/MemberActivityPage.vue');
 const ReconciliationPage = () => import('./pages/ReconciliationPage.vue');
 const ReconciliationFormPage = () => import('./pages/ReconciliationFormPage.vue');
@@ -112,6 +113,7 @@ const routes = [
     { path: '/events/new', component: EventFormPage, meta: { title: 'New Event' } },
     { path: '/events/:id', component: EventDetailPage, meta: { title: 'Event' } },
     { path: '/events/:id/edit', component: EventFormPage, meta: { title: 'Edit Event' } },
+    { path: '/events/:id/registrations', component: EventRegistrationsPage, meta: { title: 'Event Registrations' } },
     { path: '/activity', component: MemberActivityPage, meta: { title: 'Activity Logs' } },
     { path: '/reconciliation', component: ReconciliationPage, meta: { title: 'Reconciliation' } },
     { path: '/reconciliation/open', component: ReconciliationFormPage, meta: { title: 'Open Reconciliation' } },
