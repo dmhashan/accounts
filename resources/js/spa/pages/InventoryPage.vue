@@ -18,13 +18,9 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="product in filteredProducts" :key="product.id" class="p-4">
+                    <article v-for="product in filteredProducts" :key="product.id" class="p-4 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/inventory/products/' + product.id)">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ product.name }}</p>
                         <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">Variations: {{ product.variations_count }}</p>
-                        <div class="mt-2 flex gap-3 text-sm">
-                            <RouterLink :to="`/inventory/products/${product.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                            <button type="button" class="text-red-600 dark:text-red-400" @click="removeProduct(product)">Delete</button>
-                        </div>
                     </article>
                     <div v-if="filteredProducts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No products found.</div>
                 </div>
@@ -36,21 +32,16 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Variations</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="product in filteredProducts" :key="product.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                            <tr v-for="product in filteredProducts" :key="product.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer" @click="router.push('/inventory/products/' + product.id)">
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">#{{ product.id }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ product.name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ product.variations_count }}</td>
-                                <td class="px-6 py-4 text-right text-sm">
-                                    <RouterLink :to="`/inventory/products/${product.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3">Edit</RouterLink>
-                                    <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeProduct(product)">Delete</button>
-                                </td>
                             </tr>
                             <tr v-if="filteredProducts.length === 0">
-                                <td colspan="4" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No products found.</td>
+                                <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No products found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -75,7 +66,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="entry in filteredStockEntries" :key="entry.id" class="p-4 space-y-2">
+                    <article v-for="entry in filteredStockEntries" :key="entry.id" class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/inventory/stock/' + entry.id)">
                         <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ entry.product_name }} - {{ entry.variation_name }}</p>
                         <div class="grid grid-cols-2 gap-2 text-xs">
                             <div><span class="text-secondary-500 dark:text-secondary-400">Total Stock:</span> {{ entry.quantity }}</div>
@@ -84,10 +75,6 @@
                             <div><span class="text-secondary-500 dark:text-secondary-400">EXP:</span> {{ entry.expiry_date || '-' }}</div>
                         </div>
                         <div class="text-xs text-secondary-700 dark:text-secondary-300">Local: {{ money(entry.local_selling_price) }} | Foreign: {{ money(entry.foreign_selling_price) }}</div>
-                        <div class="flex gap-3 text-sm">
-                            <RouterLink :to="`/inventory/stock/${entry.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                            <button type="button" class="text-red-600 dark:text-red-400" @click="removeStock(entry)">Delete</button>
-                        </div>
                     </article>
                     <div v-if="filteredStockEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</div>
                 </div>
@@ -104,11 +91,10 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Expiry</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Local</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Foreign</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="entry in filteredStockEntries" :key="entry.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                            <tr v-for="entry in filteredStockEntries" :key="entry.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer" @click="router.push('/inventory/stock/' + entry.id)">
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.product_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.variation_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.quantity }}</td>
@@ -120,13 +106,9 @@
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.expiry_date || '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(entry.local_selling_price) }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(entry.foreign_selling_price) }}</td>
-                                <td class="px-6 py-4 text-right text-sm">
-                                    <RouterLink :to="`/inventory/stock/${entry.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3">Edit</RouterLink>
-                                    <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeStock(entry)">Delete</button>
-                                </td>
                             </tr>
                             <tr v-if="filteredStockEntries.length === 0">
-                                <td colspan="9" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</td>
+                                <td colspan="8" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -314,7 +296,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { PackagePlus, PackageSearch } from 'lucide-vue-next';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
@@ -324,6 +306,7 @@ import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 
 const route = useRoute();
+const router = useRouter();
 const context = useAppContext();
 
 const activeTab = ref(route.path === '/inventory/stock' ? 'stock' : route.path === '/inventory/display' ? 'display' : route.path === '/inventory/audit' ? 'audit' : 'products');
@@ -533,32 +516,6 @@ async function loadAll() {
         await Promise.all(requests);
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load inventory data.';
-    }
-}
-
-async function removeProduct(product) {
-    if (!window.confirm(`Delete product "${product.name}"?`)) {
-        return;
-    }
-
-    try {
-        await apiRequest(`/api/inventory/products/${product.id}`, { method: 'delete' });
-        await Promise.all([loadProducts(productMeta.value.current_page), loadStock(stockMeta.value.current_page)]);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete product.';
-    }
-}
-
-async function removeStock(entry) {
-    if (!window.confirm('Delete this stock entry?')) {
-        return;
-    }
-
-    try {
-        await apiRequest(`/api/inventory/stock/${entry.id}`, { method: 'delete' });
-        await loadStock(stockMeta.value.current_page);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete stock entry.';
     }
 }
 

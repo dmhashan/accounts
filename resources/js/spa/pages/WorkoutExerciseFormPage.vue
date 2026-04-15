@@ -6,6 +6,7 @@
             {{ errorMessage }}
         </div>
 
+        <div class="app-page-scroll">
         <form class="app-surface rounded-2xl p-4 md:p-5 grid gap-3" @submit.prevent="submit">
             <div class="grid gap-3 md:grid-cols-2">
                 <AppFormField label="Exercise Name" :required="true">
@@ -67,6 +68,7 @@
                 <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50" :disabled="submitting">{{ submitting ? 'Saving...' : 'Save Exercise' }}</button>
             </div>
         </form>
+        </div>
     </section>
 </template>
 

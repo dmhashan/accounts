@@ -18,7 +18,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="account in filteredAccounts" :key="account.id" class="p-4 space-y-2">
+                    <article v-for="account in filteredAccounts" :key="account.id" class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/accounts/' + account.id)">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ account.name }}</p>
@@ -34,11 +34,6 @@
                         </div>
 
                         <p v-if="account.description" class="text-xs text-secondary-600 dark:text-secondary-300">{{ account.description }}</p>
-
-                        <div class="mt-2 flex gap-3 text-sm">
-                            <RouterLink :to="`/accounts/${account.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                            <button type="button" class="text-red-600 dark:text-red-400" @click="removeAccount(account)">Delete</button>
-                        </div>
                     </article>
                     <div v-if="filteredAccounts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</div>
                 </div>
@@ -50,21 +45,16 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Opening</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Current</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="account in filteredAccounts" :key="account.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                            <tr v-for="account in filteredAccounts" :key="account.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top cursor-pointer" @click="router.push('/accounts/' + account.id)">
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ account.name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(account.opening_balance) }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ money(account.current_balance) }}</td>
-                                <td class="px-6 py-4 text-right text-sm">
-                                    <RouterLink :to="`/accounts/${account.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3">Edit</RouterLink>
-                                    <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeAccount(account)">Delete</button>
-                                </td>
                             </tr>
                             <tr v-if="filteredAccounts.length === 0">
-                                <td colspan="4" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</td>
+                                <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No accounts found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -89,7 +79,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="transfer in filteredTransfers" :key="transfer.id" class="p-4 space-y-2">
+                    <article v-for="transfer in filteredTransfers" :key="transfer.id" class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/accounts/transfers/' + transfer.id)">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ transfer.source_account_name }} to {{ transfer.destination_account_name }}</p>
@@ -108,11 +98,6 @@
                         </div>
 
                         <p v-if="transfer.notes" class="text-xs text-secondary-600 dark:text-secondary-300">{{ transfer.notes }}</p>
-
-                        <div class="mt-2 flex gap-3 text-sm">
-                            <RouterLink :to="`/accounts/transfers/${transfer.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                            <button type="button" class="text-red-600 dark:text-red-400" @click="removeTransfer(transfer)">Delete</button>
-                        </div>
                     </article>
                     <div v-if="filteredTransfers.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</div>
                 </div>
@@ -126,23 +111,18 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">To</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Reference</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Amount</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="transfer in filteredTransfers" :key="transfer.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                            <tr v-for="transfer in filteredTransfers" :key="transfer.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top cursor-pointer" @click="router.push('/accounts/transfers/' + transfer.id)">
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ transfer.transfer_date || '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ transfer.source_account_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ transfer.destination_account_name }}</td>
                                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ transfer.reference_number || '-' }}</td>
                                 <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ money(transfer.amount) }}</td>
-                                <td class="px-6 py-4 text-right text-sm">
-                                    <RouterLink :to="`/accounts/transfers/${transfer.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3">Edit</RouterLink>
-                                    <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeTransfer(transfer)">Delete</button>
-                                </td>
                             </tr>
                             <tr v-if="filteredTransfers.length === 0">
-                                <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</td>
+                                <td colspan="5" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No transfers found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -247,7 +227,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ArrowRightLeft, Landmark } from 'lucide-vue-next';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
@@ -256,6 +236,7 @@ import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();
+const router = useRouter();
 
 const validTabs = ['accounts', 'transfers', 'transactions'];
 const activeTab = ref(route.path === '/accounts/transfers' ? 'transfers' : route.path === '/accounts/transactions' ? 'transactions' : 'accounts');
@@ -346,9 +327,9 @@ function formatType(type) {
 }
 
 function sourceRecordPath(tx) {
-    if (tx.model_name === 'sale') return `/sales/${tx.reference_id}/edit`;
-    if (tx.model_name === 'expense') return `/expenses/${tx.reference_id}/edit`;
-    if (tx.model_name === 'payment') return `/payments/${tx.reference_id}/edit`;
+    if (tx.model_name === 'sale') return `/sales/${tx.reference_id}`;
+    if (tx.model_name === 'expense') return `/expenses/${tx.reference_id}`;
+    if (tx.model_name === 'payment') return `/payments/${tx.reference_id}`;
     return '#';
 }
 
@@ -459,36 +440,6 @@ async function loadAll() {
         errorMessage.value = error?.response?.data?.message || 'Failed to load account data.';
     }
 }
-
-async function removeAccount(account) {
-    if (!window.confirm(`Delete account "${account.name}"?`)) {
-        return;
-    }
-
-    try {
-        await apiRequest(`/api/accounts/${account.id}`, { method: 'delete' });
-        await loadAccounts(accountMeta.value.current_page);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete account.';
-    }
-}
-
-async function removeTransfer(transfer) {
-    if (!window.confirm('Delete this transfer?')) {
-        return;
-    }
-
-    try {
-        await apiRequest(`/api/accounts/transfers/${transfer.id}`, { method: 'delete' });
-        await Promise.all([
-            loadAccounts(accountMeta.value.current_page),
-            loadTransfers(transferMeta.value.current_page),
-        ]);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete transfer.';
-    }
-}
-
 
 function handleAccountPageChange(page) {
     loadAccounts(page);

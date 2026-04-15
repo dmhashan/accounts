@@ -18,7 +18,7 @@
             <div class="app-page-scroll">
                 <div class="app-surface rounded-2xl overflow-hidden">
                     <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                        <article v-for="expense in expenses" :key="expense.id" class="p-4 space-y-2">
+                        <article v-for="expense in expenses" :key="expense.id" class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/expenses/' + expense.id)">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ expense.category }}</p>
@@ -35,11 +35,6 @@
                             </div>
 
                             <p v-if="expense.notes" class="text-xs text-secondary-600 dark:text-secondary-300">{{ expense.notes }}</p>
-
-                            <div class="mt-2 flex gap-3 text-sm">
-                                <RouterLink :to="`/expenses/${expense.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                                <button type="button" class="text-red-600 dark:text-red-400" @click="removeExpense(expense)">Delete</button>
-                            </div>
                         </article>
                         <div v-if="expenses.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</div>
                     </div>
@@ -54,24 +49,19 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Reference</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Notes</th>
                                     <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Amount</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                                <tr v-for="expense in expenses" :key="expense.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                                <tr v-for="expense in expenses" :key="expense.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer align-top" @click="router.push('/expenses/' + expense.id)">
                                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.expense_date || '-' }}</td>
                                     <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ expense.category }}</td>
                                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.account_name }}</td>
                                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ expense.reference_number || '-' }}</td>
                                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 max-w-xs truncate">{{ expense.notes || '-' }}</td>
                                     <td class="px-6 py-4 text-sm font-medium text-red-600 dark:text-red-400 text-right">-{{ money(expense.amount) }}</td>
-                                    <td class="px-6 py-4 text-right text-sm">
-                                        <RouterLink :to="`/expenses/${expense.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3">Edit</RouterLink>
-                                        <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" @click="removeExpense(expense)">Delete</button>
-                                    </td>
                                 </tr>
                                 <tr v-if="expenses.length === 0">
-                                    <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</td>
+                                    <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No expenses recorded.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -96,6 +86,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { ReceiptText } from 'lucide-vue-next';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
@@ -104,6 +95,7 @@ import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const expenses = ref([]);
+const router = useRouter();
 const search = ref('');
 const errorMessage = ref('');
 const loading = ref(false);
@@ -135,17 +127,6 @@ function handleLimitChange(limit) {
 
 function money(value) {
     return Number(value || 0).toFixed(2);
-}
-
-async function removeExpense(expense) {
-    if (!window.confirm(`Delete expense "${expense.category}"?`)) return;
-
-    try {
-        await apiRequest(`/api/accounts/expenses/${expense.id}`, { method: 'delete' });
-        await loadExpenses(meta.value.current_page);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete expense.';
-    }
 }
 
 onMounted(() => {

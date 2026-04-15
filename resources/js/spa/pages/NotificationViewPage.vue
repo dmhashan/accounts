@@ -1,6 +1,20 @@
 <template>
     <section class="app-page-frame">
-        <AppPageHeader :show-back="true" :title="notification?.name || 'Notification'" />
+        <AppPageHeader :show-back="true" :title="notification?.name || 'Notification'">
+            <template v-if="notification?.status === 'draft'" #cta-slot>
+                <RouterLink :to="`/notifications/${notification.id}/edit`" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors">
+                    Edit Draft
+                </RouterLink>
+                <button
+                    type="button"
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 transition-colors"
+                    :disabled="deleting"
+                    @click="removeNotification"
+                >
+                    {{ deleting ? 'Deleting...' : 'Delete' }}
+                </button>
+            </template>
+        </AppPageHeader>
 
         <div class="app-page-scroll">
             <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading...</div>
@@ -35,9 +49,6 @@
                             <p class="text-base font-semibold text-secondary-900 dark:text-white">{{ notification.name }}</p>
                         </div>
                         <div class="flex gap-2 shrink-0">
-                            <RouterLink v-if="notification.status === 'draft'" :to="`/notifications/${notification.id}/edit`" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors">
-                                Edit Draft
-                            </RouterLink>
                             <button
                                 v-if="notification.status === 'draft'"
                                 type="button"
@@ -136,14 +147,17 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import { CheckCircle, Clock, Send } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 
 const route = useRoute();
+const router = useRouter();
 const loading = ref(false);
 const sending = ref(false);
+const deleting = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 const notification = ref(null);
@@ -165,6 +179,20 @@ function confirmSend() {
     errorMessage.value = '';
     successMessage.value = '';
     showConfirm.value = true;
+}
+
+async function removeNotification() {
+    if (!window.confirm('Delete this draft notification?')) return;
+    deleting.value = true;
+    errorMessage.value = '';
+    try {
+        await apiRequest(`/api/notifications/${route.params.id}`, { method: 'delete' });
+        router.push('/notifications');
+    } catch (e) {
+        errorMessage.value = e?.response?.data?.message || 'Failed to delete notification.';
+    } finally {
+        deleting.value = false;
+    }
 }
 
 async function doSend() {

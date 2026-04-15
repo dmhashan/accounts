@@ -21,7 +21,7 @@
 
                     <template v-else>
                         <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <article v-for="user in users" :key="user.id" class="p-4 space-y-3">
+                            <article v-for="user in users" :key="user.id" class="p-4 space-y-3 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/users/' + user.id)">
                                 <div class="flex items-center gap-3">
                                     <div class="h-10 w-10 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                                         <span class="text-xs font-semibold text-white">{{ initials(user.name) }}</span>
@@ -41,18 +41,6 @@
                                         {{ user.role?.name || 'No Role' }}
                                     </span>
                                 </div>
-
-                                <div class="flex items-center gap-3 text-sm">
-                                    <RouterLink v-if="permissions.edit" :to="`/users/${user.id}/edit`" class="text-primary-600 dark:text-primary-400">Edit</RouterLink>
-                                    <button
-                                        v-if="permissions.delete && user.canDelete"
-                                        type="button"
-                                        class="text-red-600 dark:text-red-400"
-                                        @click="removeUser(user.id)"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
                             </article>
 
                             <div v-if="users.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No users found.</div>
@@ -65,11 +53,10 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Name</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Email</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Role</th>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                                    <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                                    <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer" @click="router.push('/users/' + user.id)">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
                                                 <div class="h-10 w-10 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
@@ -87,21 +74,10 @@
                                                 {{ user.role?.name || 'No Role' }}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-right text-sm">
-                                            <RouterLink v-if="permissions.edit" :to="`/users/${user.id}/edit`" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mr-3">Edit</RouterLink>
-                                            <button
-                                                v-if="permissions.delete && user.canDelete"
-                                                type="button"
-                                                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                                                @click="removeUser(user.id)"
-                                            >
-                                                Delete
-                                            </button>
-                                        </td>
                                     </tr>
 
                                     <tr v-if="users.length === 0">
-                                        <td colspan="4" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No users found.</td>
+                                        <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No users found.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -127,6 +103,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -136,6 +113,7 @@ import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
 
 const context = useAppContext();
+const router = useRouter();
 const users = ref([]);
 const loading = ref(false);
 const errorMessage = ref('');
@@ -184,19 +162,6 @@ function handlePageChange(page) {
 function handleLimitChange(limit) {
     perPage.value = Number(limit);
     loadUsers(1);
-}
-
-async function removeUser(userId) {
-    if (!window.confirm('Are you sure you want to delete this user?')) {
-        return;
-    }
-
-    try {
-        await apiRequest(`/api/users/${userId}`, { method: 'delete' });
-        await loadUsers(meta.value.current_page);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to delete user.';
-    }
 }
 
 onMounted(() => {

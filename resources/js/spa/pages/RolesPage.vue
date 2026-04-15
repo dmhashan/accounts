@@ -17,7 +17,7 @@
         <div class="min-h-0 flex flex-1 flex-col">
             <div class="app-page-scroll">
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                    <article v-for="role in filteredRoles" :key="role.id" class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-5 md:p-6">
+                    <article v-for="role in filteredRoles" :key="role.id" class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-5 md:p-6 cursor-pointer hover:shadow-md transition-shadow" @click="router.push('/roles/' + role.id)">
                         <div class="flex items-start justify-between gap-2">
                             <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">{{ role.name }}</h3>
                             <span v-if="!role.is_editable" class="px-2 py-1 text-xs bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300 rounded">Predefined</span>
@@ -28,10 +28,6 @@
                             <p>{{ role.users_count }} {{ pluralize(role.users_count, 'user') }}</p>
                             <p>{{ role.permissions_count }} {{ pluralize(role.permissions_count, 'permission') }}</p>
                         </div>
-
-                        <RouterLink :to="`/roles/${role.id}/edit`" class="mt-4 block w-full px-4 py-2 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 rounded-lg text-center font-medium transition-colors">
-                            Manage Permissions
-                        </RouterLink>
                     </article>
                 </div>
 
@@ -55,6 +51,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import AppPagination from '../components/AppPagination.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -63,6 +60,7 @@ import { ShieldPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 
 const loading = ref(false);
+const router = useRouter();
 const roles = ref([]);
 const errorMessage = ref('');
 const allowRoleCreate = ref(false);

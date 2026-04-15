@@ -27,7 +27,7 @@
                     <template v-else>
                         <!-- Mobile cards -->
                         <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <article v-for="n in notifications" :key="n.id" class="p-4 space-y-2">
+                            <article v-for="n in notifications" :key="n.id" class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/notifications/' + n.id)">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-center gap-2">
@@ -40,11 +40,6 @@
                                             <template v-if="n.sent_at"> &bull; Sent {{ formatDate(n.sent_at) }}</template>
                                             <template v-else> &bull; Created {{ formatDate(n.created_at) }}</template>
                                         </p>
-                                    </div>
-                                    <div class="flex gap-2 shrink-0 text-sm">
-                                        <RouterLink :to="`/notifications/${n.id}`" class="text-primary-600 dark:text-primary-400">View</RouterLink>
-                                        <RouterLink v-if="n.status === 'draft'" :to="`/notifications/${n.id}/edit`" class="text-emerald-600 dark:text-emerald-400">Edit</RouterLink>
-                                        <button v-if="n.status === 'draft'" type="button" class="text-red-600 dark:text-red-400" @click="remove(n.id)">Delete</button>
                                     </div>
                                 </div>
                             </article>
@@ -59,11 +54,10 @@
                                     <th class="px-4 py-3 text-center font-semibold text-secondary-700 dark:text-secondary-300">Recipients</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Status</th>
                                     <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Date</th>
-                                    <th class="px-4 py-3 text-right font-semibold text-secondary-700 dark:text-secondary-300">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                                <tr v-for="n in notifications" :key="n.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors">
+                                <tr v-for="n in notifications" :key="n.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors cursor-pointer" @click="router.push('/notifications/' + n.id)">
                                     <td class="px-4 py-3 font-medium text-secondary-900 dark:text-white">{{ n.name }}</td>
                                     <td class="px-4 py-3 text-secondary-600 dark:text-secondary-400 max-w-xs truncate">{{ n.message }}</td>
                                     <td class="px-4 py-3 text-center text-secondary-600 dark:text-secondary-400">{{ n.recipients_count }}</td>
@@ -72,11 +66,6 @@
                                     </td>
                                     <td class="px-4 py-3 text-secondary-500 dark:text-secondary-400 whitespace-nowrap">
                                         {{ n.sent_at ? formatDate(n.sent_at) : formatDate(n.created_at) }}
-                                    </td>
-                                    <td class="px-4 py-3 text-right space-x-3 whitespace-nowrap">
-                                        <RouterLink :to="`/notifications/${n.id}`" class="text-primary-600 dark:text-primary-400 hover:underline">View</RouterLink>
-                                        <RouterLink v-if="n.status === 'draft'" :to="`/notifications/${n.id}/edit`" class="text-emerald-600 dark:text-emerald-400 hover:underline">Edit</RouterLink>
-                                        <button v-if="n.status === 'draft'" type="button" class="text-red-600 dark:text-red-400 hover:underline" @click="remove(n.id)">Delete</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -92,6 +81,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { BellPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -100,6 +90,7 @@ import AppSearchField from '../components/AppSearchField.vue';
 import AppPagination from '../components/AppPagination.vue';
 
 const loading = ref(false);
+const router = useRouter();
 const errorMessage = ref('');
 const search = ref('');
 const notifications = ref([]);
