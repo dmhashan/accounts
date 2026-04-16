@@ -78,7 +78,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 space-y-3 text-sm text-gray-700">
                 <div>
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Name</p>
-                    <p>{{ existingRegistration.first_name }} {{ existingRegistration.last_name }}</p>
+                    <p>{{ existingRegistration.name }}</p>
                 </div>
                 <div v-if="existingRegistration.email">
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
@@ -97,7 +97,7 @@
             <div v-if="existingRegistration.guests?.length > 0" class="bg-white rounded-2xl shadow-sm p-4 mb-4">
                 <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Additional Members</h3>
                 <div v-for="(g, i) in existingRegistration.guests" :key="i" class="py-2 border-b border-gray-50 last:border-0">
-                    <p class="font-medium text-gray-800">{{ g.first_name }} {{ g.last_name }}</p>
+                    <p class="font-medium text-gray-800">{{ g.name }}</p>
                     <p v-if="g.notes" class="text-xs text-gray-500 mt-0.5 whitespace-pre-wrap">{{ g.notes }}</p>
                 </div>
             </div>
@@ -200,29 +200,16 @@
 
                     <form class="p-4 space-y-4" @submit.prevent="submit">
                         <!-- Main registrant -->
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">First Name <span class="text-red-500">*</span></label>
-                                <input
-                                    v-model="form.first_name"
-                                    type="text"
-                                    required
-                                    maxlength="100"
-                                    class="pp-input"
-                                    :readonly="!!memberMeta"
-                                />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 mb-1">Last Name <span class="text-red-500">*</span></label>
-                                <input
-                                    v-model="form.last_name"
-                                    type="text"
-                                    required
-                                    maxlength="100"
-                                    class="pp-input"
-                                    :readonly="!!memberMeta"
-                                />
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Name <span class="text-red-500">*</span></label>
+                            <input
+                                v-model="form.name"
+                                type="text"
+                                required
+                                maxlength="200"
+                                class="pp-input"
+                                :readonly="!!memberMeta"
+                            />
                         </div>
 
                         <div>
@@ -286,27 +273,15 @@
                                     <span class="text-xs font-semibold text-gray-500">Member {{ idx + 1 }}</span>
                                     <button type="button" class="text-xs text-red-500 hover:text-red-700" @click="removeGuest(idx)">Remove</button>
                                 </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs text-gray-500 mb-1">First Name <span class="text-red-500">*</span></label>
-                                        <input
-                                            v-model="guest.first_name"
-                                            type="text"
-                                            required
-                                            maxlength="100"
-                                            class="pp-input"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Last Name <span class="text-red-500">*</span></label>
-                                        <input
-                                            v-model="guest.last_name"
-                                            type="text"
-                                            required
-                                            maxlength="100"
-                                            class="pp-input"
-                                        />
-                                    </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Name <span class="text-red-500">*</span></label>
+                                    <input
+                                        v-model="guest.name"
+                                        type="text"
+                                        required
+                                        maxlength="200"
+                                        class="pp-input"
+                                    />
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
@@ -380,12 +355,11 @@ const submitting         = ref(false);
 const errorMessage       = ref('');
 
 const form = ref({
-    first_name: '',
-    last_name:  '',
-    email:      '',
-    phone:      '',
-    notes:      '',
-    guests:     [],
+    name:   '',
+    email:  '',
+    phone:  '',
+    notes:  '',
+    guests: [],
 });
 
 // ─── Countdown ──────────────────────────────────────────────
@@ -460,11 +434,9 @@ async function loadMemberProfile() {
         memberMeta.value = data.meta;
 
         // Pre-fill the form with member details
-        const nameParts     = (data.meta.name || '').trim().split(/\s+/);
-        form.value.first_name = nameParts[0] || '';
-        form.value.last_name  = nameParts.slice(1).join(' ') || '';
-        form.value.email      = data.meta.email || '';
-        form.value.phone      = data.meta.phone_number || '';
+        form.value.name  = data.meta.name || '';
+        form.value.email = data.meta.email || '';
+        form.value.phone = data.meta.phone_number || '';
     } catch {
         // non-critical — form stays empty
     }
@@ -484,9 +456,8 @@ async function loadMyRegistration() {
         // Pre-fill editable form fields with existing registration data
         form.value.notes  = data.data.notes || '';
         form.value.guests = (data.data.guests || []).map(g => ({
-            first_name: g.first_name,
-            last_name:  g.last_name,
-            notes:      g.notes || '',
+            name:  g.name,
+            notes: g.notes || '',
         }));
     } catch {
         // non-critical
@@ -495,7 +466,7 @@ async function loadMyRegistration() {
 
 // ─── Guest management ────────────────────────────────────────
 function addGuest() {
-    form.value.guests.push({ first_name: '', last_name: '', notes: '' });
+    form.value.guests.push({ name: '', notes: '' });
 }
 
 function removeGuest(idx) {
@@ -546,11 +517,10 @@ async function submit() {
 function cancelEdit() {
     editing.value      = false;
     errorMessage.value = '';
-    form.value.notes   = existingRegistration.value.notes || '';
-    form.value.guests  = (existingRegistration.value.guests || []).map(g => ({
-        first_name: g.first_name,
-        last_name:  g.last_name,
-        notes:      g.notes || '',
+    form.value.notes  = existingRegistration.value.notes || '';
+    form.value.guests = (existingRegistration.value.guests || []).map(g => ({
+        name:  g.name,
+        notes: g.notes || '',
     }));
 }
 

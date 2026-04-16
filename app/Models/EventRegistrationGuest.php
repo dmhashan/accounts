@@ -9,8 +9,7 @@ class EventRegistrationGuest extends Model
 {
     protected $fillable = [
         'event_registration_id',
-        'first_name',
-        'last_name',
+        'name',
         'fee',
         'notes',
     ];

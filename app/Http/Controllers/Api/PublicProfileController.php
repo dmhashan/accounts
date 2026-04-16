@@ -230,15 +230,13 @@ class PublicProfileController extends Controller
         }
 
         $validated = $request->validate([
-            'first_name'     => ['required', 'string', 'max:100'],
-            'last_name'      => ['required', 'string', 'max:100'],
+            'name'           => ['required', 'string', 'max:200'],
             'email'          => ['nullable', 'email', 'max:150'],
             'phone'          => ['nullable', 'string', 'max:30'],
             'notes'          => ['nullable', 'string', 'max:1000'],
             'guests'         => ['nullable', 'array', 'max:20'],
-            'guests.*.first_name' => ['required', 'string', 'max:100'],
-            'guests.*.last_name'  => ['required', 'string', 'max:100'],
-            'guests.*.notes'      => ['nullable', 'string', 'max:500'],
+            'guests.*.name'  => ['required', 'string', 'max:200'],
+            'guests.*.notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         // Resolve optional member from PP token header
@@ -427,11 +425,10 @@ class PublicProfileController extends Controller
         }
 
         $validated = $request->validate([
-            'notes'               => ['nullable', 'string', 'max:1000'],
-            'guests'              => ['nullable', 'array', 'max:20'],
-            'guests.*.first_name' => ['required', 'string', 'max:100'],
-            'guests.*.last_name'  => ['required', 'string', 'max:100'],
-            'guests.*.notes'      => ['nullable', 'string', 'max:500'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
+            'guests'         => ['nullable', 'array', 'max:20'],
+            'guests.*.name'  => ['required', 'string', 'max:200'],
+            'guests.*.notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $updated = app(EventService::class)->updateRegistration($registration, $event, $validated);

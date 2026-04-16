@@ -82,9 +82,7 @@ class EventService
         $paginator = EventRegistration::where('event_id', $event->id)
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                      ->orWhere('last_name', 'like', "%{$search}%")
-                      ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
+                    $q->where('name', 'like', "%{$search}%")
                       ->orWhere('phone', 'like', "%{$search}%")
                       ->orWhereHas('member', fn ($mq) => $mq
                           ->where('name', 'like', "%{$search}%")
@@ -115,22 +113,20 @@ class EventService
         $totalFee     = $ticketFee + (count($guests) * $guestFee);
 
         $registration = EventRegistration::create([
-            'event_id'   => $event->id,
-            'tenant_id'  => $tenantId,
-            'member_id'  => $memberId,
-            'first_name' => $data['first_name'],
-            'last_name'  => $data['last_name'],
-            'email'      => $data['email'] ?? null,
-            'phone'      => $data['phone'] ?? null,
-            'notes'      => $data['notes'] ?? null,
-            'total_fee'  => $totalFee,
+            'event_id'  => $event->id,
+            'tenant_id' => $tenantId,
+            'member_id' => $memberId,
+            'name'      => $data['name'],
+            'email'     => $data['email'] ?? null,
+            'phone'     => $data['phone'] ?? null,
+            'notes'     => $data['notes'] ?? null,
+            'total_fee' => $totalFee,
         ]);
 
         foreach ($guests as $guest) {
             EventRegistrationGuest::create([
                 'event_registration_id' => $registration->id,
-                'first_name'            => $guest['first_name'],
-                'last_name'             => $guest['last_name'],
+                'name'                  => $guest['name'],
                 'fee'                   => $guestFee,
             ]);
         }
@@ -153,12 +149,11 @@ class EventService
         $totalFee = (float) $event->ticket_fee + (count($guests) * $guestFee);
 
         $registration->update([
-            'first_name' => $data['first_name'] ?? $registration->first_name,
-            'last_name'  => $data['last_name']  ?? $registration->last_name,
-            'email'      => $data['email']      ?? $registration->email,
-            'phone'      => $data['phone']      ?? $registration->phone,
-            'notes'      => $data['notes'] ?? null,
-            'total_fee'  => $totalFee,
+            'name'      => $data['name']  ?? $registration->name,
+            'email'     => $data['email'] ?? $registration->email,
+            'phone'     => $data['phone'] ?? $registration->phone,
+            'notes'     => $data['notes'] ?? null,
+            'total_fee' => $totalFee,
         ]);
 
         $registration->guests()->delete();
@@ -166,8 +161,7 @@ class EventService
         foreach ($guests as $guest) {
             EventRegistrationGuest::create([
                 'event_registration_id' => $registration->id,
-                'first_name'            => $guest['first_name'],
-                'last_name'             => $guest['last_name'],
+                'name'                  => $guest['name'],
                 'fee'                   => $guestFee,
                 'notes'                 => $guest['notes'] ?? null,
             ]);
@@ -252,8 +246,7 @@ class EventService
     {
         return [
             'id'         => $r->id,
-            'first_name' => $r->first_name,
-            'last_name'  => $r->last_name,
+            'name'       => $r->name,
             'email'      => $r->email,
             'phone'      => $r->phone,
             'notes'      => $r->notes,
@@ -267,7 +260,7 @@ class EventService
                 'gender'       => $r->member->gender,
                 'phone_number' => $r->member->phone_number,
             ] : null,
-            'guests'     => $r->guests->map(fn ($g) => ['first_name' => $g->first_name, 'last_name' => $g->last_name, 'fee' => (float) $g->fee, 'notes' => $g->notes])->all(),
+            'guests'     => $r->guests->map(fn ($g) => ['name' => $g->name, 'fee' => (float) $g->fee, 'notes' => $g->notes])->all(),
             'created_at' => $r->created_at?->toIso8601String(),
         ];
     }

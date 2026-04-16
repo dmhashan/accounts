@@ -43,7 +43,7 @@
                                         <p v-if="reg.member.phone_number" class="text-xs text-secondary-500 dark:text-secondary-400">{{ reg.member.phone_number }}</p>
                                     </template>
                                     <template v-else>
-                                        <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ reg.first_name }} {{ reg.last_name }}</p>
+                                        <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ reg.name }}</p>
                                         <p v-if="reg.phone" class="text-xs text-secondary-500 dark:text-secondary-400">{{ reg.phone }}</p>
                                     </template>
                                     <p v-if="reg.guests.length > 0" class="text-xs text-secondary-400">+ {{ reg.guests.length }} guest{{ reg.guests.length !== 1 ? 's' : '' }}</p>
@@ -91,7 +91,7 @@
                                         <div v-if="reg.member.phone_number" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">{{ reg.member.phone_number }}</div>
                                     </template>
                                     <template v-else>
-                                        <span class="font-medium text-secondary-900 dark:text-white">{{ reg.first_name }} {{ reg.last_name }}</span>
+                                        <span class="font-medium text-secondary-900 dark:text-white">{{ reg.name }}</span>
                                         <div v-if="reg.phone" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">{{ reg.phone }}</div>
                                     </template>
                                 </td>
@@ -166,14 +166,9 @@
                     <span class="text-secondary-400 text-xs">{{ regEditTarget.member.member_id }}</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <AppFormField label="First Name" :required="true">
-                        <AppFormInput v-model="regForm.first_name" placeholder="First name" :disabled="!regEditTarget" />
-                    </AppFormField>
-                    <AppFormField label="Last Name" :required="true">
-                        <AppFormInput v-model="regForm.last_name" placeholder="Last name" :disabled="!regEditTarget" />
-                    </AppFormField>
-                </div>
+                <AppFormField label="Name" :required="true">
+                    <AppFormInput v-model="regForm.name" placeholder="Full name" :disabled="!regEditTarget" />
+                </AppFormField>
 
                 <div class="grid grid-cols-2 gap-3">
                     <AppFormField label="Email" :optional="true">
@@ -195,9 +190,8 @@
                     </div>
                     <div v-if="regForm.guests.length === 0" class="text-xs text-secondary-400 py-1">No additional members.</div>
                     <div v-for="(guest, idx) in regForm.guests" :key="idx" class="flex items-end gap-2 mb-2">
-                        <div class="flex-1 grid grid-cols-2 gap-2">
-                            <AppFormInput v-model="guest.first_name" placeholder="First name" />
-                            <AppFormInput v-model="guest.last_name" placeholder="Last name" />
+                        <div class="flex-1">
+                            <AppFormInput v-model="guest.name" placeholder="Full name" />
                         </div>
                         <button type="button" class="mb-0.5 text-secondary-400 hover:text-red-500 dark:hover:text-red-400 text-sm shrink-0 h-12 flex items-center" @click="removeRegGuest(idx)">✕</button>
                     </div>
@@ -223,7 +217,7 @@
                 <button
                     type="button"
                     class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
-                    :disabled="regSubmitting || !regForm.first_name.trim() || !regForm.last_name.trim()"
+                    :disabled="regSubmitting || !regForm.name.trim()"
                     @click="submitRegModal"
                 >
                     {{ regSubmitting ? (regEditTarget ? 'Saving…' : 'Registering…') : (regEditTarget ? 'Save Changes' : 'Register') }}
@@ -238,7 +232,7 @@
         <div class="relative z-10 w-full max-w-sm rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-5 shadow-xl">
             <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Delete Registration</h3>
             <p class="mt-1.5 text-sm text-secondary-500 dark:text-secondary-400">
-                Remove registration for <span class="font-medium text-secondary-800 dark:text-secondary-200">{{ deleteTarget.first_name }} {{ deleteTarget.last_name }}</span>? This cannot be undone.
+                Remove registration for <span class="font-medium text-secondary-800 dark:text-secondary-200">{{ deleteTarget.name }}</span>? This cannot be undone.
             </p>
             <p v-if="deleteError" class="mt-2 text-sm text-red-600 dark:text-red-400">{{ deleteError }}</p>
             <div class="mt-4 flex items-center justify-end gap-2">
@@ -261,7 +255,7 @@
                 <div>
                     <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Record Payment</h3>
                     <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">
-                        {{ payTarget?.first_name }} {{ payTarget?.last_name }} &mdash; {{ formatFee(payTarget?.total_fee) }}
+                        {{ payTarget?.name }} &mdash; {{ formatFee(payTarget?.total_fee) }}
                     </p>
                 </div>
                 <button type="button" class="text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayModal">✕</button>
@@ -334,7 +328,7 @@ const regMemberId    = ref(null);
 const regEditTarget  = ref(null);
 const regSubmitting  = ref(false);
 const regError       = ref('');
-const regForm        = ref({ first_name: '', last_name: '', email: '', phone: '', notes: '', guests: [] });
+const regForm        = ref({ name: '', email: '', phone: '', notes: '', guests: [] });
 
 // Delete
 const deleteTarget     = ref(null);
@@ -348,21 +342,18 @@ const availableRegMembers = computed(() => {
 
 function onRegMemberSelected(id) {
     if (!id) {
-        regForm.value.first_name = '';
-        regForm.value.last_name  = '';
-        regForm.value.phone      = '';
+        regForm.value.name  = '';
+        regForm.value.phone = '';
         return;
     }
     const member = regMembers.value.find(m => m.id === id);
     if (!member) return;
-    const parts              = member.customer_name.trim().split(/\s+/);
-    regForm.value.first_name = parts[0] || '';
-    regForm.value.last_name  = parts.slice(1).join(' ') || '';
-    regForm.value.phone      = member.phone_number !== 'N/A' ? member.phone_number : '';
+    regForm.value.name  = member.customer_name.trim();
+    regForm.value.phone = member.phone_number !== 'N/A' ? member.phone_number : '';
 }
 
 function openRegModal() {
-    regForm.value       = { first_name: '', last_name: '', email: '', phone: '', notes: '', guests: [] };
+    regForm.value       = { name: '', email: '', phone: '', notes: '', guests: [] };
     regMemberId.value   = null;
     regEditTarget.value = null;
     regError.value      = '';
@@ -374,12 +365,11 @@ function openEditRegModal(reg) {
     regEditTarget.value = reg;
     regMemberId.value   = reg.member?.id ?? null;
     regForm.value = {
-        first_name: reg.first_name || '',
-        last_name:  reg.last_name  || '',
-        email:      reg.email      || '',
-        phone:      reg.phone      || '',
-        notes:      reg.notes      || '',
-        guests: (reg.guests || []).map(g => ({ first_name: g.first_name, last_name: g.last_name, notes: g.notes || '' })),
+        name:  reg.name  || '',
+        email: reg.email || '',
+        phone: reg.phone || '',
+        notes: reg.notes || '',
+        guests: (reg.guests || []).map(g => ({ name: g.name, notes: g.notes || '' })),
     };
     regError.value     = '';
     regModalOpen.value = true;
@@ -413,7 +403,7 @@ async function executeDeleteReg() {
 }
 
 function addRegGuest() {
-    regForm.value.guests.push({ first_name: '', last_name: '', notes: '' });
+    regForm.value.guests.push({ name: '', notes: '' });
 }
 
 function removeRegGuest(idx) {
@@ -430,21 +420,20 @@ async function loadRegMembers() {
 }
 
 async function submitRegModal() {
-    if (!regForm.value.first_name.trim() || !regForm.value.last_name.trim()) return;
+    if (!regForm.value.name.trim()) return;
     regSubmitting.value = true;
     regError.value      = '';
     try {
         const guests = regForm.value.guests
-            .filter(g => g.first_name.trim() && g.last_name.trim())
-            .map(g => ({ first_name: g.first_name.trim(), last_name: g.last_name.trim(), notes: g.notes?.trim() || null }));
+            .filter(g => g.name.trim())
+            .map(g => ({ name: g.name.trim(), notes: g.notes?.trim() || null }));
 
         if (regEditTarget.value) {
             const payload = {
-                first_name: regForm.value.first_name.trim(),
-                last_name:  regForm.value.last_name.trim(),
-                email:      regForm.value.email.trim() || null,
-                phone:      regForm.value.phone.trim() || null,
-                notes:      regForm.value.notes.trim() || null,
+                name:  regForm.value.name.trim(),
+                email: regForm.value.email.trim() || null,
+                phone: regForm.value.phone.trim() || null,
+                notes: regForm.value.notes.trim() || null,
                 guests,
             };
             const res = await apiRequest(`/api/events/${route.params.id}/registrations/${regEditTarget.value.id}`, { method: 'PUT', data: payload });
@@ -452,12 +441,11 @@ async function submitRegModal() {
             if (idx !== -1) registrations.value[idx] = res.data;
         } else {
             const payload = {
-                member_id:  regMemberId.value ?? null,
-                first_name: regForm.value.first_name.trim(),
-                last_name:  regForm.value.last_name.trim(),
-                email:      regForm.value.email.trim() || null,
-                phone:      regForm.value.phone.trim() || null,
-                notes:      regForm.value.notes.trim() || null,
+                member_id: regMemberId.value ?? null,
+                name:      regForm.value.name.trim(),
+                email:     regForm.value.email.trim() || null,
+                phone:     regForm.value.phone.trim() || null,
+                notes:     regForm.value.notes.trim() || null,
                 guests,
             };
             const res = await apiRequest(`/api/events/${route.params.id}/registrations`, { method: 'POST', data: payload });

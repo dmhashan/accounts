@@ -82,15 +82,13 @@ class EventApiController extends Controller
         abort_if($registration->is_paid, 422, 'Cannot edit a paid registration.');
 
         $validated = $request->validate([
-            'first_name'          => ['required', 'string', 'max:100'],
-            'last_name'           => ['required', 'string', 'max:100'],
-            'email'               => ['nullable', 'email', 'max:150'],
-            'phone'               => ['nullable', 'string', 'max:30'],
-            'notes'               => ['nullable', 'string', 'max:1000'],
-            'guests'              => ['nullable', 'array', 'max:20'],
-            'guests.*.first_name' => ['required', 'string', 'max:100'],
-            'guests.*.last_name'  => ['required', 'string', 'max:100'],
-            'guests.*.notes'      => ['nullable', 'string', 'max:500'],
+            'name'           => ['required', 'string', 'max:200'],
+            'email'          => ['nullable', 'email', 'max:150'],
+            'phone'          => ['nullable', 'string', 'max:30'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
+            'guests'         => ['nullable', 'array', 'max:20'],
+            'guests.*.name'  => ['required', 'string', 'max:200'],
+            'guests.*.notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $updated = $this->service->updateRegistration($registration, $event, $validated);
@@ -120,16 +118,14 @@ class EventApiController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'member_id'           => ['nullable', 'integer', 'exists:members,id'],
-            'first_name'          => ['required', 'string', 'max:100'],
-            'last_name'           => ['required', 'string', 'max:100'],
-            'email'               => ['nullable', 'email', 'max:150'],
-            'phone'               => ['nullable', 'string', 'max:30'],
-            'notes'               => ['nullable', 'string', 'max:1000'],
-            'guests'              => ['nullable', 'array', 'max:20'],
-            'guests.*.first_name' => ['required', 'string', 'max:100'],
-            'guests.*.last_name'  => ['required', 'string', 'max:100'],
-            'guests.*.notes'      => ['nullable', 'string', 'max:500'],
+            'member_id'      => ['nullable', 'integer', 'exists:members,id'],
+            'name'           => ['required', 'string', 'max:200'],
+            'email'          => ['nullable', 'email', 'max:150'],
+            'phone'          => ['nullable', 'string', 'max:30'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
+            'guests'         => ['nullable', 'array', 'max:20'],
+            'guests.*.name'  => ['required', 'string', 'max:200'],
+            'guests.*.notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $memberId = null;
