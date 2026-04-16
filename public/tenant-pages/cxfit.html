@@ -163,7 +163,7 @@
             inset: 0;
             background:
                 linear-gradient(135deg, rgba(7,9,15,0.97) 0%, rgba(7,9,15,0.78) 45%, rgba(7,9,15,0.52) 100%),
-                url('https://lh3.googleusercontent.com/geougc-cs/ABOP9ps6Rcv0ZyC1Sdxn3ehslMp-6Niq-iiEWtDZlABqK9krolfbhbywlFW8nx-qeC3Gv5_KddW3f6uWqzipOyxUIkGveRy8YS_XjIbTuD-dYDelA3KzjoNIfl3CZoZxR1T7Gp48odFLC3jtycJS=s2560-w2560-h1142-rw') center/cover no-repeat;
+                url('/tenant-pages/img/cxfit_background_1.webp') center/cover no-repeat;
         }
         .hero-glow {
             position: absolute;
@@ -491,6 +491,10 @@
             overflow: hidden;
             position: relative;
             cursor: pointer;
+            height: 420px;
+            background-image: url('/tenant-pages/img/cxfit_background_2.webp');
+            background-size: cover;
+            background-position: center;
         }
         .video-box::after {
             content: '';
@@ -500,12 +504,6 @@
             transition: background 0.3s;
         }
         .video-box:hover::after { background: rgba(7,9,15,0.1); }
-        .video-box img {
-            width: 100%;
-            max-height: 420px;
-            object-fit: cover;
-            border-radius: 0;
-        }
         .play-btn {
             position: absolute;
             left: 50%; top: 50%;
@@ -753,6 +751,34 @@
             line-height: 1.7;
         }
         .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+        /* contact info inside cta */
+        .contact-items {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .contact-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            background: rgba(0,0,0,0.22);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            padding: 12px 24px;
+            transition: background 0.2s, border-color 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .contact-item:hover {
+            background: rgba(0,0,0,0.38);
+            border-color: rgba(255,255,255,0.4);
+        }
         .cta-wrap .btn-primary {
             background: #fff;
             color: var(--accent);
@@ -877,14 +903,13 @@
                 </svg>
             </a>
             <div class="nav-links">
-                <a href="#classes">Classes</a>
+                <a href="#services">Services</a>
                 <a href="#trainers">Trainers</a>
                 <a href="#equipment">Equipment</a>
                 <a href="#pricing">Pricing</a>
             </div>
             <div class="nav-actions">
-                <a href="/login" class="btn btn-outline">Login</a>
-                <a href="/register" class="btn btn-primary">Join Now</a>
+                <a href="https://cxfit.beforward.lk/profile" class="btn btn-primary">&#128100;&ensp;Member Portal</a>
             </div>
         </div>
     </nav>
@@ -906,8 +931,7 @@
                     Where fitness meets inspiration, and every drop of sweat tells a story of determination. Professional trainers, world-class equipment, unbeatable value.
                 </p>
                 <div class="hero-cta">
-                    <a href="/register" class="btn btn-primary">&#9654;&ensp;Get Started Today</a>
-                    <a href="/login" class="btn btn-outline">Already a member? Login</a>
+                    <a href="#contact" class="btn btn-primary">&#9993;&ensp;Contact Us</a>
                 </div>
                 <div class="hero-stats" role="list">
                     <div class="hero-stat" role="listitem">
@@ -935,7 +959,7 @@
                 <span class="strip-dot">•</span>
                 <span>Personal Training</span>
                 <span class="strip-dot">•</span>
-                <span>Yoga &amp; Stretching</span>
+                <span>Stretching</span>
                 <span class="strip-dot">•</span>
                 <span>Free Weights</span>
                 <span class="strip-dot">•</span>
@@ -947,33 +971,33 @@
             </div>
         </div>
 
-        <!-- ===== CLASSES ===== -->
-        <section class="section section-dark" id="classes" aria-labelledby="classes-heading">
+        <!-- ===== SERVICES ===== -->
+        <section class="section section-dark" id="services" aria-labelledby="services-heading">
             <div class="container">
                 <div class="title-block reveal">
-                    <div class="kicker">Training Disciplines</div>
-                    <h2 id="classes-heading" class="display">
-                        Train With <span class="ghost">Premium</span><br />Equipment Categories
+                    <div class="kicker">What We Offer</div>
+                    <h2 id="services-heading" class="display">
+                        Our <span class="ghost">Premium</span><br />Services
                     </h2>
                 </div>
 
                 <div class="classes-grid">
                     <article class="class-card reveal reveal-d1">
-                        <img src="https://images.unsplash.com/photo-1534258936925-c58bed479fcb?auto=format&fit=crop&w=700&q=80" alt="Strength training class" loading="lazy" />
+                        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80" alt="Strength training with barbells" loading="lazy" />
                         <div class="class-label">
                             <h3>Strength</h3>
                             <span class="class-tag">Free Weights</span>
                         </div>
                     </article>
                     <article class="class-card reveal reveal-d2">
-                        <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=700&q=80" alt="Yoga and stretching class" loading="lazy" />
+                        <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=700&q=80" alt="Stretching and mobility training" loading="lazy" />
                         <div class="class-label">
-                            <h3>Yoga</h3>
-                            <span class="class-tag">Flexibility</span>
+                            <h3>Stretching</h3>
+                            <span class="class-tag">Mobility</span>
                         </div>
                     </article>
                     <article class="class-card reveal reveal-d3">
-                        <img src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=700&q=80" alt="Full body workout class" loading="lazy" />
+                        <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=80" alt="Full body workout class" loading="lazy" />
                         <div class="class-label">
                             <h3>Workout</h3>
                             <span class="class-tag">Full Body</span>
@@ -1007,7 +1031,7 @@
                                 <span class="trainer-avatar-name">Bihath Muthu Hennadige</span>
                             </div>
                             <img
-                                src="img/trainer-bihath.jpg"
+                                src="/tenant-pages/img/cxfit_trainer_1.png"
                                 alt="Bihath Muthu Hennadige — Head Trainer"
                                 loading="lazy"
                                 onerror="this.style.opacity='0';this.style.pointerEvents='none';"
@@ -1037,7 +1061,7 @@
                                 <span class="trainer-avatar-name">Pathum Dias</span>
                             </div>
                             <img
-                                src="img/trainer-pathum.jpg"
+                                src="/tenant-pages/img/cxfit_trainer_2.png"
                                 alt="Pathum Dias — Freelance Personal Trainer"
                                 loading="lazy"
                                 onerror="this.style.opacity='0';this.style.pointerEvents='none';"
@@ -1062,7 +1086,6 @@
 
                 <!-- Video showcase -->
                 <div class="video-box reveal" role="button" tabindex="0" aria-label="Play gym showcase video">
-                    <img src="https://lh3.googleusercontent.com/geougc-cs/ABOP9ptXTD4BrRwCWhzcezV94QpnWMcwf7jHOzUINb2FWE6oX4_qgpnGGe5QBomAQAuDgKmr7rQ4foNHhNzPoVK4OQGLtQSn3ju0F8h6rm_WWUmQSWnZ88cbTGBEUK1jNyP1zfWcg7GfvpdywmU=s2560-w2560-h1142-rw" alt="CoreX Fitness gym floor" loading="lazy" />
                     <button class="play-btn" aria-label="Play video">&#9654;</button>
                 </div>
             </div>
@@ -1133,7 +1156,7 @@
                             <li>Perfect for visitors</li>
                             <li>Try before you commit</li>
                         </ul>
-                        <a href="/register" class="btn btn-outline" style="width:100%;justify-content:center;">Get Day Pass</a>
+                        <a href="#contact" class="btn btn-outline" style="width:100%;justify-content:center;">Contact Us</a>
                     </article>
 
                     <article class="price-card popular reveal reveal-d2">
@@ -1149,7 +1172,7 @@
                             <li>No registration fee</li>
                             <li>No admission fee</li>
                         </ul>
-                        <a href="/register" class="btn btn-primary" style="width:100%;justify-content:center;">Join Monthly</a>
+                        <a href="#contact" class="btn btn-primary" style="width:100%;justify-content:center;">Contact Us</a>
                     </article>
 
                     <article class="price-card reveal reveal-d3">
@@ -1163,7 +1186,7 @@
                             <li>Expert guidance</li>
                             <li>Faster goal achievement</li>
                         </ul>
-                        <a href="/register" class="btn btn-outline" style="width:100%;justify-content:center;">Book a Session</a>
+                        <a href="#contact" class="btn btn-outline" style="width:100%;justify-content:center;">Contact Us</a>
                     </article>
                 </div>
             </div>
@@ -1237,14 +1260,14 @@
                     </article>
                 </div>
 
-                <!-- CTA -->
-                <div class="cta-wrap reveal">
+                <!-- CONTACT US -->
+                <div class="cta-wrap reveal" id="contact">
                     <div class="cta-inner">
-                        <h2>Let's Join Our<br />Community</h2>
-                        <p>Where fitness meets inspiration, and every drop of sweat tells a story of determination. Your transformation starts today.</p>
-                        <div class="cta-actions">
-                            <a href="/register" class="btn btn-primary">&#9654;&ensp;Get Started</a>
-                            <a href="/login" class="btn btn-outline">Already a member? Login</a>
+                        <h2>Get In Touch</h2>
+                        <p>Interested in a membership or personal training? Reach out and we'll get you started.</p>
+                        <div class="contact-items">
+                            <a href="tel:+94779600845" class="contact-item">&#128222;&ensp;+94 77 960 0845</a>
+                            <a href="mailto:corexfitnesstangalle@gmail.com" class="contact-item">&#9993;&ensp;corexfitnesstangalle@gmail.com</a>
                         </div>
                     </div>
                 </div>
@@ -1262,12 +1285,11 @@
                     </svg>
                 </a>
                 <nav class="footer-links" aria-label="Footer navigation">
-                    <a href="#classes">Classes</a>
+                    <a href="#services">Services</a>
                     <a href="#trainers">Trainers</a>
                     <a href="#equipment">Equipment</a>
                     <a href="#pricing">Pricing</a>
                 </nav>
-                <a href="/register" class="btn btn-primary">Join Now</a>
             </div>
             <p class="footer-copy">Copyright &copy; 2026 CoreX Fitness. All rights reserved.</p>
         </div>
