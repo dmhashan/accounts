@@ -415,9 +415,15 @@ class CompanyAccountService
             $outgoingQuery->where('id', '!=', $excludedTransferId);
         }
 
+        $transactionTotal = CompanyAccountTransaction::query()
+            ->where('tenant_id', $tenantId)
+            ->where('company_account_id', $account->id)
+            ->sum('amount');
+
         return round(
             (float) $account->opening_balance
             + (float) $incomingQuery->sum('amount')
+            + (float) $transactionTotal
             - (float) $outgoingQuery->sum('amount'),
             2
         );
