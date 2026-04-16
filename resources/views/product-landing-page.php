@@ -42,18 +42,6 @@
         .lp-accent    { color: var(--lp-accent); }
         .lp-accent-bg { background-color: var(--lp-accent); }
 
-        /* ── Navbar ──────────────────────────────────────── */
-        #lp-nav {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            background: rgba(26, 29, 35, 0.85);
-            border-bottom: 1px solid var(--lp-border);
-            transition: background 0.3s;
-        }
-
         /* ── Hero ────────────────────────────────────────── */
         .hero-grid {
             display: grid;
@@ -61,12 +49,12 @@
             gap: 3rem;
             align-items: center;
             min-height: 100vh;
-            padding: 7rem 1.5rem 4rem;
+            padding: 5rem 1.5rem 4rem;
         }
         @media (min-width: 1024px) {
             .hero-grid {
                 grid-template-columns: 1fr 1fr;
-                padding: 6rem 4rem 4rem;
+                padding: 4rem 4rem 4rem;
             }
         }
 
@@ -429,19 +417,6 @@
 <body>
 
     <!-- ═══════════════════════════════════════════════════
-         NAVBAR
-    ══════════════════════════════════════════════════════ -->
-    <nav id="lp-nav">
-        <div style="max-width:1280px;margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:60px;">
-            <img src="<?= asset('images/product-logo.svg') ?>" alt="beForward.lk" style="height:32px;width:auto;">
-            <div style="display:flex;align-items:center;gap:0.75rem;">
-                <a href="/login" class="btn-ghost" style="padding:0.5rem 1.1rem;font-size:0.85rem;">Log in</a>
-                <a href="/login" class="btn-primary" style="padding:0.5rem 1.1rem;font-size:0.85rem;">Get Started</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- ═══════════════════════════════════════════════════
          HERO
     ══════════════════════════════════════════════════════ -->
     <section style="position:relative;overflow:hidden;">
@@ -452,6 +427,10 @@
         <div class="hero-grid" style="max-width:1280px;margin:0 auto;">
             <!-- Left copy -->
             <div>
+                <!-- Large logo -->
+                <div style="margin-bottom:2rem;">
+                    <img src="<?= asset('images/product-logo.svg') ?>" alt="beForward.lk" style="height:64px;width:auto;">
+                </div>
                 <div class="hero-badge">
                     <span>&#9679;</span> All-in-One Platform
                 </div>
@@ -464,9 +443,9 @@
                     Empower your gym with a powerful backoffice, a beautiful member portal, and a fully customizable public website — all in one platform built for modern fitness businesses.
                 </p>
                 <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;">
-                    <a href="/login" class="btn-primary">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                        Start Managing
+                    <a href="#contact" class="btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Contact us
                     </a>
                     <a href="#modules" class="btn-ghost">Explore Features</a>
                 </div>
@@ -810,9 +789,9 @@
                 Join the platform that brings your members, staff, and operations into a single, beautifully designed system.
             </p>
             <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:0.75rem;">
-                <a href="/login" class="btn-primary" style="padding:0.85rem 2rem;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    Start Managing Now
+                <a href="#contact" class="btn-primary" style="padding:0.85rem 2rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Contact us
                 </a>
             </div>
         </div>
@@ -841,15 +820,7 @@
         }, { threshold: 0.12 });
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        // Sticky nav opacity
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('lp-nav');
-            if (window.scrollY > 20) {
-                nav.style.background = 'rgba(26,29,35,0.97)';
-            } else {
-                nav.style.background = 'rgba(26,29,35,0.85)';
-            }
-        });
+
     </script>
 
 </body>
