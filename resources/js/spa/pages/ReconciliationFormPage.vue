@@ -246,14 +246,14 @@ async function loadFormConfig() {
 
         accounts.value.forEach(a => {
             const raw = accountItems.find(i => i.reference_id === a.id);
-            accountEntries.value[a.id] = raw?.actual_close ?? '';
+            accountEntries.value[a.id] = raw?.actual_close ?? raw?.expected_close ?? '';
         });
         products.value.forEach(p => {
             const key         = `${p.type}_${p.id}`;
             const stockItem   = stockItems.find(i => i.type === p.type && i.reference_id === p.id);
             const displayItem = displayMap[key] ?? null;
-            stockEntries.value[key]   = stockItem?.actual_close ?? '';
-            displayEntries.value[key] = displayItem?.actual_close ?? '';
+            stockEntries.value[key]   = stockItem?.actual_close ?? stockItem?.expected_close ?? '';
+            displayEntries.value[key] = displayItem?.actual_close ?? displayItem?.expected_close ?? '';
         });
     }
 

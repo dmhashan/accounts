@@ -122,17 +122,12 @@ class ReconciliationApiController extends Controller
         $this->guardSession($session);
 
         $validated = $request->validate([
-            'entries'                 => ['required', 'array', 'min:1'],
-            'entries.*.type'          => ['required', 'in:account,stock,stock_variation,stock_display,stock_variation_display'],
-            'entries.*.reference_id'  => ['required', 'integer'],
-            'entries.*.entered_value' => ['required', 'numeric', 'min:0'],
-            'adjustment_reason'       => ['nullable', 'string', 'max:2000'],
+            'adjustment_reason' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $result = $this->reconciliationService->closeSession(
             $session,
             $request->user()->id,
-            $validated['entries'],
             $validated['adjustment_reason'] ?? null,
         );
 

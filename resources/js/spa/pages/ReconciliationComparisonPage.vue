@@ -191,20 +191,19 @@ function goBack() {
 async function confirm() {
     if (hasDifferences.value && !adjustmentReason.value.trim()) return;
 
+    // Guard: all items must have close values saved (via the close form).
+    if (items.value.some(i => i.actual_close === null)) {
+        errorMessage.value = 'Some closing values are missing. Please go back and complete the close form.';
+        return;
+    }
+
     confirming.value   = true;
     errorMessage.value = '';
-
-    const entries = items.value.map(i => ({
-        type:          i.type,
-        reference_id:  i.reference_id,
-        entered_value: i.actual_close,
-    }));
 
     try {
         const res = await apiRequest(`/api/reconciliation/sessions/${sessionId.value}/close`, {
             method: 'POST',
             data:   {
-                entries,
                 adjustment_reason: adjustmentReason.value.trim() || null,
             },
         });

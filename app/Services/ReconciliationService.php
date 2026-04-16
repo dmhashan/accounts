@@ -261,26 +261,28 @@ class ReconciliationService
 
     // ──────────────────────── Close Session ──────────────────────────────────
 
-    public function closeSession(ReconciliationSession $session, int $userId, array $entries, ?string $reason): array|string
+    public function closeSession(ReconciliationSession $session, int $userId, ?string $reason): array|string
     {
         if ($session->status === 'closed') {
             return 'This session is already closed.';
         }
 
-        return DB::transaction(function () use ($session, $userId, $entries, $reason) {
-            // Upsert close-stage entries
-            foreach ($entries as $entry) {
-                ReconciliationEntry::updateOrCreate(
-                    [
-                        'session_id'   => $session->id,
-                        'type'         => $entry['type'],
-                        'reference_id' => $entry['reference_id'],
-                        'stage'        => 'close',
-                    ],
-                    ['entered_value' => $entry['entered_value']]
-                );
-            }
+        $session->load('entries');
+        $openEntries = $session->entries->where('stage', 'open');
 
+        // Ensure every open entry has a corresponding saved close entry.
+        foreach ($openEntries as $openEntry) {
+            $hasClose = $session->entries->contains(
+                fn ($e) => $e->stage === 'close'
+                    && $e->type         === $openEntry->type
+                    && $e->reference_id === $openEntry->reference_id
+            );
+            if (!$hasClose) {
+                return 'Please complete all closing values before confirming.';
+            }
+        }
+
+        return DB::transaction(function () use ($session, $userId, $reason) {
             $session->update([
                 'status'             => 'closed',
                 'closed_by'          => $userId,
