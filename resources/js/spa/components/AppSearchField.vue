@@ -8,6 +8,7 @@
                 type="text"
                 class="h-12 w-full rounded-full border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-900 pl-5 pr-14 text-sm text-secondary-900 dark:text-white placeholder:text-secondary-400 dark:placeholder:text-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
                 @input="$emit('update:modelValue', $event.target.value)"
+                @keydown.enter.prevent
                 @keyup.enter="$emit('search')"
             >
 

@@ -77,7 +77,7 @@ class EventService
         $event->delete();
     }
 
-    public function registrations(Event $event, int $perPage, string $search = ''): array
+    public function registrations(Event $event, int $perPage, string $search = '', string $status = '', string $type = ''): array
     {
         $paginator = EventRegistration::where('event_id', $event->id)
             ->when($search !== '', function ($q) use ($search) {
@@ -90,6 +90,10 @@ class EventService
                       );
                 });
             })
+            ->when($status === 'paid',   fn ($q) => $q->where('is_paid', true))
+            ->when($status === 'unpaid', fn ($q) => $q->where('is_paid', false))
+            ->when($type === 'member', fn ($q) => $q->whereNotNull('member_id'))
+            ->when($type === 'walkin', fn ($q) => $q->whereNull('member_id'))
             ->with(['member:id,name,member_id,gender,phone_number', 'guests'])
             ->orderByDesc('created_at')
             ->paginate($perPage);
@@ -113,15 +117,21 @@ class EventService
         $totalFee     = $ticketFee + (count($guests) * $guestFee);
 
         $registration = EventRegistration::create([
-            'event_id'  => $event->id,
-            'tenant_id' => $tenantId,
-            'member_id' => $memberId,
-            'name'      => $data['name'],
-            'email'     => $data['email'] ?? null,
-            'phone'     => $data['phone'] ?? null,
-            'notes'     => $data['notes'] ?? null,
-            'total_fee' => $totalFee,
+            'event_id'    => $event->id,
+            'tenant_id'   => $tenantId,
+            'member_id'   => $memberId,
+            'name'        => $data['name'],
+            'email'       => $data['email'] ?? null,
+            'phone'       => $data['phone'] ?? null,
+            'notes'       => $data['notes'] ?? null,
+            'total_fee'   => $totalFee,
+            'is_attended' => ! empty($data['is_attended']),
+            'attended_at' => ! empty($data['is_attended']) ? now() : null,
         ]);
+
+        if (! empty($data['is_paid']) && ! empty($data['company_account_id'])) {
+            $this->markRegistrationPaid($registration, (int) $data['company_account_id']);
+        }
 
         foreach ($guests as $guest) {
             EventRegistrationGuest::create([
@@ -245,24 +255,36 @@ class EventService
     public function toRegistrationItem(EventRegistration $r): array
     {
         return [
-            'id'         => $r->id,
-            'name'       => $r->name,
-            'email'      => $r->email,
-            'phone'      => $r->phone,
-            'notes'      => $r->notes,
-            'total_fee'  => (float) $r->total_fee,
-            'is_paid'    => (bool) $r->is_paid,
-            'paid_at'    => $r->paid_at?->toIso8601String(),
-            'member'     => $r->member ? [
+            'id'          => $r->id,
+            'name'        => $r->name,
+            'email'       => $r->email,
+            'phone'       => $r->phone,
+            'notes'       => $r->notes,
+            'total_fee'   => (float) $r->total_fee,
+            'is_paid'     => (bool) $r->is_paid,
+            'paid_at'     => $r->paid_at?->toIso8601String(),
+            'is_attended' => (bool) $r->is_attended,
+            'attended_at' => $r->attended_at?->toIso8601String(),
+            'member'      => $r->member ? [
                 'id'           => $r->member->id,
                 'name'         => $r->member->name,
                 'member_id'    => $r->member->member_id,
                 'gender'       => $r->member->gender,
                 'phone_number' => $r->member->phone_number,
             ] : null,
-            'guests'     => $r->guests->map(fn ($g) => ['name' => $g->name, 'fee' => (float) $g->fee, 'notes' => $g->notes])->all(),
-            'created_at' => $r->created_at?->toIso8601String(),
+            'guests'      => $r->guests->map(fn ($g) => ['name' => $g->name, 'fee' => (float) $g->fee, 'notes' => $g->notes])->all(),
+            'created_at'  => $r->created_at?->toIso8601String(),
         ];
+    }
+
+    public function markAttendance(EventRegistration $registration): EventRegistration
+    {
+        $registration->update([
+            'is_attended' => true,
+            'attended_at' => now(),
+        ]);
+
+        return $registration->fresh(['guests']);
     }
 
     private function uniqueSlug(int $tenantId, string $base, ?int $excludeId = null): string

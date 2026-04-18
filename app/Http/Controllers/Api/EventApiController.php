@@ -71,8 +71,10 @@ class EventApiController extends Controller
 
         $perPage = min((int) $request->integer('per_page', 20), 100);
         $search  = trim((string) $request->query('search', ''));
+        $status  = in_array($request->query('status'), ['paid', 'unpaid'], true) ? $request->query('status') : '';
+        $type    = in_array($request->query('type'), ['member', 'walkin'], true) ? $request->query('type') : '';
 
-        return response()->json($this->service->registrations($event, $perPage, $search));
+        return response()->json($this->service->registrations($event, $perPage, $search, $status, $type));
     }
 
     public function updateRegistration(Request $request, Event $event, EventRegistration $registration): JsonResponse
@@ -118,15 +120,22 @@ class EventApiController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'member_id'      => ['nullable', 'integer', 'exists:members,id'],
-            'name'           => ['required', 'string', 'max:200'],
-            'email'          => ['nullable', 'email', 'max:150'],
-            'phone'          => ['nullable', 'string', 'max:30'],
-            'notes'          => ['nullable', 'string', 'max:1000'],
-            'guests'         => ['nullable', 'array', 'max:20'],
-            'guests.*.name'  => ['required', 'string', 'max:200'],
-            'guests.*.notes' => ['nullable', 'string', 'max:500'],
+            'member_id'          => ['nullable', 'integer', 'exists:members,id'],
+            'name'               => ['required', 'string', 'max:200'],
+            'email'              => ['nullable', 'email', 'max:150'],
+            'phone'              => ['nullable', 'string', 'max:30'],
+            'notes'              => ['nullable', 'string', 'max:1000'],
+            'guests'             => ['nullable', 'array', 'max:20'],
+            'guests.*.name'      => ['required', 'string', 'max:200'],
+            'guests.*.notes'     => ['nullable', 'string', 'max:500'],
+            'is_paid'            => ['boolean'],
+            'company_account_id' => ['nullable', 'integer', 'exists:company_accounts,id'],
+            'is_attended'        => ['boolean'],
         ]);
+
+        if (! empty($validated['is_paid'])) {
+            abort_if(empty($validated['company_account_id']), 422, 'A company account is required to mark registration as paid.');
+        }
 
         $memberId = null;
         if (!empty($validated['member_id'])) {
@@ -149,6 +158,21 @@ class EventApiController extends Controller
             'message' => 'Registration added successfully.',
             'data'    => $this->service->toRegistrationItem($registration->load('guests')),
         ], 201);
+    }
+
+    public function markAttendance(Event $event, EventRegistration $registration): JsonResponse
+    {
+        $this->authorizeEvent($event);
+        abort_if($registration->event_id !== $event->id, 404);
+
+        abort_if($registration->is_attended, 422, 'Attendance has already been marked and cannot be changed.');
+
+        $updated = $this->service->markAttendance($registration);
+
+        return response()->json([
+            'message' => 'Attendance marked.',
+            'data'    => $this->service->toRegistrationItem($updated),
+        ]);
     }
 
     public function markRegistrationPaid(Request $request, Event $event, EventRegistration $registration): JsonResponse

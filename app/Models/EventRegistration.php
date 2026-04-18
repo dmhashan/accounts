@@ -20,12 +20,16 @@ class EventRegistration extends Model
         'is_paid',
         'paid_at',
         'company_account_id',
+        'is_attended',
+        'attended_at',
     ];
 
     protected $casts = [
-        'total_fee' => 'decimal:2',
-        'is_paid'   => 'boolean',
-        'paid_at'   => 'datetime',
+        'total_fee'   => 'decimal:2',
+        'is_paid'     => 'boolean',
+        'paid_at'     => 'datetime',
+        'is_attended' => 'boolean',
+        'attended_at' => 'datetime',
     ];
 
     public function event(): BelongsTo

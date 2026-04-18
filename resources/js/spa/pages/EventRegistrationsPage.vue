@@ -8,18 +8,46 @@
 
         <div v-else class="app-page-scroll">
             <div class="app-surface rounded-2xl overflow-hidden">
-                <div class="px-4 py-3 border-b border-secondary-200 dark:border-secondary-700 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 class="text-sm font-semibold text-secondary-900 dark:text-white shrink-0">Registrations ({{ regMeta.total }})</h2>
-                    <div class="flex items-center gap-2 flex-1 sm:justify-end">
-                        <AppSearchField v-model="regSearch" placeholder="Search by name or phone" class="w-full sm:w-64" :disabled="regLoading" />
-                        <button
-                            type="button"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors shrink-0"
-                            @click="openRegModal"
+                <div class="px-4 py-3 border-b border-secondary-200 dark:border-secondary-700 flex flex-col gap-2">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 class="text-sm font-semibold text-secondary-900 dark:text-white shrink-0">Registrations ({{ regMeta.total }})</h2>
+                        <div class="flex items-center gap-2 flex-1 sm:justify-end">
+                            <AppSearchField v-model="regSearch" placeholder="Search by name or phone" class="w-full sm:w-64" :disabled="regLoading" />
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors shrink-0"
+                                @click="openRegModal"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                Add Registration
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select
+                            v-model="regStatusFilter"
+                            class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            @change="loadRegistrations(1)"
                         >
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                            Add Registration
-                        </button>
+                            <option value="">All payments</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                        </select>
+                        <select
+                            v-model="regTypeFilter"
+                            class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            @change="loadRegistrations(1)"
+                        >
+                            <option value="">All types</option>
+                            <option value="member">Members only</option>
+                            <option value="walkin">Walk-ins only</option>
+                        </select>
+                        <button
+                            v-if="hasActiveFilters"
+                            type="button"
+                            class="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            @click="clearFilters"
+                        >Clear filters</button>
                     </div>
                 </div>
 
@@ -27,7 +55,7 @@
 
                 <template v-else-if="registrations.length === 0">
                     <div class="p-8 text-center text-secondary-400 dark:text-secondary-500 text-sm">
-                        {{ regSearch.trim() ? 'No registrations match your search.' : 'No registrations yet.' }}
+                        {{ regSearch.trim() || regStatusFilter || regTypeFilter ? 'No registrations match your filters.' : 'No registrations yet.' }}
                     </div>
                 </template>
 
@@ -51,14 +79,27 @@
                                 <div class="text-right shrink-0 space-y-1">
                                     <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ formatFee(reg.total_fee) }}</p>
                                     <p class="text-xs text-secondary-400">{{ formatDate(reg.created_at) }}</p>
-                                    <span v-if="reg.is_paid" class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Paid</span>
-                                    <template v-else>
+                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                        <span v-if="reg.is_paid" class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Paid</span>
                                         <button
-                                            v-if="reg.total_fee > 0"
+                                            v-else-if="reg.total_fee > 0"
                                             type="button"
                                             class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-primary-100 text-primary-700 hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-300 transition-colors"
                                             @click="openPayModal(reg)"
                                         >Pay Now</button>
+                                        <span
+                                            v-if="reg.is_attended"
+                                            class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                        >Attended</span>
+                                        <button
+                                            v-else
+                                            type="button"
+                                            class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-secondary-100 text-secondary-500 dark:bg-secondary-800 dark:text-secondary-400"
+                                            :disabled="attendanceLoading[reg.id]"
+                                            @click="toggleAttendance(reg)"
+                                        >Mark Attended</button>
+                                    </div>
+                                    <template v-if="!reg.is_paid">
                                         <div class="flex items-center justify-end gap-1.5 mt-0.5">
                                             <button type="button" class="text-xs text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 transition-colors" @click="openEditRegModal(reg)">Edit</button>
                                             <span class="text-secondary-300 dark:text-secondary-600">·</span>
@@ -79,6 +120,7 @@
                                 <th class="px-4 py-3 text-right font-semibold text-secondary-700 dark:text-secondary-300">Total Fee</th>
                                 <th class="px-4 py-3 text-left font-semibold text-secondary-700 dark:text-secondary-300">Registered At</th>
                                 <th class="px-4 py-3 text-center font-semibold text-secondary-700 dark:text-secondary-300">Payment</th>
+                                <th class="px-4 py-3 text-center font-semibold text-secondary-700 dark:text-secondary-300">Attended</th>
                                 <th class="px-4 py-3 text-center font-semibold text-secondary-700 dark:text-secondary-300">Actions</th>
                             </tr>
                         </thead>
@@ -112,6 +154,22 @@
                                         @click="openPayModal(reg)"
                                     >Pay Now</button>
                                     <span v-else class="text-secondary-400 text-xs">Free</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span
+                                        v-if="reg.is_attended"
+                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                    >
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                                        Attended
+                                    </span>
+                                    <button
+                                        v-else
+                                        type="button"
+                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-secondary-100 text-secondary-500 dark:bg-secondary-800 dark:text-secondary-400 hover:bg-secondary-200 dark:hover:bg-secondary-700 transition-colors"
+                                        :disabled="attendanceLoading[reg.id]"
+                                        @click="toggleAttendance(reg)"
+                                    >Mark</button>
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     <template v-if="!reg.is_paid">
@@ -208,6 +266,56 @@
                         {{ formatFee((Number(event.ticket_fee) || 0) + regForm.guests.length * (Number(event.additional_ticket_fee) || 0)) }}
                     </span>
                 </div>
+
+                <template v-if="!regEditTarget">
+                    <div class="space-y-3 rounded-2xl border border-secondary-200 dark:border-secondary-700 px-4 py-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Mark as Paid</p>
+                                <p class="text-xs text-secondary-400">Record payment immediately on registration</p>
+                            </div>
+                            <button
+                                type="button"
+                                :class="regForm.is_paid
+                                    ? 'relative inline-flex h-6 w-11 shrink-0 rounded-full bg-primary-600 transition-colors'
+                                    : 'relative inline-flex h-6 w-11 shrink-0 rounded-full bg-secondary-300 dark:bg-secondary-600 transition-colors'"
+                                role="switch"
+                                :aria-checked="regForm.is_paid"
+                                @click="regForm.is_paid = !regForm.is_paid"
+                            >
+                                <span :class="regForm.is_paid ? 'translate-x-5' : 'translate-x-1'" class="inline-block h-4 w-4 mt-1 rounded-full bg-white shadow transition-transform" />
+                            </button>
+                        </div>
+                        <div v-if="regForm.is_paid">
+                            <label class="block text-xs font-semibold text-secondary-600 dark:text-secondary-400 uppercase tracking-wide mb-1.5">Company Account</label>
+                            <select
+                                v-model.number="regForm.company_account_id"
+                                class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            >
+                                <option :value="null">Select account</option>
+                                <option v-for="acc in companyAccounts" :key="acc.id" :value="acc.id">{{ acc.label || acc.name }}</option>
+                            </select>
+                            <p v-if="companyAccounts.length === 0" class="mt-1 text-xs text-red-600 dark:text-red-400">No company accounts found.</p>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-secondary-100 dark:border-secondary-700 pt-3">
+                            <div>
+                                <p class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Mark as Attended</p>
+                                <p class="text-xs text-secondary-400">Record attendance immediately on registration</p>
+                            </div>
+                            <button
+                                type="button"
+                                :class="regForm.is_attended
+                                    ? 'relative inline-flex h-6 w-11 shrink-0 rounded-full bg-blue-600 transition-colors'
+                                    : 'relative inline-flex h-6 w-11 shrink-0 rounded-full bg-secondary-300 dark:bg-secondary-600 transition-colors'"
+                                role="switch"
+                                :aria-checked="regForm.is_attended"
+                                @click="regForm.is_attended = !regForm.is_attended"
+                            >
+                                <span :class="regForm.is_attended ? 'translate-x-5' : 'translate-x-1'" class="inline-block h-4 w-4 mt-1 rounded-full bg-white shadow transition-transform" />
+                            </button>
+                        </div>
+                    </div>
+                </template>
 
                 <p v-if="regError" class="text-sm text-red-600 dark:text-red-400">{{ regError }}</p>
             </div>
@@ -308,10 +416,12 @@ const loading      = ref(false);
 const errorMessage = ref('');
 const event        = ref({});
 
-const regLoading  = ref(false);
-const regSearch   = ref('');
-const registrations = ref([]);
-const regMeta     = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
+const regLoading      = ref(false);
+const regSearch       = ref('');
+const regStatusFilter = ref('');
+const regTypeFilter   = ref('');
+const registrations   = ref([]);
+const regMeta         = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
 
 // Pay modal
 const companyAccounts = ref([]);
@@ -328,7 +438,10 @@ const regMemberId    = ref(null);
 const regEditTarget  = ref(null);
 const regSubmitting  = ref(false);
 const regError       = ref('');
-const regForm        = ref({ name: '', email: '', phone: '', notes: '', guests: [] });
+const regForm        = ref({ name: '', email: '', phone: '', notes: '', guests: [], is_paid: false, company_account_id: null, is_attended: false });
+
+// Attendance loading per registration
+const attendanceLoading = ref({});
 
 // Delete
 const deleteTarget     = ref(null);
@@ -353,7 +466,7 @@ function onRegMemberSelected(id) {
 }
 
 function openRegModal() {
-    regForm.value       = { name: '', email: '', phone: '', notes: '', guests: [] };
+    regForm.value       = { name: '', email: '', phone: '', notes: '', guests: [], is_paid: false, company_account_id: companyAccounts.value.length > 0 ? companyAccounts.value[0].id : null, is_attended: false };
     regMemberId.value   = null;
     regEditTarget.value = null;
     regError.value      = '';
@@ -441,12 +554,15 @@ async function submitRegModal() {
             if (idx !== -1) registrations.value[idx] = res.data;
         } else {
             const payload = {
-                member_id: regMemberId.value ?? null,
-                name:      regForm.value.name.trim(),
-                email:     regForm.value.email.trim() || null,
-                phone:     regForm.value.phone.trim() || null,
-                notes:     regForm.value.notes.trim() || null,
+                member_id:           regMemberId.value ?? null,
+                name:                regForm.value.name.trim(),
+                email:               regForm.value.email.trim() || null,
+                phone:               regForm.value.phone.trim() || null,
+                notes:               regForm.value.notes.trim() || null,
                 guests,
+                is_paid:             regForm.value.is_paid,
+                company_account_id:  regForm.value.is_paid ? regForm.value.company_account_id : null,
+                is_attended:         regForm.value.is_attended,
             };
             const res = await apiRequest(`/api/events/${route.params.id}/registrations`, { method: 'POST', data: payload });
             registrations.value.unshift(res.data);
@@ -493,6 +609,23 @@ async function confirmPayment() {
     }
 }
 
+async function toggleAttendance(reg) {
+    if (reg.is_attended) return;
+    attendanceLoading.value[reg.id] = true;
+    try {
+        const res = await apiRequest(
+            `/api/events/${route.params.id}/registrations/${reg.id}/mark-attendance`,
+            { method: 'POST' }
+        );
+        const idx = registrations.value.findIndex(r => r.id === reg.id);
+        if (idx !== -1) registrations.value[idx] = res.data;
+    } catch {
+        // silently fail
+    } finally {
+        delete attendanceLoading.value[reg.id];
+    }
+}
+
 async function loadEvent() {
     loading.value = true;
     errorMessage.value = '';
@@ -514,11 +647,21 @@ async function loadCompanyAccounts() {
     }
 }
 
+const hasActiveFilters = computed(() => regStatusFilter.value || regTypeFilter.value);
+
+function clearFilters() {
+    regStatusFilter.value = '';
+    regTypeFilter.value   = '';
+    loadRegistrations(1);
+}
+
 async function loadRegistrations(page = 1) {
     regLoading.value = true;
     try {
         const params = new URLSearchParams({ page, per_page: 20 });
         if (regSearch.value.trim()) params.set('search', regSearch.value.trim());
+        if (regStatusFilter.value) params.set('status', regStatusFilter.value);
+        if (regTypeFilter.value)   params.set('type',   regTypeFilter.value);
         const res = await apiRequest(`/api/events/${route.params.id}/registrations?${params}`);
         registrations.value = res.data;
         regMeta.value       = res.meta;
