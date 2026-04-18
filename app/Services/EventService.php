@@ -98,13 +98,23 @@ class EventService
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
+        $attendedQuery = EventRegistration::where('event_id', $event->id)->where('is_attended', true);
+        $attendedIds   = (clone $attendedQuery)->pluck('id');
+
+        $attendedTotal   = $attendedIds->count();
+        $attendedMembers = (clone $attendedQuery)->whereNotNull('member_id')->count();
+        $attendedGuests  = \App\Models\EventRegistrationGuest::whereIn('event_registration_id', $attendedIds)->count();
+
         return [
             'data' => $paginator->map(fn (EventRegistration $r) => $this->toRegistrationItem($r)),
             'meta' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
-                'per_page'     => $paginator->perPage(),
-                'total'        => $paginator->total(),
+                'current_page'    => $paginator->currentPage(),
+                'last_page'       => $paginator->lastPage(),
+                'per_page'        => $paginator->perPage(),
+                'total'           => $paginator->total(),
+                'attended_total'  => $attendedTotal,
+                'attended_members'=> $attendedMembers,
+                'attended_guests' => $attendedGuests,
             ],
         ];
     }

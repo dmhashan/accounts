@@ -10,7 +10,19 @@
             <div class="app-surface rounded-2xl overflow-hidden">
                 <div class="px-4 py-3 border-b border-secondary-200 dark:border-secondary-700 flex flex-col gap-2">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <h2 class="text-sm font-semibold text-secondary-900 dark:text-white shrink-0">Registrations ({{ regMeta.total }})</h2>
+                        <div class="shrink-0 space-y-1">
+                            <h2 class="text-sm font-semibold text-secondary-900 dark:text-white">Registrations ({{ regMeta.total }})</h2>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-secondary-500 dark:text-secondary-400">
+                                <span class="inline-flex items-center gap-1">
+                                    <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Attended: <strong class="text-secondary-700 dark:text-secondary-200 ml-0.5">{{ regMeta.attended_total }}</strong>
+                                </span>
+                                <span class="text-secondary-300 dark:text-secondary-600">|</span>
+                                <span>Members: <strong class="text-secondary-700 dark:text-secondary-200">{{ regMeta.attended_members }}</strong></span>
+                                <span class="text-secondary-300 dark:text-secondary-600">|</span>
+                                <span>Additional: <strong class="text-secondary-700 dark:text-secondary-200">{{ regMeta.attended_guests }}</strong></span>
+                            </div>
+                        </div>
                         <div class="flex items-center gap-2 flex-1 sm:justify-end">
                             <AppSearchField v-model="regSearch" placeholder="Search by name or phone" class="w-full sm:w-64" :disabled="regLoading" />
                             <button
@@ -421,7 +433,7 @@ const regSearch       = ref('');
 const regStatusFilter = ref('');
 const regTypeFilter   = ref('');
 const registrations   = ref([]);
-const regMeta         = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
+const regMeta         = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0, attended_total: 0, attended_members: 0, attended_guests: 0 });
 
 // Pay modal
 const companyAccounts = ref([]);
@@ -619,6 +631,14 @@ async function toggleAttendance(reg) {
         );
         const idx = registrations.value.findIndex(r => r.id === reg.id);
         if (idx !== -1) registrations.value[idx] = res.data;
+        // update attendance stats
+        const guestDelta = (reg.guests?.length ?? 0);
+        regMeta.value = {
+            ...regMeta.value,
+            attended_total:   regMeta.value.attended_total + 1,
+            attended_members: reg.member ? regMeta.value.attended_members + 1 : regMeta.value.attended_members,
+            attended_guests:  regMeta.value.attended_guests + guestDelta,
+        };
     } catch {
         // silently fail
     } finally {
