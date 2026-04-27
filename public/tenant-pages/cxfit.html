@@ -1097,6 +1097,242 @@
             .payment-grid { grid-template-columns: 1fr; }
         }
 
+        /* ===== LOCAL PRICING MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.78);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-box {
+            background: var(--panel);
+            border: 1px solid rgba(232,32,42,0.28);
+            border-radius: var(--r-xl);
+            padding: 40px 36px;
+            max-width: 480px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.65), 0 0 0 1px rgba(232,32,42,0.08);
+            transform: translateY(24px) scale(0.97);
+            transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        .modal-overlay.open .modal-box {
+            transform: translateY(0) scale(1);
+        }
+        .modal-close {
+            position: absolute;
+            top: 16px; right: 20px;
+            background: var(--glass);
+            border: 1px solid var(--line2);
+            color: var(--muted);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: var(--text);
+            border-color: rgba(232,32,42,0.4);
+            background: rgba(232,32,42,0.08);
+        }
+        .modal-header { margin-bottom: 28px; }
+        .modal-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 38px;
+            letter-spacing: 0.5px;
+            line-height: 1;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+        .modal-subtitle {
+            font-size: 12.5px;
+            color: var(--muted);
+        }
+        .local-price-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .local-price-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--glass);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px 18px;
+            transition: border-color 0.2s;
+        }
+        .local-price-row:hover { border-color: rgba(232,32,42,0.22); }
+        .local-price-row.popular-row {
+            border-color: rgba(232,32,42,0.32);
+            background: rgba(232,32,42,0.06);
+        }
+        .local-price-label {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--muted2);
+        }
+        .local-price-value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: 0.5px;
+            color: var(--text);
+        }
+        .local-price-row.popular-row .local-price-value { color: var(--accent3); }
+
+        /* Local pricing trigger */
+        .local-trigger-wrap { margin-top: 44px; }
+        .local-trigger-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: var(--panel2);
+            border: 1px solid rgba(232,32,42,0.2);
+            border-radius: var(--r);
+            padding: 22px 30px;
+            max-width: 660px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+            justify-content: center;
+            text-align: left;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .local-trigger-card:hover {
+            border-color: rgba(232,32,42,0.38);
+            box-shadow: 0 8px 32px rgba(232,32,42,0.08);
+        }
+        .local-trigger-icon { font-size: 36px; line-height: 1; }
+        .local-trigger-text {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1;
+            min-width: 160px;
+        }
+        .local-trigger-text strong { font-size: 15px; font-weight: 800; color: var(--text); }
+        .local-trigger-text span { font-size: 12.5px; color: var(--muted); }
+
+        /* Section label above pricing grid */
+        .pricing-section-label {
+            text-align: center;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: var(--muted);
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .pricing-section-label::before,
+        .pricing-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        /* ===== GYM HOURS SECTION ===== */
+        .hours-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .hours-card {
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-lg);
+            padding: 32px 30px;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            position: relative;
+            overflow: hidden;
+        }
+        .hours-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent2), var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .hours-card:hover::after { opacity: 1; }
+        .hours-card:hover {
+            border-color: rgba(232,32,42,0.22);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+        }
+        .hours-icon {
+            width: 52px; height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(232,32,42,0.15), rgba(232,32,42,0.05));
+            border: 1px solid rgba(232,32,42,0.15);
+            display: grid;
+            place-items: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        .hours-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.25);
+            color: #4ade80;
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 3px 10px;
+            border-radius: 100px;
+            margin-bottom: 14px;
+        }
+        .hours-card h3 {
+            font-size: 14.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 18px;
+        }
+        .hours-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .hours-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .hours-row:first-of-type { padding-top: 0; }
+        .hours-day { font-size: 12.5px; color: var(--muted); font-weight: 500; flex-shrink: 0; }
+        .hours-time { font-size: 14px; font-weight: 700; color: var(--text); text-align: right; }
+
+        @media (max-width: 640px) {
+            .hours-grid { grid-template-columns: 1fr; }
+            .local-trigger-card { padding: 18px 20px; }
+        }
+        @media (max-width: 480px) {
+            .modal-box { padding: 32px 22px; }
+        }
+
         /* ===== FOOTER ===== */
         footer {
             border-top: 1px solid var(--line);
@@ -1215,6 +1451,7 @@
                 <a href="#trainers">Trainers</a>
                 <a href="#equipment">Equipment</a>
                 <a href="#pricing">Pricing</a>
+                <a href="#hours">Hours</a>
                 <a href="#payment">Payments</a>
             </div>
             <div class="nav-actions">
@@ -1253,7 +1490,7 @@
                         <small>Overseas Visitors</small>
                     </div>
                     <div class="hero-stat" role="listitem">
-                        <strong>7AM–10PM</strong>
+                        <strong>6:30AM–10PM</strong>
                         <small>Open Daily</small>
                     </div>
                 </div>
@@ -1470,6 +1707,8 @@
                     </h2>
                 </div>
 
+                <p class="pricing-section-label reveal">International &amp; Foreign Visitor Rates</p>
+
                 <div class="pricing-grid">
                     <article class="price-card reveal reveal-d1">
                         <div class="price-label">Day Pass</div>
@@ -1513,6 +1752,57 @@
                             <li><span class="check-icon" aria-hidden="true">✓</span>Faster goal achievement</li>
                         </ul>
                         <a href="#contact" class="btn btn-outline" style="width:100%;justify-content:center;">Contact Us</a>
+                    </article>
+                </div>
+
+                <!-- Local Member Pricing Trigger -->
+                <div class="local-trigger-wrap reveal">
+                    <div class="local-trigger-card">
+                        <div class="local-trigger-icon" aria-hidden="true">🇱🇰</div>
+                        <div class="local-trigger-text">
+                            <strong>Local Member Pricing</strong>
+                            <span>Special LKR rates for Sri Lankan residents — view our local packages</span>
+                        </div>
+                        <button class="btn btn-outline" onclick="openLocalPricingModal()" aria-haspopup="dialog">
+                            View Local Rates
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== GYM HOURS ===== -->
+        <section class="section section-dark" id="hours" aria-labelledby="hours-heading">
+            <div class="container">
+                <div class="title-block reveal">
+                    <div class="kicker">When We're Open</div>
+                    <h2 id="hours-heading" class="display">
+                        Hours &amp; <span class="ghost">Schedule</span>
+                    </h2>
+                </div>
+                <div class="hours-grid">
+                    <article class="hours-card reveal reveal-d1">
+                        <div class="hours-icon" aria-hidden="true">🕐</div>
+                        <div class="hours-badge">Open Every Day</div>
+                        <h3>Gym Opening Hours</h3>
+                        <div class="hours-row">
+                            <span class="hours-day">Monday – Sunday</span>
+                            <span class="hours-time">6:30 AM – 10:00 PM</span>
+                        </div>
+                    </article>
+
+                    <article class="hours-card reveal reveal-d2">
+                        <div class="hours-icon" aria-hidden="true">🏅</div>
+                        <div class="hours-badge">Mon – Sat</div>
+                        <h3>Coach Available Times</h3>
+                        <div class="hours-row">
+                            <span class="hours-day">Morning Session</span>
+                            <span class="hours-time">8:00 AM – 11:00 AM</span>
+                        </div>
+                        <div class="hours-row">
+                            <span class="hours-day">Evening Session</span>
+                            <span class="hours-time">3:00 PM – 9:00 PM</span>
+                        </div>
                     </article>
                 </div>
             </div>
@@ -1622,7 +1912,7 @@
                                 <p class="payment-card-sub">Pay at the gym, any time</p>
                             </div>
                         </div>
-                        <p style="color:var(--muted);font-size:13px;line-height:1.7;">Walk in and pay cash at the front desk. Available during all opening hours — 6 AM to 10 PM daily.</p>
+                        <p style="color:var(--muted);font-size:13px;line-height:1.7;">Walk in and pay cash at the front desk. Available during all opening hours — 6:30 AM to 10:00 PM daily.</p>
                     </article>
 
                     <!-- Card -->
@@ -1675,6 +1965,41 @@
         </section>
     </main>
 
+    <!-- ===== LOCAL PRICING MODAL ===== -->
+    <div id="local-pricing-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="local-pricing-title">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeLocalPricingModal()" aria-label="Close">&times;</button>
+            <div class="modal-header">
+                <div class="kicker">Sri Lankan Members</div>
+                <h3 id="local-pricing-title" class="modal-title">Local Pricing</h3>
+                <p class="modal-subtitle">All prices in Sri Lankan Rupees (LKR)</p>
+            </div>
+            <div class="local-price-list">
+                <div class="local-price-row">
+                    <span class="local-price-label">Admission Fee</span>
+                    <span class="local-price-value">LKR 2,000</span>
+                </div>
+                <div class="local-price-row">
+                    <span class="local-price-label">Monthly Fee</span>
+                    <span class="local-price-value">LKR 4,000</span>
+                </div>
+                <div class="local-price-row popular-row">
+                    <span class="local-price-label">3 Months Package</span>
+                    <span class="local-price-value">LKR 9,950</span>
+                </div>
+                <div class="local-price-row">
+                    <span class="local-price-label">6 Months Package</span>
+                    <span class="local-price-value">LKR 19,950</span>
+                </div>
+                <div class="local-price-row">
+                    <span class="local-price-label">1 Year Package</span>
+                    <span class="local-price-value">LKR 29,950</span>
+                </div>
+            </div>
+            <a href="#contact" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:24px;" onclick="closeLocalPricingModal()">Get Started</a>
+        </div>
+    </div>
+
     <!-- ===== FOOTER ===== -->
     <footer>
         <div class="container">
@@ -1689,6 +2014,7 @@
                     <a href="#trainers">Trainers</a>
                     <a href="#equipment">Equipment</a>
                     <a href="#pricing">Pricing</a>
+                    <a href="#hours">Hours</a>
                     <a href="#payment">Payments</a>
                 </nav>
             </div>
@@ -1697,6 +2023,22 @@
     </footer>
 
     <script>
+        // Local pricing modal
+        function openLocalPricingModal() {
+            document.getElementById('local-pricing-modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeLocalPricingModal() {
+            document.getElementById('local-pricing-modal').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        document.getElementById('local-pricing-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeLocalPricingModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLocalPricingModal();
+        });
+
         // Scroll reveal via IntersectionObserver
         const revealObserver = new IntersectionObserver(
             (entries) => entries.forEach(e => {
