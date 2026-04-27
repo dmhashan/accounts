@@ -1054,7 +1054,7 @@
                     </div>
                     <div>
                         <div class="contact-label">Email us</div>
-                        <div class="contact-value">hello@beforward.lk</div>
+                        <div class="contact-value">dmhashan@gmail.com</div>
                     </div>
                 </div>
                 <div class="contact-row">
@@ -1063,7 +1063,7 @@
                     </div>
                     <div>
                         <div class="contact-label">Call us</div>
-                        <div class="contact-value">+94 77 000 0000</div>
+                        <div class="contact-value">+94 77 9600 845</div>
                     </div>
                 </div>
                 <div class="contact-row">
