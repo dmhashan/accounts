@@ -8,6 +8,7 @@ use App\Models\CompanyAccountTransfer;
 use App\Models\Expense;
 use App\Models\MemberPayment;
 use App\Models\Sale;
+use App\Models\WalletTopup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -118,6 +119,7 @@ class CompanyAccountService
         $saleIds    = $items->where('model_name', 'sale')->pluck('reference_id')->filter()->unique()->values();
         $expenseIds = $items->where('model_name', 'expense')->pluck('reference_id')->filter()->unique()->values();
         $paymentIds = $items->where('model_name', 'payment')->pluck('reference_id')->filter()->unique()->values();
+        $topupIds   = $items->where('model_name', 'wallet_topup')->pluck('reference_id')->filter()->unique()->values();
 
         // Load related records in bulk
         $sales    = $saleIds->isNotEmpty()
@@ -132,11 +134,18 @@ class CompanyAccountService
                 ->get(['id', 'member_id'])
                 ->keyBy('id')
             : collect();
+        $topups   = $topupIds->isNotEmpty()
+            ? WalletTopup::whereIn('id', $topupIds)
+                ->with('member:id,member_id,first_name,last_name,name')
+                ->get(['id', 'member_id', 'reference_number'])
+                ->keyBy('id')
+            : collect();
 
         return [
-            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments) {
+            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments, $topups) {
                 $sourceReference = null;
                 $customer = null;
+                $memberId = null;
 
                 if ($tx->model_name === 'sale' && $tx->reference_id) {
                     $sale = $sales->get($tx->reference_id);
@@ -150,6 +159,15 @@ class CompanyAccountService
                     if ($payment?->member) {
                         $m = $payment->member;
                         $customer = trim(($m->first_name ?? '') . ' ' . ($m->last_name ?? '')) ?: ($m->name ?? null);
+                        $memberId = $m->id;
+                    }
+                } elseif ($tx->model_name === 'wallet_topup' && $tx->reference_id) {
+                    $topup = $topups->get($tx->reference_id);
+                    $sourceReference = $topup?->reference_number;
+                    $memberId = $topup?->member_id;
+                    if ($topup?->member) {
+                        $m = $topup->member;
+                        $customer = $m->member_id;
                     }
                 }
 
@@ -158,6 +176,7 @@ class CompanyAccountService
                     'type'             => $tx->type,
                     'model_name'       => $tx->model_name,
                     'reference_id'     => $tx->reference_id,
+                    'member_id'        => $memberId,
                     'amount'           => $tx->amount,
                     'transaction_date' => $tx->transaction_date?->toDateString(),
                     'reference_number' => $tx->reference_number,

@@ -147,7 +147,7 @@
                     <button
                         type="button"
                         class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
-                        :disabled="payNowDisabled"
+                        :disabled="submitDisabled"
                         @click="openPayNowModal"
                     >
                         {{ submitting ? 'Processing...' : 'Pay Now' }}
@@ -169,14 +169,14 @@
 
                 <div class="mt-4">
                     <AppFormField label="Company Account">
-                        <AppFormSelect v-model.number="selectedPayNowAccountId">
-                            <option :value="null">Select account</option>
-                            <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
-                                {{ account.label || account.name }}
-                            </option>
-                        </AppFormSelect>
+                        <AppCompanyAccountSelect
+                            v-model="selectedPayNowAccountId"
+                            :accounts="companyAccounts"
+                            :member-id="selectedMember?.id ?? undefined"
+                            :amount="totalAmount"
+                        />
                     </AppFormField>
-                    <p v-if="companyAccounts.length === 0" class="mt-2 text-sm text-red-600 dark:text-red-400">No company account found. Add one before using Pay Now.</p>
+                    <p v-if="companyAccounts.length === 0 && !selectedMember" class="mt-2 text-sm text-red-600 dark:text-red-400">No company account found. Add one before using Pay Now.</p>
                 </div>
 
                 <div class="mt-5 flex items-center justify-end gap-2">
@@ -259,8 +259,8 @@ import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
+import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -273,13 +273,10 @@ const errorMessage = ref('');
 const variationOptions = ref([]);
 const productSearch = ref('');
 const members = ref([]);
-// Removed: memberSearch, customerDropdownOpen, customerSelectorRef
 const activeProductId = ref(null);
 const activeCartKey = ref(null);
 const cartListRef = ref(null);
 const cartItemRefs = ref({});
-const walletLoading = ref(false);
-const walletBalance = ref(0);
 const companyAccounts = ref([]);
 const payNowModalOpen = ref(false);
 const selectedPayNowAccountId = ref(null);
@@ -311,7 +308,6 @@ const paymentMethods = [
     { value: 'cash', label: 'Cash' },
     { value: 'bank', label: 'Bank' },
     { value: 'card', label: 'Card' },
-    { value: 'member_wallet', label: 'Member Wallet' },
 ];
 
 const selectedMember = computed(() => {
@@ -362,35 +358,14 @@ const updatedStockItems = computed(() => {
 });
 
 const submitDisabled = computed(() => {
-    if (saleLocked.value) {
-        return true;
-    }
-
-    if (!hasActionPermission.value) {
-        return true;
-    }
-
-    if (submitting.value || loadingMeta.value || form.value.items.length === 0) {
-        return true;
-    }
-
-    if (form.value.payment_method === 'member_wallet') {
-        if (!selectedMember.value) {
-            return true;
-        }
-
-        return Number(walletBalance.value || 0) < totalAmount.value;
-    }
-
+    if (saleLocked.value) return true;
+    if (!hasActionPermission.value) return true;
+    if (submitting.value || loadingMeta.value || form.value.items.length === 0) return true;
     return false;
 });
 
 const saveDisabled = computed(() => {
     return !hasActionPermission.value || submitting.value || loadingMeta.value || form.value.items.length === 0;
-});
-
-const payNowDisabled = computed(() => {
-    return submitDisabled.value || companyAccounts.value.length === 0;
 });
 
 function money(value) {
@@ -540,22 +515,7 @@ function selectCustomer(memberId) {
 // Removed: handleDocumentClick
 
 async function loadWalletBalance() {
-    if (!selectedMember.value || form.value.payment_method !== 'member_wallet') {
-        walletBalance.value = 0;
-        return;
-    }
-
-    walletLoading.value = true;
-
-    try {
-        const response = await apiRequest(`/api/sales/member-wallet/${selectedMember.value.id}`);
-        walletBalance.value = Number(response.data?.current_balance || 0);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to load member wallet balance.';
-        walletBalance.value = 0;
-    } finally {
-        walletLoading.value = false;
-    }
+    // No-op: wallet balance is now fetched inside AppCompanyAccountSelect component
 }
 
 async function loadMeta() {
@@ -632,26 +592,21 @@ async function submitSale(mode = 'update') {
     try {
         const resolvedCustomerName = selectedMember.value?.customer_name || null;
         const isPayNowMode = mode === 'pay_now';
-
-        if (isPayNowMode && !selectedPayNowAccountId.value) {
-            errorMessage.value = 'Please select a company account.';
-            submitting.value = false;
-            return;
-        }
+        const isWalletPayment = isPayNowMode && selectedPayNowAccountId.value === 'member_wallet';
 
         const paidAmount = isEdit.value
-            ? (form.value.payment_method === 'member_wallet' ? totalAmount.value : Number(form.value.paid_amount || 0))
+            ? (isWalletPayment ? totalAmount.value : Number(form.value.paid_amount || 0))
             : (isPayNowMode ? totalAmount.value : 0);
 
         const payload = {
             customer_name: resolvedCustomerName,
             customer_member_id: selectedMember.value?.id || null,
             customer_type: form.value.customer_type,
-            payment_method: form.value.payment_method,
+            payment_method: isPayNowMode ? (isWalletPayment ? 'member_wallet' : form.value.payment_method) : form.value.payment_method,
             reference_number: showReferenceField.value ? (form.value.reference_number || null) : null,
             paid_amount: paidAmount,
             is_paid: isEdit.value ? undefined : isPayNowMode,
-            account_id: isEdit.value ? undefined : (isPayNowMode ? Number(selectedPayNowAccountId.value) : null),
+            account_id: isEdit.value ? undefined : (isPayNowMode && !isWalletPayment ? Number(selectedPayNowAccountId.value) : null),
             items: form.value.items
                 .filter((item) => item.product_variation_id && Number(item.quantity) > 0)
                 .map((item) => ({
@@ -726,15 +681,15 @@ function handleFormSubmit() {
 }
 
 function openPayNowModal() {
-    if (payNowDisabled.value) {
-        return;
-    }
-
+    if (submitDisabled.value) return;
     if (!selectedPayNowAccountId.value && companyAccounts.value.length > 0) {
         selectedPayNowAccountId.value = companyAccounts.value[0].id;
     }
-
     payNowModalOpen.value = true;
+}
+
+function submitWalletSale() {
+    // No-op: wallet is now selected via the account dropdown inside the Pay Now modal
 }
 
 function closePayNowModal() {
@@ -758,7 +713,7 @@ function resetForNewSale() {
         paid_amount: 0,
         items: [],
     };
-    walletBalance.value = 0;
+    selectedPayNowAccountId.value = companyAccounts.value[0]?.id ?? null;
     productSearch.value = '';
     errorMessage.value = '';
 }
@@ -791,17 +746,10 @@ onBeforeUnmount(() => {
 
 watch(
     () => form.value.customer_member_id,
-    () => {
+    (newId) => {
         if (!selectedMember.value && form.value.payment_method === 'member_wallet') {
             form.value.payment_method = 'cash';
         }
-    }
-);
-
-watch(
-    () => [form.value.payment_method, form.value.customer_member_id],
-    () => {
-        loadWalletBalance();
     }
 );
 

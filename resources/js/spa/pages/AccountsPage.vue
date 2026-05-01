@@ -330,6 +330,7 @@ function sourceRecordPath(tx) {
     if (tx.model_name === 'sale') return `/sales/${tx.reference_id}`;
     if (tx.model_name === 'expense') return `/expenses/${tx.reference_id}`;
     if (tx.model_name === 'payment') return `/payments/${tx.reference_id}`;
+    if (tx.model_name === 'wallet_topup' && tx.reference_id) return `/wallet-topups/${tx.reference_id}`;
     return '#';
 }
 
@@ -337,6 +338,7 @@ function sourceRecordLabel(tx) {
     if (tx.model_name === 'sale') return tx.source_reference ? `Sale • ${tx.source_reference}` : `Sale #${tx.reference_id}`;
     if (tx.model_name === 'expense') return tx.source_reference ? `Expense • ${tx.source_reference}` : `Expense #${tx.reference_id}`;
     if (tx.model_name === 'payment') return `Payment #${tx.reference_id}`;
+    if (tx.model_name === 'wallet_topup') return (tx.customer && tx.transaction_date) ? `${tx.customer} • ${tx.transaction_date}` : tx.customer ? tx.customer : `Wallet Topup #${tx.reference_id}`;
     return '-';
 }
 

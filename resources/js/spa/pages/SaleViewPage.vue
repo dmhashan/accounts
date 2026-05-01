@@ -56,12 +56,12 @@
                     </div>
 
                     <AppFormField label="Company Account">
-                        <AppFormSelect v-model.number="selectedAccountId">
-                            <option :value="null">Select account</option>
-                            <option v-for="account in companyAccounts" :key="account.id" :value="account.id">
-                                {{ account.label || account.name }}
-                            </option>
-                        </AppFormSelect>
+                        <AppCompanyAccountSelect
+                            v-model="selectedAccountId"
+                            :accounts="companyAccounts"
+                            :member-id="sale.customer_member_id ?? undefined"
+                            :amount="Number(sale.total_amount || 0)"
+                        />
                     </AppFormField>
                 </div>
 
@@ -83,7 +83,7 @@ import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
-import AppFormSelect from '../components/forms/AppFormSelect.vue';
+import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
 import SaleInvoicePreviewCard from '../components/SaleInvoicePreviewCard.vue';
 
 const route = useRoute();
@@ -120,9 +120,12 @@ async function confirmPayNow() {
     if (!selectedAccountId.value) return;
     payNowLoading.value = true;
     try {
+        const isWallet = selectedAccountId.value === 'member_wallet';
         await apiRequest(`/api/sales/${route.params.id}/mark-as-paid`, {
             method: 'post',
-            data: { account_id: Number(selectedAccountId.value) },
+            data: isWallet
+                ? { payment_method: 'member_wallet' }
+                : { account_id: Number(selectedAccountId.value) },
         });
         payNowOpen.value = false;
         await load();

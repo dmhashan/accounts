@@ -110,6 +110,24 @@
                 </div>
             </div>
 
+            <!-- ── Tabs ── -->
+            <div class="border-b border-secondary-200 dark:border-secondary-700 mx-4">
+                <nav class="-mb-px flex gap-4" aria-label="Member tabs">
+                    <button
+                        v-for="tab in tabs"
+                        :key="tab.id"
+                        type="button"
+                        class="pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
+                        :class="activeTab === tab.id
+                            ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                            : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
+                        @click="switchTab(tab.id)"
+                    >{{ tab.label }}</button>
+                </nav>
+            </div>
+
+            <!-- ── Overview Tab ── -->
+            <template v-if="activeTab === 'overview'">
             <!-- ── Detail Cards ── -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -213,12 +231,163 @@
                 </div>
 
             </div>
+            </template><!-- /overview -->
+
+            <!-- ── Wallet Tab ── -->
+            <template v-if="activeTab === 'wallet'">
+                <!-- Balance Card -->
+                <div class="bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 mx-0 shadow-md">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-emerald-100">Wallet Balance</p>
+                            <p class="mt-1 text-3xl font-bold text-white">{{ formatMoney(member.current_balance) }}</p>
+                        </div>
+                        <button
+                            v-if="permissions.edit"
+                            type="button"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-xl bg-white/20 hover:bg-white/30 border border-white/25 text-white transition-colors"
+                            @click="openTopupModal"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            Top Up
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Topup History -->
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between">
+                        <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Top-up History</h2>
+                    </div>
+                    <div v-if="walletLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
+                    <div v-else-if="topupHistory.length === 0" class="px-5 py-6 text-center text-sm text-secondary-400 dark:text-secondary-500">No top-ups yet.</div>
+                    <div v-else class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                        <div v-for="topup in topupHistory" :key="topup.id" class="flex items-center justify-between px-5 py-3 gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ formatMoney(topup.amount) }}</p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                                    {{ topup.account_name }} &bull; {{ formatDate(topup.topup_date) }}
+                                    <span v-if="topup.reference_number"> &bull; Ref: {{ topup.reference_number }}</span>
+                                </p>
+                                <p v-if="topup.notes" class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5 truncate">{{ topup.notes }}</p>
+                            </div>
+                            <span class="shrink-0 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">+Credit</span>
+                        </div>
+                    </div>
+                    <!-- Pagination -->
+                    <div v-if="topupMeta.last_page > 1" class="px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">Page {{ topupMeta.current_page }} of {{ topupMeta.last_page }}</p>
+                        <div class="flex gap-1">
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="topupMeta.current_page <= 1" @click="loadTopupHistory(topupMeta.current_page - 1)">Prev</button>
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="topupMeta.current_page >= topupMeta.last_page" @click="loadTopupHistory(topupMeta.current_page + 1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction History -->
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
+                        <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Transaction History</h2>
+                    </div>
+                    <div v-if="walletLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
+                    <div v-else-if="walletTransactions.length === 0" class="px-5 py-6 text-center text-sm text-secondary-400 dark:text-secondary-500">No wallet transactions yet.</div>
+                    <div v-else class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                        <div v-for="tx in walletTransactions" :key="tx.id" class="flex items-center justify-between px-5 py-3 gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ tx.label }}</p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                                    {{ formatDate(tx.date) }}
+                                    <span v-if="tx.reference"> &bull; Ref: {{ tx.reference }}</span>
+                                </p>
+                                <p v-if="tx.notes" class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5 truncate">{{ tx.notes }}</p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <p class="text-sm font-bold"
+                                    :class="tx.direction === 'credit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+                                    {{ tx.direction === 'credit' ? '+' : '-' }}{{ formatMoney(tx.amount) }}
+                                </p>
+                                <span class="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                                    :class="tx.direction === 'credit' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'">
+                                    {{ tx.direction }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Pagination -->
+                    <div v-if="txMeta.last_page > 1" class="px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">Page {{ txMeta.current_page }} of {{ txMeta.last_page }}</p>
+                        <div class="flex gap-1">
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="txMeta.current_page <= 1" @click="loadTransactions(txMeta.current_page - 1)">Prev</button>
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="txMeta.current_page >= txMeta.last_page" @click="loadTransactions(txMeta.current_page + 1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </template><!-- /wallet -->
+
         </template>
 
         <div v-else-if="!loading" class="p-8 text-center text-sm text-secondary-400 dark:text-secondary-500">Member details are unavailable.</div>
 
         </div><!-- max-w-4xl -->
         </div><!-- app-page-scroll -->
+
+        <!-- ── Wallet Top-up Modal ── -->
+        <div v-if="topupModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/45" @click="closeTopupModal"></div>
+            <div class="relative z-10 w-full max-w-md rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-5 shadow-xl">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Top Up Wallet</h3>
+                        <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">Current balance: <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ formatMoney(member.current_balance) }}</span></p>
+                    </div>
+                    <button type="button" class="text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closeTopupModal">✕</button>
+                </div>
+
+                <div v-if="topupError" class="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-200">{{ topupError }}</div>
+
+                <form class="space-y-3" @submit.prevent="submitTopup">
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Amount <span class="text-red-500">*</span></label>
+                        <input v-model="topupForm.amount" type="number" min="0.01" step="0.01" required
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="0.00" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Company Account <span class="text-red-500">*</span></label>
+                        <select v-model.number="topupForm.company_account_id" required
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option :value="null">Select account...</option>
+                            <option v-for="acc in walletAccounts" :key="acc.id" :value="acc.id">{{ acc.name }} — {{ formatMoney(acc.current_balance ?? 0) }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Date <span class="text-red-500">*</span></label>
+                        <input v-model="topupForm.topup_date" type="date" required
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Reference <span class="text-xs text-secondary-400">(optional)</span></label>
+                        <input v-model="topupForm.reference_number" type="text" maxlength="255"
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="Receipt or reference number" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Notes <span class="text-xs text-secondary-400">(optional)</span></label>
+                        <textarea v-model="topupForm.notes" rows="2" maxlength="1000"
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                        <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closeTopupModal">Cancel</button>
+                        <button type="submit"
+                            class="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                            :disabled="topupSubmitting || !topupForm.amount || !topupForm.company_account_id">
+                            {{ topupSubmitting ? 'Processing...' : 'Top Up' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -236,6 +405,105 @@ const errorMessage = ref('');
 const successMessage = ref('');
 const member = ref(null);
 const permissions = ref({ edit: false, delete: false });
+
+// ── Tabs ──
+const tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'wallet', label: 'Wallet' },
+];
+const activeTab = ref('overview');
+
+function switchTab(id) {
+    activeTab.value = id;
+    if (id === 'wallet' && member.value) {
+        loadWalletData();
+    }
+}
+
+// ── Wallet state ──
+const walletLoading = ref(false);
+const topupHistory = ref([]);
+const topupMeta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
+const walletTransactions = ref([]);
+const txMeta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
+const walletAccounts = ref([]);
+
+// Topup modal
+const topupModalOpen = ref(false);
+const topupSubmitting = ref(false);
+const topupError = ref('');
+const topupForm = ref({ amount: '', company_account_id: null, topup_date: todayString(), reference_number: '', notes: '' });
+
+function todayString() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function openTopupModal() {
+    topupForm.value = { amount: '', company_account_id: null, topup_date: todayString(), reference_number: '', notes: '' };
+    topupError.value = '';
+    topupModalOpen.value = true;
+    loadWalletMeta();
+}
+
+function closeTopupModal() {
+    topupModalOpen.value = false;
+}
+
+async function loadWalletMeta() {
+    try {
+        const res = await apiRequest('/api/wallet/meta');
+        walletAccounts.value = res.accounts || [];
+    } catch (_) { /* ignore */ }
+}
+
+async function loadWalletData() {
+    walletLoading.value = true;
+    try {
+        await Promise.all([
+            loadTopupHistory(1),
+            loadTransactions(1),
+        ]);
+        if (walletAccounts.value.length === 0) loadWalletMeta();
+    } finally {
+        walletLoading.value = false;
+    }
+}
+
+async function loadTopupHistory(page = 1) {
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/wallet/topup-history?page=${page}&per_page=10`);
+        topupHistory.value = res.data || [];
+        topupMeta.value = res.meta || topupMeta.value;
+    } catch (_) { /* ignore */ }
+}
+
+async function loadTransactions(page = 1) {
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/wallet/transactions?page=${page}&per_page=15`);
+        walletTransactions.value = res.data || [];
+        txMeta.value = res.meta || txMeta.value;
+    } catch (_) { /* ignore */ }
+}
+
+async function submitTopup() {
+    topupSubmitting.value = true;
+    topupError.value = '';
+    try {
+        const res = await apiRequest(`/api/members/${member.value.id}/wallet/topup`, {
+            method: 'post',
+            data: topupForm.value,
+        });
+        member.value = { ...member.value, current_balance: res.current_balance };
+        closeTopupModal();
+        await Promise.all([loadTopupHistory(1), loadTransactions(1), loadWalletMeta()]);
+        successMessage.value = 'Wallet topped up successfully.';
+        setTimeout(() => { successMessage.value = ''; }, 4000);
+    } catch (err) {
+        topupError.value = err?.response?.data?.message || 'Failed to process top-up.';
+    } finally {
+        topupSubmitting.value = false;
+    }
+}
 
 const moneyFormatter = new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 2,

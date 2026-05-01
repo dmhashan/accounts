@@ -81,7 +81,10 @@ class SaleMetaService
         $accounts = CompanyAccount::query()
             ->where('tenant_id', $tenantId)
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->withSum('incomingTransfers as incoming_total', 'amount')
+            ->withSum('outgoingTransfers as outgoing_total', 'amount')
+            ->withSum('transactions as transaction_total', 'amount')
+            ->get();
 
         return [
             'variations' => $variations->map(function (ProductVariation $variation) use ($availableStock, $priceMap) {
@@ -110,9 +113,16 @@ class SaleMetaService
                 ];
             })->values(),
             'accounts' => $accounts->map(fn (CompanyAccount $account) => [
-                'id' => $account->id,
-                'name' => $account->name,
-                'label' => $account->name,
+                'id'              => $account->id,
+                'name'            => $account->name,
+                'label'           => $account->name,
+                'current_balance' => round(
+                    (float) $account->opening_balance
+                    + (float) ($account->incoming_total ?? 0)
+                    + (float) ($account->transaction_total ?? 0)
+                    - (float) ($account->outgoing_total ?? 0),
+                    2
+                ),
             ])->values(),
         ];
     }

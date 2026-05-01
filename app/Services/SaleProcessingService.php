@@ -124,16 +124,49 @@ class SaleProcessingService
                 abort(422, 'Sale is already paid.');
             }
 
-            $accountId = $this->resolveAccountId($validated, $tenantId);
+            $isWallet = ($validated['payment_method'] ?? null) === 'member_wallet';
 
-            $lockedSale->update([
-                'account_id' => $accountId,
-                'is_paid' => true,
-                'paid_amount' => (float) $lockedSale->total_amount,
-                'balance' => 0,
-            ]);
+            if ($isWallet) {
+                if (!$lockedSale->customer_member_id) {
+                    abort(422, 'Member wallet payment requires a member to be assigned to this sale.');
+                }
 
-            $this->recordAccountTransactionForSale($lockedSale, $tenantId, Carbon::today()->toDateString());
+                $member = Member::query()
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->find($lockedSale->customer_member_id);
+
+                if (!$member) {
+                    abort(422, 'Member not found.');
+                }
+
+                if ((float) $member->current_balance < (float) $lockedSale->total_amount) {
+                    abort(422, 'Insufficient member wallet balance.');
+                }
+
+                $member->update([
+                    'current_balance' => (float) $member->current_balance - (float) $lockedSale->total_amount,
+                ]);
+
+                $lockedSale->update([
+                    'account_id'     => null,
+                    'payment_method' => 'member_wallet',
+                    'is_paid'        => true,
+                    'paid_amount'    => (float) $lockedSale->total_amount,
+                    'balance'        => 0,
+                ]);
+            } else {
+                $accountId = $this->resolveAccountId($validated, $tenantId);
+
+                $lockedSale->update([
+                    'account_id'  => $accountId,
+                    'is_paid'     => true,
+                    'paid_amount' => (float) $lockedSale->total_amount,
+                    'balance'     => 0,
+                ]);
+
+                $this->recordAccountTransactionForSale($lockedSale, $tenantId, Carbon::today()->toDateString());
+            }
 
             return $lockedSale->fresh();
         });

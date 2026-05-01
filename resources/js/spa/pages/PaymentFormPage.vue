@@ -32,14 +32,11 @@
                     </div>
 
                     <AppFormField label="Account" :required="true">
-                        <AppSearchableDropdown
-                            v-model="form.company_account_id"
-                            :options="accounts"
-                            :option-label="option => option.name"
-                            :option-key="option => option.id"
-                            placeholder="Select account..."
-                            search-placeholder="Search account..."
-                            no-results-text="No accounts found."
+                        <AppCompanyAccountSelect
+                            v-model="selectedAccountValue"
+                            :accounts="accounts"
+                            :member-id="form.member_id ?? undefined"
+                            :amount="parseFloat(form.amount) || 0"
                         />
                     </AppFormField>
 
@@ -80,6 +77,7 @@ import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
+import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -89,10 +87,11 @@ const submitting = ref(false);
 const errorMessage = ref('');
 const members = ref([]);
 const accounts = ref([]);
+// Combined account selector: holds account ID (number) or 'member_wallet'
+const selectedAccountValue = ref(null);
 
 const form = ref({
     member_id: null,
-    company_account_id: null,
     amount: '',
     payment_date: new Date().toISOString().slice(0, 10),
     reference_number: '',
@@ -105,17 +104,23 @@ const selectedMember = computed(() => {
 });
 
 const submitDisabled = computed(() => {
-    return submitting.value || !form.value.company_account_id || !form.value.amount;
+    if (submitting.value || !form.value.amount) return true;
+    if (!selectedAccountValue.value) return true;
+    return false;
 });
 
 function money(value) {
     return Number(value || 0).toFixed(2);
 }
 
-function onMemberSelect(memberId) {
+async function onMemberSelect(memberId) {
     const member = members.value.find(m => m.id === memberId);
     if (member && member.price > 0 && !form.value.amount) {
         form.value.amount = String(member.price);
+    }
+    // Reset account selection on member change
+    if (selectedAccountValue.value === 'member_wallet') {
+        selectedAccountValue.value = accounts.value[0]?.id ?? null;
     }
 }
 
@@ -124,7 +129,7 @@ async function loadMeta() {
     members.value = response.members || [];
     accounts.value = response.accounts || [];
     if (!isEdit.value && accounts.value.length > 0) {
-        form.value.company_account_id = accounts.value[0].id;
+        selectedAccountValue.value = accounts.value[0].id;
     }
 }
 
@@ -136,12 +141,12 @@ async function loadPayment() {
 
     form.value = {
         member_id: payment.member_id ?? null,
-        company_account_id: payment.company_account_id ?? null,
         amount: payment.amount != null ? String(payment.amount) : '',
         payment_date: payment.payment_date || new Date().toISOString().slice(0, 10),
         reference_number: payment.reference_number || '',
         notes: payment.notes || '',
     };
+    selectedAccountValue.value = payment.company_account_id ?? null;
 }
 
 async function submit() {
@@ -149,9 +154,11 @@ async function submit() {
     errorMessage.value = '';
 
     try {
+        const isWallet = selectedAccountValue.value === 'member_wallet';
         const payload = {
             member_id: form.value.member_id,
-            company_account_id: form.value.company_account_id,
+            company_account_id: isWallet ? null : selectedAccountValue.value,
+            payment_method: isWallet ? 'member_wallet' : 'cash',
             amount: form.value.amount,
             payment_date: form.value.payment_date,
             reference_number: form.value.reference_number || null,

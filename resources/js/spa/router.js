@@ -39,6 +39,7 @@ const NotificationViewPage = () => import('./pages/NotificationViewPage.vue');
 const PaymentViewPage = () => import('./pages/PaymentViewPage.vue');
 const ExpenseViewPage = () => import('./pages/ExpenseViewPage.vue');
 const SaleViewPage = () => import('./pages/SaleViewPage.vue');
+const WalletTopupViewPage = () => import('./pages/WalletTopupViewPage.vue');
 const UserViewPage = () => import('./pages/UserViewPage.vue');
 const RoleViewPage = () => import('./pages/RoleViewPage.vue');
 const InventoryProductViewPage = () => import('./pages/InventoryProductViewPage.vue');
@@ -128,6 +129,7 @@ const routes = [
     { path: '/payments/new', component: PaymentFormPage, meta: { title: 'New Payment' } },
     { path: '/payments/:id', component: PaymentViewPage, meta: { title: 'Payment' } },
     { path: '/payments/:id/edit', component: PaymentFormPage, meta: { title: 'Edit Payment' } },
+    { path: '/wallet-topups/:id', component: WalletTopupViewPage, meta: { title: 'Wallet Top-up' } },
     { path: '/attendance', component: AttendancePage, meta: { title: 'Attendance' } },
     { path: '/notifications', component: NotificationsPage, meta: { title: 'Notifications' } },
     { path: '/notifications/new', component: NotificationFormPage, meta: { title: 'New Notification' } },

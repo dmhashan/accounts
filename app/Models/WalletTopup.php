@@ -4,24 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class MemberPayment extends Model
+class WalletTopup extends Model
 {
     protected $fillable = [
         'tenant_id',
         'member_id',
         'company_account_id',
-        'payment_method',
         'amount',
-        'payment_date',
+        'topup_date',
         'reference_number',
         'notes',
+        'created_by',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'payment_date' => 'date',
+        'topup_date' => 'date',
     ];
 
     public function tenant(): BelongsTo
@@ -39,9 +38,8 @@ class MemberPayment extends Model
         return $this->belongsTo(CompanyAccount::class, 'company_account_id');
     }
 
-    public function transaction(): HasOne
+    public function createdBy(): BelongsTo
     {
-        return $this->hasOne(CompanyAccountTransaction::class, 'reference_id')
-            ->where('model_name', 'payment');
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

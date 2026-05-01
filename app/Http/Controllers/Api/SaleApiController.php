@@ -147,7 +147,13 @@ class SaleApiController extends Controller
         $this->ensureSaleBelongsToTenant($sale);
 
         $validated = $request->validate([
-            'account_id' => ['required', 'integer', 'exists:company_accounts,id'],
+            'payment_method' => ['nullable', 'string', 'in:cash,bank,card,member_wallet'],
+            'account_id'     => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => ($request->input('payment_method') ?? 'cash') !== 'member_wallet'),
+                'nullable',
+                'integer',
+                'exists:company_accounts,id',
+            ],
         ]);
 
         $sale = $this->saleProcessingService->markAsPaid($sale, app('tenant')->id, $validated);
@@ -155,8 +161,8 @@ class SaleApiController extends Controller
         return response()->json([
             'message' => 'Sale marked as paid successfully.',
             'data' => [
-                'id' => $sale->id,
-                'is_paid' => (bool) $sale->is_paid,
+                'id'       => $sale->id,
+                'is_paid'  => (bool) $sale->is_paid,
                 'account_id' => $sale->account_id,
             ],
         ]);

@@ -68,12 +68,13 @@ class PaymentApiController extends Controller
     private function rules(): array
     {
         return [
-            'member_id' => ['nullable', 'integer', 'exists:members,id'],
-            'company_account_id' => ['required', 'integer', 'exists:company_accounts,id'],
-            'amount' => ['required', 'numeric', 'gt:0'],
-            'payment_date' => ['required', 'date'],
-            'reference_number' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'member_id'          => ['nullable', 'integer', 'exists:members,id'],
+            'company_account_id' => ['nullable', 'integer', 'exists:company_accounts,id'],
+            'payment_method'     => ['nullable', 'string', 'in:cash,member_wallet'],
+            'amount'             => ['required', 'numeric', 'gt:0'],
+            'payment_date'       => ['required', 'date'],
+            'reference_number'   => ['nullable', 'string', 'max:255'],
+            'notes'              => ['nullable', 'string', 'max:1000'],
         ];
     }
 }
