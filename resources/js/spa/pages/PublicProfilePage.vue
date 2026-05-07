@@ -37,6 +37,8 @@
                             :initials="initials"
                             :workouts-data="workoutsData"
                             :sales-data="salesData"
+                            :wallet-transactions="walletTransactions"
+                            :wallet-tx-meta="walletTxMeta"
                             @open-workout="openWorkout"
                             @open-sale="openSale"
                             @logout="logout"
@@ -140,9 +142,11 @@ const isLoading     = ref(false);
 const currentToken  = ref(null);
 
 // ── Profile data ───────────────────────────────────────────
-const workoutsData = ref([]);
-const salesData    = ref([]);
-const meta         = ref({});
+const workoutsData       = ref([]);
+const salesData          = ref([]);
+const walletTransactions = ref([]);
+const walletTxMeta       = ref({ current_page: 1, last_page: 1, total: 0, per_page: 10 });
+const meta               = ref({});
 
 const tenantName = computed(() => window.__tenantName || '');
 
@@ -245,10 +249,12 @@ async function loadProfile(token) {
             return;
         }
         const data = await res.json();
-        meta.value         = data.meta;
-        workoutsData.value = data.workouts;
-        salesData.value    = data.sales;
-        screen.value       = 'profile';
+        meta.value               = data.meta;
+        workoutsData.value       = data.workouts;
+        salesData.value          = data.sales;
+        walletTransactions.value = data.wallet_transactions || [];
+        walletTxMeta.value       = data.wallet_tx_meta || walletTxMeta.value;
+        screen.value             = 'profile';
     } catch {
         localStorage.removeItem(MEMBER_ID_KEY);
         currentToken.value = null;
@@ -298,9 +304,11 @@ function logout() {
     track('logout');
     localStorage.removeItem(MEMBER_ID_KEY);
     currentToken.value = null;
-    meta.value         = {};
-    workoutsData.value = [];
-    salesData.value    = [];
+    meta.value               = {};
+    workoutsData.value       = [];
+    salesData.value          = [];
+    walletTransactions.value = [];
+    walletTxMeta.value       = { current_page: 1, last_page: 1, total: 0, per_page: 10 };
     phone.value        = '';
     otpCode.value      = '';
     error.value        = '';

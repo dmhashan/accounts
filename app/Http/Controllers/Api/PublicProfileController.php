@@ -10,11 +10,16 @@ use App\Models\Sale;
 use App\Models\WorkoutProgramAssignment;
 use App\Services\EventService;
 use App\Services\SmsService;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class PublicProfileController extends Controller
 {
+    public function __construct(private readonly WalletService $walletService)
+    {
+    }
+
     /**
      * Send an OTP to the member's registered mobile number.
      */
@@ -181,6 +186,9 @@ class PublicProfileController extends Controller
             ])->values(),
         ])->values();
 
+        // Wallet data — first page for immediate display
+        $walletPage = $this->walletService->transactions($member, $tenant->id, 10);
+
         return response()->json([
             'meta' => [
                 'name'              => $member->name,
@@ -192,9 +200,12 @@ class PublicProfileController extends Controller
                 'phone_number'      => $member->phone_number,
                 'tenant_name'       => $tenant->name,
                 'total_outstanding' => number_format($totalOutstanding, 2),
+                'current_balance'   => round((float) $member->current_balance, 2),
             ],
-            'workouts' => $workoutsData,
-            'sales'    => $salesData,
+            'workouts'            => $workoutsData,
+            'sales'               => $salesData,
+            'wallet_transactions' => $walletPage['data'],
+            'wallet_tx_meta'      => $walletPage['meta'],
         ]);
     }
 
@@ -263,6 +274,24 @@ class PublicProfileController extends Controller
             'message' => 'Registration successful.',
             'data'    => app(EventService::class)->toRegistrationItem($registration->load('guests')),
         ], 201);
+    }
+
+
+    /**
+     * Return paginated wallet transactions for the authenticated member (public portal).
+     */
+    public function getWalletTransactions(Request $request)
+    {
+        $tenant   = app('tenant');
+        $memberId = $request->input('_pp_member_id');
+        $perPage  = min(max(1, (int) $request->input('per_page', 15)), 50);
+
+        $member = Member::where('tenant_id', $tenant->id)
+            ->where('id', $memberId)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        return response()->json($this->walletService->transactions($member, $tenant->id, $perPage));
     }
 
     /**

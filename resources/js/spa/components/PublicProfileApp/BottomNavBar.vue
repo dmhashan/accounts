@@ -1,4 +1,23 @@
 <template>
+    <!-- Floating notification button -->
+    <button
+        type="button"
+        class="fixed z-30 bottom-[72px] right-5 flex items-center gap-2 shadow-lg transition-all active:scale-95 focus:outline-none"
+        :class="isNotifActive
+            ? 'bg-gray-900 text-white shadow-gray-900/40 px-4 py-2.5 rounded-2xl'
+            : 'bg-white border border-gray-100 text-gray-500 shadow-gray-200/60 px-3.5 py-2.5 rounded-2xl hover:border-gray-200'"
+        @click="router.push('/notifications')"
+        aria-label="Notifications"
+    >
+        <!-- pulse ring when inactive -->
+        <span v-if="!isNotifActive" class="absolute inset-0 rounded-2xl animate-ping opacity-20 bg-gray-300 pointer-events-none"></span>
+        <svg class="w-5 h-5 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        <span class="relative text-xs font-bold leading-none">{{ isNotifActive ? 'Notifications' : 'Alerts' }}</span>
+    </button>
+
     <nav class="fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-100 safe-area-bottom">
         <div class="max-w-lg mx-auto flex">
             <button
@@ -19,7 +38,7 @@
 </template>
 
 <script setup>
-import { h } from 'vue';
+import { computed, h } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const route  = useRoute();
@@ -28,6 +47,8 @@ const router = useRouter();
 function isActive(tab) {
     return route.path === tab.path;
 }
+
+const isNotifActive = computed(() => route.path === '/notifications');
 
 const IconHome = {
     render: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', class: 'w-5 h-5' }, [
@@ -59,10 +80,16 @@ const IconProfile = {
     ]),
 };
 
+const IconWallet = {
+    render: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', class: 'w-5 h-5' }, [
+        h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '1.8', d: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' }),
+    ]),
+};
+
 const navTabs = [
     { key: 'home',          path: '/',              label: 'Home',     icon: IconHome },
     { key: 'workout',       path: '/workout',        label: 'Workout',  icon: IconWorkout },
-    { key: 'notifications', path: '/notifications',  label: 'Notifications', icon: IconBell },
+    { key: 'wallet',        path: '/wallet',         label: 'Wallet',   icon: IconWallet },
     { key: 'transactions',  path: '/transactions',   label: 'Payments', icon: IconTransactions },
     { key: 'profile',       path: '/profile',        label: 'Profile',  icon: IconProfile },
 ];

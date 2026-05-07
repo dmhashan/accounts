@@ -14,6 +14,28 @@
 
 
 
+        <!-- Wallet balance quick card -->
+        <button
+            v-if="meta.current_balance !== undefined"
+            type="button"
+            class="w-full text-left mb-5 rounded-3xl overflow-hidden active:scale-[0.99] transition-transform focus:outline-none"
+            @click="router.push('/wallet')"
+        >
+            <div class="relative px-6 py-5 flex items-center justify-between overflow-hidden" style="background: linear-gradient(135deg, #059669 0%, #047857 60%, #065f46 100%);">
+                <div class="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none"></div>
+                <div class="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none"></div>
+                <div class="relative">
+                    <p class="text-[11px] font-bold text-emerald-200 uppercase tracking-widest mb-0.5">Wallet Balance</p>
+                    <p class="text-3xl font-extrabold text-white tracking-tight leading-none">{{ formatMoney(meta.current_balance) }}</p>
+                </div>
+                <div class="relative flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center">
+                        <svg class="w-4.5 h-4.5 w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                </div>
+            </div>
+        </button>
+
         <!-- Latest Workout Plan -->
         <section v-if="workoutsData.length" class="mb-5">
             <div class="flex items-center justify-between mb-3">
@@ -220,5 +242,10 @@ function formatEventDateTime(iso) {
         weekday: 'short', month: 'short', day: 'numeric',
         hour: '2-digit', minute: '2-digit',
     });
+}
+
+function formatMoney(val) {
+    const n = parseFloat(val ?? 0);
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 </script>

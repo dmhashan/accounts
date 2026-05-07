@@ -16,8 +16,9 @@ Route::prefix('public')->group(function () {
     Route::get('/upcoming-events', [PublicProfileController::class, 'getUpcomingEvents']);
 
     Route::middleware('pp.token')->group(function () {
-        Route::get('/member-profile',  [PublicProfileController::class, 'getProfile']);
-        Route::get('/notifications',   [PublicProfileController::class, 'getNotifications']);
+        Route::get('/member-profile',        [PublicProfileController::class, 'getProfile']);
+        Route::get('/wallet/transactions',   [PublicProfileController::class, 'getWalletTransactions']);
+        Route::get('/notifications',         [PublicProfileController::class, 'getNotifications']);
         Route::get('/event/{slug}/my-registration',  [PublicProfileController::class, 'getMyEventRegistration']);
         Route::put('/event/{slug}/my-registration',  [PublicProfileController::class, 'updateMyEventRegistration']);
     });
