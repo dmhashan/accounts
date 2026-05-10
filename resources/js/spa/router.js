@@ -58,6 +58,8 @@ const ReconciliationPage = () => import('./pages/ReconciliationPage.vue');
 const ReconciliationFormPage = () => import('./pages/ReconciliationFormPage.vue');
 const ReconciliationComparisonPage = () => import('./pages/ReconciliationComparisonPage.vue');
 const ReconciliationConfigPage = () => import('./pages/ReconciliationConfigPage.vue');
+const VouchersPage = () => import('./pages/VouchersPage.vue');
+const VoucherViewPage = () => import('./pages/VoucherViewPage.vue');
 
 const routes = [
     { path: '/', redirect: '/dashboard' },
@@ -123,7 +125,7 @@ const routes = [
     { path: '/workout/assignments', component: WorkoutPage, meta: { title: 'Assignments' } },
     { path: '/workout/assignments/new', component: WorkoutProgramAssignmentFormPage, meta: { title: 'Assign Workout Program' } },
     { path: '/workout/assignments/:id', component: WorkoutAssignmentViewPage, meta: { title: 'Assignment' } },
-        { path: '/workout/assignments/:id/edit', component: WorkoutProgramAssignmentEditPage, meta: { title: 'Edit Assignment' } },
+    { path: '/workout/assignments/:id/edit', component: WorkoutProgramAssignmentEditPage, meta: { title: 'Edit Assignment' } },
     { path: '/diet', component: DietPage, meta: { title: 'Diet' } },
     { path: '/payments', component: PaymentsPage, meta: { title: 'Payments' } },
     { path: '/payments/new', component: PaymentFormPage, meta: { title: 'New Payment' } },
@@ -147,6 +149,8 @@ const routes = [
     { path: '/reconciliation/comparison/:id', component: ReconciliationComparisonPage, meta: { title: 'Reconciliation Comparison' } },
     { path: '/reconciliation/sessions/:id', component: ReconciliationComparisonPage, meta: { title: 'Reconciliation Session' } },
     { path: '/reconciliation/config', component: ReconciliationConfigPage, meta: { title: 'Reconciliation Config' } },
+    { path: '/vouchers', component: VouchersPage, meta: { title: 'Vouchers' } },
+    { path: '/vouchers/:id', component: VoucherViewPage, meta: { title: 'Voucher' } },
 ];
 
 const router = createRouter({

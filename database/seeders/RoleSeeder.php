@@ -33,8 +33,8 @@ class RoleSeeder extends Seeder
             ]
         );
 
-        // Assign admin + accounting + inventory + sales permissions to Admin role
-        $adminPermissions = Permission::whereIn('feature', ['Admin Features', 'Accounting', 'Inventory', 'Sales'])->pluck('id');
+        // Assign admin + accounting + inventory + sales + vouchers permissions to Admin role
+        $adminPermissions = Permission::whereIn('feature', ['Admin Features', 'Accounting', 'Inventory', 'Sales', 'Vouchers'])->pluck('id');
         $admin->permissions()->sync($adminPermissions);
 
         // Assign only member features to Member role

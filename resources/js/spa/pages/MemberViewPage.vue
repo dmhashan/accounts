@@ -113,15 +113,24 @@
                             <p class="text-2xl font-bold text-emerald-800 dark:text-emerald-300 leading-tight">{{ formatMoney(member.current_balance) }}</p>
                         </div>
                     </div>
-                    <button
-                        v-if="permissions.edit"
-                        type="button"
-                        class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white transition-colors shadow-sm"
-                        @click="openTopupModal"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                        Top Up
-                    </button>
+                    <div v-if="permissions.edit" class="flex flex-wrap gap-2 shrink-0">
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white transition-colors shadow-sm"
+                            @click="openTopupModal"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            Top Up
+                        </button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-violet-600 hover:bg-violet-700 text-white transition-colors shadow-sm"
+                            @click="openRedeemModal"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                            Redeem Voucher
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Stats strip -->
@@ -304,6 +313,40 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Voucher Redemption History -->
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                        <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Voucher Redemptions</h2>
+                    </div>
+                    <div v-if="walletLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
+                    <div v-else-if="voucherRedemptions.length === 0" class="px-5 py-6 text-center text-sm text-secondary-400 dark:text-secondary-500">No vouchers redeemed yet.</div>
+                    <div v-else class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                        <div v-for="r in voucherRedemptions" :key="r.id" class="flex items-start justify-between px-5 py-3 gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ r.voucher?.name || 'Voucher' }}</p>
+                                <p class="text-xs font-mono text-secondary-400 dark:text-secondary-500 break-all">{{ r.voucher?.uuid }}</p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                                    {{ formatDate(r.redeemed_at) }}
+                                    <span v-if="r.redeemed_by"> &bull; by {{ r.redeemed_by.name }}</span>
+                                </p>
+                                <p v-if="r.notes" class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5 truncate">{{ r.notes }}</p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <p class="text-sm font-bold text-violet-600 dark:text-violet-400">+{{ formatMoney(r.voucher?.amount ?? 0) }}</p>
+                                <span class="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400">Voucher</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="voucherRedemptionMeta.last_page > 1" class="px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">Page {{ voucherRedemptionMeta.current_page }} of {{ voucherRedemptionMeta.last_page }}</p>
+                        <div class="flex gap-1">
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="voucherRedemptionMeta.current_page <= 1" @click="loadVoucherRedemptions(voucherRedemptionMeta.current_page - 1)">Prev</button>
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="voucherRedemptionMeta.current_page >= voucherRedemptionMeta.last_page" @click="loadVoucherRedemptions(voucherRedemptionMeta.current_page + 1)">Next</button>
+                        </div>
+                    </div>
+                </div>
             </template><!-- /wallet -->
 
         </template>
@@ -370,6 +413,48 @@
                 </form>
             </div>
         </div>
+
+        <!-- ── Redeem Voucher Modal ── -->
+        <div v-if="redeemModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/45" @click="closeRedeemModal"></div>
+            <div class="relative z-10 w-full max-w-md rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-5 shadow-xl">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Redeem Voucher</h3>
+                        <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">Current balance: <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ formatMoney(member.current_balance) }}</span></p>
+                    </div>
+                    <button type="button" class="text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closeRedeemModal">✕</button>
+                </div>
+
+                <div v-if="redeemError" class="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-200">{{ redeemError }}</div>
+
+                <form class="space-y-3" @submit.prevent="submitRedeem">
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Voucher UUID <span class="text-red-500">*</span></label>
+                        <input v-model="redeemForm.uuid" type="text" required maxlength="36"
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm font-mono text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                            autocomplete="off"
+                            spellcheck="false" />
+                        <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">Enter the voucher UUID code to credit this member's wallet.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Notes <span class="text-xs text-secondary-400">(optional)</span></label>
+                        <textarea v-model="redeemForm.notes" rows="2" maxlength="1000"
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                        <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closeRedeemModal">Cancel</button>
+                        <button type="submit"
+                            class="px-4 py-2 text-sm font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50"
+                            :disabled="redeemSubmitting || !redeemForm.uuid.trim()">
+                            {{ redeemSubmitting ? 'Redeeming...' : 'Redeem Voucher' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -402,6 +487,18 @@ function switchTab(id) {
     }
 }
 
+// ── Voucher redemption history ──
+const voucherRedemptions = ref([]);
+const voucherRedemptionMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
+
+async function loadVoucherRedemptions(page = 1) {
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/wallet/voucher-redemptions?page=${page}&per_page=10`);
+        voucherRedemptions.value = res.data || [];
+        voucherRedemptionMeta.value = res.meta || voucherRedemptionMeta.value;
+    } catch (_) { /* ignore */ }
+}
+
 // ── Wallet state ──
 const walletLoading = ref(false);
 const topupHistory = ref([]);
@@ -415,6 +512,45 @@ const topupModalOpen = ref(false);
 const topupSubmitting = ref(false);
 const topupError = ref('');
 const topupForm = ref({ amount: '', company_account_id: null, topup_date: todayString(), reference_number: '', notes: '' });
+
+// Redeem voucher modal
+const redeemModalOpen = ref(false);
+const redeemSubmitting = ref(false);
+const redeemError = ref('');
+const redeemForm = ref({ uuid: '', notes: '' });
+
+function openRedeemModal() {
+    redeemForm.value = { uuid: '', notes: '' };
+    redeemError.value = '';
+    redeemModalOpen.value = true;
+}
+
+function closeRedeemModal() {
+    redeemModalOpen.value = false;
+}
+
+async function submitRedeem() {
+    redeemSubmitting.value = true;
+    redeemError.value = '';
+    try {
+        const res = await apiRequest(`/api/members/${member.value.id}/wallet/redeem-voucher`, {
+            method: 'post',
+            data: {
+                uuid: redeemForm.value.uuid.trim(),
+                notes: redeemForm.value.notes || null,
+            },
+        });
+        member.value = { ...member.value, current_balance: res.current_balance };
+        closeRedeemModal();
+        await Promise.all([loadVoucherRedemptions(1), loadTransactions(1)]);
+        successMessage.value = 'Voucher redeemed successfully. Wallet credited.';
+        setTimeout(() => { successMessage.value = ''; }, 4000);
+    } catch (err) {
+        redeemError.value = err?.response?.data?.message || 'Failed to redeem voucher.';
+    } finally {
+        redeemSubmitting.value = false;
+    }
+}
 
 function todayString() {
     return new Date().toISOString().slice(0, 10);
@@ -444,6 +580,7 @@ async function loadWalletData() {
         await Promise.all([
             loadTopupHistory(1),
             loadTransactions(1),
+            loadVoucherRedemptions(1),
         ]);
         if (walletAccounts.value.length === 0) loadWalletMeta();
     } finally {
@@ -486,6 +623,7 @@ async function submitTopup() {
         topupSubmitting.value = false;
     }
 }
+
 
 const moneyFormatter = new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 2,
