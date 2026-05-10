@@ -429,6 +429,11 @@
                 <div v-if="redeemError" class="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-200">{{ redeemError }}</div>
 
                 <form class="space-y-3" @submit.prevent="submitRedeem">
+                    <!-- Hidden canvas for QR decoding (always present) -->
+                    <canvas ref="qrCanvasRef" class="hidden" />
+                    <!-- Hidden file input for image upload -->
+                    <input ref="qrFileInputRef" type="file" accept="image/*" class="hidden" @change="onQrFileChange" />
+
                     <div>
                         <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Voucher UUID <span class="text-red-500">*</span></label>
                         <input v-model="redeemForm.uuid" type="text" required maxlength="36"
@@ -436,7 +441,49 @@
                             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                             autocomplete="off"
                             spellcheck="false" />
-                        <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">Enter the voucher UUID code to credit this member's wallet.</p>
+
+                        <!-- QR scan buttons -->
+                        <div class="flex gap-2 mt-2">
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                                :class="qrScanMode === 'camera'
+                                    ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
+                                    : 'border-secondary-300 dark:border-secondary-600 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-800'"
+                                @click="qrScanMode === 'camera' ? stopCameraScan() : startCameraScan()"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                {{ qrScanMode === 'camera' ? 'Stop Camera' : 'Scan QR' }}
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors"
+                                @click="triggerFileInput"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                Upload Image
+                            </button>
+                        </div>
+
+                        <!-- QR error -->
+                        <p v-if="qrError" class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ qrError }}</p>
+
+                        <!-- Camera preview -->
+                        <div v-if="qrScanMode === 'camera'" class="mt-3 rounded-xl overflow-hidden bg-black relative">
+                            <video ref="qrVideoRef" autoplay playsinline muted class="w-full max-h-52 object-cover" />
+                            <!-- corner frame overlay -->
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div class="relative w-40 h-40">
+                                    <span class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-violet-400 rounded-tl-sm"></span>
+                                    <span class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-violet-400 rounded-tr-sm"></span>
+                                    <span class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-violet-400 rounded-bl-sm"></span>
+                                    <span class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-violet-400 rounded-br-sm"></span>
+                                </div>
+                            </div>
+                            <p class="absolute bottom-2 inset-x-0 text-center text-[11px] text-white/70">Point camera at the voucher QR code</p>
+                        </div>
+
+                        <p v-if="qrScanMode === 'off' && !qrError" class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">Enter the UUID manually or scan the voucher QR code.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Notes <span class="text-xs text-secondary-400">(optional)</span></label>
@@ -459,8 +506,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import jsQR from 'jsqr';
 import { apiRequest } from '../composables/useApiClient';
 
 const route = useRoute();
@@ -519,13 +567,108 @@ const redeemSubmitting = ref(false);
 const redeemError = ref('');
 const redeemForm = ref({ uuid: '', notes: '' });
 
+// QR scanner
+const qrScanMode = ref('off'); // 'off' | 'camera'
+const qrError = ref('');
+const qrVideoRef = ref(null);
+const qrCanvasRef = ref(null);
+const qrFileInputRef = ref(null);
+let qrStream = null;
+let qrAnimFrame = null;
+
+async function startCameraScan() {
+    qrError.value = '';
+    qrScanMode.value = 'camera';
+    await nextTick();
+    try {
+        qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        qrVideoRef.value.srcObject = qrStream;
+        qrVideoRef.value.onloadedmetadata = () => scanVideoFrame();
+    } catch {
+        qrError.value = 'Camera access denied. Please allow camera permission or upload an image.';
+        qrScanMode.value = 'off';
+    }
+}
+
+function stopCameraScan() {
+    if (qrStream) {
+        qrStream.getTracks().forEach(t => t.stop());
+        qrStream = null;
+    }
+    cancelAnimationFrame(qrAnimFrame);
+    qrAnimFrame = null;
+    qrScanMode.value = 'off';
+}
+
+function scanVideoFrame() {
+    if (qrScanMode.value !== 'camera' || !qrVideoRef.value || !qrCanvasRef.value) return;
+    const video = qrVideoRef.value;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = qrCanvasRef.value;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code?.data) {
+            onQrDetected(code.data);
+            return;
+        }
+    }
+    qrAnimFrame = requestAnimationFrame(scanVideoFrame);
+}
+
+function triggerFileInput() {
+    qrFileInputRef.value?.click();
+}
+
+function onQrFileChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    qrError.value = '';
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+        const canvas = qrCanvasRef.value;
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        URL.revokeObjectURL(url);
+        if (code?.data) {
+            onQrDetected(code.data);
+        } else {
+            qrError.value = 'No QR code found in image. Try a clearer image.';
+        }
+        event.target.value = '';
+    };
+    img.src = url;
+}
+
+function onQrDetected(data) {
+    const match = data.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    if (match) {
+        redeemForm.value.uuid = match[0];
+        stopCameraScan();
+        qrError.value = '';
+    } else {
+        qrError.value = 'QR code does not contain a valid UUID.';
+    }
+}
+
 function openRedeemModal() {
     redeemForm.value = { uuid: '', notes: '' };
     redeemError.value = '';
+    qrScanMode.value = 'off';
+    qrError.value = '';
     redeemModalOpen.value = true;
 }
 
 function closeRedeemModal() {
+    stopCameraScan();
     redeemModalOpen.value = false;
 }
 
@@ -783,5 +926,9 @@ async function removeMember() {
 
 onMounted(() => {
     loadMember();
+});
+
+onUnmounted(() => {
+    stopCameraScan();
 });
 </script>
