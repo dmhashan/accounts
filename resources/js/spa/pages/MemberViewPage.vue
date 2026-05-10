@@ -103,7 +103,7 @@
                 </div>
 
                 <!-- Wallet balance -->
-                <div class="mx-4 my-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 p-4 flex items-center justify-between gap-3">
+                <div class="mx-4 my-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="shrink-0 w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/60 flex items-center justify-center">
                             <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
@@ -113,10 +113,10 @@
                             <p class="text-2xl font-bold text-emerald-800 dark:text-emerald-300 leading-tight">{{ formatMoney(member.current_balance) }}</p>
                         </div>
                     </div>
-                    <div v-if="permissions.edit" class="flex flex-wrap gap-2 shrink-0">
+                    <div v-if="permissions.edit" class="flex gap-2 sm:shrink-0">
                         <button
                             type="button"
-                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white transition-colors shadow-sm"
+                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white transition-colors shadow-sm"
                             @click="openTopupModal"
                         >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
@@ -124,7 +124,7 @@
                         </button>
                         <button
                             type="button"
-                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-violet-600 hover:bg-violet-700 text-white transition-colors shadow-sm"
+                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-violet-600 hover:bg-violet-700 text-white transition-colors shadow-sm"
                             @click="openRedeemModal"
                         >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
