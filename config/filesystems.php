@@ -20,13 +20,15 @@ return [
     | Media Disk
     |--------------------------------------------------------------------------
     |
-    | The disk used for user-uploaded media (e.g. member profile photos).
-    | Use "public" locally (no credentials needed, symlinked via storage:link).
-    | Use "s3" (or your cloud disk) in production.
+    | The disk used for user-uploaded media (member profile photos, etc.).
+    | Falls back to FILESYSTEM_DISK so Laravel Cloud environments work
+    | automatically — LC sets FILESYSTEM_DISK=private, so no separate
+    | MEDIA_DISK env var is required in production.
+    | Locally: keep FILESYSTEM_DISK=local and MEDIA_DISK=public (default),
+    | or set MEDIA_DISK=private to test against the real R2 bucket.
     |
     */
-
-    'media_disk' => env('MEDIA_DISK', 'public'),
+    'media_disk' => env('MEDIA_DISK', env('FILESYSTEM_DISK', 'public')),
 
     /*
     |--------------------------------------------------------------------------
