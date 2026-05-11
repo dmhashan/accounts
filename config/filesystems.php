@@ -76,14 +76,14 @@ return [
         /*
          | Laravel Cloud / Cloudflare R2 bucket disk.
          |
-         | All connection details are parsed directly from LARAVEL_CLOUD_DISK_CONFIG,
-         | the JSON blob that Laravel Cloud auto-injects when a storage bucket is
-         | attached to the environment. No extra env vars are needed in production.
-         |
-         | Set MEDIA_DISK=private (and FILESYSTEM_DISK=private) in production.
+         | Laravel Cloud injects LARAVEL_CLOUD_DISK_CONFIG (not AWS_* vars).
+         | The IIFE parses that JSON to build the S3 driver config at boot time.
+         | Falls back to local disk when the env var is absent (local dev with
+         | MEDIA_DISK=public has no need for this disk at all).
          */
         'private' => (static function (): array {
-            $entries = json_decode((string) env('LARAVEL_CLOUD_DISK_CONFIG', '[]'), true);
+            $raw = (string) env('LARAVEL_CLOUD_DISK_CONFIG', '[]');
+            $entries = json_decode($raw, true);
             $cfg = collect((array) $entries)->firstWhere('disk', 'private') ?? [];
 
             if (empty($cfg)) {
@@ -99,7 +99,6 @@ return [
                 'url'                     => $cfg['url'] ?: null,
                 'endpoint'                => $cfg['endpoint'],
                 'use_path_style_endpoint' => $cfg['use_path_style_endpoint'] ?? false,
-                'visibility'              => 'public',
                 'throw'                   => true,
                 'report'                  => false,
             ];
