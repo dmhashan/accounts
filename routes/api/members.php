@@ -15,6 +15,9 @@ Route::middleware(['auth', 'permission:users.view'])->group(function () {
     Route::patch('/members/{member}/toggle-status', [MemberApiController::class, 'toggleStatus'])->middleware('permission:users.edit');
     Route::patch('/members/{member}/toggle-verification', [MemberApiController::class, 'toggleVerification'])->middleware('permission:users.edit');
     Route::delete('/members/{member}', [MemberApiController::class, 'destroy'])->middleware('permission:users.delete');
+    Route::post('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
+    Route::put('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
+    Route::delete('/members/{member}/avatar', [MemberApiController::class, 'deleteAvatar'])->middleware('permission:users.edit');
 });
 
 // Wallet routes — require payments.manage permission

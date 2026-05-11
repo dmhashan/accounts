@@ -68,9 +68,13 @@
 
                     <!-- Avatar + name on banner -->
                     <div class="relative flex flex-col sm:flex-row sm:items-end gap-3">
-                        <div class="h-20 w-20 shrink-0 rounded-2xl bg-white/20 border-2 border-white/35 flex items-center justify-center shadow-xl">
-                            <span class="text-2xl font-bold text-white">{{ initials }}</span>
-                        </div>
+                        <MemberAvatarUploader
+                            :member-id="member.id"
+                            :photo-url="member.profile_photo_url"
+                            :initials="initials"
+                            :can-edit="permissions.edit"
+                            @update:photo-url="member.profile_photo_url = $event"
+                        />
                         <div class="sm:pb-0.5 flex-1 min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h1 class="text-2xl font-bold text-white leading-tight">{{ fullName }}</h1>
@@ -510,6 +514,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import jsQR from 'jsqr';
 import { apiRequest } from '../composables/useApiClient';
+import MemberAvatarUploader from '../components/MemberAvatarUploader.vue';
 
 const route = useRoute();
 const router = useRouter();

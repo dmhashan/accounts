@@ -204,4 +204,30 @@ class MemberApiController extends Controller
             'message' => 'Member deleted successfully.',
         ]);
     }
+
+    public function uploadAvatar(Request $request, Member $member): JsonResponse
+    {
+        $this->memberService->ensureTenantMember($member, app('tenant')->id);
+
+        $request->validate([
+            'avatar' => ['required', 'image', 'max:2048', 'mimes:jpg,jpeg,png,webp'],
+        ]);
+
+        $url = $this->memberService->uploadAvatar($member, $request->file('avatar'));
+
+        return response()->json([
+            'message' => 'Avatar uploaded successfully.',
+            'profile_photo_url' => $url,
+        ]);
+    }
+
+    public function deleteAvatar(Member $member): JsonResponse
+    {
+        $this->memberService->ensureTenantMember($member, app('tenant')->id);
+        $this->memberService->deleteAvatar($member);
+
+        return response()->json([
+            'message' => 'Avatar removed successfully.',
+        ]);
+    }
 }

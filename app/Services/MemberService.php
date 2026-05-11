@@ -6,7 +6,9 @@ use App\Models\Member;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -244,6 +246,9 @@ class MemberService
             'is_active' => (bool) $member->is_active,
             'is_verified' => (bool) $member->is_verified,
             'is_temp' => (bool) $member->is_temp,
+            'profile_photo_url' => $member->profile_photo_path
+                ? $this->mediaUrl($member->profile_photo_path)
+                : null,
             'created_at' => optional($member->created_at)->toDateString(),
         ];
     }
@@ -292,7 +297,45 @@ class MemberService
             $member->user->delete();
         }
 
+        $this->deleteAvatar($member);
         $member->delete();
+    }
+
+    public function uploadAvatar(Member $member, UploadedFile $file): string
+    {
+        $disk = config('filesystems.media_disk', 'public');
+
+        if ($member->profile_photo_path) {
+            Storage::disk($disk)->delete($member->profile_photo_path);
+        }
+
+        $path = $file->store("member-avatars/{$member->tenant_id}", [
+            'disk' => $disk,
+            'visibility' => 'public',
+        ]);
+
+        $member->update(['profile_photo_path' => $path]);
+
+        return $this->mediaUrl($path);
+    }
+
+    public function deleteAvatar(Member $member): void
+    {
+        if (! $member->profile_photo_path) {
+            return;
+        }
+
+        $disk = config('filesystems.media_disk', 'public');
+        Storage::disk($disk)->delete($member->profile_photo_path);
+        $member->update(['profile_photo_path' => null]);
+    }
+
+    private function mediaUrl(string $path): string
+    {
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk(config('filesystems.media_disk', 'public'));
+
+        return $disk->url($path);
     }
 
     public function ensureTenantMember(Member $member, int $tenantId): void

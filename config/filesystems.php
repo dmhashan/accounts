@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Media Disk
+    |--------------------------------------------------------------------------
+    |
+    | The disk used for user-uploaded media (e.g. member profile photos).
+    | Use "public" locally (no credentials needed, symlinked via storage:link).
+    | Use "s3" (or your cloud disk) in production.
+    |
+    */
+
+    'media_disk' => env('MEDIA_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -57,6 +70,30 @@ return [
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
+            'report' => false,
+        ],
+
+        /*
+         | Laravel Cloud bucket disk.
+         |
+         | Credentials are injected automatically by Laravel Cloud when you
+         | attach a storage bucket to your environment. You can also supply
+         | them manually via the variables below.
+         |
+         | Set MEDIA_DISK=cloud in your production environment to route all
+         | member profile photo uploads through this disk.
+         */
+        'cloud' => [
+            'driver' => 's3',
+            'key' => env('CLOUD_STORAGE_KEY'),
+            'secret' => env('CLOUD_STORAGE_SECRET'),
+            'region' => env('CLOUD_STORAGE_REGION', 'us-east-1'),
+            'bucket' => env('CLOUD_STORAGE_BUCKET'),
+            'url' => env('CLOUD_STORAGE_URL'),
+            'endpoint' => env('CLOUD_STORAGE_ENDPOINT'),
+            'use_path_style_endpoint' => env('CLOUD_STORAGE_PATH_STYLE', true),
+            'visibility' => 'public',
+            'throw' => true,
             'report' => false,
         ],
 
