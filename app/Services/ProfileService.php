@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Models\Member;
 use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
 
 class ProfileService
 {
+    public function __construct(private readonly MediaStorageService $media) {}
     public function build(User $user, Tenant $tenant): array
     {
         $canViewProfile = $user->hasPermission('member.profile.view') || $user->hasRole('member');
@@ -64,7 +64,7 @@ class ProfileService
                 'is_active' => (bool) $member->is_active,
                 'is_verified' => (bool) $member->is_verified,
                 'profile_photo_url' => $member->profile_photo_path
-                    ? Storage::url($member->profile_photo_path)
+                    ? $this->media->url($member->profile_photo_path)
                     : null,
                 'created_at' => optional($member->created_at)->format('Y-m-d'),
             ] : null,

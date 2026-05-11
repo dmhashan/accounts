@@ -74,28 +74,36 @@ return [
         ],
 
         /*
-         | Laravel Cloud bucket disk.
+         | Laravel Cloud / Cloudflare R2 bucket disk.
          |
-         | Credentials are injected automatically by Laravel Cloud when you
-         | attach a storage bucket to your environment. You can also supply
-         | them manually via the variables below.
+         | All connection details are parsed directly from LARAVEL_CLOUD_DISK_CONFIG,
+         | the JSON blob that Laravel Cloud auto-injects when a storage bucket is
+         | attached to the environment. No extra env vars are needed in production.
          |
-         | Set MEDIA_DISK=cloud in your production environment to route all
-         | member profile photo uploads through this disk.
+         | Set MEDIA_DISK=private (and FILESYSTEM_DISK=private) in production.
          */
-        'cloud' => [
-            'driver' => 's3',
-            'key' => env('CLOUD_STORAGE_KEY'),
-            'secret' => env('CLOUD_STORAGE_SECRET'),
-            'region' => env('CLOUD_STORAGE_REGION', 'us-east-1'),
-            'bucket' => env('CLOUD_STORAGE_BUCKET'),
-            'url' => env('CLOUD_STORAGE_URL'),
-            'endpoint' => env('CLOUD_STORAGE_ENDPOINT'),
-            'use_path_style_endpoint' => env('CLOUD_STORAGE_PATH_STYLE', true),
-            'visibility' => 'public',
-            'throw' => true,
-            'report' => false,
-        ],
+        'private' => (static function (): array {
+            $entries = json_decode((string) env('LARAVEL_CLOUD_DISK_CONFIG', '[]'), true);
+            $cfg = collect((array) $entries)->firstWhere('disk', 'private') ?? [];
+
+            if (empty($cfg)) {
+                return ['driver' => 'local', 'root' => storage_path('app/private')];
+            }
+
+            return [
+                'driver'                  => 's3',
+                'key'                     => $cfg['access_key_id'],
+                'secret'                  => $cfg['access_key_secret'],
+                'region'                  => $cfg['default_region'] ?? 'auto',
+                'bucket'                  => $cfg['bucket'],
+                'url'                     => $cfg['url'] ?: null,
+                'endpoint'                => $cfg['endpoint'],
+                'use_path_style_endpoint' => $cfg['use_path_style_endpoint'] ?? false,
+                'visibility'              => 'public',
+                'throw'                   => true,
+                'report'                  => false,
+            ];
+        })(),
 
     ],
 

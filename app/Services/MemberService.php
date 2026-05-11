@@ -8,12 +8,12 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MemberService
 {
+    public function __construct(private readonly MediaStorageService $media) {}
     public function meta(): array
     {
         return [
@@ -247,7 +247,7 @@ class MemberService
             'is_verified' => (bool) $member->is_verified,
             'is_temp' => (bool) $member->is_temp,
             'profile_photo_url' => $member->profile_photo_path
-                ? $this->mediaUrl($member->profile_photo_path)
+                ? $this->media->url($member->profile_photo_path)
                 : null,
             'created_at' => optional($member->created_at)->toDateString(),
         ];
@@ -303,20 +303,15 @@ class MemberService
 
     public function uploadAvatar(Member $member, UploadedFile $file): string
     {
-        $disk = config('filesystems.media_disk', 'public');
-
         if ($member->profile_photo_path) {
-            Storage::disk($disk)->delete($member->profile_photo_path);
+            $this->media->delete($member->profile_photo_path);
         }
 
-        $path = $file->store("member-avatars/{$member->tenant_id}", [
-            'disk' => $disk,
-            'visibility' => 'public',
-        ]);
+        $path = $this->media->store($file, "member-avatars/{$member->tenant_id}");
 
         $member->update(['profile_photo_path' => $path]);
 
-        return $this->mediaUrl($path);
+        return $this->media->url($path);
     }
 
     public function deleteAvatar(Member $member): void
@@ -325,17 +320,8 @@ class MemberService
             return;
         }
 
-        $disk = config('filesystems.media_disk', 'public');
-        Storage::disk($disk)->delete($member->profile_photo_path);
+        $this->media->delete($member->profile_photo_path);
         $member->update(['profile_photo_path' => null]);
-    }
-
-    private function mediaUrl(string $path): string
-    {
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk(config('filesystems.media_disk', 'public'));
-
-        return $disk->url($path);
     }
 
     public function ensureTenantMember(Member $member, int $tenantId): void
