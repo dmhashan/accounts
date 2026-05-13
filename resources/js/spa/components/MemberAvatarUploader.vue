@@ -61,11 +61,20 @@
 
     <!-- Error message below avatar -->
     <p v-if="error" class="mt-1.5 text-xs text-red-300 max-w-[12rem] text-center">{{ error }}</p>
+
+    <!-- Crop modal -->
+    <AvatarCropModal
+        v-if="cropSrc"
+        :image-src="cropSrc"
+        @confirm="onCropConfirm"
+        @cancel="onCropCancel"
+    />
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { apiRequest } from '../composables/useApiClient';
+import AvatarCropModal from './AvatarCropModal.vue';
 
 const props = defineProps({
     memberId: { type: Number, required: true },
@@ -78,35 +87,44 @@ const emit = defineEmits(['update:photoUrl']);
 
 const fileInput = ref(null);
 const uploading = ref(false);
-const error = ref('');
+const error     = ref('');
+const cropSrc   = ref(null);
+
+// ── Step 1: file picked → open crop modal ────────────────────────────────────
 
 function triggerPicker() {
     error.value = '';
     fileInput.value?.click();
 }
 
-async function onFileSelected(event) {
+function onFileSelected(event) {
     const file = event.target.files?.[0];
+    event.target.value = '';
     if (!file) return;
 
-    // Client-side guard: 2 MB max
-    if (file.size > 2 * 1024 * 1024) {
-        error.value = 'Image must be smaller than 2 MB.';
-        event.target.value = '';
+    if (!file.type.startsWith('image/')) {
+        error.value = 'Please select a valid image file.';
         return;
     }
 
+    // Load as data URL so the crop modal can display it without a network request
+    const reader = new FileReader();
+    reader.onload = (e) => { cropSrc.value = e.target.result; };
+    reader.readAsDataURL(file);
+}
+
+// ── Step 2: crop confirmed → resize to 320×320 and upload ───────────────────
+
+async function onCropConfirm(blob) {
+    cropSrc.value = null;
     uploading.value = true;
     error.value = '';
 
     const formData = new FormData();
-    formData.append('avatar', file);
-    // Spoof the method so the backend knows this is a replace when a photo exists
+    formData.append('avatar', blob, 'avatar.jpg');
     if (props.photoUrl) {
         formData.append('_method', 'PUT');
     }
-    // Reset so same file can be re-selected if needed
-    event.target.value = '';
 
     try {
         const res = await apiRequest(`/api/members/${props.memberId}/avatar`, {
@@ -121,6 +139,12 @@ async function onFileSelected(event) {
     }
 }
 
+function onCropCancel() {
+    cropSrc.value = null;
+}
+
+// ── Remove ───────────────────────────────────────────────────────────────────
+
 async function removePhoto() {
     if (!window.confirm('Remove this profile photo?')) return;
 
@@ -128,7 +152,6 @@ async function removePhoto() {
     error.value = '';
 
     try {
-        // Spoof DELETE via POST so it works through all proxies/servers
         await apiRequest(`/api/members/${props.memberId}/avatar`, {
             method: 'post',
             data: { _method: 'DELETE' },
