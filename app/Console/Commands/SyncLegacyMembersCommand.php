@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Member;
-use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
@@ -11,7 +10,6 @@ use Illuminate\Console\Command;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -51,7 +49,6 @@ class SyncLegacyMembersCommand extends Command
             return self::FAILURE;
         }
 
-        $memberRoleId = Role::where('slug', 'member')->value('id');
         $baseUrl = rtrim((string) $this->option('base-url'), '/');
         $page = max((int) $this->option('start-page'), 1);
         $size = max((int) $this->option('size'), 1);
@@ -59,8 +56,6 @@ class SyncLegacyMembersCommand extends Command
 
         $this->info("Sync started for tenant {$tenant->id} ({$tenant->domain})");
 
-        $createdUsers = 0;
-        $updatedUsers = 0;
         $createdMembers = 0;
         $updatedMembers = 0;
         $skipped = 0;
@@ -150,16 +145,10 @@ class SyncLegacyMembersCommand extends Command
                     continue;
                 }
 
-                $result = $this->upsertFromDetail($tenant, $memberRoleId, $detail, (string) $legacyId);
+                $result = $this->upsertFromDetail($tenant, $detail, (string) $legacyId);
 
                 $processedMemberId = $result['member_id'] ?? (string) $legacyId;
                 $this->line("{$processedMemberId} - completed");
-
-                if ($result['user'] === 'created') {
-                    $createdUsers++;
-                } elseif ($result['user'] === 'updated') {
-                    $updatedUsers++;
-                }
 
                 if ($result['member'] === 'created') {
                     $createdMembers++;
@@ -177,8 +166,6 @@ class SyncLegacyMembersCommand extends Command
         $this->newLine();
         $this->table(['Metric', 'Count'], [
             ['Pages Processed', (string) $processedPages],
-            ['Users Created', (string) $createdUsers],
-            ['Users Updated', (string) $updatedUsers],
             ['Members Created', (string) $createdMembers],
             ['Members Updated', (string) $updatedMembers],
             ['Skipped', (string) $skipped],
@@ -342,11 +329,11 @@ class SyncLegacyMembersCommand extends Command
         return [];
     }
 
-    private function upsertFromDetail(Tenant $tenant, ?int $memberRoleId, array $detail, string $legacyId): array
+    private function upsertFromDetail(Tenant $tenant, array $detail, string $legacyId): array
     {
         $email = $this->normalizeEmail($this->pick($detail, ['email', 'emailAddress', 'email_address']));
         if (!$email) {
-            return ['user' => 'skipped', 'member' => 'skipped'];
+            return ['member' => 'skipped'];
         }
 
         $firstName = $this->toText($this->pick($detail, ['firstname', 'firstName', 'first_name']));
@@ -365,10 +352,6 @@ class SyncLegacyMembersCommand extends Command
             [$firstName, $lastName] = $this->splitName($name);
         }
 
-        $existingUser = User::where('tenant_id', $tenant->id)
-            ->where('email', $email)
-            ->first();
-
         $existingMember = Member::where('tenant_id', $tenant->id)
             ->where('email', $email)
             ->first();
@@ -377,19 +360,17 @@ class SyncLegacyMembersCommand extends Command
             $tenant->id,
             (string) ($this->pick($detail, ['username', 'userName', 'user_name']) ?? ''),
             $email,
-            $existingUser,
+            null,
             $existingMember
         );
 
         $gender = $this->normalizeGender((string) ($this->pick($detail, ['gender']) ?? 'other'));
         $isActive = $this->toBool($this->pick($detail, ['isActive', 'active', 'is_active']), true);
 
-        $userStatus = 'updated';
         $memberStatus = 'updated';
 
         DB::transaction(function () use (
             $tenant,
-            $memberRoleId,
             $email,
             $name,
             $username,
@@ -399,27 +380,9 @@ class SyncLegacyMembersCommand extends Command
             $lastName,
             $gender,
             $isActive,
-            &$existingUser,
             &$existingMember,
-            &$userStatus,
             &$memberStatus
         ) {
-            if (!$existingUser) {
-                $existingUser = new User();
-                $existingUser->tenant_id = $tenant->id;
-                $existingUser->password = Hash::make(Str::random(40));
-                $userStatus = 'created';
-            }
-
-            if ($memberRoleId) {
-                $existingUser->role_id = $memberRoleId;
-            }
-
-            $existingUser->name = $name;
-            $existingUser->email = $email;
-            $existingUser->username = $username;
-            $existingUser->save();
-
             if (!$existingMember) {
                 $existingMember = new Member();
                 $existingMember->tenant_id = $tenant->id;
@@ -427,7 +390,6 @@ class SyncLegacyMembersCommand extends Command
                 $memberStatus = 'created';
             }
 
-            $existingMember->user_id = $existingUser->id;
             $existingMember->first_name = $firstName;
             $existingMember->last_name = $lastName;
             $existingMember->username = $username;
@@ -452,7 +414,6 @@ class SyncLegacyMembersCommand extends Command
         });
 
         return [
-            'user' => $userStatus,
             'member' => $memberStatus,
             'member_id' => $existingMember?->member_id,
         ];
