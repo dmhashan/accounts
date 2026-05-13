@@ -7,9 +7,13 @@
                 <h1 class="text-2xl font-bold text-gray-900 leading-tight tracking-tight">{{ firstName }} {{ lastName }}</h1>
                 <p class="text-xs text-gray-400 mt-0.5">Welcome to {{ meta.tenant_name }}</p>
             </div>
-            <div class="w-11 h-11 rounded-2xl bg-gray-900 flex items-center justify-center text-sm font-bold text-white select-none shadow-sm">
-                {{ initials }}
-            </div>
+            <MemberAvatar
+                :src="meta.profile_photo_url"
+                :initials="initials"
+                size="sm"
+                shape="square"
+                class="shadow-sm"
+            />
         </div>
 
 
@@ -202,6 +206,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import MemberAvatar from '../../../components/ui/MemberAvatar.vue';
 
 const props = defineProps({
     meta:         { type: Object,  default: () => ({}) },

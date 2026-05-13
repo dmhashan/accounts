@@ -2,9 +2,13 @@
     <div>
         <!-- Avatar block -->
         <div class="flex flex-col items-center pb-6 pt-4">
-            <div class="w-24 h-24 rounded-full bg-gray-900 flex items-center justify-center text-3xl font-bold text-white select-none shadow-md border-4 border-white">
-                {{ initials }}
-            </div>
+            <MemberAvatar
+                :src="meta.profile_photo_url"
+                :initials="initials"
+                size="2xl"
+                shape="circle"
+                class="shadow-md border-4 border-white"
+            />
             <h2 class="mt-4 text-xl font-bold text-gray-900 tracking-tight">{{ meta.name }}</h2>
             <p class="text-sm text-gray-400 mt-0.5">@{{ meta.username }}</p>
             <span v-if="meta.member_role" class="mt-3 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full shadow-sm">
@@ -106,6 +110,8 @@
 </template>
 
 <script setup>
+import MemberAvatar from '../../../components/ui/MemberAvatar.vue';
+
 defineProps({
     meta:         { type: Object, default: () => ({}) },
     initials:     { type: String, default: '' },

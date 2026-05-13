@@ -50,9 +50,10 @@
                                 @keydown.space.prevent="openMember(member.id)"
                             >
                                 <!-- Avatar -->
-                                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-primary-500/20">
-                                    {{ memberInitials(member) }}
-                                </div>
+                                <MemberAvatar
+                                    :initials="memberInitials(member)"
+                                    size="sm"
+                                />
 
                                 <!-- Info -->
                                 <div class="min-w-0 flex-1">
@@ -104,9 +105,10 @@
                                     >
                                         <td class="app-table-td">
                                             <div class="flex items-center gap-3">
-                                                <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-primary-500/20">
-                                                    {{ memberInitials(member) }}
-                                                </div>
+                                                <MemberAvatar
+                                                    :initials="memberInitials(member)"
+                                                    size="xs"
+                                                />
                                                 <div>
                                                     <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ memberFullName(member) }}</p>
                                                     <div class="mt-0.5 flex flex-wrap gap-1">
@@ -176,6 +178,7 @@ import AppSearchField from '../components/AppSearchField.vue';
 import AppBadge from '../components/AppBadge.vue';
 import AppEmptyState from '../components/AppEmptyState.vue';
 import TempMemberFormModal from '../components/TempMemberFormModal.vue';
+import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 import { ChevronRight, Clock, Download, Users, UserRoundPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 

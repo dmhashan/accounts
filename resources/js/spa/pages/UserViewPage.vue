@@ -26,9 +26,7 @@
         <div v-else class="app-page-scroll space-y-5">
             <div class="app-surface rounded-2xl p-4 md:p-6">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                    <div class="h-16 w-16 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center shrink-0">
-                        <span class="text-xl font-bold text-white">{{ initials(user.name) }}</span>
-                    </div>
+                    <MemberAvatar :initials="initials(user.name)" size="lg" />
                     <div>
                         <h1 class="text-xl font-bold text-secondary-900 dark:text-white">{{ user.name }}</h1>
                         <p class="mt-1 text-sm text-secondary-500 dark:text-secondary-400">{{ user.email }}</p>
@@ -57,6 +55,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 
 const route = useRoute();
 const router = useRouter();

@@ -23,9 +23,7 @@
                         <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
                             <article v-for="user in users" :key="user.id" class="p-4 space-y-3 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/users/' + user.id)">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-10 w-10 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
-                                        <span class="text-xs font-semibold text-white">{{ initials(user.name) }}</span>
-                                    </div>
+                                    <MemberAvatar :initials="initials(user.name)" size="sm" />
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ user.name }}</p>
                                         <p class="text-xs text-secondary-500 dark:text-secondary-400 truncate">{{ user.email }}</p>
@@ -59,9 +57,7 @@
                                     <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer" @click="router.push('/users/' + user.id)">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="h-10 w-10 bg-gradient-to-r from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
-                                                    <span class="text-xs font-semibold text-white">{{ initials(user.name) }}</span>
-                                                </div>
+                                                <MemberAvatar :initials="initials(user.name)" size="sm" />
                                                 <span class="text-sm font-medium text-secondary-900 dark:text-white">{{ user.name }}</span>
                                             </div>
                                         </td>
@@ -108,6 +104,7 @@ import AppPagination from '../components/AppPagination.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
+import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 import { UserPlus } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';

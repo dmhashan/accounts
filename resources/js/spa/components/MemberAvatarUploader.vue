@@ -2,18 +2,14 @@
     <!-- Clickable avatar shell -->
     <div class="relative group inline-block">
         <!-- Avatar image or initials -->
-        <div
-            class="h-20 w-20 shrink-0 rounded-2xl overflow-hidden border-2 border-white/35 shadow-xl flex items-center justify-center"
-            :class="photoUrl ? 'bg-white/10' : 'bg-white/20'"
-        >
-            <img
-                v-if="photoUrl"
-                :src="photoUrl"
-                alt="Member avatar"
-                class="w-full h-full object-cover"
-            />
-            <span v-else class="text-2xl font-bold text-white select-none">{{ initials }}</span>
-        </div>
+        <MemberAvatar
+            :src="photoUrl"
+            :initials="initials"
+            size="xl"
+            shape="square"
+            variant="glass"
+            class="shadow-xl"
+        />
 
         <!-- Edit overlay — only shown when edit is permitted -->
         <button
@@ -75,6 +71,7 @@
 import { ref } from 'vue';
 import { apiRequest } from '../composables/useApiClient';
 import AvatarCropModal from './AvatarCropModal.vue';
+import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 
 const props = defineProps({
     memberId: { type: Number, required: true },

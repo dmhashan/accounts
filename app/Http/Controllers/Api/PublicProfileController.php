@@ -9,6 +9,7 @@ use App\Models\MemberActivityLog;
 use App\Models\Sale;
 use App\Models\WorkoutProgramAssignment;
 use App\Services\EventService;
+use App\Services\MediaStorageService;
 use App\Services\SmsService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -16,9 +17,10 @@ use Illuminate\Support\Facades\Cache;
 
 class PublicProfileController extends Controller
 {
-    public function __construct(private readonly WalletService $walletService)
-    {
-    }
+    public function __construct(
+        private readonly WalletService $walletService,
+        private readonly MediaStorageService $media,
+    ) {}
 
     /**
      * Send an OTP to the member's registered mobile number.
@@ -199,8 +201,11 @@ class PublicProfileController extends Controller
                 'email'             => $member->email,
                 'phone_number'      => $member->phone_number,
                 'tenant_name'       => $tenant->name,
-                'total_outstanding' => number_format($totalOutstanding, 2),
-                'current_balance'   => round((float) $member->current_balance, 2),
+                'total_outstanding'  => number_format($totalOutstanding, 2),
+                'current_balance'    => round((float) $member->current_balance, 2),
+                'profile_photo_url'  => $member->profile_photo_path
+                    ? $this->media->url($member->profile_photo_path)
+                    : null,
             ],
             'workouts'            => $workoutsData,
             'sales'               => $salesData,

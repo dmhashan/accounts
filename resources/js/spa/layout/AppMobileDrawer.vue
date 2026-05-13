@@ -99,9 +99,7 @@
 
                 <!-- Profile button -->
                 <button @click="profileOpen = !profileOpen" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-secondary-50 dark:hover:bg-secondary-700/50 transition-colors text-left">
-                    <div class="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-primary-500/30">
-                        {{ initials }}
-                    </div>
+                    <MemberAvatar :initials="initials" size="sm" class="flex-shrink-0" />
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-semibold truncate" style="color: var(--text-strong)">{{ context.user?.name }}</p>
                         <p class="text-xs truncate" style="color: var(--text-muted)">{{ context.user?.email }}</p>
@@ -118,6 +116,7 @@ import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { X, Sun, Moon, LogOut, ChevronDown } from 'lucide-vue-next';
 import { useNavigation } from '../composables/useNavigation';
+import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 
 defineProps({
     open: {

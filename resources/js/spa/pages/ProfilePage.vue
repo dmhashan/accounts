@@ -26,15 +26,13 @@
         <article class="app-surface rounded-2xl overflow-hidden">
             <div class="bg-gradient-to-r from-primary-500 to-primary-700 px-4 py-5 md:px-6 md:py-6">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4 md:gap-5">
-                    <div class="h-16 w-16 md:h-20 md:w-20 rounded-full bg-white/20 border border-white/40 overflow-hidden flex items-center justify-center">
-                        <img
-                            v-if="member?.profile_photo_url"
-                            :src="member.profile_photo_url"
-                            :alt="fullName"
-                            class="h-full w-full object-cover"
-                        >
-                        <span v-else class="text-lg md:text-2xl font-bold text-white">{{ initials }}</span>
-                    </div>
+                    <MemberAvatar
+                            :src="member?.profile_photo_url"
+                            :initials="initials"
+                            size="xl"
+                            shape="circle"
+                            variant="glass"
+                        />
 
                     <div class="min-w-0">
                         <h2 class="text-xl md:text-2xl font-bold text-white truncate">{{ fullName }}</h2>
@@ -168,6 +166,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { apiRequest } from '../composables/useApiClient';
+import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 
 const loading = ref(false);
 const errorMessage = ref('');
