@@ -40,6 +40,51 @@
                 <AppFormField label="Phone Number" :required="true">
                     <AppFormInput v-model="form.phone_number" required />
                 </AppFormField>
+                <!-- Contact preferences -->
+                <div class="md:col-span-2 flex flex-col sm:flex-row gap-4">
+                    <label class="flex items-center gap-3 cursor-pointer select-none group">
+                        <button
+                            type="button"
+                            role="switch"
+                            :aria-checked="form.allow_sms"
+                            class="relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                            :class="form.allow_sms ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                            @click="form.allow_sms = !form.allow_sms"
+                        >
+                            <span
+                                class="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200"
+                                :class="form.allow_sms ? 'translate-x-4' : 'translate-x-0'"
+                            />
+                        </button>
+                        <span class="text-sm text-secondary-700 dark:text-secondary-300">
+                            Receives SMS
+                            <span class="block text-xs text-secondary-400 dark:text-secondary-500 font-normal">Mobile number can receive SMS notifications</span>
+                        </span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer select-none group">
+                        <button
+                            type="button"
+                            role="switch"
+                            :aria-checked="form.allow_whatsapp"
+                            class="relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                            :class="form.allow_whatsapp ? 'bg-green-500' : 'bg-secondary-300 dark:bg-secondary-600'"
+                            @click="form.allow_whatsapp = !form.allow_whatsapp"
+                        >
+                            <span
+                                class="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200"
+                                :class="form.allow_whatsapp ? 'translate-x-4' : 'translate-x-0'"
+                            />
+                        </button>
+                        <span class="text-sm text-secondary-700 dark:text-secondary-300">
+                            Has WhatsApp
+                            <span class="block text-xs text-secondary-400 dark:text-secondary-500 font-normal">Mobile number has WhatsApp</span>
+                        </span>
+                    </label>
+                </div>
+                <AppFormField v-if="!form.allow_whatsapp" label="WhatsApp Number" :optional="true" class="md:col-span-2">
+                    <AppFormInput v-model="form.whatsapp_number" placeholder="e.g. +94771234567" />
+                    <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">Provide a separate WhatsApp number if different from mobile</p>
+                </AppFormField>
                 <AppFormField label="NIC" :optional="true">
                     <AppFormInput v-model="form.nic" />
                 </AppFormField>
@@ -105,6 +150,9 @@ const form = ref({
     gender: '',
     email: '',
     phone_number: '',
+    allow_sms: true,
+    allow_whatsapp: true,
+    whatsapp_number: '',
     nic: '',
     date_of_birth: '',
     age: '',
@@ -123,6 +171,9 @@ async function loadMember() {
     form.value = {
         ...form.value,
         ...response.data,
+        allow_sms: response.data?.allow_sms ?? true,
+        allow_whatsapp: response.data?.allow_whatsapp ?? true,
+        whatsapp_number: response.data?.whatsapp_number ?? '',
         age: response.data?.age ? String(response.data.age) : '',
         admission_fee: response.data?.admission_fee ?? '',
         price: response.data?.price ?? '',

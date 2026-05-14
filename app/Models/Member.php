@@ -19,6 +19,9 @@ class Member extends Model
         'gender',
         'email',
         'phone_number',
+        'allow_sms',
+        'allow_whatsapp',
+        'whatsapp_number',
         'nic',
         'date_of_birth',
         'age',
@@ -38,6 +41,8 @@ class Member extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_verified' => 'boolean',
+        'allow_sms' => 'boolean',
+        'allow_whatsapp' => 'boolean',
         'is_temp' => 'boolean',
         'date_of_birth' => 'date',
         'joined_date' => 'date',

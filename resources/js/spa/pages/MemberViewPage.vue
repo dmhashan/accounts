@@ -218,9 +218,19 @@
                             <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">Email</dt>
                             <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right break-all">{{ displayValue(member.email) }}</dd>
                         </div>
-                        <div class="flex items-center justify-between px-5 py-3">
-                            <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">Phone</dt>
-                            <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">{{ displayValue(member.phone_number) }}</dd>
+                        <div class="flex items-start justify-between px-5 py-3 gap-3">
+                            <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28 pt-0.5">Phone</dt>
+                            <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
+                                <span>{{ displayValue(member.phone_number) }}</span>
+                                <span class="ml-1.5 inline-flex items-center gap-1">
+                                    <span v-if="member.allow_sms" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-primary-50 dark:bg-primary-900/25 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800" title="Receives SMS">SMS</span>
+                                    <span v-if="member.allow_whatsapp" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-green-50 dark:bg-green-900/25 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800" title="Has WhatsApp">WA</span>
+                                </span>
+                            </dd>
+                        </div>
+                        <div v-if="!member.allow_whatsapp && member.whatsapp_number" class="flex items-center justify-between px-5 py-3">
+                            <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">WhatsApp</dt>
+                            <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">{{ member.whatsapp_number }}</dd>
                         </div>
                         <div class="flex items-center justify-between px-5 py-3">
                             <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">Username</dt>
