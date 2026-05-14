@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\MemberApiController;
+use App\Http\Controllers\Api\MemberDocumentApiController;
+use App\Http\Controllers\Api\PaymentApiController;
+use App\Http\Controllers\Api\SaleApiController;
 use App\Http\Controllers\Api\WalletApiController;
+use App\Http\Controllers\Api\WorkoutProgramApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'permission:users.view'])->group(function () {
@@ -18,6 +22,27 @@ Route::middleware(['auth', 'permission:users.view'])->group(function () {
     Route::post('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
     Route::put('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
     Route::delete('/members/{member}/avatar', [MemberApiController::class, 'deleteAvatar'])->middleware('permission:users.edit');
+
+    // Member documents — view requires users.view; upload/delete requires users.edit
+    Route::get('/members/{member}/documents', [MemberDocumentApiController::class, 'index']);
+    Route::get('/members/{member}/documents/{document}/url', [MemberDocumentApiController::class, 'url']);
+    Route::post('/members/{member}/documents', [MemberDocumentApiController::class, 'store'])->middleware('permission:users.edit');
+    Route::delete('/members/{member}/documents/{document}', [MemberDocumentApiController::class, 'destroy'])->middleware('permission:users.edit');
+});
+
+// Member-scoped payments (requires payments.manage)
+Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
+    Route::get('/members/{member}/payments', [PaymentApiController::class, 'memberPayments']);
+});
+
+// Member-scoped sales (requires sales.process)
+Route::middleware(['auth', 'permission:sales.process'])->group(function () {
+    Route::get('/members/{member}/sales', [SaleApiController::class, 'memberSales']);
+});
+
+// Member-scoped workout assignments (requires workouts.manage)
+Route::middleware(['auth', 'permission:workouts.manage'])->group(function () {
+    Route::get('/members/{member}/workouts', [WorkoutProgramApiController::class, 'memberAssignments']);
 });
 
 // Wallet routes — require payments.manage permission

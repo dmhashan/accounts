@@ -13,19 +13,34 @@ use App\Http\Requests\Api\Workout\UpdateWorkoutProgramAssignmentRequest;
 use App\Http\Requests\Api\Workout\UpdateWorkoutProgramDayRequest;
 use App\Http\Requests\Api\Workout\UpdateWorkoutProgramExtraRequest;
 use App\Http\Requests\Api\Workout\UpdateWorkoutProgramRequest;
+use App\Models\Member;
 use App\Models\WorkoutDayExercise;
 use App\Models\WorkoutProgram;
 use App\Models\WorkoutProgramAssignment;
 use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutProgramExtra;
+use App\Services\MemberService;
 use App\Services\WorkoutProgramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class WorkoutProgramApiController extends Controller
 {
-    public function __construct(private readonly WorkoutProgramService $workoutProgramService)
+    public function __construct(
+        private readonly WorkoutProgramService $workoutProgramService,
+        private readonly MemberService $memberService,
+    ) {}
+
+    public function memberAssignments(Request $request, Member $member): JsonResponse
     {
+        $tenantId = app('tenant')->id;
+        $this->memberService->ensureTenantMember($member, $tenantId);
+        $perPage = min((int) $request->integer('per_page', 10), 50);
+
+        return $this->success(
+            'Member workout assignments fetched successfully.',
+            $this->workoutProgramService->memberAssignments($member->id, $tenantId, $perPage)
+        );
     }
 
     public function index(Request $request): JsonResponse

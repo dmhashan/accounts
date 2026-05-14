@@ -46,6 +46,31 @@ class WorkoutProgramService
         ];
     }
 
+    public function memberAssignments(int $memberId, int $tenantId, int $perPage): array
+    {
+        $assignments = WorkoutProgramAssignment::query()
+            ->where('tenant_id', $tenantId)
+            ->where('member_id', $memberId)
+            ->with([
+                'sourceProgram:id,title',
+                'assignedProgram:id,title',
+                'creator:id,name',
+            ])
+            ->orderByDesc('effective_date')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        return [
+            'data' => collect($assignments->items())->map(fn (WorkoutProgramAssignment $assignment) => $this->serializeAssignment($assignment)),
+            'meta' => [
+                'current_page' => $assignments->currentPage(),
+                'last_page' => $assignments->lastPage(),
+                'per_page' => $assignments->perPage(),
+                'total' => $assignments->total(),
+            ],
+        ];
+    }
+
     public function programAssignments(int $tenantId, int $perPage): array
     {
         $assignments = WorkoutProgramAssignment::query()

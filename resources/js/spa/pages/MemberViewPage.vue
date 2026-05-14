@@ -363,6 +363,203 @@
                 </div>
             </template><!-- /wallet -->
 
+            <!-- ── Payments Tab ── -->
+            <template v-if="activeTab === 'payments'">
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
+                        <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Payment History</h2>
+                    </div>
+                    <div v-if="paymentsLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
+                    <div v-else-if="memberPayments.length === 0" class="px-5 py-6 text-center text-sm text-secondary-400 dark:text-secondary-500">No payments recorded for this member.</div>
+                    <div v-else class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                        <RouterLink
+                            v-for="payment in memberPayments"
+                            :key="payment.id"
+                            :to="`/payments/${payment.id}`"
+                            class="flex items-center justify-between px-5 py-3 gap-3 hover:bg-secondary-50 dark:hover:bg-secondary-800/50 transition-colors"
+                        >
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                                    {{ formatMoney(payment.amount) }}
+                                </p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                                    {{ formatDate(payment.payment_date) }}
+                                    <span v-if="payment.account_name" class="ml-1 opacity-70">&bull; {{ payment.account_name }}</span>
+                                </p>
+                                <p v-if="payment.reference_number" class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">Ref: {{ payment.reference_number }}</p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <span class="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase rounded-full"
+                                    :class="payment.payment_method === 'member_wallet'
+                                        ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800'
+                                        : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'">
+                                    {{ payment.payment_method === 'member_wallet' ? 'Wallet' : 'Cash' }}
+                                </span>
+                            </div>
+                        </RouterLink>
+                    </div>
+                    <div v-if="paymentsMeta.last_page > 1" class="px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">Page {{ paymentsMeta.current_page }} of {{ paymentsMeta.last_page }}</p>
+                        <div class="flex gap-1">
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="paymentsMeta.current_page <= 1" @click="loadMemberPayments(paymentsMeta.current_page - 1)">Prev</button>
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="paymentsMeta.current_page >= paymentsMeta.last_page" @click="loadMemberPayments(paymentsMeta.current_page + 1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </template><!-- /payments -->
+
+            <!-- ── Sales Tab ── -->
+            <template v-if="activeTab === 'sales'">
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
+                        <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Sales History</h2>
+                    </div>
+                    <div v-if="salesLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
+                    <div v-else-if="memberSales.length === 0" class="px-5 py-6 text-center text-sm text-secondary-400 dark:text-secondary-500">No sales found for this member.</div>
+                    <div v-else class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                        <RouterLink
+                            v-for="sale in memberSales"
+                            :key="sale.id"
+                            :to="`/sales/${sale.id}`"
+                            class="flex items-center justify-between px-5 py-3 gap-3 hover:bg-secondary-50 dark:hover:bg-secondary-800/50 transition-colors"
+                        >
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ formatMoney(sale.total_amount) }}</p>
+                                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                                    {{ sale.created_at }}
+                                    <span v-if="sale.items_count" class="ml-1 opacity-70">&bull; {{ sale.items_count }} item{{ sale.items_count !== 1 ? 's' : '' }}</span>
+                                </p>
+                                <p v-if="sale.reference_number" class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">Ref: {{ sale.reference_number }}</p>
+                            </div>
+                            <div class="shrink-0 flex flex-col items-end gap-1">
+                                <span class="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase rounded-full border"
+                                    :class="sale.is_paid
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                                        : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'">
+                                    {{ sale.is_paid ? 'Paid' : 'Outstanding' }}
+                                </span>
+                                <span v-if="!sale.is_paid" class="text-xs font-semibold text-amber-600 dark:text-amber-400">Balance: {{ formatMoney(sale.balance) }}</span>
+                            </div>
+                        </RouterLink>
+                    </div>
+                    <div v-if="salesMeta.last_page > 1" class="px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">Page {{ salesMeta.current_page }} of {{ salesMeta.last_page }}</p>
+                        <div class="flex gap-1">
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="salesMeta.current_page <= 1" @click="loadMemberSales(salesMeta.current_page - 1)">Prev</button>
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="salesMeta.current_page >= salesMeta.last_page" @click="loadMemberSales(salesMeta.current_page + 1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </template><!-- /sales -->
+
+            <!-- ── Workouts Tab ── -->
+            <template v-if="activeTab === 'workouts'">
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
+                        <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Workout Assignments</h2>
+                    </div>
+                    <div v-if="workoutsLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
+                    <div v-else-if="memberWorkouts.length === 0" class="px-5 py-6 text-center text-sm text-secondary-400 dark:text-secondary-500">No workout programs assigned to this member.</div>
+                    <div v-else class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                        <RouterLink
+                            v-for="wa in memberWorkouts"
+                            :key="wa.id"
+                            :to="`/workout-assignments/${wa.id}`"
+                            class="flex items-start justify-between px-5 py-3.5 gap-3 hover:bg-secondary-50 dark:hover:bg-secondary-800/50 transition-colors"
+                        >
+                            <div class="min-w-0 flex items-start gap-3">
+                                <div class="shrink-0 w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 flex items-center justify-center mt-0.5">
+                                    <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ wa.assigned_program_title || wa.source_program_title || 'Program' }}</p>
+                                    <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                                        Effective: {{ formatDate(wa.effective_date) }}
+                                        <span v-if="wa.created_by_name" class="ml-1 opacity-70">&bull; by {{ wa.created_by_name }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <svg class="w-4 h-4 text-secondary-400 shrink-0 mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </RouterLink>
+                    </div>
+                    <div v-if="workoutsMeta.last_page > 1" class="px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">Page {{ workoutsMeta.current_page }} of {{ workoutsMeta.last_page }}</p>
+                        <div class="flex gap-1">
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="workoutsMeta.current_page <= 1" @click="loadMemberWorkouts(workoutsMeta.current_page - 1)">Prev</button>
+                            <button type="button" class="px-2 py-1 text-xs rounded border border-secondary-200 dark:border-secondary-700 disabled:opacity-40" :disabled="workoutsMeta.current_page >= workoutsMeta.last_page" @click="loadMemberWorkouts(workoutsMeta.current_page + 1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </template><!-- /workouts -->
+
+            <!-- ── Documents Tab ── -->
+            <template v-if="activeTab === 'documents'">
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Documents</h2>
+                        <button
+                            v-if="permissions.edit"
+                            type="button"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                            @click="openDocUpload"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Upload
+                        </button>
+                    </div>
+                    <div v-if="documentsLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
+                    <div v-else-if="documents.length === 0" class="px-5 py-10 text-center">
+                        <div class="mx-auto w-12 h-12 rounded-xl bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <p class="text-sm text-secondary-500 dark:text-secondary-400">No documents uploaded yet.</p>
+                        <button v-if="permissions.edit" type="button" class="mt-3 text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="openDocUpload">Upload the first document</button>
+                    </div>
+                    <div v-else class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                        <div v-for="doc in documents" :key="doc.id" class="flex items-start justify-between px-5 py-3.5 gap-3">
+                            <div class="min-w-0 flex items-start gap-3">
+                                <!-- File icon -->
+                                <div class="shrink-0 w-9 h-9 rounded-lg bg-secondary-100 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 flex items-center justify-center mt-0.5">
+                                    <svg class="w-4 h-4 text-secondary-500 dark:text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ doc.name }}</p>
+                                    <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                                        <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full border" :class="docCategoryColor(doc.category)">{{ docCategoryLabel(doc.category) }}</span>
+                                        <span class="text-[11px] text-secondary-400 dark:text-secondary-500">{{ formatFileSize(doc.file_size) }}</span>
+                                        <span v-if="doc.original_filename" class="text-[11px] text-secondary-400 dark:text-secondary-500 truncate max-w-[160px]">{{ doc.original_filename }}</span>
+                                    </div>
+                                    <p class="text-[11px] text-secondary-400 dark:text-secondary-500 mt-0.5">
+                                        {{ doc.created_at }}
+                                        <span v-if="doc.uploaded_by"> &bull; by {{ doc.uploaded_by.name }}</span>
+                                    </p>
+                                    <p v-if="doc.notes" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5 line-clamp-2">{{ doc.notes }}</p>
+                                </div>
+                            </div>
+                            <div class="shrink-0 flex items-center gap-1 mt-0.5">
+                                <button
+                                    type="button"
+                                    title="View"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-secondary-200 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-500 dark:text-secondary-400 transition-colors"
+                                    @click="viewDoc(doc)"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </button>
+                                <button
+                                    v-if="permissions.edit"
+                                    type="button"
+                                    title="Delete"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors"
+                                    @click="deleteDoc(doc)"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template><!-- /documents -->
+
         </template>
 
         <div v-else-if="!loading" class="p-8 text-center text-sm text-secondary-400 dark:text-secondary-500">Member details are unavailable.</div>
@@ -516,6 +713,174 @@
                 </form>
             </div>
         </div>
+
+        <!-- ── Document Viewer Modal ── -->
+        <div v-if="docViewOpen" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5" @keydown.esc="closeDocView">
+            <div class="absolute inset-0 bg-black/70" @click="closeDocView"></div>
+            <div class="relative z-10 flex flex-col w-full max-w-4xl max-h-[92vh] rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 shadow-2xl overflow-hidden">
+                <!-- Header -->
+                <div class="flex items-start justify-between gap-3 px-5 py-4 border-b border-secondary-100 dark:border-secondary-800 shrink-0">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-secondary-900 dark:text-white truncate">{{ docViewDoc?.name }}</h3>
+                        <div class="flex flex-wrap items-center gap-2 mt-1">
+                            <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full border" :class="docCategoryColor(docViewDoc?.category)">{{ docCategoryLabel(docViewDoc?.category) }}</span>
+                            <span class="text-[11px] text-secondary-400 dark:text-secondary-500">{{ formatFileSize(docViewDoc?.file_size) }}</span>
+                            <span v-if="docViewDoc?.original_filename" class="text-[11px] text-secondary-400 dark:text-secondary-500 truncate max-w-[200px]">{{ docViewDoc.original_filename }}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <!-- Download -->
+                        <button
+                            type="button"
+                            title="Download"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-secondary-200 dark:border-secondary-600 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-700 dark:text-secondary-200 transition-colors"
+                            :disabled="docViewLoading"
+                            @click="downloadDocView"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Download
+                        </button>
+                        <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors" @click="closeDocView">✕</button>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="flex-1 overflow-auto bg-secondary-50 dark:bg-secondary-950 min-h-0">
+                    <!-- Loading -->
+                    <div v-if="docViewLoading" class="flex items-center justify-center h-64">
+                        <div class="text-sm text-secondary-400 dark:text-secondary-500">Loading...</div>
+                    </div>
+
+                    <!-- Error -->
+                    <div v-else-if="docViewError" class="flex items-center justify-center h-64">
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ docViewError }}</p>
+                    </div>
+
+                    <!-- Image viewer -->
+                    <div v-else-if="docViewType === 'image'" class="flex items-center justify-center p-4">
+                        <img
+                            :src="docViewUrl"
+                            :alt="docViewDoc?.name"
+                            class="max-w-full max-h-[70vh] rounded-lg shadow-lg object-contain"
+                            @error="docViewError = 'Failed to load image.'"
+                        />
+                    </div>
+
+                    <!-- PDF viewer -->
+                    <div v-else-if="docViewType === 'pdf'" class="w-full h-[70vh]">
+                        <iframe
+                            :src="docViewUrl"
+                            class="w-full h-full border-0"
+                            title="Document preview"
+                        ></iframe>
+                    </div>
+
+                    <!-- Non-previewable file -->
+                    <div v-else class="flex flex-col items-center justify-center gap-4 py-16 px-6">
+                        <div class="w-16 h-16 rounded-2xl bg-secondary-200 dark:bg-secondary-800 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-secondary-500 dark:text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Preview not available for this file type</p>
+                            <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ docViewDoc?.mime_type }}</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                            @click="downloadDocView"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Download File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer: notes + metadata -->
+                <div v-if="docViewDoc?.notes || docViewDoc?.uploaded_by" class="shrink-0 px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 bg-white dark:bg-secondary-900">
+                    <p v-if="docViewDoc?.notes" class="text-xs text-secondary-600 dark:text-secondary-300 leading-relaxed">{{ docViewDoc.notes }}</p>
+                    <p class="text-[11px] text-secondary-400 dark:text-secondary-500 mt-1">
+                        Uploaded {{ docViewDoc?.created_at }}
+                        <span v-if="docViewDoc?.uploaded_by"> by {{ docViewDoc.uploaded_by.name }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Document Upload Modal ── -->
+        <div v-if="docUploadOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/45" @click="closeDocUpload"></div>
+            <div class="relative z-10 w-full max-w-md rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-5 shadow-xl">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Upload Document</h3>
+                        <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">PDF, images, Word, Excel &bull; max 10 MB</p>
+                    </div>
+                    <button type="button" class="text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closeDocUpload">✕</button>
+                </div>
+
+                <div v-if="docUploadError" class="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-200">{{ docUploadError }}</div>
+
+                <form class="space-y-3" @submit.prevent="submitDocUpload">
+                    <!-- File picker -->
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">File <span class="text-red-500">*</span></label>
+                        <input
+                            ref="docFileInputRef"
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.txt"
+                            required
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-600 dark:file:bg-primary-900/30 dark:file:text-primary-400"
+                            @change="onDocFileChange"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Document Name <span class="text-red-500">*</span></label>
+                        <input
+                            v-model="docForm.name"
+                            type="text"
+                            maxlength="255"
+                            required
+                            placeholder="e.g. Blood Test Report"
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Category <span class="text-red-500">*</span></label>
+                        <select
+                            v-model="docForm.category"
+                            required
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                            <option v-for="cat in docCategories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Notes <span class="text-xs text-secondary-400">(optional)</span></label>
+                        <textarea
+                            v-model="docForm.notes"
+                            rows="2"
+                            maxlength="1000"
+                            placeholder="Additional notes about this document..."
+                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                        ></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                        <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closeDocUpload">Cancel</button>
+                        <button
+                            type="submit"
+                            class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
+                            :disabled="docUploading || !docFile || !docForm.name.trim()"
+                        >
+                            {{ docUploading ? 'Uploading...' : 'Upload' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -539,7 +904,11 @@ const permissions = ref({ edit: false, delete: false });
 // ── Tabs ──
 const tabs = [
     { id: 'overview', label: 'Overview' },
-    { id: 'wallet', label: 'Wallet History' },
+    { id: 'wallet', label: 'Wallet' },
+    { id: 'payments', label: 'Payments' },
+    { id: 'sales', label: 'Sales' },
+    { id: 'workouts', label: 'Workouts' },
+    { id: 'documents', label: 'Documents' },
 ];
 const activeTab = ref('overview');
 
@@ -547,6 +916,18 @@ function switchTab(id) {
     activeTab.value = id;
     if (id === 'wallet' && member.value) {
         loadWalletData();
+    }
+    if (id === 'payments' && member.value) {
+        loadMemberPayments(1);
+    }
+    if (id === 'sales' && member.value) {
+        loadMemberSales(1);
+    }
+    if (id === 'workouts' && member.value) {
+        loadMemberWorkouts(1);
+    }
+    if (id === 'documents' && member.value) {
+        loadDocuments();
     }
 }
 
@@ -937,6 +1318,220 @@ async function removeMember() {
     } finally {
         actionInProgress.value = '';
     }
+}
+
+// ── Member Payments Tab ──
+const paymentsLoading = ref(false);
+const memberPayments = ref([]);
+const paymentsMeta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
+
+async function loadMemberPayments(page = 1) {
+    paymentsLoading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/payments?page=${page}&per_page=15`);
+        memberPayments.value = res.data || [];
+        paymentsMeta.value = res.meta || paymentsMeta.value;
+    } catch (_) { /* ignore */ } finally {
+        paymentsLoading.value = false;
+    }
+}
+
+// ── Member Sales Tab ──
+const salesLoading = ref(false);
+const memberSales = ref([]);
+const salesMeta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
+
+async function loadMemberSales(page = 1) {
+    salesLoading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/sales?page=${page}&per_page=15`);
+        memberSales.value = res.data || [];
+        salesMeta.value = res.meta || salesMeta.value;
+    } catch (_) { /* ignore */ } finally {
+        salesLoading.value = false;
+    }
+}
+
+// ── Member Workouts Tab ──
+const workoutsLoading = ref(false);
+const memberWorkouts = ref([]);
+const workoutsMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
+
+async function loadMemberWorkouts(page = 1) {
+    workoutsLoading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/workouts?page=${page}&per_page=10`);
+        const payload = res.data ?? res;
+        memberWorkouts.value = payload.data || [];
+        workoutsMeta.value = payload.meta || workoutsMeta.value;
+    } catch (_) { /* ignore */ } finally {
+        workoutsLoading.value = false;
+    }
+}
+
+// ── Documents Tab ──
+const documentsLoading = ref(false);
+const documents = ref([]);
+const docUploadOpen = ref(false);
+const docUploading = ref(false);
+const docUploadError = ref('');
+const docFileInputRef = ref(null);
+const docForm = ref({ name: '', category: 'other', notes: '' });
+const docFile = ref(null);
+const docCategories = [
+    { value: 'medical', label: 'Medical' },
+    { value: 'identification', label: 'Identification' },
+    { value: 'contract', label: 'Contract' },
+    { value: 'fitness', label: 'Fitness' },
+    { value: 'other', label: 'Other' },
+];
+
+async function loadDocuments() {
+    documentsLoading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/documents`);
+        documents.value = res.data || [];
+    } catch (_) { /* ignore */ } finally {
+        documentsLoading.value = false;
+    }
+}
+
+function openDocUpload() {
+    docForm.value = { name: '', category: 'other', notes: '' };
+    docFile.value = null;
+    docUploadError.value = '';
+    docUploadOpen.value = true;
+}
+
+function closeDocUpload() {
+    docUploadOpen.value = false;
+}
+
+function onDocFileChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    docFile.value = file;
+    if (!docForm.value.name) {
+        // Pre-fill name from filename without extension
+        docForm.value.name = file.name.replace(/\.[^.]+$/, '');
+    }
+}
+
+async function submitDocUpload() {
+    if (!docFile.value) {
+        docUploadError.value = 'Please select a file.';
+        return;
+    }
+    docUploading.value = true;
+    docUploadError.value = '';
+    try {
+        const formData = new FormData();
+        formData.append('file', docFile.value);
+        formData.append('name', docForm.value.name);
+        formData.append('category', docForm.value.category);
+        if (docForm.value.notes) formData.append('notes', docForm.value.notes);
+
+        const res = await apiRequest(`/api/members/${member.value.id}/documents`, {
+            method: 'post',
+            data: formData,
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        documents.value.unshift(res.data);
+        closeDocUpload();
+        successMessage.value = 'Document uploaded successfully.';
+        setTimeout(() => { successMessage.value = ''; }, 4000);
+    } catch (err) {
+        docUploadError.value = err?.response?.data?.message || 'Failed to upload document.';
+    } finally {
+        docUploading.value = false;
+    }
+}
+
+// ── Document Viewer ──
+const docViewOpen = ref(false);
+const docViewDoc = ref(null);
+const docViewUrl = ref('');
+const docViewType = ref('other'); // 'image' | 'pdf' | 'other'
+const docViewLoading = ref(false);
+const docViewError = ref('');
+
+function resolveDocViewType(mimeType) {
+    if (!mimeType) return 'other';
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType === 'application/pdf') return 'pdf';
+    return 'other';
+}
+
+async function viewDoc(doc) {
+    docViewDoc.value = doc;
+    docViewUrl.value = '';
+    docViewError.value = '';
+    docViewType.value = resolveDocViewType(doc.mime_type);
+    docViewOpen.value = true;
+    docViewLoading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/documents/${doc.id}/url`);
+        docViewUrl.value = res.url;
+    } catch (_) {
+        docViewError.value = 'Failed to load document URL.';
+    } finally {
+        docViewLoading.value = false;
+    }
+}
+
+function closeDocView() {
+    docViewOpen.value = false;
+    docViewUrl.value = '';
+    docViewDoc.value = null;
+}
+
+function downloadDocView() {
+    if (docViewUrl.value) {
+        window.open(docViewUrl.value, '_blank', 'noopener,noreferrer');
+    }
+}
+
+async function openDocUrl(doc) {
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/documents/${doc.id}/url`);
+        window.open(res.url, '_blank', 'noopener,noreferrer');
+    } catch (_) {
+        errorMessage.value = 'Failed to get document URL.';
+    }
+}
+
+async function deleteDoc(doc) {
+    if (!window.confirm(`Delete "${doc.name}"? This cannot be undone.`)) return;
+    try {
+        await apiRequest(`/api/members/${route.params.id}/documents/${doc.id}`, { method: 'delete' });
+        documents.value = documents.value.filter(d => d.id !== doc.id);
+        successMessage.value = 'Document deleted.';
+        setTimeout(() => { successMessage.value = ''; }, 3000);
+    } catch (err) {
+        errorMessage.value = err?.response?.data?.message || 'Failed to delete document.';
+    }
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function docCategoryLabel(cat) {
+    return docCategories.find(c => c.value === cat)?.label || cat;
+}
+
+function docCategoryColor(cat) {
+    const map = {
+        medical: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+        identification: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        contract: 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800',
+        fitness: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+        other: 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300 border-secondary-200 dark:border-secondary-600',
+    };
+    return map[cat] ?? map.other;
 }
 
 onMounted(() => {

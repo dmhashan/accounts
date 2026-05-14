@@ -3,20 +3,32 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Member;
 use App\Models\MemberPayment;
+use App\Services\MemberService;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PaymentApiController extends Controller
 {
-    public function __construct(private readonly PaymentService $paymentService)
-    {
-    }
+    public function __construct(
+        private readonly PaymentService $paymentService,
+        private readonly MemberService $memberService,
+    ) {}
 
     public function meta(): JsonResponse
     {
         return response()->json($this->paymentService->meta(app('tenant')->id));
+    }
+
+    public function memberPayments(Request $request, Member $member): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $this->memberService->ensureTenantMember($member, $tenantId);
+        $perPage = min((int) $request->integer('per_page', 15), 50);
+
+        return response()->json($this->paymentService->memberPayments($member->id, $tenantId, $perPage));
     }
 
     public function index(Request $request): JsonResponse

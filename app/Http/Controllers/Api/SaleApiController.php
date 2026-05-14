@@ -31,6 +31,42 @@ class SaleApiController extends Controller
         ]);
     }
 
+    public function memberSales(Request $request, Member $member): JsonResponse
+    {
+        $this->ensureMemberBelongsToTenant($member);
+
+        $perPage = min((int) $request->integer('per_page', 15), 50);
+
+        $sales = Sale::query()
+            ->where('tenant_id', app('tenant')->id)
+            ->where('customer_member_id', $member->id)
+            ->with(['items.product', 'items.variation'])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'data' => collect($sales->items())->map(fn (Sale $sale) => [
+                'id'               => $sale->id,
+                'customer_name'    => $sale->customer_name,
+                'customer_type'    => $sale->customer_type,
+                'payment_method'   => $sale->payment_method,
+                'reference_number' => $sale->reference_number,
+                'total_amount'     => (float) $sale->total_amount,
+                'paid_amount'      => (float) $sale->paid_amount,
+                'balance'          => (float) $sale->balance,
+                'is_paid'          => (bool) $sale->is_paid,
+                'created_at'       => optional($sale->created_at)->format('d M Y, H:i'),
+                'items_count'      => $sale->items->count(),
+            ]),
+            'meta' => [
+                'current_page' => $sales->currentPage(),
+                'last_page'    => $sales->lastPage(),
+                'per_page'     => $sales->perPage(),
+                'total'        => $sales->total(),
+            ],
+        ]);
+    }
+
     public function meta(): JsonResponse
     {
         return response()->json($this->saleMetaService->build(app('tenant')->id));

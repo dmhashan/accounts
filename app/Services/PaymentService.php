@@ -58,6 +58,27 @@ class PaymentService
         ];
     }
 
+    public function memberPayments(int $memberId, int $tenantId, int $perPage): array
+    {
+        $payments = MemberPayment::query()
+            ->where('tenant_id', $tenantId)
+            ->where('member_id', $memberId)
+            ->with(['account:id,name'])
+            ->orderBy('payment_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return [
+            'data' => collect($payments->items())->map(fn (MemberPayment $payment) => $this->serialize($payment)),
+            'meta' => [
+                'current_page' => $payments->currentPage(),
+                'last_page' => $payments->lastPage(),
+                'per_page' => $payments->perPage(),
+                'total' => $payments->total(),
+            ],
+        ];
+    }
+
     public function payments(int $tenantId, int $perPage): array
     {
         $payments = MemberPayment::query()
