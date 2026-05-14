@@ -3,12 +3,9 @@
 namespace App\Services;
 
 use App\Models\Member;
-use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MemberService
@@ -200,20 +197,6 @@ class MemberService
         $validated['is_verified'] = true;
 
         $member = Member::create($validated);
-
-        $memberRole = Role::where('slug', 'member')->first();
-        if ($memberRole) {
-            $user = User::create([
-                'tenant_id' => $tenant->id,
-                'role_id' => $memberRole->id,
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'username' => $validated['username'],
-                'password' => Hash::make(Str::random(40)),
-            ]);
-
-            $member->update(['user_id' => $user->id]);
-        }
 
         return $member;
     }

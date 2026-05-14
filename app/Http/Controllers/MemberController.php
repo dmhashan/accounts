@@ -3,13 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class MemberController extends Controller
 {
@@ -153,14 +149,12 @@ class MemberController extends Controller
                 'max:50',
                 'alpha_dash',
                 Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
-                Rule::unique('users')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
             ],
             'gender' => 'required|in:male,female',
             'email' => [
                 'required',
                 'email',
                 Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
-                Rule::unique('users')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
             ],
             'phone_number' => 'required|string|max:20',
             'nic' => 'nullable|string|max:50',
@@ -189,23 +183,6 @@ class MemberController extends Controller
 
         // Create member
         $member = Member::create($validated);
-
-        // Create user account with member role
-        $memberRole = Role::where('slug', 'member')->first();
-
-        if ($memberRole) {
-            $user = User::create([
-                'tenant_id' => $tenant->id,
-                'role_id' => $memberRole->id,
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'username' => $validated['username'],
-                'password' => Hash::make(Str::random(40)),
-            ]);
-
-            // Link member to user
-            $member->update(['user_id' => $user->id]);
-        }
 
         return redirect()->route('members.index')
             ->with('success', 'Member created successfully.');

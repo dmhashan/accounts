@@ -11,7 +11,7 @@ class ProfileService
     public function __construct(private readonly MediaStorageService $media) {}
     public function build(User $user, Tenant $tenant): array
     {
-        $canViewProfile = $user->hasPermission('member.profile.view') || $user->hasRole('member');
+        $canViewProfile = $user->hasPermission('member.profile.view');
 
         if (!$canViewProfile) {
             abort(403);

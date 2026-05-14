@@ -97,10 +97,6 @@ Route::middleware([IdentifyTenant::class])->group(function () {
 
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {
-        // Members should be redirected to their profile
-        if (auth()->user()->hasRole('member')) {
-            return redirect('/#/profile');
-        }
         return redirect('/#/dashboard');
     })->middleware('auth')->name('dashboard');
 

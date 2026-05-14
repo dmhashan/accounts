@@ -10,10 +10,7 @@ class UserService
 {
     public function meta(): array
     {
-        $memberRole = Role::where('slug', 'member')->first();
-
         $roles = Role::query()
-            ->when($memberRole, fn ($query) => $query->where('id', '!=', $memberRole->id))
             ->orderBy('name')
             ->get(['id', 'name', 'slug']);
 
@@ -24,11 +21,8 @@ class UserService
 
     public function index(int $tenantId, User $currentUser, int $perPage, string $search): array
     {
-        $memberRole = Role::where('slug', 'member')->first();
-
         $users = User::query()
             ->where('tenant_id', $tenantId)
-            ->when($memberRole, fn ($query) => $query->where('role_id', '!=', $memberRole->id))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
                     $innerQuery->where('name', 'like', "%{$search}%")

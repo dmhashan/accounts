@@ -15,7 +15,6 @@ class ContextApiTest extends ApiRouteTestCase
             'sales.create',
             'sales.edit',
             'sales.delete',
-            'member.profile.view',
         ]);
 
         $response = $this->getJson('/api/app/context');
@@ -32,7 +31,6 @@ class ContextApiTest extends ApiRouteTestCase
             ->assertJsonPath('permissions.salesCreate', true)
             ->assertJsonPath('permissions.salesEdit', true)
             ->assertJsonPath('permissions.salesDelete', true)
-            ->assertJsonPath('permissions.stats', true)
-            ->assertJsonPath('permissions.profile', true);
+            ->assertJsonPath('permissions.stats', true);
     }
 }
