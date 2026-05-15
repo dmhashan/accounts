@@ -79,20 +79,24 @@
         margin-bottom: 10px;
         font-style: italic;
     }
-    .checkbox-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
+    .cb-table { width: 100%; margin-bottom: 4px; border-collapse: collapse; }
+    .cb-cell-box { width: 16px; vertical-align: middle; padding: 0; }
+    .cb-cell-label { vertical-align: middle; padding-left: 6px; font-size: 10.5pt; }
     .cb-box {
         display: inline-block;
-        width: 13px;
-        height: 13px;
-        border: 1.5px solid #555;
-        margin-right: 4px;
+        width: 12px;
+        height: 12px;
+        border: 1.5px solid #444;
         text-align: center;
-        line-height: 11px;
-        font-size: 10pt;
+        font-size: 9pt;
+        font-family: dejavusans, sans-serif;
+        color: #1a1a1a;
+        line-height: 12px;
+    }
+    .cb-box.checked {
+        background-color: #222;
+        border-color: #222;
+        color: #fff;
     }
     .signature-section {
         margin-top: 30px;
@@ -154,7 +158,9 @@
         <strong>Member Name:</strong><br>
         <span style="border-bottom:1px solid #888;display:block;min-height:18px;padding-top:2px;">{{ $memberName }}</span>
     </div>
-    <div class="meta-cell" style="padding-left:16px;">
+</div>
+<div class="meta-row">
+    <div class="meta-cell">
         <strong>Member ID:</strong><br>
         <span style="border-bottom:1px solid #888;display:block;min-height:18px;padding-top:2px;">{{ $memberId }}</span>
     </div>
@@ -183,20 +189,21 @@
     @elseif($type === 'checkbox')
         <div class="field-block">
             <div class="field-label">{{ $field['label'] }}@if(!empty($field['required']))<span class="required-note"> *</span>@endif</div>
-            <div class="checkbox-row">
-                <span class="cb-box">{{ $value ? '✓' : '' }}</span>
-                {{ $value ? 'Yes' : 'No' }}
-            </div>
+            <table class="cb-table"><tr>
+                <td class="cb-cell-box"><span class="cb-box {{ $value ? 'checked' : '' }}">{!! $value ? '&#x2713;' : '' !!}</span></td>
+                <td class="cb-cell-label">{{ $value ? 'Yes' : 'No' }}</td>
+            </tr></table>
         </div>
     @elseif($type === 'radio' || $type === 'select')
         <div class="field-block">
             <div class="field-label">{{ $field['label'] }}@if(!empty($field['required']))<span class="required-note"> *</span>@endif</div>
             @if(!empty($field['options']))
                 @foreach($field['options'] as $opt)
-                    <div class="checkbox-row" style="margin-bottom:2px;">
-                        <span class="cb-box">{{ $value === $opt ? '●' : '' }}</span>
-                        {{ $opt }}
-                    </div>
+                    @php $isSelected = (string)$value === (string)$opt; @endphp
+                    <table class="cb-table"><tr>
+                        <td class="cb-cell-box"><span class="cb-box {{ $isSelected ? 'checked' : '' }}">{!! $isSelected ? '&#x2713;' : '&nbsp;&nbsp;&nbsp;' !!}</span></td>
+                        <td class="cb-cell-label">{{ $opt }}</td>
+                    </tr></table>
                 @endforeach
             @else
                 <div class="field-value {{ $value ? '' : 'empty' }}">{{ $value ?? '—' }}</div>
