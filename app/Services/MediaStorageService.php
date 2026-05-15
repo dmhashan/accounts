@@ -42,6 +42,16 @@ class MediaStorageService
     }
 
     /**
+     * Store raw string content at the given path and return the path.
+     */
+    public function storeContent(string $content, string $path): string
+    {
+        $this->disk()->put($path, $content);
+
+        return $path;
+    }
+
+    /**
      * Delete a file by its stored path. Silently ignores missing files.
      */
     public function delete(string $path): void

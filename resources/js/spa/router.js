@@ -60,6 +60,9 @@ const ReconciliationComparisonPage = () => import('./pages/ReconciliationCompari
 const ReconciliationConfigPage = () => import('./pages/ReconciliationConfigPage.vue');
 const VouchersPage = () => import('./pages/VouchersPage.vue');
 const VoucherViewPage = () => import('./pages/VoucherViewPage.vue');
+const FormsPage = () => import('./pages/FormsPage.vue');
+const FormBuilderFormPage = () => import('./pages/FormBuilderFormPage.vue');
+const FormSubmissionsPage = () => import('./pages/FormSubmissionsPage.vue');
 
 const routes = [
     { path: '/', redirect: '/dashboard' },
@@ -151,6 +154,10 @@ const routes = [
     { path: '/reconciliation/config', component: ReconciliationConfigPage, meta: { title: 'Reconciliation Config' } },
     { path: '/vouchers', component: VouchersPage, meta: { title: 'Vouchers' } },
     { path: '/vouchers/:id', component: VoucherViewPage, meta: { title: 'Voucher' } },
+    { path: '/forms', component: FormsPage, meta: { title: 'Form Templates' } },
+    { path: '/forms/new', component: FormBuilderFormPage, meta: { title: 'New Form Template' } },
+    { path: '/forms/:id/edit', component: FormBuilderFormPage, meta: { title: 'Edit Form Template' } },
+    { path: '/forms/:id/submissions', component: FormSubmissionsPage, meta: { title: 'Form Submissions' } },
 ];
 
 const router = createRouter({

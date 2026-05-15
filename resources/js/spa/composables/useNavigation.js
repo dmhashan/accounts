@@ -17,6 +17,7 @@ import {
     BellRing,
     Activity,
     ClipboardCheck,
+    ClipboardList,
     CalendarDays,
     Ticket,
 } from 'lucide-vue-next';
@@ -43,6 +44,7 @@ const ICONS = {
     activity:      Activity,
     reconciliation: ClipboardCheck,
     vouchers:      Ticket,
+    forms:         ClipboardList,
 };
 
 export function useNavigation() {
@@ -127,6 +129,8 @@ export function useNavigation() {
             items.push({ label: 'Reconciliation', shortLabel: 'Reconcile', path: '/reconciliation', icon: ICONS.reconciliation });
         if (context.permissions?.vouchersManage)
             items.push({ label: 'Vouchers', shortLabel: 'Vouchers', path: '/vouchers', icon: ICONS.vouchers });
+        if (context.permissions?.formsManage)
+            items.push({ label: 'Forms', shortLabel: 'Forms', path: '/forms', icon: ICONS.forms });
         if (context.permissions?.profile)                 items.push({ label: 'Profile',        shortLabel: 'Profile',       path: '/profile',         icon: ICONS.profile });
 
         return items;

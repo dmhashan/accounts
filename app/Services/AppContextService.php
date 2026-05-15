@@ -45,6 +45,7 @@ class AppContextService
                 'reconciliationPerform'   => $user->hasPermission('reconciliation.perform'),
                 'reconciliationManage'    => $user->hasPermission('reconciliation.manage'),
                 'vouchersManage'          => $user->hasPermission('vouchers.manage'),
+                'formsManage'             => $user->hasPermission('forms.manage'),
             ],
         ];
     }

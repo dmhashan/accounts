@@ -494,18 +494,28 @@
 
             <!-- ── Documents Tab ── -->
             <template v-if="activeTab === 'documents'">
+                <!-- Uploaded Documents -->
                 <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
                         <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">Documents</h2>
-                        <button
-                            v-if="permissions.edit"
-                            type="button"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
-                            @click="openDocUpload"
-                        >
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                            Upload
-                        </button>
+                        <div v-if="permissions.edit" class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-secondary-300 dark:border-secondary-600 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-700 dark:text-secondary-300 transition-colors"
+                                @click="openFormFillModal"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                Fill Form
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                                @click="openDocUpload"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                Upload
+                            </button>
+                        </div>
                     </div>
                     <div v-if="documentsLoading" class="px-5 py-6 text-center text-sm text-secondary-400">Loading...</div>
                     <div v-else-if="documents.length === 0" class="px-5 py-10 text-center">
@@ -881,6 +891,114 @@
                 </form>
             </div>
         </div>
+
+        <!-- ── Fill Form Modal (member tab) ── -->
+        <div v-if="formFillModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/45" @click="closeFormFillModal"></div>
+            <div class="relative z-10 w-full max-w-xl rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 shadow-xl flex flex-col max-h-[90vh]">
+                <!-- Header -->
+                <div class="flex items-start justify-between gap-3 px-5 py-4 border-b border-secondary-100 dark:border-secondary-800 shrink-0">
+                    <div>
+                        <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
+                            {{ formFillStep === 'pick' ? 'Select Form Template' : (formFillTemplate?.title || 'Fill Form') }}
+                        </h3>
+                        <p v-if="formFillStep === 'fill'" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">For: <strong>{{ member?.first_name }} {{ member?.last_name }}</strong></p>
+                    </div>
+                    <button type="button" class="text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 mt-0.5" @click="closeFormFillModal">✕</button>
+                </div>
+
+                <!-- Body -->
+                <div class="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+
+                    <!-- Step 1: Pick template -->
+                    <div v-if="formFillStep === 'pick'">
+                        <p class="text-sm text-secondary-600 dark:text-secondary-400 mb-3">Choose a form template to fill for this member:</p>
+                        <div v-if="formTemplatesLoading" class="text-sm text-secondary-400 text-center py-4">Loading…</div>
+                        <div v-else-if="activeFormTemplates.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400 text-center py-4">No active form templates available.</div>
+                        <div v-else class="rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                            <button
+                                v-for="t in activeFormTemplates"
+                                :key="t.id"
+                                type="button"
+                                class="flex w-full items-start gap-3 px-4 py-3 text-sm hover:bg-secondary-50 dark:hover:bg-secondary-800 text-left border-b border-secondary-100 dark:border-secondary-800 last:border-0 transition-colors"
+                                @click="selectFormTemplate(t)"
+                            >
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-semibold text-secondary-900 dark:text-white">{{ t.title }}</p>
+                                    <p v-if="t.description" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5 line-clamp-2">{{ t.description }}</p>
+                                </div>
+                                <svg class="w-4 h-4 text-secondary-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Fill fields -->
+                    <template v-if="formFillStep === 'fill'">
+                        <div v-if="formFillError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-200">{{ formFillError }}</div>
+
+                        <template v-for="field in (formFillTemplate?.fields ?? [])" :key="field.id">
+                            <div v-if="field.type === 'heading'">
+                                <h3 class="text-base font-bold text-secondary-900 dark:text-white border-b border-secondary-200 dark:border-secondary-700 pb-1">{{ field.label }}</h3>
+                            </div>
+                            <div v-else-if="field.type === 'paragraph'">
+                                <p class="text-sm text-secondary-500 dark:text-secondary-400 italic">{{ field.label }}</p>
+                            </div>
+                            <div v-else-if="field.type === 'checkbox'" class="flex items-start gap-2.5">
+                                <input :id="`ff-${field.id}`" v-model="formFillResponses[field.id]" type="checkbox" class="mt-0.5 rounded border-secondary-300 dark:border-secondary-600 text-primary-600 focus:ring-primary-500 shrink-0" />
+                                <label :for="`ff-${field.id}`" class="text-sm text-secondary-700 dark:text-secondary-300">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
+                            </div>
+                            <div v-else-if="field.type === 'radio'">
+                                <p class="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></p>
+                                <div class="space-y-1.5">
+                                    <div v-for="opt in field.options" :key="opt" class="flex items-center gap-2">
+                                        <input :id="`ff-${field.id}_${opt}`" v-model="formFillResponses[field.id]" type="radio" :name="`ff-${field.id}`" :value="opt" class="border-secondary-300 dark:border-secondary-600 text-primary-600 focus:ring-primary-500" />
+                                        <label :for="`ff-${field.id}_${opt}`" class="text-sm text-secondary-700 dark:text-secondary-300">{{ opt }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-else-if="field.type === 'select'">
+                                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
+                                <select v-model="formFillResponses[field.id]" class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="">{{ field.placeholder || 'Select…' }}</option>
+                                    <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+                                </select>
+                            </div>
+                            <div v-else-if="field.type === 'textarea'">
+                                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
+                                <textarea v-model="formFillResponses[field.id]" rows="3" :placeholder="field.placeholder || ''" class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+                            </div>
+                            <div v-else-if="field.type === 'date'">
+                                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
+                                <input v-model="formFillResponses[field.id]" type="date" class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                            </div>
+                            <div v-else-if="field.type === 'number'">
+                                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
+                                <input v-model="formFillResponses[field.id]" type="number" :placeholder="field.placeholder || ''" class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                            </div>
+                            <div v-else-if="field.type === 'signature'">
+                                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
+                                <AppSignaturePad v-model="formFillResponses[field.id]" :height="160" />
+                            </div>
+                            <div v-else>
+                                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
+                                <input v-model="formFillResponses[field.id]" type="text" :placeholder="field.placeholder || ''" class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                            </div>
+                        </template>
+                    </template>
+                </div>
+
+                <!-- Footer -->
+                <div v-if="formFillStep === 'fill'" class="px-5 py-4 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-3 shrink-0">
+                    <button type="button" class="text-sm text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-300" @click="formFillStep = 'pick'">← Back</button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closeFormFillModal">Cancel</button>
+                        <button type="button" class="px-5 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 transition-colors" :disabled="formFillSubmitting" @click="submitFormFill">
+                            {{ formFillSubmitting ? 'Submitting…' : 'Submit & Generate PDF' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -889,6 +1007,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import jsQR from 'jsqr';
 import { apiRequest } from '../composables/useApiClient';
+import AppSignaturePad from '../components/AppSignaturePad.vue';
 import MemberAvatarUploader from '../components/MemberAvatarUploader.vue';
 
 const route = useRoute();
@@ -928,6 +1047,7 @@ function switchTab(id) {
     }
     if (id === 'documents' && member.value) {
         loadDocuments();
+        loadMemberForms();
     }
 }
 
@@ -1532,6 +1652,110 @@ function docCategoryColor(cat) {
         other: 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300 border-secondary-200 dark:border-secondary-600',
     };
     return map[cat] ?? map.other;
+}
+
+// ── Forms (member tab) ─────────────────────────────────────────────────────
+const formsLoading = ref(false);
+const memberSubmissions = ref([]);
+const activeFormTemplates = ref([]);
+const formTemplatesLoading = ref(false);
+
+const formFillModalOpen = ref(false);
+const formFillStep = ref('pick'); // 'pick' | 'fill'
+const formFillTemplate = ref(null);
+const formFillResponses = ref({});
+const formFillSubmitting = ref(false);
+const formFillError = ref('');
+
+async function loadMemberForms() {
+    formsLoading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/form-submissions`);
+        memberSubmissions.value = res.data ?? [];
+    } catch (_) { /* ignore */ } finally {
+        formsLoading.value = false;
+    }
+}
+
+async function openFormFillModal() {
+    formFillStep.value = 'pick';
+    formFillTemplate.value = null;
+    formFillResponses.value = {};
+    formFillError.value = '';
+    formFillModalOpen.value = true;
+    if (activeFormTemplates.value.length === 0) {
+        formTemplatesLoading.value = true;
+        try {
+            const res = await apiRequest('/api/forms/templates/active');
+            activeFormTemplates.value = res.data ?? [];
+        } catch (_) { /* ignore */ } finally {
+            formTemplatesLoading.value = false;
+        }
+    }
+}
+
+function closeFormFillModal() {
+    formFillModalOpen.value = false;
+}
+
+function selectFormTemplate(t) {
+    formFillTemplate.value = t;
+    const responses = {};
+    (t.fields ?? []).forEach(f => {
+        if (!['heading', 'paragraph'].includes(f.type)) {
+            responses[f.id] = f.type === 'checkbox' ? false : '';
+        }
+    });
+    formFillResponses.value = responses;
+    formFillStep.value = 'fill';
+}
+
+async function submitFormFill() {
+    formFillError.value = '';
+    for (const field of (formFillTemplate.value?.fields ?? [])) {
+        if (['heading', 'paragraph'].includes(field.type)) continue;
+        if (field.required) {
+            const val = formFillResponses.value[field.id];
+            if (val === '' || val === null || val === undefined || val === false) {
+                formFillError.value = `"${field.label}" is required.`;
+                return;
+            }
+        }
+    }
+    formFillSubmitting.value = true;
+    try {
+        const res = await apiRequest(
+            `/api/forms/templates/${formFillTemplate.value.id}/members/${member.value.id}/submit`,
+            { method: 'post', data: { responses: formFillResponses.value } },
+        );
+        memberSubmissions.value.unshift(res.data);
+        closeFormFillModal();
+        successMessage.value = 'Form submitted and PDF generated.';
+        setTimeout(() => { successMessage.value = ''; }, 4000);
+    } catch (err) {
+        formFillError.value = err?.response?.data?.message ?? 'Failed to submit form.';
+    } finally {
+        formFillSubmitting.value = false;
+    }
+}
+
+async function downloadSubmissionPdf(s) {
+    try {
+        const res = await apiRequest(`/api/forms/submissions/${s.id}/pdf-url`);
+        window.open(res.url, '_blank');
+    } catch {
+        errorMessage.value = 'Could not retrieve the PDF.';
+    }
+}
+
+async function deleteSubmission(s) {
+    if (!confirm('Delete this form submission?')) return;
+    try {
+        await apiRequest(`/api/forms/submissions/${s.id}`, { method: 'delete' });
+        memberSubmissions.value = memberSubmissions.value.filter(x => x.id !== s.id);
+    } catch {
+        errorMessage.value = 'Failed to delete submission.';
+    }
 }
 
 onMounted(() => {
