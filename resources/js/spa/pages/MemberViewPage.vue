@@ -936,7 +936,24 @@
                     <template v-if="formFillStep === 'fill'">
                         <div v-if="formFillError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-200">{{ formFillError }}</div>
 
-                        <template v-for="field in (formFillTemplate?.fields ?? [])" :key="field.id">
+                        <!-- Language selector -->
+                        <div v-if="availableFormLanguages.length > 1" class="flex items-center gap-2">
+                            <label class="text-xs font-medium text-secondary-500 dark:text-secondary-400 shrink-0">Language:</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="lang in availableFormLanguages"
+                                    :key="lang.code"
+                                    type="button"
+                                    class="px-2.5 py-1 rounded-md text-xs font-medium border transition-colors"
+                                    :class="formFillLanguage === lang.code
+                                        ? 'bg-primary-600 border-primary-600 text-white'
+                                        : 'border-secondary-300 dark:border-secondary-600 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800'"
+                                    @click="formFillLanguage = lang.code"
+                                >{{ lang.label }}</button>
+                            </div>
+                        </div>
+
+                        <template v-for="field in resolvedFormFields" :key="field.id">
                             <div v-if="field.type === 'heading'">
                                 <h3 class="text-base font-bold text-secondary-900 dark:text-white border-b border-secondary-200 dark:border-secondary-700 pb-1">{{ field.label }}</h3>
                             </div>
@@ -1663,9 +1680,43 @@ const formTemplatesLoading = ref(false);
 const formFillModalOpen = ref(false);
 const formFillStep = ref('pick'); // 'pick' | 'fill'
 const formFillTemplate = ref(null);
+const formFillLanguage = ref('en');
 const formFillResponses = ref({});
 const formFillSubmitting = ref(false);
 const formFillError = ref('');
+
+const FORM_LANGUAGES = [
+    { code: 'en', label: 'English' },
+    { code: 'si', label: 'සිංහල' },
+    { code: 'ta', label: 'தமிழ்' },
+    { code: 'fr', label: 'Français' },
+    { code: 'de', label: 'Deutsch' },
+    { code: 'es', label: 'Español' },
+    { code: 'pt', label: 'Português' },
+    { code: 'zh', label: '中文' },
+    { code: 'ja', label: '日本語' },
+    { code: 'ar', label: 'العربية' },
+];
+
+const availableFormLanguages = computed(() => {
+    if (!formFillTemplate.value) return [FORM_LANGUAGES[0]];
+    const trans = formFillTemplate.value.translations ?? {};
+    return FORM_LANGUAGES.filter(l => l.code === 'en' || trans[l.code]);
+});
+
+const resolvedFormFields = computed(() => {
+    if (!formFillTemplate.value) return [];
+    const lang = formFillLanguage.value;
+    const trans = formFillTemplate.value.translations?.[lang]?.fields ?? {};
+    return (formFillTemplate.value.fields ?? []).map(field => {
+        const t = trans[field.id] ?? {};
+        return {
+            ...field,
+            label: t.label ?? field.label,
+            options: t.options ?? field.options,
+        };
+    });
+});
 
 async function loadMemberForms() {
     formsLoading.value = true;
@@ -1700,6 +1751,7 @@ function closeFormFillModal() {
 
 function selectFormTemplate(t) {
     formFillTemplate.value = t;
+    formFillLanguage.value = 'en';
     const responses = {};
     (t.fields ?? []).forEach(f => {
         if (!['heading', 'paragraph'].includes(f.type)) {
@@ -1726,7 +1778,7 @@ async function submitFormFill() {
     try {
         const res = await apiRequest(
             `/api/forms/templates/${formFillTemplate.value.id}/members/${member.value.id}/submit`,
-            { method: 'post', data: { responses: formFillResponses.value } },
+            { method: 'post', data: { responses: formFillResponses.value, language: formFillLanguage.value } },
         );
         memberSubmissions.value.unshift(res.data);
         closeFormFillModal();
