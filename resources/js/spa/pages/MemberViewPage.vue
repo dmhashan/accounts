@@ -1730,6 +1730,7 @@ async function submitFormFill() {
         );
         memberSubmissions.value.unshift(res.data);
         closeFormFillModal();
+        loadDocuments();
         successMessage.value = 'Form submitted and PDF generated.';
         setTimeout(() => { successMessage.value = ''; }, 4000);
     } catch (err) {

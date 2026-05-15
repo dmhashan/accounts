@@ -185,6 +185,163 @@
                     </div>
                 </article>
 
+                <!-- Translations -->
+                <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <div>
+                            <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">Translations</h4>
+                            <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">Add translated versions of the form. English is the default and always shown as the fallback.</p>
+                        </div>
+                        <!-- Add language dropdown -->
+                        <div class="relative" ref="langMenuRef">
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-primary-500 text-primary-600 dark:text-primary-400 px-3 py-1.5 text-sm font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                                @click="langMenuOpen = !langMenuOpen"
+                            >
+                                <Plus class="w-3.5 h-3.5" :stroke-width="2.5" />
+                                Add Language
+                            </button>
+                            <div v-if="langMenuOpen" class="absolute right-0 mt-1 z-20 w-52 rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 shadow-lg overflow-hidden">
+                                <button
+                                    v-for="lang in AVAILABLE_LANGUAGES"
+                                    :key="lang.code"
+                                    type="button"
+                                    :disabled="translationLangs.includes(lang.code)"
+                                    class="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    @click="addLanguage(lang.code)"
+                                >
+                                    <span class="text-base leading-none">{{ lang.flag }}</span>
+                                    <span>{{ lang.name }}</span>
+                                    <span v-if="translationLangs.includes(lang.code)" class="ml-auto text-xs text-secondary-400">Added</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="translationLangs.length === 0" class="mt-4 rounded-xl border-2 border-dashed border-secondary-300 dark:border-secondary-700 py-8 text-center text-sm text-secondary-400 dark:text-secondary-500">
+                        No translations added. Click <strong>Add Language</strong> to translate this form.
+                    </div>
+
+                    <template v-else>
+                        <!-- Language tabs -->
+                        <div class="mt-3 flex flex-wrap gap-1.5 border-b border-secondary-200 dark:border-secondary-700 pb-3 mb-4">
+                            <button
+                                v-for="lang in AVAILABLE_LANGUAGES.filter(l => translationLangs.includes(l.code))"
+                                :key="lang.code"
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors"
+                                :class="activeLangTab === lang.code
+                                    ? 'bg-primary-600 text-white shadow-sm'
+                                    : 'border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800'"
+                                @click="activeLangTab = lang.code"
+                            >
+                                <span>{{ lang.flag }}</span>
+                                {{ lang.name }}
+                            </button>
+                        </div>
+
+                        <!-- Active language editor -->
+                        <template v-if="activeLangTab && form.translations[activeLangTab]">
+                            <div class="space-y-4">
+                                <!-- Title & Description -->
+                                <div class="grid gap-3 md:grid-cols-2">
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                                            Form Title
+                                            <span class="text-secondary-400 font-normal">(translated)</span>
+                                        </label>
+                                        <input
+                                            v-model="form.translations[activeLangTab].title"
+                                            type="text"
+                                            maxlength="255"
+                                            :placeholder="form.title || 'English title as fallback'"
+                                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        />
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                                            Description
+                                            <span class="text-secondary-400 font-normal">(translated)</span>
+                                        </label>
+                                        <textarea
+                                            v-model="form.translations[activeLangTab].description"
+                                            rows="2"
+                                            maxlength="2000"
+                                            :placeholder="form.description || 'English description as fallback'"
+                                            class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                                        ></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Per-field translations -->
+                                <div v-if="form.fields.length > 0" class="space-y-2">
+                                    <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide">Field Translations</p>
+                                    <div
+                                        v-for="field in form.fields"
+                                        :key="field.id"
+                                        class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-3"
+                                    >
+                                        <p class="text-[11px] font-semibold uppercase tracking-wide text-secondary-400 dark:text-secondary-500 mb-2">
+                                            {{ fieldTypeLabel(field.type) }}
+                                            <span class="normal-case font-normal ml-1 text-secondary-500 dark:text-secondary-400">— {{ field.label || '(no label)' }}</span>
+                                        </p>
+                                        <div class="grid gap-2 md:grid-cols-2">
+                                            <div :class="['select','radio'].includes(field.type) ? 'md:col-span-2' : ''">
+                                                <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                                                    {{ field.type === 'heading' ? 'Heading Text' : field.type === 'paragraph' ? 'Paragraph Text' : 'Label' }}
+                                                </label>
+                                                <input
+                                                    v-model="form.translations[activeLangTab].fields[field.id].label"
+                                                    type="text"
+                                                    maxlength="255"
+                                                    :placeholder="field.label || 'English label as fallback'"
+                                                    class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                />
+                                            </div>
+                                            <div v-if="['text','textarea','number','date','select'].includes(field.type)">
+                                                <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Placeholder</label>
+                                                <input
+                                                    v-model="form.translations[activeLangTab].fields[field.id].placeholder"
+                                                    type="text"
+                                                    maxlength="255"
+                                                    :placeholder="field.placeholder || 'English placeholder as fallback'"
+                                                    class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                />
+                                            </div>
+                                            <!-- Options for select/radio -->
+                                            <div v-if="['select','radio'].includes(field.type)" class="md:col-span-2">
+                                                <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Options <span class="font-normal text-secondary-400">(same order as English)</span></label>
+                                                <div class="space-y-1.5">
+                                                    <div v-for="(_, oi) in field.options" :key="oi" class="flex items-center gap-2">
+                                                        <span class="text-xs text-secondary-400 dark:text-secondary-500 w-4 shrink-0">{{ oi + 1 }}.</span>
+                                                        <input
+                                                            v-model="form.translations[activeLangTab].fields[field.id].options[oi]"
+                                                            type="text"
+                                                            maxlength="255"
+                                                            :placeholder="field.options[oi] || ('Option ' + (oi + 1))"
+                                                            class="flex-1 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Remove language -->
+                                <div class="flex justify-end">
+                                    <button
+                                        type="button"
+                                        class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors"
+                                        @click="removeLanguage(activeLangTab)"
+                                    >Remove this language translation</button>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                </article>
+
                 <!-- Save -->
                 <div class="flex items-center justify-end gap-3">
                     <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="router.push('/forms')">
@@ -347,6 +504,10 @@ const errorMessage = ref('');
 const activeTab = ref('builder');
 const addMenuOpen = ref(false);
 const addMenuRef = ref(null);
+const langMenuOpen = ref(false);
+const langMenuRef = ref(null);
+const translationLangs = ref([]);
+const activeLangTab = ref('');
 
 const FIELD_TYPES = [
     { type: 'text',      label: 'Short Text',       icon: Text },
@@ -361,31 +522,108 @@ const FIELD_TYPES = [
     { type: 'signature', label: 'Signature',        icon: PenLine },
 ];
 
+const AVAILABLE_LANGUAGES = [
+    { code: 'si', name: 'Sinhala',     flag: '🇱🇰' },
+    { code: 'ta', name: 'Tamil',       flag: '🇮🇳' },
+    { code: 'fr', name: 'French',      flag: '🇫🇷' },
+    { code: 'de', name: 'German',      flag: '🇩🇪' },
+    { code: 'es', name: 'Spanish',     flag: '🇪🇸' },
+    { code: 'pt', name: 'Portuguese',  flag: '🇵🇹' },
+    { code: 'zh', name: 'Chinese',     flag: '🇨🇳' },
+    { code: 'ja', name: 'Japanese',    flag: '🇯🇵' },
+    { code: 'ar', name: 'Arabic',      flag: '🇸🇦' },
+];
+
 const form = ref({
     title: '',
     description: '',
     is_active: true,
     fields: [],
+    translations: {},
 });
 
 function fieldTypeLabel(type) {
     return FIELD_TYPES.find(f => f.type === type)?.label ?? type;
 }
 
+/** Build an empty translations field entry for one field */
+function emptyFieldTrans(field) {
+    return {
+        label: '',
+        placeholder: '',
+        options: ['select', 'radio'].includes(field.type) ? field.options.map(() => '') : [],
+    };
+}
+
+/** Ensure all languages have an entry for every current field */
+function syncTranslationFields() {
+    for (const lang of translationLangs.value) {
+        if (!form.value.translations[lang]) continue;
+        for (const field of form.value.fields) {
+            if (!form.value.translations[lang].fields[field.id]) {
+                form.value.translations[lang].fields[field.id] = emptyFieldTrans(field);
+            }
+            // Sync option count for select/radio
+            if (['select', 'radio'].includes(field.type)) {
+                const opts = form.value.translations[lang].fields[field.id].options;
+                while (opts.length < field.options.length) opts.push('');
+                while (opts.length > field.options.length) opts.pop();
+            }
+        }
+        // Remove entries for fields that no longer exist
+        const ids = new Set(form.value.fields.map(f => f.id));
+        for (const key of Object.keys(form.value.translations[lang].fields)) {
+            if (!ids.has(key)) delete form.value.translations[lang].fields[key];
+        }
+    }
+}
+
+function addLanguage(code) {
+    langMenuOpen.value = false;
+    if (translationLangs.value.includes(code)) return;
+    // Build initial fields map
+    const fields = {};
+    for (const field of form.value.fields) {
+        fields[field.id] = emptyFieldTrans(field);
+    }
+    form.value.translations[code] = { title: '', description: '', fields };
+    translationLangs.value.push(code);
+    activeLangTab.value = code;
+}
+
+function removeLanguage(code) {
+    translationLangs.value = translationLangs.value.filter(l => l !== code);
+    delete form.value.translations[code];
+    activeLangTab.value = translationLangs.value[0] ?? '';
+}
+
 function addField(type) {
     addMenuOpen.value = false;
-    form.value.fields.push({
+    const newField = {
         id: crypto.randomUUID(),
         type,
         label: '',
         placeholder: '',
         required: false,
         options: ['select', 'radio'].includes(type) ? ['Yes', 'No'] : [],
-    });
+    };
+    form.value.fields.push(newField);
+    // Add entry in all active translation languages
+    for (const lang of translationLangs.value) {
+        if (form.value.translations[lang]) {
+            form.value.translations[lang].fields[newField.id] = emptyFieldTrans(newField);
+        }
+    }
 }
 
 function removeField(idx) {
-    form.value.fields.splice(idx, 1);
+    const removed = form.value.fields.splice(idx, 1)[0];
+    // Remove from translations
+    for (const lang of translationLangs.value) {
+        if (form.value.translations[lang]?.fields) {
+            delete form.value.translations[lang].fields[removed.id];
+        }
+    }
 }
 
 function moveField(idx, dir) {
@@ -402,6 +640,9 @@ function removeOption(field, oi) {
 function closeAddMenu(e) {
     if (addMenuRef.value && !addMenuRef.value.contains(e.target)) {
         addMenuOpen.value = false;
+    }
+    if (langMenuRef.value && !langMenuRef.value.contains(e.target)) {
+        langMenuOpen.value = false;
     }
 }
 
@@ -422,7 +663,31 @@ async function load() {
                 required: f.required ?? false,
                 options: f.options ?? [],
             })),
+            translations: {},
         };
+
+        // Restore translations
+        const raw = t.translations ?? {};
+        for (const [lang, data] of Object.entries(raw)) {
+            const fields = {};
+            for (const field of form.value.fields) {
+                const ft = data.fields?.[field.id] ?? {};
+                fields[field.id] = {
+                    label: ft.label ?? '',
+                    placeholder: ft.placeholder ?? '',
+                    options: ['select', 'radio'].includes(field.type)
+                        ? field.options.map((_, i) => ft.options?.[i] ?? '')
+                        : [],
+                };
+            }
+            form.value.translations[lang] = {
+                title: data.title ?? '',
+                description: data.description ?? '',
+                fields,
+            };
+            if (!translationLangs.value.includes(lang)) translationLangs.value.push(lang);
+        }
+        if (translationLangs.value.length > 0) activeLangTab.value = translationLangs.value[0];
     } catch {
         errorMessage.value = 'Failed to load form template.';
     } finally {
@@ -436,21 +701,46 @@ async function save() {
         errorMessage.value = 'Title is required.';
         return;
     }
+    // Sync option counts in translations before saving
+    syncTranslationFields();
     saving.value = true;
     try {
+        const normalizedFields = form.value.fields.map((f, i) => ({
+            id: f.id,
+            type: f.type,
+            label: f.label.trim(),
+            placeholder: f.placeholder?.trim() || null,
+            required: f.required,
+            options: f.options.filter(o => o.trim()),
+            order: i,
+        }));
+
+        // Build translations payload — only include non-empty entries
+        const translations = {};
+        for (const lang of translationLangs.value) {
+            const t = form.value.translations[lang];
+            if (!t) continue;
+            const fields = {};
+            for (const [fid, ft] of Object.entries(t.fields ?? {})) {
+                fields[fid] = {
+                    label: ft.label?.trim() || null,
+                    placeholder: ft.placeholder?.trim() || null,
+                    options: ft.options ?? [],
+                };
+            }
+            translations[lang] = {
+                title: t.title?.trim() || null,
+                description: t.description?.trim() || null,
+                fields,
+            };
+        }
+
         const payload = {
             title: form.value.title.trim(),
             description: form.value.description.trim() || null,
             is_active: form.value.is_active,
-            fields: form.value.fields.map((f, i) => ({
-                id: f.id,
-                type: f.type,
-                label: f.label.trim(),
-                placeholder: f.placeholder?.trim() || null,
-                required: f.required,
-                options: f.options.filter(o => o.trim()),
-                order: i,
-            })),
+            fields: normalizedFields,
+            translations,
         };
 
         if (isEdit.value) {

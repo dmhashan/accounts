@@ -13,6 +13,7 @@ class FormSubmission extends Model
         'member_id',
         'submitted_by',
         'responses',
+        'language',
         'pdf_path',
         'submitted_at',
     ];

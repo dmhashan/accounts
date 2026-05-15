@@ -6,8 +6,10 @@ use App\Models\FormSubmission;
 use App\Models\FormTemplate;
 use App\Models\Member;
 use App\Models\MemberDocument;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
+use Mpdf\Mpdf;
 
 class FormBuilderService
 {
@@ -24,6 +26,9 @@ class FormBuilderService
         'paragraph',
         'signature',
     ];
+
+    /** Allowed translation language codes */
+    public const ALLOWED_LANGUAGES = ['en', 'si', 'ta', 'fr', 'de', 'es', 'pt', 'zh', 'ja', 'ar'];
 
     public function __construct(private readonly MediaStorageService $media) {}
 
@@ -54,12 +59,13 @@ class FormBuilderService
     public function storeTemplate(int $tenantId, ?int $createdBy, array $validated): FormTemplate
     {
         return FormTemplate::create([
-            'tenant_id'   => $tenantId,
-            'created_by'  => $createdBy,
-            'title'       => trim($validated['title']),
-            'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
-            'fields'      => $this->normalizeFields($validated['fields'] ?? []),
-            'is_active'   => $validated['is_active'] ?? true,
+            'tenant_id'    => $tenantId,
+            'created_by'   => $createdBy,
+            'title'        => trim($validated['title']),
+            'description'  => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
+            'fields'       => $this->normalizeFields($validated['fields'] ?? []),
+            'translations' => $this->normalizeTranslations($validated['translations'] ?? []),
+            'is_active'    => $validated['is_active'] ?? true,
         ]);
     }
 
@@ -72,8 +78,9 @@ class FormBuilderService
         $template->update([
             'title'       => trim($validated['title']),
             'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
-            'fields'      => $this->normalizeFields($validated['fields'] ?? []),
-            'is_active'   => $validated['is_active'] ?? $template->is_active,
+            'fields'       => $this->normalizeFields($validated['fields'] ?? []),
+            'translations' => $this->normalizeTranslations($validated['translations'] ?? []),
+            'is_active'    => $validated['is_active'] ?? $template->is_active,
         ]);
 
         return $template->fresh();
@@ -125,7 +132,8 @@ class FormBuilderService
         Member $member,
         int $tenantId,
         ?int $submittedBy,
-        array $responses
+        array $responses,
+        string $language = 'en'
     ): FormSubmission {
         if ($template->tenant_id !== $tenantId) {
             abort(404);
@@ -137,6 +145,7 @@ class FormBuilderService
             'member_id'        => $member->id,
             'submitted_by'     => $submittedBy,
             'responses'        => $responses,
+            'language'         => in_array($language, self::ALLOWED_LANGUAGES, true) ? $language : 'en',
             'submitted_at'     => now(),
         ]);
 
@@ -207,15 +216,79 @@ class FormBuilderService
     ): array {
         $memberName = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?? 'Member');
 
-        $pdf = Pdf::loadView('pdfs.form-submission', [
-            'template'    => $template,
-            'submission'  => $submission,
-            'memberName'  => $memberName,
-            'memberId'    => $member->member_id ?? '',
-            'submittedAt' => $submission->submitted_at?->format('d M Y, H:i') ?? now()->format('d M Y, H:i'),
-        ])->setPaper('a4');
+        // Resolve field labels for the submission language
+        $resolvedFields = $this->resolveFieldsForLanguage(
+            $template->fields ?? [],
+            $template->translations ?? [],
+            $submission->language ?? 'en'
+        );
 
-        $content  = $pdf->output();
+        $lang = $submission->language ?? 'en';
+        $isRtl = $lang === 'ar';
+
+        // Font config per non-Latin script
+        $scriptFonts = [
+            'si' => ['key' => 'notosanssinhala', 'file' => 'NotoSansSinhala-Regular.ttf', 'otl' => true],
+            'ta' => ['key' => 'notosanstamil',   'file' => 'NotoSansTamil-Regular.ttf',   'otl' => true],
+            'ar' => ['key' => 'notosansarabic',  'file' => 'NotoSansArabic-Regular.ttf',  'otl' => true],
+            'zh' => ['key' => 'notosanssc',      'file' => 'NotoSansSC-Regular.ttf',      'otl' => false],
+            'ja' => ['key' => 'notosansjp',      'file' => 'NotoSansJP-Regular.ttf',      'otl' => false],
+        ];
+        $scriptFont = $scriptFonts[$lang] ?? null;
+
+        // Build mPDF font config on top of defaults
+        $defaultFontDirs = (new ConfigVariables())->getDefaults()['fontDir'];
+        $defaultFontData = (new FontVariables())->getDefaults()['fontdata'];
+
+        $fontDirs = array_merge($defaultFontDirs, [storage_path('fonts')]);
+        $fontData = $defaultFontData;
+
+        $defaultFont = 'dejavusans';
+        $bodyFont    = 'dejavusans, sans-serif';
+
+        if ($scriptFont) {
+            $entry = [
+                'R' => $scriptFont['file'],
+                'B' => $scriptFont['file'],
+                'I' => $scriptFont['file'],
+            ];
+            if ($scriptFont['otl']) {
+                $entry['useOTL']    = 0xFF;
+                $entry['useKashida'] = 75;
+            }
+            $fontData[$scriptFont['key']] = $entry;
+            $defaultFont = $scriptFont['key'];
+            $bodyFont    = "'{$scriptFont['key']}', dejavusans, sans-serif";
+        }
+
+        $html = view('pdfs.form-submission', [
+            'template'       => $template,
+            'submission'     => $submission,
+            'resolvedFields' => $resolvedFields,
+            'language'       => $lang,
+            'bodyFont'       => $bodyFont,
+            'isRtl'          => $isRtl,
+            'memberName'     => $memberName,
+            'memberId'       => $member->member_id ?? '',
+            'submittedAt'    => $submission->submitted_at?->format('d M Y, H:i') ?? now()->format('d M Y, H:i'),
+        ])->render();
+
+        $mpdf = new Mpdf([
+            'mode'         => 'utf-8',
+            'format'       => 'A4',
+            'fontDir'      => $fontDirs,
+            'fontdata'     => $fontData,
+            'default_font' => $defaultFont,
+            'tempDir'      => storage_path('app/mpdf-tmp'),
+        ]);
+
+        if ($isRtl) {
+            $mpdf->SetDirectionality('rtl');
+        }
+
+        $mpdf->WriteHTML($html);
+        $content  = $mpdf->Output('', 'S');
+
         $filename = Str::slug($template->title) . '-' . $submission->id . '.pdf';
         $path     = "members/{$tenantId}/{$member->id}/form-submissions/{$filename}";
 
@@ -241,6 +314,66 @@ class FormBuilderService
         }, $fields, array_keys($fields)));
     }
 
+    /**
+     * Normalize and sanitize the translations map.
+     * Shape: { lang_code: { title, description, fields: { field_id: { label, placeholder, options } } } }
+     */
+    public function normalizeTranslations(array $translations): array
+    {
+        $result = [];
+
+        foreach ($translations as $lang => $data) {
+            if (! in_array($lang, self::ALLOWED_LANGUAGES, true) || $lang === 'en') {
+                continue;
+            }
+
+            $fields = [];
+            foreach ($data['fields'] ?? [] as $fieldId => $ft) {
+                $fields[(string) $fieldId] = [
+                    'label'       => isset($ft['label'])       ? trim((string) $ft['label'])       : null,
+                    'placeholder' => isset($ft['placeholder']) ? trim((string) $ft['placeholder']) : null,
+                    'options'     => array_values(array_filter(
+                        array_map(fn ($o) => trim((string) $o), $ft['options'] ?? []),
+                        fn ($o) => $o !== ''
+                    )),
+                ];
+            }
+
+            $result[$lang] = [
+                'title'       => isset($data['title'])       ? trim((string) $data['title'])       : null,
+                'description' => isset($data['description']) ? trim((string) $data['description']) : null,
+                'fields'      => $fields,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Merge translation overrides onto a fields array for the given language.
+     * Falls back to the original English value for any missing translation.
+     */
+    private function resolveFieldsForLanguage(array $fields, array $translations, string $language): array
+    {
+        if ($language === 'en' || empty($translations[$language])) {
+            return $fields;
+        }
+
+        $trans = $translations[$language]['fields'] ?? [];
+
+        return array_map(function (array $field) use ($trans) {
+            $ft = $trans[$field['id']] ?? null;
+            if (! $ft) {
+                return $field;
+            }
+            return array_merge($field, array_filter([
+                'label'       => $ft['label']       ?: null,
+                'placeholder' => $ft['placeholder'] ?: null,
+                'options'     => ! empty($ft['options']) ? $ft['options'] : null,
+            ], fn ($v) => $v !== null));
+        }, $fields);
+    }
+
     private function serializeTemplate(FormTemplate $t, bool $withFields = false): array
     {
         $data = [
@@ -253,7 +386,8 @@ class FormBuilderService
         ];
 
         if ($withFields) {
-            $data['fields'] = $t->fields ?? [];
+            $data['fields']       = $t->fields ?? [];
+            $data['translations'] = $t->translations ?? [];
         }
 
         return $data;
@@ -270,6 +404,7 @@ class FormBuilderService
                 'member_id' => $s->member->member_id ?? '',
             ] : null,
             'submitted_by' => $s->submitter ? ['id' => $s->submitter->id, 'name' => $s->submitter->name] : null,
+            'language'     => $s->language ?? 'en',
             'has_pdf'      => (bool) $s->pdf_path,
             'submitted_at' => $s->submitted_at?->format('d M Y, H:i'),
             'created_at'   => $s->created_at?->format('d M Y, H:i'),

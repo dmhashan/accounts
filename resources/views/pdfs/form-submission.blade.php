@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ $language ?? 'en' }}">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,11 +7,12 @@
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-        font-family: DejaVu Sans, Arial, sans-serif;
+        font-family: {!! $bodyFont ?? 'dejavusans, sans-serif' !!};
         font-size: 11pt;
         color: #1a1a1a;
-        line-height: 1.5;
+        line-height: 1.6;
         padding: 30px 36px;
+        direction: {{ ($isRtl ?? false) ? 'rtl' : 'ltr' }};
     }
     .header {
         text-align: center;
@@ -168,7 +169,7 @@
 <hr style="border:none;border-top:1px solid #ccc;margin:10px 0 18px;" />
 
 <!-- Fields -->
-@foreach($template->fields ?? [] as $field)
+@foreach($resolvedFields ?? $template->fields ?? [] as $field)
     @php
         $type  = $field['type'] ?? 'text';
         $fid   = $field['id']   ?? '';

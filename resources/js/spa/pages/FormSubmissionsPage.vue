@@ -152,9 +152,26 @@
 
                     <!-- Form fields step -->
                     <template v-else>
+                        <!-- Language switcher (shown only if template has translations) -->
+                        <div v-if="availableFormLanguages.length > 1" class="flex flex-wrap gap-1.5 pb-3 border-b border-secondary-200 dark:border-secondary-700">
+                            <button
+                                v-for="lang in availableFormLanguages"
+                                :key="lang.code"
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors"
+                                :class="selectedLanguage === lang.code
+                                    ? 'bg-primary-600 text-white shadow-sm'
+                                    : 'border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800'"
+                                @click="selectedLanguage = lang.code"
+                            >
+                                <span>{{ lang.flag }}</span>
+                                {{ lang.name }}
+                            </button>
+                        </div>
+
                         <div v-if="fillError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-200">{{ fillError }}</div>
 
-                        <template v-for="field in templateFields" :key="field.id">
+                        <template v-for="field in displayFields" :key="field.id">
                             <!-- Heading -->
                             <div v-if="field.type === 'heading'">
                                 <h3 class="text-base font-bold text-secondary-900 dark:text-white border-b border-secondary-200 dark:border-secondary-700 pb-1">{{ field.label }}</h3>
@@ -326,6 +343,7 @@ const successMessage = ref('');
 const submissions = ref([]);
 const templateTitle = ref('');
 const templateFields = ref([]);
+const templateTranslations = ref({});
 const search = ref('');
 
 const deleteTarget = ref(null);
@@ -341,6 +359,50 @@ const memberSearch = ref('');
 const memberResults = ref([]);
 const memberSearching = ref(false);
 let memberSearchTimer = null;
+
+// Language
+const selectedLanguage = ref('en');
+
+const AVAILABLE_LANGUAGES = [
+    { code: 'en', name: 'English',     flag: '🇬🇧' },
+    { code: 'si', name: 'Sinhala',     flag: '🇱🇰' },
+    { code: 'ta', name: 'Tamil',       flag: '🇮🇳' },
+    { code: 'fr', name: 'French',      flag: '🇫🇷' },
+    { code: 'de', name: 'German',      flag: '🇩🇪' },
+    { code: 'es', name: 'Spanish',     flag: '🇪🇸' },
+    { code: 'pt', name: 'Portuguese',  flag: '🇵🇹' },
+    { code: 'zh', name: 'Chinese',     flag: '🇨🇳' },
+    { code: 'ja', name: 'Japanese',    flag: '🇯🇵' },
+    { code: 'ar', name: 'Arabic',      flag: '🇸🇦' },
+];
+
+/** Languages available for this template (EN + any translated langs) */
+const availableFormLanguages = computed(() => {
+    const langs = [AVAILABLE_LANGUAGES[0]]; // always EN
+    for (const [code] of Object.entries(templateTranslations.value)) {
+        const meta = AVAILABLE_LANGUAGES.find(l => l.code === code);
+        if (meta) langs.push(meta);
+    }
+    return langs;
+});
+
+/** Fields with translated labels merged in for the selected language */
+const displayFields = computed(() => {
+    if (selectedLanguage.value === 'en' || !templateTranslations.value[selectedLanguage.value]) {
+        return templateFields.value;
+    }
+    const trans = templateTranslations.value[selectedLanguage.value];
+    return templateFields.value.map(field => {
+        const ft = trans.fields?.[field.id];
+        if (!ft) return field;
+        return {
+            ...field,
+            label: ft.label || field.label,
+            placeholder: ft.placeholder || field.placeholder,
+            options: ft.options?.some(o => o) ? ft.options.map((o, i) => o || field.options[i] || '') : field.options,
+        };
+    });
+});
 
 const filtered = computed(() => {
     const q = search.value.trim().toLowerCase();
@@ -361,6 +423,7 @@ async function load() {
         ]);
         templateTitle.value = tRes.title;
         templateFields.value = tRes.fields ?? [];
+        templateTranslations.value = tRes.translations ?? {};
         submissions.value = sRes.data ?? [];
     } catch {
         errorMessage.value = 'Failed to load submissions.';
@@ -403,6 +466,7 @@ function openFillModal() {
     fillError.value = '';
     memberSearch.value = '';
     memberResults.value = [];
+    selectedLanguage.value = 'en';
     fillModalOpen.value = true;
 }
 
@@ -448,8 +512,8 @@ function selectMember(m) {
 
 async function submitFill() {
     fillError.value = '';
-    // Validate required fields
-    for (const field of templateFields.value) {
+    // Validate required fields using displayFields (translated labels for error messages)
+    for (const field of displayFields.value) {
         if (['heading', 'paragraph'].includes(field.type)) continue;
         if (field.required) {
             const val = fillResponses.value[field.id];
@@ -464,7 +528,7 @@ async function submitFill() {
     try {
         const res = await apiRequest(
             `/api/forms/templates/${route.params.id}/members/${fillMember.value.id}/submit`,
-            { method: 'post', data: { responses: fillResponses.value } },
+            { method: 'post', data: { responses: fillResponses.value, language: selectedLanguage.value } },
         );
         submissions.value.unshift(res.data);
         closeFillModal();

@@ -14,12 +14,14 @@ class FormTemplate extends Model
         'title',
         'description',
         'fields',
+        'translations',
         'is_active',
     ];
 
     protected $casts = [
-        'fields'    => 'array',
-        'is_active' => 'boolean',
+        'fields'       => 'array',
+        'translations' => 'array',
+        'is_active'    => 'boolean',
     ];
 
     public function tenant(): BelongsTo

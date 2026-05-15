@@ -43,15 +43,25 @@ class FormBuilderApiController extends Controller
         $tenantId = app('tenant')->id;
 
         $validated = $request->validate([
-            'title'              => ['required', 'string', 'max:255'],
-            'description'        => ['nullable', 'string', 'max:2000'],
-            'is_active'          => ['boolean'],
-            'fields'             => ['required', 'array'],
-            'fields.*.type'      => ['required', 'string', 'in:' . implode(',', FormBuilderService::FIELD_TYPES)],
-            'fields.*.label'     => ['required', 'string', 'max:255'],
-            'fields.*.required'  => ['boolean'],
-            'fields.*.options'   => ['array'],
-            'fields.*.options.*' => ['string', 'max:255'],
+            'title'                               => ['required', 'string', 'max:255'],
+            'description'                         => ['nullable', 'string', 'max:2000'],
+            'is_active'                           => ['boolean'],
+            'fields'                              => ['required', 'array'],
+            'fields.*.type'                       => ['required', 'string', 'in:' . implode(',', FormBuilderService::FIELD_TYPES)],
+            'fields.*.label'                      => ['required', 'string', 'max:255'],
+            'fields.*.required'                   => ['boolean'],
+            'fields.*.options'                    => ['array'],
+            'fields.*.options.*'                  => ['string', 'max:255'],
+            'translations'                        => ['nullable', 'array'],
+            'translations.*'                      => ['array'],
+            'translations.*.title'                => ['nullable', 'string', 'max:255'],
+            'translations.*.description'          => ['nullable', 'string', 'max:2000'],
+            'translations.*.fields'               => ['nullable', 'array'],
+            'translations.*.fields.*'             => ['nullable', 'array'],
+            'translations.*.fields.*.label'       => ['nullable', 'string', 'max:255'],
+            'translations.*.fields.*.placeholder' => ['nullable', 'string', 'max:255'],
+            'translations.*.fields.*.options'     => ['nullable', 'array'],
+            'translations.*.fields.*.options.*'   => ['nullable', 'string', 'max:255'],
         ]);
 
         $template = $this->formService->storeTemplate($tenantId, $request->user()?->id, $validated);
@@ -71,15 +81,25 @@ class FormBuilderApiController extends Controller
         }
 
         $validated = $request->validate([
-            'title'              => ['required', 'string', 'max:255'],
-            'description'        => ['nullable', 'string', 'max:2000'],
-            'is_active'          => ['boolean'],
-            'fields'             => ['required', 'array'],
-            'fields.*.type'      => ['required', 'string', 'in:' . implode(',', FormBuilderService::FIELD_TYPES)],
-            'fields.*.label'     => ['required', 'string', 'max:255'],
-            'fields.*.required'  => ['boolean'],
-            'fields.*.options'   => ['array'],
-            'fields.*.options.*' => ['string', 'max:255'],
+            'title'                               => ['required', 'string', 'max:255'],
+            'description'                         => ['nullable', 'string', 'max:2000'],
+            'is_active'                           => ['boolean'],
+            'fields'                              => ['required', 'array'],
+            'fields.*.type'                       => ['required', 'string', 'in:' . implode(',', FormBuilderService::FIELD_TYPES)],
+            'fields.*.label'                      => ['required', 'string', 'max:255'],
+            'fields.*.required'                   => ['boolean'],
+            'fields.*.options'                    => ['array'],
+            'fields.*.options.*'                  => ['string', 'max:255'],
+            'translations'                        => ['nullable', 'array'],
+            'translations.*'                      => ['array'],
+            'translations.*.title'                => ['nullable', 'string', 'max:255'],
+            'translations.*.description'          => ['nullable', 'string', 'max:2000'],
+            'translations.*.fields'               => ['nullable', 'array'],
+            'translations.*.fields.*'             => ['nullable', 'array'],
+            'translations.*.fields.*.label'       => ['nullable', 'string', 'max:255'],
+            'translations.*.fields.*.placeholder' => ['nullable', 'string', 'max:255'],
+            'translations.*.fields.*.options'     => ['nullable', 'array'],
+            'translations.*.fields.*.options.*'   => ['nullable', 'string', 'max:255'],
         ]);
 
         $template = $this->formService->updateTemplate($template, $tenantId, $validated);
@@ -133,6 +153,7 @@ class FormBuilderApiController extends Controller
         $validated = $request->validate([
             'responses'   => ['required', 'array'],
             'responses.*' => ['nullable'],
+            'language'    => ['nullable', 'string', 'max:10'],
         ]);
 
         $submission = $this->formService->submitForm(
@@ -140,7 +161,8 @@ class FormBuilderApiController extends Controller
             $member,
             $tenantId,
             $request->user()?->id,
-            $validated['responses']
+            $validated['responses'],
+            $validated['language'] ?? 'en',
         );
 
         return response()->json([
