@@ -7,6 +7,7 @@
             v-else-if="screen === 'identify'"
             v-model="phone"
             :tenant-name="tenantName"
+            :tenant-logo-url="tenantLogoUrl"
             :error="error"
             :is-loading="isLoading"
             @submit="requestOtp"
@@ -39,6 +40,7 @@
                             :sales-data="salesData"
                             :wallet-transactions="walletTransactions"
                             :wallet-tx-meta="walletTxMeta"
+                            :tenant-logo-url="tenantLogoUrl"
                             @open-workout="openWorkout"
                             @open-sale="openSale"
                             @logout="logout"
@@ -148,7 +150,8 @@ const walletTransactions = ref([]);
 const walletTxMeta       = ref({ current_page: 1, last_page: 1, total: 0, per_page: 10 });
 const meta               = ref({});
 
-const tenantName = computed(() => window.__tenantName || '');
+const tenantName    = computed(() => window.__tenantName || '');
+const tenantLogoUrl = computed(() => window.__tenantLogoUrl || null);
 
 // ── Nav state ──────────────────────────────────────────────
 const router        = useRouter();

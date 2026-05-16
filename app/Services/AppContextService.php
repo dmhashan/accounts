@@ -7,6 +7,10 @@ use App\Models\User;
 
 class AppContextService
 {
+    public function __construct(
+        private readonly MediaStorageService $media,
+    ) {}
+
     public function build(User $user, Tenant $tenant): array
     {
         return [
@@ -16,9 +20,13 @@ class AppContextService
                 'email' => $user->email,
             ],
             'tenant' => [
-                'id' => $tenant->id,
-                'name' => $tenant->name,
-                'domain' => $tenant->domain,
+                'id'       => $tenant->id,
+                'name'     => $tenant->name,
+                'domain'   => $tenant->domain,
+                'address'  => $tenant->address,
+                'email'    => $tenant->email,
+                'phone'    => $tenant->phone,
+                'logo_url' => $tenant->logo_path ? $this->media->url($tenant->logo_path) : null,
             ],
             'permissions' => [
                 'dashboard' => $user->hasPermission('dashboard.view'),

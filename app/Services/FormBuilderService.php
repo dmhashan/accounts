@@ -6,6 +6,7 @@ use App\Models\FormSubmission;
 use App\Models\FormTemplate;
 use App\Models\Member;
 use App\Models\MemberDocument;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mpdf\Config\ConfigVariables;
 use Mpdf\Config\FontVariables;
@@ -151,7 +152,7 @@ class FormBuilderService
 
         // Generate PDF, store it, and create a MemberDocument record
         try {
-            [$pdfPath, $pdfSize, $pdfFilename] = $this->generateAndStorePdf($submission, $template, $member, $tenantId);
+            [$pdfPath, $pdfSize, $pdfFilename] = $this->generateAndStorePdf($submission, $template, $member, $tenantId, app('tenant'));
             $submission->update(['pdf_path' => $pdfPath]);
 
             MemberDocument::create([
@@ -199,7 +200,7 @@ class FormBuilderService
         if (! $submission->pdf_path) {
             // Regenerate if missing
             $submission->loadMissing(['template', 'member']);
-            [$pdfPath] = $this->generateAndStorePdf($submission, $submission->template, $submission->member, $tenantId);
+            [$pdfPath] = $this->generateAndStorePdf($submission, $submission->template, $submission->member, $tenantId, app('tenant'));
             $submission->update(['pdf_path' => $pdfPath]);
         }
 
@@ -212,7 +213,8 @@ class FormBuilderService
         FormSubmission $submission,
         FormTemplate $template,
         Member $member,
-        int $tenantId
+        int $tenantId,
+        ?\App\Models\Tenant $tenant = null
     ): array {
         $memberName = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?? 'Member');
 
@@ -270,6 +272,11 @@ class FormBuilderService
             'memberName'     => $memberName,
             'memberId'       => $member->member_id ?? '',
             'submittedAt'    => $submission->submitted_at?->format('d M Y, H:i') ?? now()->format('d M Y, H:i'),
+            'tenantName'     => $tenant->name ?? '',
+            'tenantAddress'  => $tenant->address ?? '',
+            'tenantEmail'    => $tenant->email ?? '',
+            'tenantPhone'    => $tenant->phone ?? '',
+            'tenantLogoBase64' => $this->resolveLogoBase64($tenant),
         ])->render();
 
         $mpdf = new Mpdf([
@@ -414,5 +421,33 @@ class FormBuilderService
         }
 
         return $data;
+    }
+
+    /**
+     * Return a data-URI (base64) for the tenant logo suitable for mPDF inline images.
+     * Returns null if no logo is set or the file cannot be read.
+     */
+    private function resolveLogoBase64(?\App\Models\Tenant $tenant): ?string
+    {
+        if (! $tenant || ! $tenant->logo_path) {
+            return null;
+        }
+
+        try {
+            $diskName = config('filesystems.media_disk', 'public');
+            $content  = Storage::disk($diskName)->get($tenant->logo_path);
+
+            if (! $content) {
+                return null;
+            }
+
+            $ext      = strtolower(pathinfo($tenant->logo_path, PATHINFO_EXTENSION));
+            $mimeMap  = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'svg' => 'image/svg+xml'];
+            $mime     = $mimeMap[$ext] ?? 'image/png';
+
+            return 'data:' . $mime . ';base64,' . base64_encode($content);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

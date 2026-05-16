@@ -3,8 +3,15 @@
         <div class="app-surface flex h-[calc(100vh-2rem)] flex-col rounded-3xl overflow-hidden">
             <!-- Brand header -->
             <div class="px-5 py-5 border-b border-secondary-200/70 dark:border-secondary-700/70 shrink-0">
-                <p class="text-[11px] uppercase tracking-[0.14em] text-secondary-400 dark:text-secondary-500">Workspace</p>
-                <h2 class="mt-0.5 text-lg font-bold truncate" style="color: var(--text-strong)">{{ context.tenant?.name || 'Tenant App' }}</h2>
+                <div class="flex items-center gap-3">
+                    <div v-if="context.tenant?.logo_url" class="w-10 h-10 rounded-xl overflow-hidden bg-secondary-100 dark:bg-secondary-800 shrink-0 border border-secondary-200/70 dark:border-secondary-700/70">
+                        <img :src="context.tenant.logo_url" :alt="context.tenant.name" class="w-full h-full object-contain" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] uppercase tracking-[0.14em] text-secondary-400 dark:text-secondary-500">Administrator</p>
+                        <h2 class="mt-0.5 text-lg font-bold truncate" style="color: var(--text-strong)">{{ context.tenant?.name || 'Tenant App' }}</h2>
+                    </div>
+                </div>
             </div>
 
             <!-- Nav -->

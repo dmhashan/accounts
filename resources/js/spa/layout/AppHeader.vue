@@ -8,9 +8,14 @@
                 </svg>
                 </button>
 
-                <div class="min-w-0">
-                    <p class="text-[11px] sm:text-xs uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400 truncate">{{ context.tenant?.name || 'Tenant App' }}</p>
-                    <h1 class="text-base sm:text-lg md:text-xl font-bold app-gradient-title truncate">{{ pageTitle }}</h1>
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div v-if="context.tenant?.logo_url" class="w-7 h-7 rounded-lg overflow-hidden bg-secondary-100 dark:bg-secondary-800 shrink-0 border border-secondary-200/50 dark:border-secondary-700/50">
+                        <img :src="context.tenant.logo_url" :alt="context.tenant.name" class="w-full h-full object-contain" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] sm:text-xs uppercase tracking-[0.12em] text-secondary-500 dark:text-secondary-400 truncate">{{ context.tenant?.name || 'Tenant App' }}</p>
+                        <h1 class="text-base sm:text-lg md:text-xl font-bold app-gradient-title truncate">{{ pageTitle }}</h1>
+                    </div>
                 </div>
             </div>
 

@@ -11,6 +11,10 @@ class Tenant extends Model
         'name',
         'domain',
         'use_custom_landing_page',
+        'address',
+        'email',
+        'phone',
+        'logo_path',
     ];
 
     protected $casts = [

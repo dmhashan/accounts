@@ -15,9 +15,14 @@
             :class="open ? 'translate-x-0' : '-translate-x-full'">
             <!-- Header -->
             <div class="h-16 px-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center justify-between shrink-0">
-                <div class="min-w-0">
-                    <p class="text-[11px] uppercase tracking-[0.12em]" style="color: var(--text-muted)">Navigation</p>
-                    <h2 class="text-lg font-bold truncate" style="color: var(--text-strong)">{{ context.tenant?.name || 'Tenant App' }}</h2>
+                <div class="flex items-center gap-3 min-w-0">
+                    <div v-if="context.tenant?.logo_url" class="w-8 h-8 rounded-lg overflow-hidden bg-secondary-100 dark:bg-secondary-800 shrink-0 border border-secondary-200/70 dark:border-secondary-700/70">
+                        <img :src="context.tenant.logo_url" :alt="context.tenant.name" class="w-full h-full object-contain" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] uppercase tracking-[0.12em]" style="color: var(--text-muted)">Navigation</p>
+                        <h2 class="text-lg font-bold truncate" style="color: var(--text-strong)">{{ context.tenant?.name || 'Tenant App' }}</h2>
+                    </div>
                 </div>
                 <button type="button" class="p-2 rounded-xl transition-colors hover:bg-secondary-100 dark:hover:bg-secondary-700/50" style="color: var(--text-muted)" @click="$emit('close')">
                     <X class="h-5 w-5" :stroke-width="2" />

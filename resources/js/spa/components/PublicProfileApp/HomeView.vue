@@ -2,10 +2,13 @@
     <div>
         <!-- Header -->
         <div class="flex items-center justify-between pt-12 pb-6">
-            <div>
+            <div class="min-w-0">
                 <p class="text-sm text-gray-400 leading-none mb-1">{{ greeting }},</p>
                 <h1 class="text-2xl font-bold text-gray-900 leading-tight tracking-tight">{{ firstName }} {{ lastName }}</h1>
-                <p class="text-xs text-gray-400 mt-0.5">Welcome to {{ meta.tenant_name }}</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <img v-if="tenantLogoUrl" :src="tenantLogoUrl" :alt="meta.tenant_name" class="w-4 h-4 object-contain rounded" />
+                    <p class="text-xs text-gray-400">{{ meta.tenant_name }}</p>
+                </div>
             </div>
             <MemberAvatar
                 :src="meta.profile_photo_url"
@@ -209,13 +212,14 @@ import { useRouter } from 'vue-router';
 import MemberAvatar from '../../../components/ui/MemberAvatar.vue';
 
 const props = defineProps({
-    meta:         { type: Object,  default: () => ({}) },
-    greeting:     { type: String,  default: '' },
-    firstName:    { type: String,  default: '' },
-    lastName:     { type: String,  default: '' },
-    initials:     { type: String,  default: '' },
-    workoutsData: { type: Array,   default: () => [] },
-    salesData:    { type: Array,   default: () => [] },
+    meta:          { type: Object,  default: () => ({}) },
+    greeting:      { type: String,  default: '' },
+    firstName:     { type: String,  default: '' },
+    lastName:      { type: String,  default: '' },
+    initials:      { type: String,  default: '' },
+    workoutsData:  { type: Array,   default: () => [] },
+    salesData:     { type: Array,   default: () => [] },
+    tenantLogoUrl: { type: String,  default: null },
 });
 
 defineEmits(['open-workout', 'open-sale']);
