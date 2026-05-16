@@ -228,8 +228,8 @@ class FormBuilderService
 
         // Font config per non-Latin script
         $scriptFonts = [
-            'si' => ['key' => 'notosanssinhala', 'file' => 'NotoSansSinhala-Regular.ttf', 'otl' => true],
-            'ta' => ['key' => 'notosanstamil',   'file' => 'NotoSansTamil-Regular.ttf',   'otl' => true],
+            'si' => ['key' => 'notosanssinhala', 'file' => 'NotoSansSinhala-Regular.ttf', 'otl' => false],
+            'ta' => ['key' => 'notosanstamil',   'file' => 'NotoSansTamil-Regular.ttf',   'otl' => false],
             'ar' => ['key' => 'notosansarabic',  'file' => 'NotoSansArabic-Regular.ttf',  'otl' => false],
             'zh' => ['key' => 'notosanssc',      'file' => 'NotoSansSC-Regular.ttf',      'otl' => false],
             'ja' => ['key' => 'notosansjp',      'file' => 'NotoSansJP-Regular.ttf',      'otl' => false],
