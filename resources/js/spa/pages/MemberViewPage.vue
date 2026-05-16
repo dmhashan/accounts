@@ -908,7 +908,7 @@
                 </div>
 
                 <!-- Body -->
-                <div class="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+                <div class="overflow-y-auto flex-1 px-5 py-4 space-y-4" :dir="formFillDir">
 
                     <!-- Step 1: Pick template -->
                     <div v-if="formFillStep === 'pick'">
@@ -1020,7 +1020,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import jsQR from 'jsqr';
 import { apiRequest } from '../composables/useApiClient';
@@ -1698,6 +1698,9 @@ const FORM_LANGUAGES = [
     { code: 'ar', label: 'العربية' },
 ];
 
+const RTL_LANGUAGES = ['ar'];
+const formFillDir = computed(() => RTL_LANGUAGES.includes(formFillLanguage.value) ? 'rtl' : 'ltr');
+
 const availableFormLanguages = computed(() => {
     if (!formFillTemplate.value) return [FORM_LANGUAGES[0]];
     const trans = formFillTemplate.value.translations ?? {};
@@ -1716,6 +1719,16 @@ const resolvedFormFields = computed(() => {
             options: t.options ?? field.options,
         };
     });
+});
+
+// When language changes, clear radio/select responses so stale option values don't persist
+watch(formFillLanguage, () => {
+    if (!formFillTemplate.value) return;
+    for (const field of (formFillTemplate.value.fields ?? [])) {
+        if (field.type === 'radio' || field.type === 'select') {
+            formFillResponses.value[field.id] = '';
+        }
+    }
 });
 
 async function loadMemberForms() {

@@ -230,7 +230,7 @@ class FormBuilderService
         $scriptFonts = [
             'si' => ['key' => 'notosanssinhala', 'file' => 'NotoSansSinhala-Regular.ttf', 'otl' => true],
             'ta' => ['key' => 'notosanstamil',   'file' => 'NotoSansTamil-Regular.ttf',   'otl' => true],
-            'ar' => ['key' => 'notosansarabic',  'file' => 'NotoSansArabic-Regular.ttf',  'otl' => true],
+            'ar' => ['key' => 'notosansarabic',  'file' => 'NotoSansArabic-Regular.ttf',  'otl' => false],
             'zh' => ['key' => 'notosanssc',      'file' => 'NotoSansSC-Regular.ttf',      'otl' => false],
             'ja' => ['key' => 'notosansjp',      'file' => 'NotoSansJP-Regular.ttf',      'otl' => false],
         ];
