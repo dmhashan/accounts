@@ -228,8 +228,8 @@ class FormBuilderService
 
         // Font config per non-Latin script
         $scriptFonts = [
-            'si' => ['key' => 'notosanssinhala', 'file' => 'NotoSansSinhala-Regular.ttf', 'otl' => false],
-            'ta' => ['key' => 'notosanstamil',   'file' => 'NotoSansTamil-Regular.ttf',   'otl' => false],
+            'si' => ['key' => 'notosanssinhala', 'file' => 'NotoSansSinhala-OTL.ttf',    'otl' => true],
+            'ta' => ['key' => 'notosanstamil',   'file' => 'NotoSansTamil-OTL.ttf',      'otl' => true],
             'ar' => ['key' => 'notosansarabic',  'file' => 'NotoSansArabic-Regular.ttf',  'otl' => false],
             'zh' => ['key' => 'notosanssc',      'file' => 'NotoSansSC-Regular.ttf',      'otl' => false],
             'ja' => ['key' => 'notosansjp',      'file' => 'NotoSansJP-Regular.ttf',      'otl' => false],
@@ -253,8 +253,7 @@ class FormBuilderService
                 'I' => $scriptFont['file'],
             ];
             if ($scriptFont['otl']) {
-                $entry['useOTL']    = 0xFF;
-                $entry['useKashida'] = 75;
+                $entry['useOTL'] = 0xFF;
             }
             $fontData[$scriptFont['key']] = $entry;
             $defaultFont = $scriptFont['key'];
