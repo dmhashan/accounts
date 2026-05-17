@@ -18,6 +18,7 @@ class ExampleTest extends TestCase
         $tenant = Tenant::create([
             'name' => 'Gym',
             'domain' => 'gym',
+            'tenant_uuid' => \Illuminate\Support\Str::uuid()->toString(),
             'use_custom_landing_page' => false,
         ]);
 

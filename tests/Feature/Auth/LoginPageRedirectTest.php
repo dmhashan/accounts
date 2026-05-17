@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class LoginPageRedirectTest extends TestCase
@@ -22,6 +23,7 @@ class LoginPageRedirectTest extends TestCase
         $this->tenant = Tenant::create([
             'name' => 'Test Gym',
             'domain' => 'test-gym',
+            'tenant_uuid' => Str::uuid()->toString(),
             'use_custom_landing_page' => false,
         ]);
 
@@ -45,6 +47,7 @@ class LoginPageRedirectTest extends TestCase
         $otherTenant = Tenant::create([
             'name' => 'Other Gym',
             'domain' => 'other-gym',
+            'tenant_uuid' => Str::uuid()->toString(),
             'use_custom_landing_page' => false,
         ]);
 

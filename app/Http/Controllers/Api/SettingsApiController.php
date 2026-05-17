@@ -70,7 +70,7 @@ class SettingsApiController extends Controller
             $this->media->delete($tenant->logo_path);
         }
 
-        $path = $this->media->store($request->file('logo'), "tenant-logos/{$tenant->id}");
+        $path = $this->media->store($request->file('logo'), 'tenant-logos');
 
         $tenant->update(['logo_path' => $path]);
 

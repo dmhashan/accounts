@@ -33,6 +33,7 @@ abstract class ApiRouteTestCase extends TestCase
         $this->tenant = Tenant::create([
             'name' => 'Test Gym',
             'domain' => 'test-gym',
+            'tenant_uuid' => Str::uuid()->toString(),
             'use_custom_landing_page' => false,
         ]);
 

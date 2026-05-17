@@ -46,7 +46,7 @@ class MemberDocumentService
     {
         $path = $this->media->store(
             $file,
-            "members/{$tenantId}/{$member->id}/documents"
+            "members/{$member->id}/documents"
         );
 
         return MemberDocument::create([

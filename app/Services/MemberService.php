@@ -296,7 +296,7 @@ class MemberService
             $this->media->delete($member->profile_photo_path);
         }
 
-        $path = $this->media->store($file, "member-avatars/{$member->tenant_id}");
+        $path = $this->media->store($file, 'member-avatars');
 
         $member->update(['profile_photo_path' => $path]);
 

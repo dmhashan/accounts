@@ -296,9 +296,7 @@ class FormBuilderService
         $content  = $mpdf->Output('', 'S');
 
         $filename = Str::slug($template->title) . '-' . $submission->id . '.pdf';
-        $path     = "members/{$tenantId}/{$member->id}/form-submissions/{$filename}";
-
-        $this->media->storeContent($content, $path);
+        $path     = $this->media->storeContent($content, "form-submissions/{$filename}");
 
         return [$path, strlen($content), $filename];
     }
