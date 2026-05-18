@@ -1,31 +1,47 @@
 {
-    "$schema": "https://www.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "test:ui": "vitest --ui"
-    },
-    "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "@vitejs/plugin-vue": "^6.0.4",
-        "@vitest/ui": "^4.1.2",
-        "@vue/test-utils": "^2.4.6",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "jsdom": "^29.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.7",
-        "vitest": "^4.1.2"
-    },
-    "dependencies": {
-        "jsqr": "^1.4.0",
-        "lucide-vue-next": "^0.576.0",
-        "vue": "^3.5.29",
-        "vue-router": "^4.6.4"
-    }
+  "$schema": "https://www.schemastore.org/package.json",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "lint": "eslint resources/js",
+    "lint:fix": "eslint resources/js --fix",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "@vitest/ui": "^4.1.2",
+    "@vue/test-utils": "^2.4.6",
+    "axios": "^1.11.0",
+    "concurrently": "^9.0.1",
+    "eslint": "^10.4.0",
+    "eslint-plugin-vue": "^10.9.1",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "jsdom": "^29.0.1",
+    "laravel-vite-plugin": "^2.0.0",
+    "lint-staged": "^17.0.5",
+    "tailwindcss": "^4.0.0",
+    "vite": "^7.0.7",
+    "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "lucide-vue-next": "^0.576.0",
+    "vue": "^3.5.29",
+    "vue-router": "^4.6.4"
+  },
+  "lint-staged": {
+    "resources/js/**/*.{js,vue}": "eslint --fix",
+    "app/**/*.php": "./vendor/bin/pint",
+    "routes/**/*.php": "./vendor/bin/pint",
+    "database/**/*.php": "./vendor/bin/pint",
+    "tests/**/*.php": "./vendor/bin/pint"
+  }
 }
