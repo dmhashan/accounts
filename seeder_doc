@@ -1,0 +1,102 @@
+##############################################################################
+# DB SEEDERS
+##############################################################################
+
+# Full base seed (tenants + permissions + roles)
+php artisan db:seed
+
+# Individual seeders
+php artisan db:seed --class=TenantSeeder
+php artisan db:seed --class=RoleSeeder
+php artisan db:seed --class=WorkoutSystemSeeder
+php artisan db:seed --class=ParqFormTemplateSeeder
+php artisan db:seed --class=KonaMangallayaVoucherSeeder
+
+# Fresh migrate + seed (⚠ drops all data)
+php artisan migrate:fresh --seed
+
+##############################################################################
+# LEGACY MEMBER SYNC  (legacy:sync-members)
+##############################################################################
+
+# Sync all active members (bearer token)
+php artisan legacy:sync-members \
+  --access-token="<bearer_token>" \
+  --tenant-domain=gymname
+
+# Sync using OAuth authorization code + PKCE
+php artisan legacy:sync-members \
+  --code="<auth_code>" \
+  --code-verifier="<pkce_verifier>" \
+  --redirect-uri="https://dashboard.gymhive.app/callback" \
+  --tenant-domain=gymname
+
+# Sync with filters (inactive female members, plan 5, start from page 3)
+php artisan legacy:sync-members \
+  --access-token="<bearer_token>" \
+  --tenant-domain=gymname \
+  --isActive=false \
+  --gender=FEMALE \
+  --planId=5 \
+  --start-page=3 \
+  --max-pages=10 \
+  --size=50
+
+# Sync using tenant ID
+php artisan legacy:sync-members \
+  --access-token="<bearer_token>" \
+  --tenant-id=1
+
+##############################################################################
+# LEGACY ATTENDANCE SYNC  (legacy:sync-attendance)
+##############################################################################
+
+# Sync full year to date
+php artisan legacy:sync-attendance \
+  --access-token="<bearer_token>" \
+  --date-start=2026-01-01 \
+  --date-end=2026-05-17 \
+  --tenant-domain=gymname
+
+# Sync single day
+php artisan legacy:sync-attendance \
+  --access-token="<bearer_token>" \
+  --date-start=2026-05-17 \
+  --date-end=2026-05-17 \
+  --tenant-domain=gymname
+
+# Sync using tenant ID instead of domain
+php artisan legacy:sync-attendance \
+  --access-token="<bearer_token>" \
+  --date-start=2026-05-01 \
+  --date-end=2026-05-17 \
+  --tenant-id=1
+
+# Sync against a custom legacy API base URL
+php artisan legacy:sync-attendance \
+  --access-token="<bearer_token>" \
+  --date-start=2026-05-01 \
+  --date-end=2026-05-17 \
+  --tenant-domain=gymname \
+  --base-url=https://custom-api.example.com/api/gym
+
+# Sync using the actual token from the last run (cxfit, Jan–May 2026)
+php artisan legacy:sync-attendance \
+  --access-token="<bearer_token>" \
+  --date-start=2026-01-01 \
+  --date-end=2026-05-17 \
+  --tenant-domain=cxfit
+
+##############################################################################
+# MEMBER USER CLEANUP  (legacy:delete-member-users)
+##############################################################################
+
+# Preview count then confirm interactively
+php artisan legacy:delete-member-users
+
+# Scope to a specific tenant
+php artisan legacy:delete-member-users --tenant-id=1
+
+# Skip confirmation prompt (CI / automation)
+php artisan legacy:delete-member-users --force
+php artisan legacy:delete-member-users --tenant-id=1 --force

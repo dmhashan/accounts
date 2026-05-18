@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Member;
+use App\Models\MemberAttendance;
 use App\Models\Tenant;
 use App\Services\MemberService;
 use Illuminate\Http\JsonResponse;
@@ -234,6 +235,35 @@ class MemberApiController extends Controller
 
         return response()->json([
             'message' => 'Avatar removed successfully.',
+        ]);
+    }
+
+    public function attendance(Request $request, Member $member): JsonResponse
+    {
+        $tenant = app('tenant');
+        $this->memberService->ensureTenantMember($member, $tenant->id);
+
+        $year = $request->integer('year', now()->year);
+
+        $records = MemberAttendance::where('tenant_id', $tenant->id)
+            ->where(function ($q) use ($member) {
+                $q->where('member_id', $member->id)
+                  ->orWhere(function ($q2) use ($member) {
+                      if ($member->username) {
+                          $q2->whereNull('member_id')->where('username', $member->username);
+                      } else {
+                          $q2->whereRaw('0=1');
+                      }
+                  });
+            })
+            ->whereYear('attended_date', $year)
+            ->orderBy('attended_date')
+            ->get(['id', 'attended_date']);
+
+        return response()->json([
+            'data'  => $records,
+            'total' => $records->count(),
+            'year'  => $year,
         ]);
     }
 }

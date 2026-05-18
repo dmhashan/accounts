@@ -45,6 +45,11 @@ Route::middleware(['auth', 'permission:workouts.manage'])->group(function () {
     Route::get('/members/{member}/workouts', [WorkoutProgramApiController::class, 'memberAssignments']);
 });
 
+// Member attendance history (requires users.view)
+Route::middleware(['auth', 'permission:users.view'])->group(function () {
+    Route::get('/members/{member}/attendance', [MemberApiController::class, 'attendance']);
+});
+
 // Wallet routes — require payments.manage permission
 Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
     Route::get('/wallet/meta', [WalletApiController::class, 'meta']);

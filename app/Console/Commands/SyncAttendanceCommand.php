@@ -1,0 +1,258 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Member;
+use App\Models\MemberAttendance;
+use App\Models\Tenant;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Console\Command;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+
+class SyncAttendanceCommand extends Command
+{
+    protected $signature = 'legacy:sync-attendance
+        {--access-token= : Bearer access token for the legacy API}
+        {--date-start= : Start date (YYYY-MM-DD, inclusive)}
+        {--date-end= : End date (YYYY-MM-DD, inclusive)}
+        {--tenant-id= : Target tenant ID}
+        {--tenant-domain= : Target tenant domain}
+        {--base-url=https://gm-api.nanosoft.lk/api/gym : Legacy API base URL}';
+
+    protected $description = 'Sync daily attendance from the legacy gym API into member_attendances';
+
+    public function handle(): int
+    {
+        $token = trim((string) $this->option('access-token'));
+        if ($token === '') {
+            $this->error('--access-token is required.');
+            return self::FAILURE;
+        }
+
+        $tenant = $this->resolveTenant();
+        if (!$tenant) {
+            $this->error('Tenant not found. Provide --tenant-id or --tenant-domain.');
+            return self::FAILURE;
+        }
+
+        $dateStart = $this->resolveDate('date-start');
+        $dateEnd   = $this->resolveDate('date-end');
+
+        if (!$dateStart || !$dateEnd) {
+            $this->error('--date-start and --date-end are required and must be valid dates (YYYY-MM-DD).');
+            return self::FAILURE;
+        }
+
+        if ($dateStart->gt($dateEnd)) {
+            $this->error('--date-start must not be after --date-end.');
+            return self::FAILURE;
+        }
+
+        $baseUrl = rtrim((string) $this->option('base-url'), '/');
+
+        $this->info("Syncing attendance for tenant {$tenant->id} ({$tenant->domain})");
+        $this->info("Range: {$dateStart->toDateString()} → {$dateEnd->toDateString()}");
+
+        $period = CarbonPeriod::create($dateStart, $dateEnd);
+
+        $inserted = 0;
+        $skipped  = 0;
+        $errors   = 0;
+
+        foreach ($period as $date) {
+            $dateStr = $date->toDateString();
+
+            $response = $this->requestWithRetry($token, "{$baseUrl}/attendance-summary-to-date", [
+                'date' => $dateStr,
+            ]);
+
+            if (!$response) {
+                $this->warn("  {$dateStr} — request failed after retries, skipping.");
+                $errors++;
+                continue;
+            }
+
+            if (!$response->successful()) {
+                $this->warn("  {$dateStr} — HTTP {$response->status()}, skipping.");
+                $errors++;
+                continue;
+            }
+
+            $payload = $response->json();
+            $members = $payload['attendedMembers'] ?? [];
+
+            if (!is_array($members) || count($members) === 0) {
+                $this->line("  {$dateStr} — 0 attendees.");
+                continue;
+            }
+
+            $dayInserted = 0;
+            $daySkipped  = 0;
+
+            foreach ($members as $entry) {
+                if (!is_array($entry)) {
+                    $daySkipped++;
+                    continue;
+                }
+
+                $legacyUuid     = isset($entry['id']) ? (string) $entry['id'] : null;
+                $legacyMemberId = isset($entry['memberId']) ? (int) $entry['memberId'] : null;
+                $username       = isset($entry['username']) ? (string) $entry['username'] : null;
+
+                if (!$legacyUuid) {
+                    $daySkipped++;
+                    continue;
+                }
+
+                // Resolve local member by username
+                $localMemberId = $this->resolveLocalMemberId($tenant->id, $username);
+
+                try {
+                    DB::table('member_attendances')->upsert(
+                        [
+                            'tenant_id'        => $tenant->id,
+                            'member_id'        => $localMemberId,
+                            'legacy_uuid'      => $legacyUuid,
+                            'legacy_member_id' => $legacyMemberId,
+                            'username'         => $username,
+                            'attended_date'    => $dateStr,
+                            'created_at'       => now(),
+                            'updated_at'       => now(),
+                        ],
+                        ['tenant_id', 'legacy_uuid', 'attended_date'],
+                        ['member_id', 'legacy_member_id', 'username', 'updated_at']
+                    );
+                    $dayInserted++;
+                } catch (\Throwable $e) {
+                    $this->warn("  {$dateStr} — failed to upsert {$legacyUuid}: {$e->getMessage()}");
+                    $daySkipped++;
+                }
+            }
+
+            $inserted += $dayInserted;
+            $skipped  += $daySkipped;
+
+            $this->line("  {$dateStr} — {$dayInserted} upserted, {$daySkipped} skipped (total in payload: " . count($members) . ")");
+        }
+
+        $this->newLine();
+        $this->table(['Metric', 'Count'], [
+            ['Upserted', (string) $inserted],
+            ['Skipped',  (string) $skipped],
+            ['Date errors', (string) $errors],
+        ]);
+
+        $this->info('Attendance sync completed.');
+
+        // ── Remap missing member_id by username ──
+        $this->newLine();
+        $this->info('Re-mapping member_id for unlinked attendance records...');
+
+        $unlinked = DB::table('member_attendances')
+            ->where('tenant_id', $tenant->id)
+            ->whereNull('member_id')
+            ->whereNotNull('username')
+            ->distinct()
+            ->pluck('username');
+
+        if ($unlinked->isEmpty()) {
+            $this->line('  Nothing to remap.');
+        } else {
+            // Build username → member id map in one query
+            $memberMap = Member::where('tenant_id', $tenant->id)
+                ->whereIn('username', $unlinked)
+                ->pluck('id', 'username');
+
+            $remapped = 0;
+            foreach ($memberMap as $username => $memberId) {
+                $affected = DB::table('member_attendances')
+                    ->where('tenant_id', $tenant->id)
+                    ->whereNull('member_id')
+                    ->where('username', $username)
+                    ->update(['member_id' => $memberId, 'updated_at' => now()]);
+
+                $remapped += $affected;
+                $this->line("  @{$username} → member #{$memberId} ({$affected} records updated)");
+            }
+
+            $this->line("  Done. {$remapped} record(s) linked.");
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function resolveDate(string $option): ?Carbon
+    {
+        $value = trim((string) $this->option($option));
+        if ($value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('Y-m-d', $value)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function resolveTenant(): ?Tenant
+    {
+        $tenantId = $this->option('tenant-id');
+        if ($tenantId !== null && $tenantId !== '') {
+            return Tenant::find((int) $tenantId);
+        }
+
+        $tenantDomain = trim((string) $this->option('tenant-domain'));
+        if ($tenantDomain !== '') {
+            return Tenant::where('domain', $tenantDomain)->first();
+        }
+
+        $bypassDomain = (string) config('app.multitenancy_bypass_domain');
+        if ($bypassDomain !== '') {
+            return Tenant::where('domain', $bypassDomain)->first();
+        }
+
+        return null;
+    }
+
+    private function resolveLocalMemberId(int $tenantId, ?string $username): ?int
+    {
+        if (!$username) {
+            return null;
+        }
+
+        /** @var Member|null $member */
+        $member = Member::where('tenant_id', $tenantId)
+            ->where('username', $username)
+            ->value('id');
+
+        return $member ? (int) $member : null;
+    }
+
+    private function requestWithRetry(string $token, string $url, array $query = []): ?Response
+    {
+        $attempts         = 3;
+        $delayMicroseconds = 500000;
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            try {
+                return Http::acceptJson()
+                    ->withToken($token)
+                    ->connectTimeout(10)
+                    ->timeout(30)
+                    ->get($url, $query);
+            } catch (\Throwable) {
+                if ($attempt === $attempts) {
+                    return null;
+                }
+
+                usleep($delayMicroseconds);
+            }
+        }
+
+        return null;
+    }
+}

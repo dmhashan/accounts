@@ -570,6 +570,103 @@
                 </div>
             </template><!-- /documents -->
 
+            <!-- ── Attendance Tab ── -->
+            <template v-if="activeTab === 'attendance'">
+                <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
+                    <!-- Header: year nav + total -->
+                    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                class="w-7 h-7 flex items-center justify-center rounded-lg border border-secondary-200 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-500 dark:text-secondary-400 transition-colors"
+                                @click="changeAttendanceYear(-1)"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
+                            <span class="text-sm font-bold text-secondary-900 dark:text-white tabular-nums w-10 text-center">{{ attendanceYear }}</span>
+                            <button
+                                type="button"
+                                class="w-7 h-7 flex items-center justify-center rounded-lg border border-secondary-200 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-500 dark:text-secondary-400 transition-colors disabled:opacity-30"
+                                :disabled="attendanceYear >= currentYear"
+                                @click="changeAttendanceYear(1)"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span v-if="!attendanceLoading" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-green-50 dark:bg-green-900/25 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400">
+                                {{ attendanceTotal }} visit{{ attendanceTotal !== 1 ? 's' : '' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div v-if="attendanceLoading" class="px-5 py-10 text-center text-sm text-secondary-400">Loading...</div>
+
+                    <div v-else class="p-4 sm:p-5">
+                        <!-- Legend -->
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="flex items-center gap-1.5 text-xs text-secondary-500 dark:text-secondary-400">
+                                <span class="w-5 h-5 rounded-full bg-green-500 dark:bg-green-500 inline-block"></span>
+                                Attended
+                            </span>
+                            <span class="flex items-center gap-1.5 text-xs text-secondary-500 dark:text-secondary-400">
+                                <span class="w-5 h-5 rounded-full bg-secondary-100 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 inline-block"></span>
+                                Not attended
+                            </span>
+                        </div>
+
+                        <!-- 12-month grid -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div
+                                v-for="month in attendanceCalendar"
+                                :key="month.index"
+                                class="rounded-xl border border-secondary-100 dark:border-secondary-800 overflow-hidden"
+                            >
+                                <!-- Month header -->
+                                <div class="px-2 py-1.5 bg-secondary-50 dark:bg-secondary-800/60 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between">
+                                    <span class="text-[11px] font-semibold text-secondary-600 dark:text-secondary-300">{{ month.label }}</span>
+                                    <span v-if="month.count > 0" class="text-[10px] font-bold text-green-600 dark:text-green-400">{{ month.count }}d</span>
+                                </div>
+                                <!-- Day-of-week headers -->
+                                <div class="grid grid-cols-7 px-1 pt-1">
+                                    <span
+                                        v-for="dow in ['S','M','T','W','T','F','S']"
+                                        :key="dow"
+                                        class="text-center text-[9px] font-semibold text-secondary-400 dark:text-secondary-600 pb-0.5"
+                                    >{{ dow }}</span>
+                                </div>
+                                <!-- Day cells -->
+                                <div class="grid grid-cols-7 gap-y-0.5 px-1 pb-1.5">
+                                    <div
+                                        v-for="(cell, ci) in month.cells"
+                                        :key="ci"
+                                        class="flex items-center justify-center"
+                                        style="aspect-ratio:1"
+                                    >
+                                        <template v-if="cell">
+                                            <span
+                                                class="w-full h-full flex items-center justify-center rounded-full text-[10px] font-semibold leading-none transition-colors"
+                                                :class="cell.attended
+                                                    ? 'bg-green-500 text-white'
+                                                    : cell.today
+                                                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 ring-1 ring-primary-400 dark:ring-primary-600'
+                                                        : 'text-secondary-600 dark:text-secondary-400'"
+                                                :title="cell.attended ? 'Attended' : ''"
+                                            >{{ cell.day }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Empty year state -->
+                        <div v-if="attendanceTotal === 0" class="mt-4 py-6 text-center">
+                            <p class="text-sm text-secondary-500 dark:text-secondary-400">No attendance recorded for {{ attendanceYear }}.</p>
+                        </div>
+                    </div>
+                </div>
+            </template><!-- /attendance -->
+
         </template>
 
         <div v-else-if="!loading" class="p-8 text-center text-sm text-secondary-400 dark:text-secondary-500">Member details are unavailable.</div>
@@ -1045,6 +1142,7 @@ const tabs = [
     { id: 'sales', label: 'Sales' },
     { id: 'workouts', label: 'Workouts' },
     { id: 'documents', label: 'Documents' },
+    { id: 'attendance', label: 'Attendance' },
 ];
 const activeTab = ref('overview');
 
@@ -1065,6 +1163,9 @@ function switchTab(id) {
     if (id === 'documents' && member.value) {
         loadDocuments();
         loadMemberForms();
+    }
+    if (id === 'attendance' && member.value) {
+        loadAttendance();
     }
 }
 
@@ -1822,6 +1923,61 @@ async function deleteSubmission(s) {
     } catch {
         errorMessage.value = 'Failed to delete submission.';
     }
+}
+
+// ── Attendance Tab ──
+const currentYear = new Date().getFullYear();
+const attendanceYear = ref(currentYear);
+const attendanceLoading = ref(false);
+const attendanceRecords = ref([]);
+const attendanceTotal = ref(0);
+
+const attendanceCalendar = computed(() => {
+    const attendedSet = new Set(
+        attendanceRecords.value.map(r => String(r.attended_date).slice(0, 10))
+    );
+    const todayStr = (() => {
+        const n = new Date();
+        return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    })();
+
+    return Array.from({ length: 12 }, (_, m) => {
+        const firstDay = new Date(attendanceYear.value, m, 1);
+        const daysInMonth = new Date(attendanceYear.value, m + 1, 0).getDate();
+        const startDow = firstDay.getDay(); // 0=Sun
+        const cells = [];
+        // leading empty cells
+        for (let i = 0; i < startDow; i++) cells.push(null);
+        let count = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const ds = `${attendanceYear.value}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const attended = attendedSet.has(ds);
+            if (attended) count++;
+            cells.push({ day: d, dateStr: ds, attended, today: ds === todayStr });
+        }
+        return {
+            index: m,
+            label: firstDay.toLocaleDateString(undefined, { month: 'long' }),
+            cells,
+            count,
+        };
+    });
+});
+
+async function loadAttendance() {
+    attendanceLoading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${route.params.id}/attendance?year=${attendanceYear.value}`);
+        attendanceRecords.value = res.data || [];
+        attendanceTotal.value = res.total ?? 0;
+    } catch (_) { /* ignore */ } finally {
+        attendanceLoading.value = false;
+    }
+}
+
+function changeAttendanceYear(delta) {
+    attendanceYear.value += delta;
+    loadAttendance();
 }
 
 onMounted(() => {
