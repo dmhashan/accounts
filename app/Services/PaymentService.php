@@ -6,8 +6,9 @@ use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransaction;
 use App\Models\Member;
 use App\Models\MemberPayment;
+use App\Models\PaymentMembership;
+use App\Models\PaymentPlan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
@@ -27,9 +28,15 @@ class PaymentService
             ->withSum('transactions as transaction_total', 'amount')
             ->get();
 
+        $plans = PaymentPlan::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('duration_days')
+            ->get(['id', 'name', 'duration_days', 'price']);
+
         return [
             'members' => $members->map(function (Member $member) {
                 $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
+
                 if ($name === '') {
                     $name = $member->name ?: 'Member';
                 }
@@ -45,15 +52,21 @@ class PaymentService
                 ];
             })->values(),
             'accounts' => $accounts->map(fn (CompanyAccount $account) => [
-                'id'              => $account->id,
-                'name'            => $account->name,
+                'id' => $account->id,
+                'name' => $account->name,
                 'current_balance' => round(
                     (float) $account->opening_balance
                     + (float) ($account->incoming_total ?? 0)
                     + (float) ($account->transaction_total ?? 0)
                     - (float) ($account->outgoing_total ?? 0),
-                    2
+                    2,
                 ),
+            ])->values(),
+            'plans' => $plans->map(fn (PaymentPlan $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'duration_days' => $p->duration_days,
+                'price' => (float) $p->price,
             ])->values(),
         ];
     }
@@ -63,7 +76,7 @@ class PaymentService
         $payments = MemberPayment::query()
             ->where('tenant_id', $tenantId)
             ->where('member_id', $memberId)
-            ->with(['account:id,name'])
+            ->with(['account:id,name', 'membership.plan:id,name'])
             ->orderBy('payment_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -86,6 +99,7 @@ class PaymentService
             ->with([
                 'member:id,first_name,last_name,name,phone_number',
                 'account:id,name',
+                'membership.plan:id,name',
             ])
             ->orderBy('payment_date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -109,6 +123,7 @@ class PaymentService
             ->with([
                 'member:id,first_name,last_name,name,phone_number',
                 'account:id,name',
+                'membership.plan:id,name',
             ])
             ->find($payment->id);
 
@@ -136,9 +151,11 @@ class PaymentService
                     ->where('tenant_id', $tenantId)
                     ->lockForUpdate()
                     ->find((int) $validated['member_id']);
+
                 if (!$member) {
                     abort(422, 'Member not found.');
                 }
+
                 if ((float) $member->current_balance < (float) $validated['amount']) {
                     abort(422, 'Insufficient wallet balance.');
                 }
@@ -152,15 +169,17 @@ class PaymentService
             }
 
             $payment = MemberPayment::create([
-                'tenant_id'          => $tenantId,
-                'member_id'          => $validated['member_id'] ?? null,
+                'tenant_id' => $tenantId,
+                'member_id' => $validated['member_id'] ?? null,
                 'company_account_id' => $accountId,
-                'payment_method'     => $isWalletPayment ? 'member_wallet' : 'cash',
-                'amount'             => $validated['amount'],
-                'payment_date'       => $validated['payment_date'],
-                'reference_number'   => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
-                'notes'              => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+                'payment_method' => $isWalletPayment ? 'member_wallet' : 'cash',
+                'amount' => $validated['amount'],
+                'payment_date' => $validated['payment_date'],
+                'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
+                'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
             ]);
+
+            $this->syncMembership($payment, $tenantId, $validated);
 
             if (!$isWalletPayment) {
                 $this->syncTransaction($payment, $tenantId);
@@ -193,14 +212,15 @@ class PaymentService
             $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
 
             $lockedPayment->update([
-                'member_id'          => $validated['member_id'] ?? null,
+                'member_id' => $validated['member_id'] ?? null,
                 'company_account_id' => $validated['company_account_id'],
-                'amount'             => $validated['amount'],
-                'payment_date'       => $validated['payment_date'],
-                'reference_number'   => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
-                'notes'              => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+                'amount' => $validated['amount'],
+                'payment_date' => $validated['payment_date'],
+                'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
+                'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
             ]);
 
+            $this->syncMembership($lockedPayment, $tenantId, $validated);
             $this->syncTransaction($lockedPayment, $tenantId);
         });
     }
@@ -221,6 +241,7 @@ class PaymentService
                 ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($lockedPayment->member_id);
+
             if ($member) {
                 $member->update([
                     'current_balance' => (float) $member->current_balance + (float) $lockedPayment->amount,
@@ -236,6 +257,36 @@ class PaymentService
         $lockedPayment->delete();
     }
 
+    private function syncMembership(MemberPayment $payment, int $tenantId, array $validated): void
+    {
+        $planId = !empty($validated['payment_plan_id']) ? (int) $validated['payment_plan_id'] : null;
+        $startDate = filled($validated['start_date'] ?? null) ? $validated['start_date'] : null;
+        $endDate = filled($validated['end_date'] ?? null) ? $validated['end_date'] : null;
+
+        // Auto-calculate end_date from plan duration if not provided
+        if ($planId && $startDate && !$endDate) {
+            $plan = PaymentPlan::find($planId);
+
+            if ($plan) {
+                $endDate = \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days - 1)->toDateString();
+            }
+        }
+
+        if ($planId || $startDate || $endDate) {
+            PaymentMembership::updateOrCreate(
+                ['member_payment_id' => $payment->id],
+                [
+                    'tenant_id' => $tenantId,
+                    'payment_plan_id' => $planId,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                ],
+            );
+        } else {
+            PaymentMembership::where('member_payment_id', $payment->id)->delete();
+        }
+    }
+
     private function syncTransaction(MemberPayment $payment, int $tenantId): void
     {
         $member = $payment->member;
@@ -245,18 +296,18 @@ class PaymentService
 
         CompanyAccountTransaction::updateOrCreate(
             [
-                'model_name'   => 'payment',
+                'model_name' => 'payment',
                 'reference_id' => $payment->id,
             ],
             [
-                'tenant_id'          => $tenantId,
+                'tenant_id' => $tenantId,
                 'company_account_id' => $payment->company_account_id,
-                'type'               => 'payment',
-                'amount'             => (float) $payment->amount,
-                'transaction_date'   => $payment->payment_date->toDateString(),
-                'reference_number'   => $payment->reference_number,
-                'notes'              => filled($payment->notes) ? $payment->notes : 'Payment: ' . $memberName,
-            ]
+                'type' => 'payment',
+                'amount' => (float) $payment->amount,
+                'transaction_date' => $payment->payment_date->toDateString(),
+                'reference_number' => $payment->reference_number,
+                'notes' => filled($payment->notes) ? $payment->notes : 'Payment: ' . $memberName,
+            ],
         );
     }
 
@@ -298,9 +349,13 @@ class PaymentService
             'member_phone' => $member?->phone_number,
             'company_account_id' => $payment->company_account_id,
             'account_name' => $payment->account?->name,
+            'payment_plan_id' => $payment->membership?->payment_plan_id,
+            'payment_plan_name' => $payment->membership?->plan?->name,
             'payment_method' => $payment->payment_method ?? 'cash',
             'amount' => round((float) $payment->amount, 2),
             'payment_date' => $payment->payment_date?->toDateString(),
+            'start_date' => $payment->membership?->start_date?->toDateString(),
+            'end_date' => $payment->membership?->end_date?->toDateString(),
             'reference_number' => $payment->reference_number,
             'notes' => $payment->notes,
             'created_at' => optional($payment->created_at)->format('Y-m-d H:i'),

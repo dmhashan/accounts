@@ -39,6 +39,11 @@ class MemberPayment extends Model
         return $this->belongsTo(CompanyAccount::class, 'company_account_id');
     }
 
+    public function membership(): HasOne
+    {
+        return $this->hasOne(PaymentMembership::class);
+    }
+
     public function transaction(): HasOne
     {
         return $this->hasOne(CompanyAccountTransaction::class, 'reference_id')

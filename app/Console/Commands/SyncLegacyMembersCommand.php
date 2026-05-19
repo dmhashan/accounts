@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\Member;
 use App\Models\Tenant;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\Response;
@@ -39,13 +38,16 @@ class SyncLegacyMembersCommand extends Command
     public function handle(): int
     {
         $token = $this->resolveAccessToken();
+
         if (!$token) {
             return self::FAILURE;
         }
 
         $tenant = $this->resolveTenant();
+
         if (!$tenant) {
             $this->error('Tenant not found. Provide --tenant-id or --tenant-domain.');
+
             return self::FAILURE;
         }
 
@@ -79,20 +81,23 @@ class SyncLegacyMembersCommand extends Command
             $listResponse = $this->requestLegacyWithRetry(
                 $token,
                 "{$baseUrl}/getmembers",
-                $query
+                $query,
             );
 
             if (!$listResponse) {
                 $this->error("Failed list request on page {$page}: request timeout after retries.");
+
                 return self::FAILURE;
             }
 
             if (!$listResponse->successful()) {
                 $this->error("Failed list request on page {$page}. HTTP {$listResponse->status()}");
+
                 return self::FAILURE;
             }
 
             $items = $this->extractListItems($listResponse->json());
+
             if (count($items) === 0) {
                 $this->line("No items on page {$page}. Stopping.");
                 break;
@@ -123,7 +128,7 @@ class SyncLegacyMembersCommand extends Command
 
                 $detailResponse = $this->requestLegacyWithRetry(
                     $token,
-                    "{$baseUrl}/getmemberview/{$legacyId}"
+                    "{$baseUrl}/getmemberview/{$legacyId}",
                 );
 
                 if (!$detailResponse) {
@@ -139,6 +144,7 @@ class SyncLegacyMembersCommand extends Command
                 }
 
                 $detail = $this->extractMemberDetail($detailResponse->json());
+
                 if (!is_array($detail) || $detail === []) {
                     $this->warn("Skipping {$legacyId}: invalid detail payload");
                     $skipped++;
@@ -179,6 +185,7 @@ class SyncLegacyMembersCommand extends Command
     private function resolveAccessToken(): ?string
     {
         $accessToken = trim((string) $this->option('access-token'));
+
         if ($accessToken !== '') {
             return $accessToken;
         }
@@ -191,6 +198,7 @@ class SyncLegacyMembersCommand extends Command
 
         if ($code === '' || $codeVerifier === '' || $redirectUri === '') {
             $this->error('Provide either --access-token OR all of --code, --code-verifier, --redirect-uri.');
+
             return null;
         }
 
@@ -208,12 +216,15 @@ class SyncLegacyMembersCommand extends Command
         if (!$response->successful()) {
             $this->error('Failed to authenticate and get access token. HTTP ' . $response->status());
             $this->line((string) $response->body());
+
             return null;
         }
 
         $token = $response->json('access_token');
+
         if (!is_string($token) || trim($token) === '') {
             $this->error('Authentication succeeded but access_token is missing.');
+
             return null;
         }
 
@@ -247,18 +258,22 @@ class SyncLegacyMembersCommand extends Command
     private function resolveTenant(): ?Tenant
     {
         $tenantId = $this->option('tenant-id');
+
         if ($tenantId !== null && $tenantId !== '') {
             return Tenant::find((int) $tenantId);
         }
 
         $tenantDomain = trim((string) $this->option('tenant-domain'));
+
         if ($tenantDomain !== '') {
             return Tenant::where('domain', $tenantDomain)->first();
         }
 
         $bypassDomain = (string) config('app.multitenancy_bypass_domain');
+
         if ($bypassDomain !== '') {
             $tenant = Tenant::where('domain', $bypassDomain)->first();
+
             if ($tenant) {
                 return $tenant;
             }
@@ -332,6 +347,7 @@ class SyncLegacyMembersCommand extends Command
     private function upsertFromDetail(Tenant $tenant, array $detail, string $legacyId): array
     {
         $email = $this->normalizeEmail($this->pick($detail, ['email', 'emailAddress', 'email_address']));
+
         if (!$email) {
             return ['member' => 'skipped'];
         }
@@ -356,13 +372,8 @@ class SyncLegacyMembersCommand extends Command
             ->where('email', $email)
             ->first();
 
-        $username = $this->buildUniqueUsername(
-            $tenant->id,
-            (string) ($this->pick($detail, ['username', 'userName', 'user_name']) ?? ''),
-            $email,
-            null,
-            $existingMember
-        );
+        $preferredUsername = trim((string) ($this->pick($detail, ['username', 'userName', 'user_name']) ?? ''));
+        $username = $preferredUsername !== '' ? $preferredUsername : Str::before($email, '@');
 
         $gender = $this->normalizeGender((string) ($this->pick($detail, ['gender']) ?? 'other'));
         $isActive = $this->toBool($this->pick($detail, ['isActive', 'active', 'is_active']), true);
@@ -384,7 +395,7 @@ class SyncLegacyMembersCommand extends Command
             &$memberStatus
         ) {
             if (!$existingMember) {
-                $existingMember = new Member();
+                $existingMember = new Member;
                 $existingMember->tenant_id = $tenant->id;
                 $existingMember->member_id = $this->resolveLocalMemberCode($detail, $legacyId);
                 $memberStatus = 'created';
@@ -423,6 +434,7 @@ class SyncLegacyMembersCommand extends Command
     {
         foreach ($keys as $key) {
             $value = Arr::get($source, $key);
+
             if ($value !== null && $value !== '') {
                 return $value;
             }
@@ -438,6 +450,7 @@ class SyncLegacyMembersCommand extends Command
         }
 
         $email = strtolower(trim($value));
+
         return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
     }
 
@@ -455,6 +468,7 @@ class SyncLegacyMembersCommand extends Command
     private function splitName(string $name): array
     {
         $parts = preg_split('/\s+/', trim($name), 2);
+
         return [$parts[0] ?? '', $parts[1] ?? ''];
     }
 
@@ -479,6 +493,7 @@ class SyncLegacyMembersCommand extends Command
 
         if (is_numeric($value)) {
             $int = (int) $value;
+
             return $int > 0 ? $int : null;
         }
 
@@ -493,12 +508,14 @@ class SyncLegacyMembersCommand extends Command
 
         if (is_array($value)) {
             $candidate = $this->pick($value, ['amount', 'price', 'value', 'planPrice', 'plan_price', 'fee', 'total']);
+
             if ($candidate !== null) {
                 return $this->toDecimal($candidate);
             }
 
             foreach ($value as $nested) {
                 $parsed = $this->toDecimal($nested);
+
                 if ($parsed !== null) {
                     return $parsed;
                 }
@@ -516,6 +533,7 @@ class SyncLegacyMembersCommand extends Command
         }
 
         $normalized = preg_replace('/[^\d.\-]/', '', (string) $value);
+
         return is_numeric($normalized) ? (float) $normalized : null;
     }
 
@@ -530,6 +548,7 @@ class SyncLegacyMembersCommand extends Command
         }
 
         $normalized = strtolower((string) $value);
+
         if (in_array($normalized, ['1', 'true', 'yes', 'y', 'active'], true)) {
             return true;
         }
@@ -557,13 +576,16 @@ class SyncLegacyMembersCommand extends Command
 
         if (is_array($value)) {
             $candidate = $this->pick($value, ['name', 'title', 'label', 'value', 'text', 'description', 'address']);
+
             if ($candidate !== null) {
                 return $this->toText($candidate);
             }
 
             $parts = [];
+
             foreach ($value as $item) {
                 $text = $this->toText($item);
+
                 if ($text !== '') {
                     $parts[] = $text;
                 }
@@ -579,6 +601,7 @@ class SyncLegacyMembersCommand extends Command
     {
         if (is_array($value)) {
             $candidate = $this->pick($value, ['name', 'planName', 'title', 'label', 'displayName', 'value']);
+
             if ($candidate !== null) {
                 return $this->toText($candidate);
             }
@@ -589,48 +612,6 @@ class SyncLegacyMembersCommand extends Command
         }
 
         return $this->toText($value);
-    }
-
-    private function buildUniqueUsername(
-        int $tenantId,
-        string $preferred,
-        string $email,
-        ?User $existingUser,
-        ?Member $existingMember
-    ): string {
-        $preferred = trim($preferred);
-        $base = $preferred !== ''
-            ? Str::lower(Str::slug($preferred, '_'))
-            : Str::lower(Str::slug(Str::before($email, '@'), '_'));
-
-        if ($base === '') {
-            $base = 'member';
-        }
-
-        $base = Str::limit($base, 40, '');
-
-        $candidate = $base;
-        $counter = 1;
-
-        while (true) {
-            $userConflict = User::where('tenant_id', $tenantId)
-                ->where('username', $candidate)
-                ->when($existingUser?->id, fn ($query) => $query->where('id', '!=', $existingUser->id))
-                ->exists();
-
-            $memberConflict = Member::where('tenant_id', $tenantId)
-                ->where('username', $candidate)
-                ->when($existingMember?->id, fn ($query) => $query->where('id', '!=', $existingMember->id))
-                ->exists();
-
-            if (!$userConflict && !$memberConflict) {
-                return $candidate;
-            }
-
-            $counter++;
-            $suffix = '_' . $counter;
-            $candidate = Str::limit($base, max(1, 50 - strlen($suffix)), '') . $suffix;
-        }
     }
 
     private function resolveLocalMemberCode(array $detail, string $legacyId): string

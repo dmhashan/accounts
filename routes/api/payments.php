@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\PaymentApiController;
+use App\Http\Controllers\Api\PaymentPlanApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
@@ -10,4 +11,10 @@ Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
     Route::get('/payments/{payment}', [PaymentApiController::class, 'show']);
     Route::put('/payments/{payment}', [PaymentApiController::class, 'update']);
     Route::delete('/payments/{payment}', [PaymentApiController::class, 'destroy']);
+
+    // Payment plans
+    Route::get('/payment-plans', [PaymentPlanApiController::class, 'index']);
+    Route::post('/payment-plans', [PaymentPlanApiController::class, 'store']);
+    Route::put('/payment-plans/{paymentPlan}', [PaymentPlanApiController::class, 'update']);
+    Route::delete('/payment-plans/{paymentPlan}', [PaymentPlanApiController::class, 'destroy']);
 });
