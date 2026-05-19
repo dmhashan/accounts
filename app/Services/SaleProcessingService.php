@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendMemberNotificationJob;
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransaction;
 use App\Models\Member;
@@ -9,17 +10,14 @@ use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
-use App\Services\AuditService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class SaleProcessingService
 {
     public function __construct(
-        private readonly SmsService $smsService,
         private readonly AuditService $auditService,
-    ) {
-    }
+    ) {}
 
     public function create(int $tenantId, array $validated): Sale
     {
@@ -52,9 +50,9 @@ class SaleProcessingService
         });
 
         if ($sale->is_paid) {
-            $this->sendSalePaidSms($sale);
+            $this->sendSalePaidNotification($sale);
         } else {
-            $this->sendSaleOutstandingSms($sale);
+            $this->sendSaleOutstandingNotification($sale);
         }
 
         return $sale;
@@ -149,20 +147,20 @@ class SaleProcessingService
                 ]);
 
                 $lockedSale->update([
-                    'account_id'     => null,
+                    'account_id' => null,
                     'payment_method' => 'member_wallet',
-                    'is_paid'        => true,
-                    'paid_amount'    => (float) $lockedSale->total_amount,
-                    'balance'        => 0,
+                    'is_paid' => true,
+                    'paid_amount' => (float) $lockedSale->total_amount,
+                    'balance' => 0,
                 ]);
             } else {
                 $accountId = $this->resolveAccountId($validated, $tenantId);
 
                 $lockedSale->update([
-                    'account_id'  => $accountId,
-                    'is_paid'     => true,
+                    'account_id' => $accountId,
+                    'is_paid' => true,
                     'paid_amount' => (float) $lockedSale->total_amount,
-                    'balance'     => 0,
+                    'balance' => 0,
                 ]);
 
                 $this->recordAccountTransactionForSale($lockedSale, $tenantId, Carbon::today()->toDateString());
@@ -171,7 +169,7 @@ class SaleProcessingService
             return $lockedSale->fresh();
         });
 
-        $this->sendSalePaidSms($paid);
+        $this->sendSalePaidNotification($paid);
 
         return $paid;
     }
@@ -208,7 +206,7 @@ class SaleProcessingService
                 ->sum('display_quantity');
 
             if ($item['quantity'] > $available) {
-                abort(422, 'Insufficient display stock for '.$variation->product->name.' - '.$variation->name);
+                abort(422, 'Insufficient display stock for ' . $variation->product->name . ' - ' . $variation->name);
             }
 
             $priceEntry = StockEntry::query()
@@ -222,7 +220,7 @@ class SaleProcessingService
                 ->first();
 
             if (!$priceEntry) {
-                abort(422, 'No valid stock for '.$variation->product->name.' - '.$variation->name);
+                abort(422, 'No valid stock for ' . $variation->product->name . ' - ' . $variation->name);
             }
 
             $unitPrice = $validated['customer_type'] === 'local'
@@ -349,6 +347,7 @@ class SaleProcessingService
                 }
 
                 $deduct = min($entry->display_quantity, $remaining);
+
                 if ($deduct <= 0) {
                     continue;
                 }
@@ -451,59 +450,54 @@ class SaleProcessingService
 
         CompanyAccountTransaction::updateOrCreate(
             [
-                'model_name'   => 'sale',
+                'model_name' => 'sale',
                 'reference_id' => $sale->id,
             ],
             [
-                'tenant_id'          => $tenantId,
+                'tenant_id' => $tenantId,
                 'company_account_id' => $sale->account_id,
-                'type'               => 'sale_payment',
-                'amount'             => (float) $sale->total_amount,
-                'transaction_date'   => $transactionDate ?? optional($sale->created_at)->toDateString() ?? Carbon::today()->toDateString(),
-                'reference_number'   => $sale->reference_number,
-                'notes'              => 'Sale payment for sale #'.$sale->id,
-            ]
+                'type' => 'sale_payment',
+                'amount' => (float) $sale->total_amount,
+                'transaction_date' => $transactionDate ?? optional($sale->created_at)->toDateString() ?? Carbon::today()->toDateString(),
+                'reference_number' => $sale->reference_number,
+                'notes' => 'Sale payment for sale #' . $sale->id,
+            ],
         );
     }
 
-    private function sendSalePaidSms(Sale $sale): void
+    private function sendSalePaidNotification(Sale $sale): void
     {
-        $phone = null;
-
-        if ($sale->customer_member_id) {
-            $phone = Member::where('id', $sale->customer_member_id)
-                ->value('phone_number');
-        }
-
-        if (!$phone) {
+        if (!$sale->customer_member_id) {
             return;
         }
 
-        $ref = $sale->reference_number ? ' (Ref: '.$sale->reference_number.')' : '';
+        $ref = $sale->reference_number ? ' (Ref: ' . $sale->reference_number . ')' : '';
         $amount = number_format((float) $sale->total_amount, 2);
         $tenant = app('tenant');
         $profileUrl = $tenant->profileUrl();
-        $message = "Payment received for Sale #{$sale->id}: LKR {$amount}{$ref}. Thank you! View your account: {$profileUrl}";
 
-        $this->smsService->send($phone, $message);
+        $title = "Payment Received – LKR {$amount}";
+        $body = "Payment received for Sale #{$sale->id}: LKR {$amount}{$ref}. Thank you! View your account: {$profileUrl}";
+
+        SendMemberNotificationJob::dispatch(
+            $sale->tenant_id,
+            $sale->customer_member_id,
+            'sale_paid',
+            $title,
+            $body,
+        );
     }
 
-    private function sendSaleOutstandingSms(Sale $sale): void
+    private function sendSaleOutstandingNotification(Sale $sale): void
     {
-        $phone = null;
-
-        if ($sale->customer_member_id) {
-            $phone = Member::where('id', $sale->customer_member_id)
-                ->value('phone_number');
-        }
-
-        if (!$phone) {
+        if (!$sale->customer_member_id) {
             return;
         }
 
         $due = number_format(abs((float) $sale->balance), 2);
-        $ref = $sale->reference_number ? ' (Ref: '.$sale->reference_number.')' : '';
+        $ref = $sale->reference_number ? ' (Ref: ' . $sale->reference_number . ')' : '';
 
+        // Compute total outstanding before dispatching so the job gets a snapshot
         $totalOutstanding = Sale::where('customer_member_id', $sale->customer_member_id)
             ->where('is_paid', false)
             ->sum('balance');
@@ -511,8 +505,16 @@ class SaleProcessingService
 
         $tenant = app('tenant');
         $profileUrl = $tenant->profileUrl();
-        $message = "Outstanding for Sale #{$sale->id}: LKR {$due}{$ref}. Total outstanding: LKR {$totalDue}. Please settle soon. View your account: {$profileUrl}";
 
-        $this->smsService->send($phone, $message);
+        $title = "Outstanding Balance – LKR {$due}";
+        $body = "Outstanding for Sale #{$sale->id}: LKR {$due}{$ref}. Total outstanding: LKR {$totalDue}. Please settle soon. View your account: {$profileUrl}";
+
+        SendMemberNotificationJob::dispatch(
+            $sale->tenant_id,
+            $sale->customer_member_id,
+            'sale_outstanding',
+            $title,
+            $body,
+        );
     }
 }

@@ -38,6 +38,11 @@ class BulkNotification extends Model
 
     public function isSent(): bool
     {
-        return $this->status === 'sent';
+        return in_array($this->status, ['processing', 'sent'], true);
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === 'failed';
     }
 }

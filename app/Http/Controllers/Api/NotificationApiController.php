@@ -12,16 +12,14 @@ use Illuminate\Http\Request;
 
 class NotificationApiController extends Controller
 {
-    public function __construct(private readonly BulkNotificationService $service)
-    {
-    }
+    public function __construct(private readonly BulkNotificationService $service) {}
 
     public function index(Request $request): JsonResponse
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
         $perPage = min((int) $request->integer('per_page', 15), 50);
-        $search  = trim((string) $request->query('search', ''));
+        $search = trim((string) $request->query('search', ''));
 
         return response()->json($this->service->index($tenant->id, $perPage, $search));
     }
@@ -47,8 +45,8 @@ class NotificationApiController extends Controller
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('name', 'like', "%{$search}%")
-                          ->orWhere('member_id', 'like', "%{$search}%")
-                          ->orWhere('phone_number', 'like', "%{$search}%");
+                        ->orWhere('member_id', 'like', "%{$search}%")
+                        ->orWhere('phone_number', 'like', "%{$search}%");
                 });
             })
             ->orderBy('name')
@@ -56,11 +54,11 @@ class NotificationApiController extends Controller
 
         return response()->json([
             'data' => $members->map(fn (Member $m) => [
-                'id'           => $m->id,
-                'member_id'    => $m->member_id,
-                'name'         => $m->name,
+                'id' => $m->id,
+                'member_id' => $m->member_id,
+                'name' => $m->name,
                 'phone_number' => $m->phone_number,
-                'is_active'    => (bool) $m->is_active,
+                'is_active' => (bool) $m->is_active,
             ]),
         ]);
     }
@@ -71,9 +69,9 @@ class NotificationApiController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:255'],
-            'message'      => ['required', 'string', 'max:621'],
-            'member_ids'   => ['required', 'array', 'min:1'],
+            'name' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:621'],
+            'member_ids' => ['required', 'array', 'min:1'],
             'member_ids.*' => ['integer', 'exists:members,id'],
         ]);
 
@@ -94,9 +92,9 @@ class NotificationApiController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:255'],
-            'message'      => ['required', 'string', 'max:621'],
-            'member_ids'   => ['required', 'array', 'min:1'],
+            'name' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:621'],
+            'member_ids' => ['required', 'array', 'min:1'],
             'member_ids.*' => ['integer', 'exists:members,id'],
         ]);
 
@@ -132,14 +130,9 @@ class NotificationApiController extends Controller
 
         $result = $this->service->send($bulkNotification);
 
-        if (!$result['success']) {
-            return response()->json(['message' => 'Failed to send SMS. Please check your SMS configuration.'], 500);
-        }
-
         return response()->json([
-            'message'         => 'Notification sent successfully.',
+            'message' => 'Notification queued for delivery.',
             'recipient_count' => $result['recipient_count'],
-            'campaign_id'     => $result['campaign_id'],
         ]);
     }
 

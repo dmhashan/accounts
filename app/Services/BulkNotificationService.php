@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendBulkNotificationJob;
 use App\Models\BulkNotification;
 use App\Models\BulkNotificationRecipient;
 use App\Models\Member;
@@ -11,9 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class BulkNotificationService
 {
-    public function __construct(private readonly SmsService $smsService)
-    {
-    }
+    public function __construct() {}
 
     public function index(int $tenantId, int $perPage, string $search): array
     {
@@ -28,9 +27,9 @@ class BulkNotificationService
             'data' => collect($notifications->items())->map(fn (BulkNotification $n) => $this->summarize($n)),
             'meta' => [
                 'current_page' => $notifications->currentPage(),
-                'last_page'    => $notifications->lastPage(),
-                'per_page'     => $notifications->perPage(),
-                'total'        => $notifications->total(),
+                'last_page' => $notifications->lastPage(),
+                'per_page' => $notifications->perPage(),
+                'total' => $notifications->total(),
             ],
         ];
     }
@@ -40,17 +39,17 @@ class BulkNotificationService
         $notification->load(['recipients.member', 'creator']);
 
         return [
-            'id'               => $notification->id,
-            'name'             => $notification->name,
-            'message'          => $notification->message,
-            'status'           => $notification->status,
-            'sent_at'          => $notification->sent_at?->toDateTimeString(),
-            'created_at'       => $notification->created_at->toDateTimeString(),
-            'created_by_name'  => $notification->creator?->name,
-            'recipients'       => $notification->recipients->map(fn (BulkNotificationRecipient $r) => [
-                'id'           => $r->id,
-                'member_id'    => $r->member_id,
-                'member_name'  => $r->member?->name,
+            'id' => $notification->id,
+            'name' => $notification->name,
+            'message' => $notification->message,
+            'status' => $notification->status,
+            'sent_at' => $notification->sent_at?->toDateTimeString(),
+            'created_at' => $notification->created_at->toDateTimeString(),
+            'created_by_name' => $notification->creator?->name,
+            'recipients' => $notification->recipients->map(fn (BulkNotificationRecipient $r) => [
+                'id' => $r->id,
+                'member_id' => $r->member_id,
+                'member_name' => $r->member?->name,
                 'phone_number' => $r->phone_number,
             ])->values()->all(),
         ];
@@ -61,11 +60,11 @@ class BulkNotificationService
         return DB::transaction(function () use ($tenant, $user, $data) {
             /** @var BulkNotification $notification */
             $notification = BulkNotification::create([
-                'tenant_id'  => $tenant->id,
+                'tenant_id' => $tenant->id,
                 'created_by' => $user->id,
-                'name'       => $data['name'],
-                'message'    => $data['message'],
-                'status'     => 'draft',
+                'name' => $data['name'],
+                'message' => $data['message'],
+                'status' => 'draft',
             ]);
 
             $this->syncRecipients($notification, $tenant->id, $data['member_ids'] ?? []);
@@ -78,7 +77,7 @@ class BulkNotificationService
     {
         DB::transaction(function () use ($notification, $tenant, $data) {
             $notification->update([
-                'name'    => $data['name'],
+                'name' => $data['name'],
                 'message' => $data['message'],
             ]);
 
@@ -94,25 +93,20 @@ class BulkNotificationService
     }
 
     /**
-     * Finalize and send the notification. Returns ['success', 'failed', 'campaign_id'].
+     * Dispatch an async job to send the notification via all channels (sms, email, in_app).
+     * Returns ['queued' => true, 'recipient_count' => int].
      */
     public function send(BulkNotification $notification): array
     {
-        $contacts = $notification->recipients()->pluck('phone_number')->values()->all();
+        $recipientCount = $notification->recipients()->count();
 
-        $result = $this->smsService->sendBulk($contacts, $notification->message);
+        $notification->update(['status' => 'processing']);
 
-        if ($result['success']) {
-            $notification->update([
-                'status'  => 'sent',
-                'sent_at' => now(),
-            ]);
-        }
+        SendBulkNotificationJob::dispatch($notification->id);
 
         return [
-            'success'          => $result['success'],
-            'campaign_id'      => $result['campaign_id'],
-            'recipient_count'  => count($contacts),
+            'queued' => true,
+            'recipient_count' => $recipientCount,
         ];
     }
 
@@ -135,10 +129,10 @@ class BulkNotificationService
 
         $rows = $members->map(fn (Member $m) => [
             'bulk_notification_id' => $notification->id,
-            'member_id'            => $m->id,
-            'phone_number'         => $m->phone_number,
-            'created_at'           => now(),
-            'updated_at'           => now(),
+            'member_id' => $m->id,
+            'phone_number' => $m->phone_number,
+            'created_at' => now(),
+            'updated_at' => now(),
         ])->all();
 
         if ($rows !== []) {
@@ -149,12 +143,12 @@ class BulkNotificationService
     private function summarize(BulkNotification $notification): array
     {
         return [
-            'id'               => $notification->id,
-            'name'             => $notification->name,
-            'message'          => $notification->message,
-            'status'           => $notification->status,
-            'sent_at'          => $notification->sent_at?->toDateTimeString(),
-            'created_at'       => $notification->created_at->toDateTimeString(),
+            'id' => $notification->id,
+            'name' => $notification->name,
+            'message' => $notification->message,
+            'status' => $notification->status,
+            'sent_at' => $notification->sent_at?->toDateTimeString(),
+            'created_at' => $notification->created_at->toDateTimeString(),
             'recipients_count' => $notification->recipients_count ?? 0,
         ];
     }

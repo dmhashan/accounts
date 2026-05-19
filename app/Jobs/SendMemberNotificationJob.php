@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Jobs;
+
+use App\Mail\MemberNotificationMail;
+use App\Models\Member;
+use App\Models\MemberNotification;
+use App\Services\SmsService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+class SendMemberNotificationJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public int $tries = 3;
+
+    /**
+     * @param  array<string>  $channels  Any subset of: 'sms', 'email', 'in_app'
+     */
+    public function __construct(
+        private readonly int $tenantId,
+        private readonly int $memberId,
+        private readonly string $type,
+        private readonly string $title,
+        private readonly string $body,
+        private readonly array $channels = ['sms', 'email', 'in_app'],
+    ) {}
+
+    public function handle(SmsService $smsService): void
+    {
+        $member = Member::where('tenant_id', $this->tenantId)->find($this->memberId);
+
+        if (!$member) {
+            Log::warning('SendMemberNotificationJob: Member not found.', [
+                'tenant_id' => $this->tenantId,
+                'member_id' => $this->memberId,
+            ]);
+
+            return;
+        }
+
+        foreach ($this->channels as $channel) {
+            match ($channel) {
+                'sms' => $this->sendSms($member, $smsService),
+                'email' => $this->sendEmail($member),
+                'in_app' => $this->sendInApp($member),
+                default => null,
+            };
+        }
+    }
+
+    private function sendSms(Member $member, SmsService $smsService): void
+    {
+        if (!$member->allow_sms || !$member->phone_number) {
+            return;
+        }
+
+        $smsService->send($member->phone_number, $this->body);
+    }
+
+    private function sendEmail(Member $member): void
+    {
+        if (!$member->email) {
+            return;
+        }
+
+        try {
+            Mail::to($member->email)->send(
+                new MemberNotificationMail($this->title, $this->body),
+            );
+        } catch (\Throwable $e) {
+            Log::error('SendMemberNotificationJob: Email send failed.', [
+                'member_id' => $member->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function sendInApp(Member $member): void
+    {
+        MemberNotification::create([
+            'tenant_id' => $this->tenantId,
+            'member_id' => $member->id,
+            'type' => $this->type,
+            'title' => $this->title,
+            'body' => $this->body,
+        ]);
+    }
+}
