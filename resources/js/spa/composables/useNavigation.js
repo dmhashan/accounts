@@ -90,7 +90,13 @@ export function useNavigation() {
             ],
         });
 
-        if (context.permissions?.paymentsManage) items.push({ label: 'Payments',  shortLabel: 'Payments', path: '/payments',  icon: ICONS.payments });
+        if (context.permissions?.paymentsManage) items.push({
+            label: 'Payments', shortLabel: 'Payments', path: '/payments', icon: ICONS.payments,
+            children: [
+                { label: 'Payments', path: '/payments' },
+                { label: 'Payment Plans', path: '/payments/plans' },
+            ],
+        });
 
         if (context.permissions?.reports) items.push({
             label: 'Reports', shortLabel: 'Reports', path: '/reports', icon: ICONS.reports,

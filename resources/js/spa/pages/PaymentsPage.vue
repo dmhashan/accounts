@@ -18,23 +18,6 @@
           New Plan
         </button>
       </template>
-
-      <template #extra-slot>
-        <nav class="flex gap-1 p-1 rounded-xl bg-secondary-100 dark:bg-secondary-800 w-fit">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            type="button"
-            class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            :class="activeTab === tab.key
-              ? 'bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white shadow-sm'
-              : 'text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300'"
-            @click="switchTab(tab.key)"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-      </template>
     </AppPageHeader>
 
     <!-- Payments tab -->
@@ -400,17 +383,7 @@ const route = useRoute();
 const canManage = computed(() => Boolean(context.permissions?.paymentsManage));
 
 // ── Tab state ──────────────────────────────────────────────
-const tabs = [
-    { key: 'payments', label: 'Payments' },
-    { key: 'plans',    label: 'Plans' },
-];
-
-const activeTab = ref(route.path === '/payments/plans' ? 'plans' : 'payments');
-
-function switchTab(key) {
-    activeTab.value = key;
-    router.replace(key === 'plans' ? '/payments/plans' : '/payments');
-}
+const activeTab = computed(() => route.path === '/payments/plans' ? 'plans' : 'payments');
 
 // ── Payments ──────────────────────────────────────────────
 const loading = ref(false);
