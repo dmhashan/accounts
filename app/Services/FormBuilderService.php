@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendFormSubmissionEmailJob;
 use App\Models\FormSubmission;
 use App\Models\FormTemplate;
 use App\Models\Member;
@@ -60,13 +61,13 @@ class FormBuilderService
     public function storeTemplate(int $tenantId, ?int $createdBy, array $validated): FormTemplate
     {
         return FormTemplate::create([
-            'tenant_id'    => $tenantId,
-            'created_by'   => $createdBy,
-            'title'        => trim($validated['title']),
-            'description'  => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
-            'fields'       => $this->normalizeFields($validated['fields'] ?? []),
+            'tenant_id' => $tenantId,
+            'created_by' => $createdBy,
+            'title' => trim($validated['title']),
+            'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
+            'fields' => $this->normalizeFields($validated['fields'] ?? []),
             'translations' => $this->normalizeTranslations($validated['translations'] ?? []),
-            'is_active'    => $validated['is_active'] ?? true,
+            'is_active' => $validated['is_active'] ?? true,
         ]);
     }
 
@@ -77,11 +78,11 @@ class FormBuilderService
         }
 
         $template->update([
-            'title'       => trim($validated['title']),
+            'title' => trim($validated['title']),
             'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
-            'fields'       => $this->normalizeFields($validated['fields'] ?? []),
+            'fields' => $this->normalizeFields($validated['fields'] ?? []),
             'translations' => $this->normalizeTranslations($validated['translations'] ?? []),
-            'is_active'    => $validated['is_active'] ?? $template->is_active,
+            'is_active' => $validated['is_active'] ?? $template->is_active,
         ]);
 
         return $template->fresh();
@@ -134,20 +135,20 @@ class FormBuilderService
         int $tenantId,
         ?int $submittedBy,
         array $responses,
-        string $language = 'en'
+        string $language = 'en',
     ): FormSubmission {
         if ($template->tenant_id !== $tenantId) {
             abort(404);
         }
 
         $submission = FormSubmission::create([
-            'tenant_id'        => $tenantId,
+            'tenant_id' => $tenantId,
             'form_template_id' => $template->id,
-            'member_id'        => $member->id,
-            'submitted_by'     => $submittedBy,
-            'responses'        => $responses,
-            'language'         => in_array($language, self::ALLOWED_LANGUAGES, true) ? $language : 'en',
-            'submitted_at'     => now(),
+            'member_id' => $member->id,
+            'submitted_by' => $submittedBy,
+            'responses' => $responses,
+            'language' => in_array($language, self::ALLOWED_LANGUAGES, true) ? $language : 'en',
+            'submitted_at' => now(),
         ]);
 
         // Generate PDF, store it, and create a MemberDocument record
@@ -156,17 +157,22 @@ class FormBuilderService
             $submission->update(['pdf_path' => $pdfPath]);
 
             MemberDocument::create([
-                'tenant_id'         => $tenantId,
-                'member_id'         => $member->id,
-                'uploaded_by'       => $submittedBy,
-                'name'              => $template->title,
-                'category'          => 'fitness',
-                'path'              => $pdfPath,
-                'mime_type'         => 'application/pdf',
-                'file_size'         => $pdfSize,
+                'tenant_id' => $tenantId,
+                'member_id' => $member->id,
+                'uploaded_by' => $submittedBy,
+                'name' => $template->title,
+                'category' => 'fitness',
+                'path' => $pdfPath,
+                'mime_type' => 'application/pdf',
+                'file_size' => $pdfSize,
                 'original_filename' => $pdfFilename,
-                'notes'             => 'Auto-generated from form submission #' . $submission->id,
+                'notes' => 'Auto-generated from form submission #' . $submission->id,
             ]);
+
+            // Email the PDF to the member
+            if ($member->email) {
+                SendFormSubmissionEmailJob::dispatch($tenantId, $submission->id);
+            }
         } catch (\Throwable) {
             // PDF generation failure should not block submission
         }
@@ -197,7 +203,7 @@ class FormBuilderService
             abort(404);
         }
 
-        if (! $submission->pdf_path) {
+        if (!$submission->pdf_path) {
             // Regenerate if missing
             $submission->loadMissing(['template', 'member']);
             [$pdfPath] = $this->generateAndStorePdf($submission, $submission->template, $submission->member, $tenantId, app('tenant'));
@@ -214,7 +220,7 @@ class FormBuilderService
         FormTemplate $template,
         Member $member,
         int $tenantId,
-        ?\App\Models\Tenant $tenant = null
+        ?\App\Models\Tenant $tenant = null,
     ): array {
         $memberName = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?? 'Member');
 
@@ -222,7 +228,7 @@ class FormBuilderService
         $resolvedFields = $this->resolveFieldsForLanguage(
             $template->fields ?? [],
             $template->translations ?? [],
-            $submission->language ?? 'en'
+            $submission->language ?? 'en',
         );
 
         $lang = $submission->language ?? 'en';
@@ -239,14 +245,14 @@ class FormBuilderService
         $scriptFont = $scriptFonts[$lang] ?? null;
 
         // Build mPDF font config on top of defaults
-        $defaultFontDirs = (new ConfigVariables())->getDefaults()['fontDir'];
-        $defaultFontData = (new FontVariables())->getDefaults()['fontdata'];
+        $defaultFontDirs = (new ConfigVariables)->getDefaults()['fontDir'];
+        $defaultFontData = (new FontVariables)->getDefaults()['fontdata'];
 
         $fontDirs = array_merge($defaultFontDirs, [storage_path('fonts')]);
         $fontData = $defaultFontData;
 
         $defaultFont = 'dejavusans';
-        $bodyFont    = 'dejavusans, sans-serif';
+        $bodyFont = 'dejavusans, sans-serif';
 
         if ($scriptFont) {
             $entry = [
@@ -254,38 +260,39 @@ class FormBuilderService
                 'B' => $scriptFont['file'],
                 'I' => $scriptFont['file'],
             ];
+
             if ($scriptFont['otl']) {
                 $entry['useOTL'] = 0xFF;
             }
             $fontData[$scriptFont['key']] = $entry;
             $defaultFont = $scriptFont['key'];
-            $bodyFont    = "'{$scriptFont['key']}', dejavusans, sans-serif";
+            $bodyFont = "'{$scriptFont['key']}', dejavusans, sans-serif";
         }
 
         $html = view('pdfs.form-submission', [
-            'template'       => $template,
-            'submission'     => $submission,
+            'template' => $template,
+            'submission' => $submission,
             'resolvedFields' => $resolvedFields,
-            'language'       => $lang,
-            'bodyFont'       => $bodyFont,
-            'isRtl'          => $isRtl,
-            'memberName'     => $memberName,
-            'memberId'       => $member->member_id ?? '',
-            'submittedAt'    => $submission->submitted_at?->format('d M Y, H:i') ?? now()->format('d M Y, H:i'),
-            'tenantName'     => $tenant->name ?? '',
-            'tenantAddress'  => $tenant->address ?? '',
-            'tenantEmail'    => $tenant->email ?? '',
-            'tenantPhone'    => $tenant->phone ?? '',
+            'language' => $lang,
+            'bodyFont' => $bodyFont,
+            'isRtl' => $isRtl,
+            'memberName' => $memberName,
+            'memberId' => $member->member_id ?? '',
+            'submittedAt' => $submission->submitted_at?->format('d M Y, H:i') ?? now()->format('d M Y, H:i'),
+            'tenantName' => $tenant->name ?? '',
+            'tenantAddress' => $tenant->address ?? '',
+            'tenantEmail' => $tenant->email ?? '',
+            'tenantPhone' => $tenant->phone ?? '',
             'tenantLogoBase64' => $this->resolveLogoBase64($tenant),
         ])->render();
 
         $mpdf = new Mpdf([
-            'mode'         => 'utf-8',
-            'format'       => 'A4',
-            'fontDir'      => $fontDirs,
-            'fontdata'     => $fontData,
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'fontDir' => $fontDirs,
+            'fontdata' => $fontData,
             'default_font' => $defaultFont,
-            'tempDir'      => storage_path('app/mpdf-tmp'),
+            'tempDir' => storage_path('app/mpdf-tmp'),
         ]);
 
         if ($isRtl) {
@@ -293,10 +300,10 @@ class FormBuilderService
         }
 
         $mpdf->WriteHTML($html);
-        $content  = $mpdf->Output('', 'S');
+        $content = $mpdf->Output('', 'S');
 
         $filename = Str::slug($template->title) . '-' . $submission->id . '.pdf';
-        $path     = $this->media->storeContent($content, "form-submissions/{$filename}");
+        $path = $this->media->storeContent($content, "form-submissions/{$filename}");
 
         return [$path, strlen($content), $filename];
     }
@@ -307,13 +314,13 @@ class FormBuilderService
     {
         return array_values(array_map(function (array $field, int $order) {
             return [
-                'id'          => $field['id'] ?? Str::uuid()->toString(),
-                'type'        => $field['type'] ?? 'text',
-                'label'       => trim($field['label'] ?? ''),
+                'id' => $field['id'] ?? Str::uuid()->toString(),
+                'type' => $field['type'] ?? 'text',
+                'label' => trim($field['label'] ?? ''),
                 'placeholder' => $field['placeholder'] ?? null,
-                'required'    => (bool) ($field['required'] ?? false),
-                'options'     => $field['options'] ?? [],   // for select/radio
-                'order'       => $order,
+                'required' => (bool) ($field['required'] ?? false),
+                'options' => $field['options'] ?? [],   // for select/radio
+                'order' => $order,
             ];
         }, $fields, array_keys($fields)));
     }
@@ -327,26 +334,27 @@ class FormBuilderService
         $result = [];
 
         foreach ($translations as $lang => $data) {
-            if (! in_array($lang, self::ALLOWED_LANGUAGES, true) || $lang === 'en') {
+            if (!in_array($lang, self::ALLOWED_LANGUAGES, true) || $lang === 'en') {
                 continue;
             }
 
             $fields = [];
+
             foreach ($data['fields'] ?? [] as $fieldId => $ft) {
                 $fields[(string) $fieldId] = [
-                    'label'       => isset($ft['label'])       ? trim((string) $ft['label'])       : null,
+                    'label' => isset($ft['label']) ? trim((string) $ft['label']) : null,
                     'placeholder' => isset($ft['placeholder']) ? trim((string) $ft['placeholder']) : null,
-                    'options'     => array_values(array_filter(
+                    'options' => array_values(array_filter(
                         array_map(fn ($o) => trim((string) $o), $ft['options'] ?? []),
-                        fn ($o) => $o !== ''
+                        fn ($o) => $o !== '',
                     )),
                 ];
             }
 
             $result[$lang] = [
-                'title'       => isset($data['title'])       ? trim((string) $data['title'])       : null,
+                'title' => isset($data['title']) ? trim((string) $data['title']) : null,
                 'description' => isset($data['description']) ? trim((string) $data['description']) : null,
-                'fields'      => $fields,
+                'fields' => $fields,
             ];
         }
 
@@ -367,13 +375,15 @@ class FormBuilderService
 
         return array_map(function (array $field) use ($trans) {
             $ft = $trans[$field['id']] ?? null;
-            if (! $ft) {
+
+            if (!$ft) {
                 return $field;
             }
+
             return array_merge($field, array_filter([
-                'label'       => $ft['label']       ?: null,
+                'label' => $ft['label'] ?: null,
                 'placeholder' => $ft['placeholder'] ?: null,
-                'options'     => ! empty($ft['options']) ? $ft['options'] : null,
+                'options' => !empty($ft['options']) ? $ft['options'] : null,
             ], fn ($v) => $v !== null));
         }, $fields);
     }
@@ -381,16 +391,16 @@ class FormBuilderService
     private function serializeTemplate(FormTemplate $t, bool $withFields = false): array
     {
         $data = [
-            'id'          => $t->id,
-            'title'       => $t->title,
+            'id' => $t->id,
+            'title' => $t->title,
             'description' => $t->description,
-            'is_active'   => $t->is_active,
-            'created_by'  => $t->creator ? ['id' => $t->creator->id, 'name' => $t->creator->name] : null,
-            'created_at'  => $t->created_at?->format('d M Y'),
+            'is_active' => $t->is_active,
+            'created_by' => $t->creator ? ['id' => $t->creator->id, 'name' => $t->creator->name] : null,
+            'created_at' => $t->created_at?->format('d M Y'),
         ];
 
         if ($withFields) {
-            $data['fields']       = $t->fields ?? [];
+            $data['fields'] = $t->fields ?? [];
             $data['translations'] = $t->translations ?? [];
         }
 
@@ -400,18 +410,18 @@ class FormBuilderService
     private function serializeSubmission(FormSubmission $s, bool $withResponses = false): array
     {
         $data = [
-            'id'           => $s->id,
-            'template'     => $s->template ? ['id' => $s->template->id, 'title' => $s->template->title] : null,
-            'member'       => $s->member ? [
-                'id'        => $s->member->id,
-                'name'      => trim(($s->member->first_name ?? '') . ' ' . ($s->member->last_name ?? '')) ?: ($s->member->name ?? ''),
+            'id' => $s->id,
+            'template' => $s->template ? ['id' => $s->template->id, 'title' => $s->template->title] : null,
+            'member' => $s->member ? [
+                'id' => $s->member->id,
+                'name' => trim(($s->member->first_name ?? '') . ' ' . ($s->member->last_name ?? '')) ?: ($s->member->name ?? ''),
                 'member_id' => $s->member->member_id ?? '',
             ] : null,
             'submitted_by' => $s->submitter ? ['id' => $s->submitter->id, 'name' => $s->submitter->name] : null,
-            'language'     => $s->language ?? 'en',
-            'has_pdf'      => (bool) $s->pdf_path,
+            'language' => $s->language ?? 'en',
+            'has_pdf' => (bool) $s->pdf_path,
             'submitted_at' => $s->submitted_at?->format('d M Y, H:i'),
-            'created_at'   => $s->created_at?->format('d M Y, H:i'),
+            'created_at' => $s->created_at?->format('d M Y, H:i'),
         ];
 
         if ($withResponses) {
@@ -427,21 +437,21 @@ class FormBuilderService
      */
     private function resolveLogoBase64(?\App\Models\Tenant $tenant): ?string
     {
-        if (! $tenant || ! $tenant->logo_path) {
+        if (!$tenant || !$tenant->logo_path) {
             return null;
         }
 
         try {
             $diskName = config('filesystems.media_disk', 'public');
-            $content  = Storage::disk($diskName)->get($tenant->logo_path);
+            $content = Storage::disk($diskName)->get($tenant->logo_path);
 
-            if (! $content) {
+            if (!$content) {
                 return null;
             }
 
-            $ext      = strtolower(pathinfo($tenant->logo_path, PATHINFO_EXTENSION));
-            $mimeMap  = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'svg' => 'image/svg+xml'];
-            $mime     = $mimeMap[$ext] ?? 'image/png';
+            $ext = strtolower(pathinfo($tenant->logo_path, PATHINFO_EXTENSION));
+            $mimeMap = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'svg' => 'image/svg+xml'];
+            $mime = $mimeMap[$ext] ?? 'image/png';
 
             return 'data:' . $mime . ';base64,' . base64_encode($content);
         } catch (\Throwable) {
