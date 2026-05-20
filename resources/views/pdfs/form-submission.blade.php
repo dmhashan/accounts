@@ -18,40 +18,30 @@
     .top-bar { background: #c8102e; height: 5px; width: 100%; font-size: 0; }
 
     /* ── Letterhead ───────────────────────────────────────── */
-    .lh-table { width: 100%; border-collapse: collapse; }
-    .lh-logo-td {
-        width: 64px;
-        padding: 20px 12px 16px 36px;
+    .lh-table { width: 100%; border-collapse: collapse; background: #4a4a4a; }
+    .lh-brand-td {
+        padding: 8px 28px;
         vertical-align: middle;
     }
-    .lh-logo-td img { height: 32px; object-fit: contain; }
-    .lh-name-td {
-        padding: 20px 12px 16px 4px;
-        vertical-align: middle;
-    }
+    .lh-logo-wrap { margin-bottom: 0; }
+    .lh-logo-img { max-width: 400px; max-height: 144px; object-fit: contain; display: block; }
+    .lh-contact-name { font-weight: bold; color: #fff; font-size: 10pt; }
     .lh-org-name {
-        font-size: 17pt;
+        font-size: 12pt;
         font-weight: bold;
-        color: #111;
-        line-height: 1.15;
-    }
-    .lh-tagline {
-        font-size: 7.5pt;
-        color: #aaa;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        margin-top: 3px;
+        color: #fff;
+        line-height: 1.2;
     }
     .lh-contact-td {
-        width: 180px;
-        padding: 20px 36px 16px 8px;
+        width: 360px;
+        padding: 8px 28px;
         vertical-align: middle;
         text-align: right;
     }
-    .lh-contact-line { font-size: 8.5pt; color: #555; line-height: 1.75; }
+    .lh-contact-line { font-size: 8pt; color: #ccc; line-height: 1.7; }
 
     /* ── Rule ─────────────────────────────────────────────── */
-    .lh-rule { border: none; border-top: 2px solid #111; margin: 0 36px; }
+    .lh-rule { display: none; }
 
     /* ── Title band ───────────────────────────────────────── */
     .title-table { width: 100%; border-collapse: collapse; background: #1a1a1a; }
@@ -177,18 +167,16 @@
 {{-- Letterhead --}}
 <table class="lh-table">
     <tr>
-        @if(!empty($tenantLogoBase64))
-        <td class="lh-logo-td">
-            <img src="{{ $tenantLogoBase64 }}" alt="{{ $tenantName ?? '' }}" />
-        </td>
-        @endif
-        <td class="lh-name-td">
-            @if(!empty($tenantName))
-            <div class="lh-org-name">{{ $tenantName }}</div>
+        <td class="lh-brand-td">
+            @if(!empty($tenantLogoBase64))
+            <div class="lh-logo-wrap">
+                <img src="{{ $tenantLogoBase64 }}" alt="{{ $tenantName ?? '' }}" class="lh-logo-img" />
+            </div>
             @endif
         </td>
-        @if(!empty($tenantAddress) || !empty($tenantEmail) || !empty($tenantPhone))
+        @if(!empty($tenantName) || !empty($tenantAddress) || !empty($tenantEmail) || !empty($tenantPhone))
         <td class="lh-contact-td">
+            @if(!empty($tenantName))<div class="lh-contact-line lh-contact-name">{{ $tenantName }}</div>@endif
             @if(!empty($tenantAddress))<div class="lh-contact-line">{{ $tenantAddress }}</div>@endif
             @if(!empty($tenantEmail))<div class="lh-contact-line">{{ $tenantEmail }}</div>@endif
             @if(!empty($tenantPhone))<div class="lh-contact-line">{{ $tenantPhone }}</div>@endif
@@ -246,7 +234,7 @@
             <div class="field-heading">{{ $field['label'] }}</div>
 
         @elseif($type === 'paragraph')
-            <div class="field-paragraph">{{ $field['label'] }}</div>
+            <div class="field-paragraph">{!! nl2br(e($field['label'])) !!}</div>
 
         @elseif($type === 'checkbox')
             <div class="field-block">

@@ -340,7 +340,15 @@
                         <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                           {{ field.type === 'heading' ? 'Heading Text' : field.type === 'paragraph' ? 'Paragraph Text' : 'Label' }}
                         </label>
+                        <textarea
+                          v-if="field.type === 'paragraph'"
+                          v-model="form.translations[activeLangTab].fields[field.id].label"
+                          rows="6"
+                          :placeholder="field.label || 'English label as fallback'"
+                          class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y font-mono"
+                        />
                         <input
+                          v-else
                           v-model="form.translations[activeLangTab].fields[field.id].label"
                           type="text"
                           maxlength="255"
