@@ -1,0 +1,361 @@
+<template>
+  <section class="app-page-frame">
+    <AppPageHeader title="Configuration" />
+
+    <div class="app-page-scroll">
+      <div v-if="loadError" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        {{ loadError }}
+      </div>
+
+      <div v-if="loading" class="py-12 text-center text-sm text-secondary-500 dark:text-secondary-400">
+        Loading configuration…
+      </div>
+
+      <template v-else>
+        <!-- Notifications card -->
+        <div class="app-surface rounded-2xl overflow-hidden">
+          <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
+            <Bell class="w-5 h-5 text-primary-500 flex-shrink-0" :stroke-width="2" />
+            <div>
+              <h2 class="text-base font-semibold" style="color: var(--text-strong)">
+                Notifications
+              </h2>
+              <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                Configure in-app, email and SMS notification channels
+              </p>
+            </div>
+          </div>
+
+          <div class="divide-y divide-secondary-100 dark:divide-secondary-800">
+            <!-- In-App Notifications -->
+            <div class="px-4 md:px-6 py-4">
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <BellRing class="w-4 h-4 text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium" style="color: var(--text-strong)">
+                      In-App Notifications
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                      Show notifications inside the member portal
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="form['notifications.inapp.enabled'] === '1'"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                  :class="form['notifications.inapp.enabled'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                  @click="toggle('notifications.inapp.enabled')"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                    :class="form['notifications.inapp.enabled'] === '1' ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+            </div>
+
+            <!-- Email Notifications -->
+            <div class="px-4 md:px-6 py-4 space-y-4">
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                    <Mail class="w-4 h-4 text-blue-600 dark:text-blue-400" :stroke-width="2" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium" style="color: var(--text-strong)">
+                      Email Notifications
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                      Send notifications via SMTP email &mdash; configure your SMTP server below
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="form['notifications.email.enabled'] === '1'"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                  :class="form['notifications.email.enabled'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                  @click="toggle('notifications.email.enabled')"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                    :class="form['notifications.email.enabled'] === '1' ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+
+              <!-- SMTP fields (shown when email enabled) -->
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-1"
+              >
+                <div v-if="form['notifications.email.enabled'] === '1'" class="ml-0 md:ml-12 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                  <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                    SMTP Configuration
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <AppFormField label="SMTP Host">
+                      <AppFormInput
+                        v-model="form['notifications.email.smtp_host']"
+                        type="text"
+                        placeholder="smtp.example.com"
+                        maxlength="255"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="SMTP Port">
+                      <AppFormInput
+                        v-model="form['notifications.email.smtp_port']"
+                        type="number"
+                        placeholder="587"
+                        min="1"
+                        max="65535"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="Username">
+                      <AppFormInput
+                        v-model="form['notifications.email.smtp_username']"
+                        type="text"
+                        placeholder="user@example.com"
+                        maxlength="255"
+                        autocomplete="off"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="Password">
+                      <AppFormInput
+                        v-model="form['notifications.email.smtp_password']"
+                        type="password"
+                        placeholder="••••••••"
+                        maxlength="255"
+                        autocomplete="new-password"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="Encryption">
+                      <select
+                        v-model="form['notifications.email.smtp_encryption']"
+                        class="app-form-input w-full"
+                      >
+                        <option value="tls">
+                          TLS
+                        </option>
+                        <option value="ssl">
+                          SSL
+                        </option>
+                        <option value="none">
+                          None
+                        </option>
+                      </select>
+                    </AppFormField>
+
+                    <AppFormField label="From Address">
+                      <AppFormInput
+                        v-model="form['notifications.email.from_address']"
+                        type="email"
+                        placeholder="no-reply@example.com"
+                        maxlength="255"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="From Name" class="sm:col-span-2">
+                      <AppFormInput
+                        v-model="form['notifications.email.from_name']"
+                        type="text"
+                        placeholder="My Fitness Center"
+                        maxlength="255"
+                      />
+                    </AppFormField>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+
+            <!-- SMS Notifications -->
+            <div class="px-4 md:px-6 py-4 space-y-4">
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                    <MessageSquare class="w-4 h-4 text-green-600 dark:text-green-400" :stroke-width="2" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium" style="color: var(--text-strong)">
+                      SMS Notifications
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                      Send notifications via SMS &mdash; powered by <a
+                        href="https://smslenz.lk"
+                        target="_blank"
+                        rel="noopener"
+                        class="underline hover:text-secondary-700 dark:hover:text-secondary-300"
+                      >SMSlenz</a>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="form['notifications.sms.enabled'] === '1'"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                  :class="form['notifications.sms.enabled'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                  @click="toggle('notifications.sms.enabled')"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                    :class="form['notifications.sms.enabled'] === '1' ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+
+              <!-- SMS fields -->
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-1"
+              >
+                <div v-if="form['notifications.sms.enabled'] === '1'" class="ml-0 md:ml-12 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                  <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                    SMSlenz Configuration
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <AppFormField label="User ID">
+                      <AppFormInput
+                        v-model="form['notifications.sms.user_id']"
+                        type="text"
+                        placeholder="Your SMSlenz User ID"
+                        maxlength="255"
+                        autocomplete="off"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="API Key">
+                      <AppFormInput
+                        v-model="form['notifications.sms.api_key']"
+                        type="password"
+                        placeholder="••••••••"
+                        maxlength="255"
+                        autocomplete="new-password"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="Sender ID" class="sm:col-span-2" help="The name or number shown as the SMS sender (max 11 chars for alphanumeric IDs)">
+                      <AppFormInput
+                        v-model="form['notifications.sms.sender_id']"
+                        type="text"
+                        placeholder="e.g. MyGym"
+                        maxlength="50"
+                      />
+                    </AppFormField>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+
+          <!-- Save button -->
+          <div class="px-4 md:px-6 py-4 border-t border-secondary-200/70 dark:border-secondary-700/70 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div v-if="saveError" class="flex-1 text-sm text-red-600 dark:text-red-400">
+              {{ saveError }}
+            </div>
+            <div v-else-if="successMessage" class="flex-1 text-sm text-green-600 dark:text-green-400">
+              {{ successMessage }}
+            </div>
+            <div v-else class="flex-1" />
+            <button
+              type="button"
+              class="w-full sm:w-auto px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              :disabled="submitting"
+              @click="save"
+            >
+              {{ submitting ? 'Saving…' : 'Save Configuration' }}
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+</template>
+
+<script setup>
+import { onMounted, ref } from 'vue';
+import { Bell, BellRing, Mail, MessageSquare } from 'lucide-vue-next';
+import AppPageHeader from '../components/AppPageHeader.vue';
+import AppFormField from '../components/forms/AppFormField.vue';
+import AppFormInput from '../components/forms/AppFormInput.vue';
+import { apiRequest } from '../composables/useApiClient';
+
+const loading = ref(true);
+const loadError = ref('');
+const submitting = ref(false);
+const saveError = ref('');
+const successMessage = ref('');
+
+const form = ref({
+    'notifications.inapp.enabled': '0',
+    'notifications.email.enabled': '0',
+    'notifications.email.smtp_host': '',
+    'notifications.email.smtp_port': '587',
+    'notifications.email.smtp_username': '',
+    'notifications.email.smtp_password': '',
+    'notifications.email.smtp_encryption': 'tls',
+    'notifications.email.from_address': '',
+    'notifications.email.from_name': '',
+    'notifications.sms.enabled': '0',
+    'notifications.sms.user_id': '',
+    'notifications.sms.api_key': '',
+    'notifications.sms.sender_id': '',
+});
+
+function toggle(key) {
+    form.value[key] = form.value[key] === '1' ? '0' : '1';
+}
+
+async function load() {
+    loading.value = true;
+    loadError.value = '';
+    try {
+        const response = await apiRequest('/api/settings/configuration');
+        const data = response.data || {};
+        Object.keys(form.value).forEach((key) => {
+            if (data[key] !== undefined) {
+                form.value[key] = data[key];
+            }
+        });
+    } catch {
+        loadError.value = 'Failed to load configuration.';
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function save() {
+    submitting.value = true;
+    saveError.value = '';
+    successMessage.value = '';
+    try {
+        await apiRequest('/api/settings/configuration', { method: 'PUT', data: form.value });
+        successMessage.value = 'Configuration saved successfully.';
+        setTimeout(() => { successMessage.value = ''; }, 3000);
+    } catch (err) {
+        saveError.value = err?.response?.data?.message || 'Failed to save configuration.';
+    } finally {
+        submitting.value = false;
+    }
+}
+
+onMounted(load);
+</script>

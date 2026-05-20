@@ -6,13 +6,14 @@ use App\Mail\MemberNotificationMail;
 use App\Models\Member;
 use App\Models\MemberNotification;
 use App\Services\SmsService;
+use App\Services\TenantConfigurationService;
+use App\Services\TenantMailService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class SendMemberNotificationJob implements ShouldQueue
 {
@@ -32,7 +33,7 @@ class SendMemberNotificationJob implements ShouldQueue
         private readonly array $channels = ['sms', 'email', 'in_app'],
     ) {}
 
-    public function handle(SmsService $smsService): void
+    public function handle(SmsService $smsService, TenantMailService $tenantMail, TenantConfigurationService $tenantConfig): void
     {
         $member = Member::where('tenant_id', $this->tenantId)->find($this->memberId);
 
@@ -45,10 +46,12 @@ class SendMemberNotificationJob implements ShouldQueue
             return;
         }
 
-        foreach ($this->channels as $channel) {
+        $channels = $tenantConfig->enabledChannels($this->tenantId, $this->channels);
+
+        foreach ($channels as $channel) {
             match ($channel) {
                 'sms' => $this->sendSms($member, $smsService),
-                'email' => $this->sendEmail($member),
+                'email' => $this->sendEmail($member, $tenantMail),
                 'in_app' => $this->sendInApp($member),
                 default => null,
             };
@@ -61,19 +64,19 @@ class SendMemberNotificationJob implements ShouldQueue
             return;
         }
 
-        $smsService->send($member->phone_number, $this->body);
+        $smsService->send($member->phone_number, $this->body, $this->tenantId);
     }
 
-    private function sendEmail(Member $member): void
+    private function sendEmail(Member $member, TenantMailService $tenantMail): void
     {
         if (!$member->email) {
             return;
         }
 
         try {
-            Mail::to($member->email)->send(
-                new MemberNotificationMail($this->title, $this->body),
-            );
+            $tenantMail->mailerForTenant($this->tenantId)
+                ->to($member->email)
+                ->send(new MemberNotificationMail($this->title, $this->body));
         } catch (\Throwable $e) {
             Log::error('SendMemberNotificationJob: Email send failed.', [
                 'member_id' => $member->id,

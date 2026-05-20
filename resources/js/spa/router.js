@@ -25,6 +25,7 @@ const ReportsPage = () => import('./pages/ReportsPage.vue');
 const SettingsPage = () => import('./pages/SettingsPage.vue');
 const GeneralSettingsPage = () => import('./pages/GeneralSettingsPage.vue');
 const LegacyToolsPage = () => import('./pages/LegacyToolsPage.vue');
+const ConfigurationPage = () => import('./pages/ConfigurationPage.vue');
 const ProfilePage = () => import('./pages/ProfilePage.vue');
 const WorkoutPage = () => import('./pages/WorkoutPage.vue');
 const WorkoutExerciseFormPage = () => import('./pages/WorkoutExerciseFormPage.vue');
@@ -120,6 +121,7 @@ const routes = [
     { path: '/settings/general', component: GeneralSettingsPage, meta: { title: 'General Settings' } },
     { path: '/settings/roles', component: SettingsPage, meta: { title: 'Roles Settings' } },
     { path: '/settings/legacy-tools', component: LegacyToolsPage, meta: { title: 'Manual Commands' } },
+    { path: '/settings/configuration', component: ConfigurationPage, meta: { title: 'Configuration' } },
     { path: '/profile', component: ProfilePage, meta: { title: 'My Profile' } },
     { path: '/workout', component: WorkoutPage, meta: { title: 'Workout' } },
     { path: '/workout/exercises', component: WorkoutPage, meta: { title: 'Exercises' } },
