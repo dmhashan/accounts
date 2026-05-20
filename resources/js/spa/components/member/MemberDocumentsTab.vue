@@ -446,9 +446,7 @@
                 </h3>
               </div>
               <div v-else-if="field.type === 'paragraph'">
-                <p class="text-sm text-secondary-500 dark:text-secondary-400 italic">
-                  {{ field.label }}
-                </p>
+                <pre class="text-sm text-secondary-500 dark:text-secondary-400 italic whitespace-pre-wrap font-sans">{{ field.label }}</pre>
               </div>
               <div v-else-if="field.type === 'checkbox'" class="flex items-start gap-2.5">
                 <input
@@ -690,6 +688,7 @@ function downloadDocView() {
 }
 
 async function deleteDoc(doc) {
+    // eslint-disable-next-line no-alert
     if (!window.confirm(`Delete "${doc.name}"? This cannot be undone.`)) return;
     try {
         await apiRequest(`/api/members/${props.memberId}/documents/${doc.id}`, { method: 'delete' });
