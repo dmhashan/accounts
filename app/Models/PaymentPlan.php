@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PaymentPlan extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'tenant_id',
         'name',
@@ -30,5 +33,10 @@ class PaymentPlan extends Model
     public function memberships(): HasMany
     {
         return $this->hasMany(PaymentMembership::class);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(Member::class);
     }
 }

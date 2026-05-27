@@ -91,7 +91,7 @@
             <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-white/15 border border-white/25 text-white">{{ normalizedGender }}</span>
           </div>
           <p class="mt-1 text-xs text-primary-100/90 tracking-wide">
-            {{ member.member_id }}<span v-if="member.username" class="ml-2 opacity-70">@{{ member.username }}</span>
+            {{ member.biometric_member_id }}<span v-if="member.username" class="ml-2 opacity-70">@{{ member.username }}</span>
           </p>
         </div>
       </div>

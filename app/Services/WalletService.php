@@ -12,9 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class WalletService
 {
-    public function __construct(private readonly AuditService $auditService)
-    {
-    }
+    public function __construct(private readonly AuditService $auditService) {}
 
     public function meta(int $tenantId): array
     {
@@ -28,14 +26,14 @@ class WalletService
 
         return [
             'accounts' => $accounts->map(fn (CompanyAccount $a) => [
-                'id'              => $a->id,
-                'name'            => $a->name,
+                'id' => $a->id,
+                'name' => $a->name,
                 'current_balance' => round(
                     (float) $a->opening_balance
                     + (float) ($a->incoming_total ?? 0)
                     + (float) ($a->transaction_total ?? 0)
                     - (float) ($a->outgoing_total ?? 0),
-                    2
+                    2,
                 ),
             ])->values(),
         ];
@@ -63,14 +61,14 @@ class WalletService
             }
 
             $topup = WalletTopup::create([
-                'tenant_id'          => $tenantId,
-                'member_id'          => $lockedMember->id,
+                'tenant_id' => $tenantId,
+                'member_id' => $lockedMember->id,
                 'company_account_id' => $account->id,
-                'amount'             => (float) $validated['amount'],
-                'topup_date'         => $validated['topup_date'],
-                'reference_number'   => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
-                'notes'              => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
-                'created_by'         => $createdBy,
+                'amount' => (float) $validated['amount'],
+                'topup_date' => $validated['topup_date'],
+                'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
+                'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+                'created_by' => $createdBy,
             ]);
 
             $lockedMember->update([
@@ -78,19 +76,19 @@ class WalletService
             ]);
 
             CompanyAccountTransaction::create([
-                'tenant_id'          => $tenantId,
+                'tenant_id' => $tenantId,
                 'company_account_id' => $account->id,
-                'model_name'         => 'wallet_topup',
-                'reference_id'       => $topup->id,
-                'type'               => 'wallet_topup',
-                'amount'             => (float) $validated['amount'],
-                'transaction_date'   => $validated['topup_date'],
-                'reference_number'   => $topup->reference_number,
-                'notes'              => 'Wallet top-up for ' . trim(($lockedMember->first_name ?? '') . ' ' . ($lockedMember->last_name ?? '')) ?: $lockedMember->name,
+                'model_name' => 'wallet_topup',
+                'reference_id' => $topup->id,
+                'type' => 'wallet_topup',
+                'amount' => (float) $validated['amount'],
+                'transaction_date' => $validated['topup_date'],
+                'reference_number' => $topup->reference_number,
+                'notes' => 'Wallet top-up for ' . trim(($lockedMember->first_name ?? '') . ' ' . ($lockedMember->last_name ?? '')) ?: $lockedMember->name,
             ]);
 
             $this->auditService->log($tenantId, 'wallet_topup', $topup, [], [
-                'amount'    => (float) $validated['amount'],
+                'amount' => (float) $validated['amount'],
                 'member_id' => $lockedMember->id,
             ]);
 
@@ -112,9 +110,9 @@ class WalletService
             'data' => collect($topups->items())->map(fn (WalletTopup $t) => $this->serializeTopup($t)),
             'meta' => [
                 'current_page' => $topups->currentPage(),
-                'last_page'    => $topups->lastPage(),
-                'per_page'     => $topups->perPage(),
-                'total'        => $topups->total(),
+                'last_page' => $topups->lastPage(),
+                'per_page' => $topups->perPage(),
+                'total' => $topups->total(),
             ],
         ];
     }
@@ -127,15 +125,15 @@ class WalletService
             ->where('member_id', $member->id)
             ->get()
             ->map(fn (WalletTopup $t) => [
-                'id'          => 'topup_' . $t->id,
-                'type'        => 'topup',
-                'label'       => 'Wallet Top-up',
-                'amount'      => (float) $t->amount,
-                'direction'   => 'credit',
-                'date'        => $t->topup_date?->toDateString(),
-                'reference'   => $t->reference_number,
-                'notes'       => $t->notes,
-                'created_at'  => optional($t->created_at)->format('Y-m-d H:i'),
+                'id' => 'topup_' . $t->id,
+                'type' => 'topup',
+                'label' => 'Wallet Top-up',
+                'amount' => (float) $t->amount,
+                'direction' => 'credit',
+                'date' => $t->topup_date?->toDateString(),
+                'reference' => $t->reference_number,
+                'notes' => $t->notes,
+                'created_at' => optional($t->created_at)->format('Y-m-d H:i'),
             ]);
 
         $walletSales = Sale::query()
@@ -145,15 +143,15 @@ class WalletService
             ->whereNull('deleted_at')
             ->get()
             ->map(fn (Sale $s) => [
-                'id'          => 'sale_' . $s->id,
-                'type'        => 'sale',
-                'label'       => 'Sale #' . $s->id,
-                'amount'      => (float) $s->total_amount,
-                'direction'   => 'debit',
-                'date'        => optional($s->created_at)->toDateString(),
-                'reference'   => $s->reference_number,
-                'notes'       => null,
-                'created_at'  => optional($s->created_at)->format('Y-m-d H:i'),
+                'id' => 'sale_' . $s->id,
+                'type' => 'sale',
+                'label' => 'Sale #' . $s->id,
+                'amount' => (float) $s->total_amount,
+                'direction' => 'debit',
+                'date' => optional($s->created_at)->toDateString(),
+                'reference' => $s->reference_number,
+                'notes' => null,
+                'created_at' => optional($s->created_at)->format('Y-m-d H:i'),
             ]);
 
         $walletPayments = MemberPayment::query()
@@ -162,15 +160,15 @@ class WalletService
             ->where('payment_method', 'member_wallet')
             ->get()
             ->map(fn (MemberPayment $p) => [
-                'id'          => 'payment_' . $p->id,
-                'type'        => 'payment',
-                'label'       => 'Member Payment',
-                'amount'      => (float) $p->amount,
-                'direction'   => 'debit',
-                'date'        => $p->payment_date?->toDateString(),
-                'reference'   => $p->reference_number,
-                'notes'       => $p->notes,
-                'created_at'  => optional($p->created_at)->format('Y-m-d H:i'),
+                'id' => 'payment_' . $p->id,
+                'type' => 'payment',
+                'label' => 'Member Payment',
+                'amount' => (float) $p->amount,
+                'direction' => 'debit',
+                'date' => $p->payment_date?->toDateString(),
+                'reference' => $p->reference_number,
+                'notes' => $p->notes,
+                'created_at' => optional($p->created_at)->format('Y-m-d H:i'),
             ]);
 
         $all = $topups->concat($walletSales)->concat($walletPayments)
@@ -187,9 +185,9 @@ class WalletService
             'data' => $items,
             'meta' => [
                 'current_page' => $page,
-                'last_page'    => $lastPage,
-                'per_page'     => $perPage,
-                'total'        => $total,
+                'last_page' => $lastPage,
+                'per_page' => $perPage,
+                'total' => $total,
             ],
         ];
     }
@@ -200,7 +198,7 @@ class WalletService
             abort(404);
         }
 
-        $topup->load(['member:id,first_name,last_name,name,member_id,email,phone_number', 'account:id,name', 'createdBy:id,name']);
+        $topup->load(['member:id,first_name,last_name,name,biometric_member_id,email,phone_number', 'account:id,name', 'createdBy:id,name']);
 
         $member = $topup->member;
         $memberName = $member
@@ -210,12 +208,12 @@ class WalletService
         return [
             ...$this->serializeTopup($topup),
             'created_by_name' => $topup->createdBy?->name,
-            'member'          => $member ? [
-                'id'        => $member->id,
-                'member_id' => $member->member_id,
-                'name'      => $memberName,
-                'email'     => $member->email,
-                'phone'     => $member->phone_number,
+            'member' => $member ? [
+                'id' => $member->id,
+                'member_id' => $member->biometric_member_id,
+                'name' => $memberName,
+                'email' => $member->email,
+                'phone' => $member->phone_number,
             ] : null,
         ];
     }
@@ -223,14 +221,14 @@ class WalletService
     private function serializeTopup(WalletTopup $topup): array
     {
         return [
-            'id'               => $topup->id,
-            'amount'           => round((float) $topup->amount, 2),
-            'topup_date'       => $topup->topup_date?->toDateString(),
+            'id' => $topup->id,
+            'amount' => round((float) $topup->amount, 2),
+            'topup_date' => $topup->topup_date?->toDateString(),
             'reference_number' => $topup->reference_number,
-            'notes'            => $topup->notes,
-            'account_id'       => $topup->company_account_id,
-            'account_name'     => $topup->account?->name,
-            'created_at'       => optional($topup->created_at)->format('Y-m-d H:i'),
+            'notes' => $topup->notes,
+            'account_id' => $topup->company_account_id,
+            'account_name' => $topup->account?->name,
+            'created_at' => optional($topup->created_at)->format('Y-m-d H:i'),
         ];
     }
 }

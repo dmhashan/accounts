@@ -1,9 +1,27 @@
 <template>
   <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
+    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-3">
       <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">
         Payment History
       </h2>
+      <div v-if="canManage" class="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+          @click="openMembershipModal"
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span class="hidden sm:inline">Membership</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors"
+          @click="openOtherModal"
+        >
+          <Plus class="w-3.5 h-3.5" />
+          <span class="hidden sm:inline">Other</span>
+        </button>
+      </div>
     </div>
     <div v-if="paymentsLoading" class="px-5 py-6 text-center text-sm text-secondary-400">
       Loading...
@@ -66,16 +84,54 @@
       </div>
     </div>
   </div>
+
+  <!-- Membership payment modal -->
+  <Teleport to="body">
+    <div v-if="memModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
+      <PaymentMembershipForm
+        :accounts="metaAccounts"
+        :plans="metaPlans"
+        :member-id="Number(memberId)"
+        :saving="memModalSaving"
+        :error="memModalError"
+        @submit="submitMembershipPayment"
+        @cancel="closeMembershipModal"
+      />
+    </div>
+  </Teleport>
+
+  <!-- Other payment modal -->
+  <Teleport to="body">
+    <div v-if="otherModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
+      <PaymentOtherForm
+        :accounts="metaAccounts"
+        :plans="metaPlans"
+        :member-id="Number(memberId)"
+        :saving="otherModalSaving"
+        :error="otherModalError"
+        @submit="submitOtherPayment"
+        @cancel="closeOtherModal"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { RouterLink } from 'vue-router';
+import { Plus } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
 import { useMemberFormatters } from '../../composables/useMemberFormatters';
+import { useAppContext } from '../../composables/useAppContext';
+import PaymentMembershipForm from '../forms/PaymentMembershipForm.vue';
+import PaymentOtherForm from '../forms/PaymentOtherForm.vue';
 
 const props = defineProps({
     memberId: { type: [Number, String], required: true },
 });
+
+const context = useAppContext();
+const canManage = computed(() => Boolean(context.permissions?.paymentsManage));
 
 const { formatDate, formatMoney } = useMemberFormatters();
 
@@ -91,6 +147,81 @@ async function loadMemberPayments(page = 1) {
         paymentsMeta.value = res.meta || paymentsMeta.value;
     } catch { /* ignore */ } finally {
         paymentsLoading.value = false;
+    }
+}
+
+// ── Meta ──────────────────────────────────────────────────
+const metaLoaded = ref(false);
+const metaAccounts = ref([]);
+const metaPlans = ref([]);
+
+async function loadMeta() {
+    if (metaLoaded.value) return;
+    try {
+        const response = await apiRequest('/api/payments/meta');
+        metaAccounts.value = response.accounts || [];
+        metaPlans.value = (response.plans || []).filter((p) => p.is_active !== false);
+        metaLoaded.value = true;
+    } catch { /* silent */ }
+}
+
+// ── Membership payment modal ──────────────────────────────
+const memModalOpen = ref(false);
+const memModalSaving = ref(false);
+const memModalError = ref('');
+
+async function openMembershipModal() {
+    memModalError.value = '';
+    memModalSaving.value = false;
+    await loadMeta();
+    memModalOpen.value = true;
+}
+
+function closeMembershipModal() {
+    memModalOpen.value = false;
+}
+
+async function submitMembershipPayment(payload) {
+    memModalSaving.value = true;
+    memModalError.value = '';
+    try {
+        await apiRequest('/api/payments', { method: 'post', data: payload });
+        closeMembershipModal();
+        loadMemberPayments(1);
+    } catch (err) {
+        memModalError.value = err?.response?.data?.message || 'Failed to record payment.';
+    } finally {
+        memModalSaving.value = false;
+    }
+}
+
+// ── Other payment modal ───────────────────────────────────
+const otherModalOpen = ref(false);
+const otherModalSaving = ref(false);
+const otherModalError = ref('');
+
+async function openOtherModal() {
+    otherModalError.value = '';
+    otherModalSaving.value = false;
+    await loadMeta();
+    otherModalOpen.value = true;
+}
+
+function closeOtherModal() {
+    otherModalOpen.value = false;
+}
+
+async function submitOtherPayment(payload) {
+    otherModalSaving.value = true;
+    otherModalError.value = '';
+    try {
+        await apiRequest('/api/payments', { method: 'post', data: payload });
+        closeOtherModal();
+        loadMemberPayments(1);
+    } catch (err) {
+        otherModalError.value = err?.response?.data?.message || 'Failed to record payment.';
+    } finally {
+        otherModalSaving.value = false;
     }
 }
 

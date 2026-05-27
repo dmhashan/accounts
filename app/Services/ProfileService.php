@@ -9,6 +9,7 @@ use App\Models\User;
 class ProfileService
 {
     public function __construct(private readonly MediaStorageService $media) {}
+
     public function build(User $user, Tenant $tenant): array
     {
         $canViewProfile = $user->hasPermission('member.profile.view');
@@ -42,7 +43,7 @@ class ProfileService
             ],
             'member' => $member ? [
                 'id' => $member->id,
-                'member_id' => $member->member_id,
+                'biometric_member_id' => $member->biometric_member_id,
                 'name' => $member->name,
                 'first_name' => $member->first_name,
                 'last_name' => $member->last_name,

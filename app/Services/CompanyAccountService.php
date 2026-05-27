@@ -10,8 +10,8 @@ use App\Models\MemberPayment;
 use App\Models\Sale;
 use App\Models\WalletTopup;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CompanyAccountService
 {
@@ -116,13 +116,13 @@ class CompanyAccountService
         $items = collect($transactions->items());
 
         // Collect reference IDs per model type
-        $saleIds    = $items->where('model_name', 'sale')->pluck('reference_id')->filter()->unique()->values();
+        $saleIds = $items->where('model_name', 'sale')->pluck('reference_id')->filter()->unique()->values();
         $expenseIds = $items->where('model_name', 'expense')->pluck('reference_id')->filter()->unique()->values();
         $paymentIds = $items->where('model_name', 'payment')->pluck('reference_id')->filter()->unique()->values();
-        $topupIds   = $items->where('model_name', 'wallet_topup')->pluck('reference_id')->filter()->unique()->values();
+        $topupIds = $items->where('model_name', 'wallet_topup')->pluck('reference_id')->filter()->unique()->values();
 
         // Load related records in bulk
-        $sales    = $saleIds->isNotEmpty()
+        $sales = $saleIds->isNotEmpty()
             ? Sale::whereIn('id', $saleIds)->get(['id', 'reference_number', 'customer_name'])->keyBy('id')
             : collect();
         $expenses = $expenseIds->isNotEmpty()
@@ -134,9 +134,9 @@ class CompanyAccountService
                 ->get(['id', 'member_id'])
                 ->keyBy('id')
             : collect();
-        $topups   = $topupIds->isNotEmpty()
+        $topups = $topupIds->isNotEmpty()
             ? WalletTopup::whereIn('id', $topupIds)
-                ->with('member:id,member_id,first_name,last_name,name')
+                ->with('member:id,biometric_member_id,first_name,last_name,name')
                 ->get(['id', 'member_id', 'reference_number'])
                 ->keyBy('id')
             : collect();
@@ -156,6 +156,7 @@ class CompanyAccountService
                     $sourceReference = $expense?->category;
                 } elseif ($tx->model_name === 'payment' && $tx->reference_id) {
                     $payment = $payments->get($tx->reference_id);
+
                     if ($payment?->member) {
                         $m = $payment->member;
                         $customer = trim(($m->first_name ?? '') . ' ' . ($m->last_name ?? '')) ?: ($m->name ?? null);
@@ -165,32 +166,33 @@ class CompanyAccountService
                     $topup = $topups->get($tx->reference_id);
                     $sourceReference = $topup?->reference_number;
                     $memberId = $topup?->member_id;
+
                     if ($topup?->member) {
                         $m = $topup->member;
-                        $customer = $m->member_id;
+                        $customer = $m->biometric_member_id;
                     }
                 }
 
                 return [
-                    'id'               => $tx->id,
-                    'type'             => $tx->type,
-                    'model_name'       => $tx->model_name,
-                    'reference_id'     => $tx->reference_id,
-                    'member_id'        => $memberId,
-                    'amount'           => $tx->amount,
+                    'id' => $tx->id,
+                    'type' => $tx->type,
+                    'model_name' => $tx->model_name,
+                    'reference_id' => $tx->reference_id,
+                    'member_id' => $memberId,
+                    'amount' => $tx->amount,
                     'transaction_date' => $tx->transaction_date?->toDateString(),
                     'reference_number' => $tx->reference_number,
-                    'notes'            => $tx->notes,
-                    'account_name'     => $tx->account?->name,
+                    'notes' => $tx->notes,
+                    'account_name' => $tx->account?->name,
                     'source_reference' => $sourceReference,
-                    'customer'         => $customer,
+                    'customer' => $customer,
                 ];
             }),
             'meta' => [
                 'current_page' => $transactions->currentPage(),
-                'last_page'    => $transactions->lastPage(),
-                'per_page'     => $transactions->perPage(),
-                'total'        => $transactions->total(),
+                'last_page' => $transactions->lastPage(),
+                'per_page' => $transactions->perPage(),
+                'total' => $transactions->total(),
             ],
         ];
     }
@@ -247,6 +249,7 @@ class CompanyAccountService
             $destinationAccount = $accounts->get((int) $validated['destination_account_id']);
 
             $error = $this->validateTransferAccounts($sourceAccount, $destinationAccount);
+
             if ($error) {
                 return ['error' => $error];
             }
@@ -297,6 +300,7 @@ class CompanyAccountService
             $destinationAccount = $accounts->get((int) $validated['destination_account_id']);
 
             $error = $this->validateTransferAccounts($sourceAccount, $destinationAccount);
+
             if ($error) {
                 return $error;
             }
@@ -444,7 +448,7 @@ class CompanyAccountService
             + (float) $incomingQuery->sum('amount')
             + (float) $transactionTotal
             - (float) $outgoingQuery->sum('amount'),
-            2
+            2,
         );
     }
 }

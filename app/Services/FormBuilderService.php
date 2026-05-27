@@ -102,7 +102,7 @@ class FormBuilderService
     public function listSubmissions(int $tenantId, ?int $memberId = null, ?int $templateId = null): array
     {
         $query = FormSubmission::where('tenant_id', $tenantId)
-            ->with(['template:id,title', 'member:id,first_name,last_name,member_id', 'submitter:id,name'])
+            ->with(['template:id,title', 'member:id,first_name,last_name,biometric_member_id', 'submitter:id,name'])
             ->orderByDesc('created_at');
 
         if ($memberId) {
@@ -124,7 +124,7 @@ class FormBuilderService
             abort(404);
         }
 
-        $submission->loadMissing(['template', 'member:id,first_name,last_name,member_id', 'submitter:id,name']);
+        $submission->loadMissing(['template', 'member:id,first_name,last_name,biometric_member_id', 'submitter:id,name']);
 
         return $this->serializeSubmission($submission, withResponses: true);
     }
@@ -277,7 +277,7 @@ class FormBuilderService
             'bodyFont' => $bodyFont,
             'isRtl' => $isRtl,
             'memberName' => $memberName,
-            'memberId' => $member->member_id ?? '',
+            'memberId' => $member->biometric_member_id ?? '',
             'submittedAt' => $submission->submitted_at?->format('d M Y, H:i') ?? now()->format('d M Y, H:i'),
             'tenantName' => $tenant->name ?? '',
             'tenantAddress' => $tenant->address ?? '',
@@ -415,7 +415,7 @@ class FormBuilderService
             'member' => $s->member ? [
                 'id' => $s->member->id,
                 'name' => trim(($s->member->first_name ?? '') . ' ' . ($s->member->last_name ?? '')) ?: ($s->member->name ?? ''),
-                'member_id' => $s->member->member_id ?? '',
+                'member_id' => $s->member->biometric_member_id ?? '',
             ] : null,
             'submitted_by' => $s->submitter ? ['id' => $s->submitter->id, 'name' => $s->submitter->name] : null,
             'language' => $s->language ?? 'en',

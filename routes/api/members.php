@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\BiometricApiController;
 use App\Http\Controllers\Api\MemberApiController;
 use App\Http\Controllers\Api\MemberDocumentApiController;
 use App\Http\Controllers\Api\PaymentApiController;
+use App\Http\Controllers\Api\PaymentPlanApiController;
 use App\Http\Controllers\Api\SaleApiController;
 use App\Http\Controllers\Api\WalletApiController;
 use App\Http\Controllers\Api\WorkoutProgramApiController;
@@ -22,6 +24,9 @@ Route::middleware(['auth', 'permission:users.view'])->group(function () {
     Route::post('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
     Route::put('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
     Route::delete('/members/{member}/avatar', [MemberApiController::class, 'deleteAvatar'])->middleware('permission:users.edit');
+
+    // Payment plans (read-only) — needed for member create/edit form
+    Route::get('/members/form/payment-plans', [PaymentPlanApiController::class, 'index']);
 
     // Member documents — view requires users.view; upload/delete requires users.edit
     Route::get('/members/{member}/documents', [MemberDocumentApiController::class, 'index']);
@@ -57,4 +62,12 @@ Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
     Route::post('/members/{member}/wallet/topup', [WalletApiController::class, 'topup']);
     Route::get('/members/{member}/wallet/topup-history', [WalletApiController::class, 'topupHistory']);
     Route::get('/members/{member}/wallet/transactions', [WalletApiController::class, 'transactions']);
+});
+
+// Biometric device sync per-member (requires users.edit)
+Route::middleware(['auth', 'permission:users.edit'])->group(function () {
+    Route::post('/members/{member}/biometric-assign-id', [BiometricApiController::class, 'assignMemberId']);
+    Route::post('/members/{member}/biometric-sync', [BiometricApiController::class, 'syncMember']);
+    Route::get('/members/{member}/biometric-logs', [BiometricApiController::class, 'memberLogs']);
+    Route::get('/members/{member}/biometric-device-info', [BiometricApiController::class, 'memberDeviceInfo']);
 });

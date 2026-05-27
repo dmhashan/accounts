@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Member;
+use App\Models\PaymentPlan;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -153,7 +154,7 @@ class SyncLegacyMembersCommand extends Command
 
                 $result = $this->upsertFromDetail($tenant, $detail, (string) $legacyId);
 
-                $processedMemberId = $result['member_id'] ?? (string) $legacyId;
+                $processedMemberId = $result['biometric_member_id'] ?? (string) $legacyId;
                 $this->line("{$processedMemberId} - completed");
 
                 if ($result['member'] === 'created') {
@@ -378,6 +379,9 @@ class SyncLegacyMembersCommand extends Command
         $gender = $this->normalizeGender((string) ($this->pick($detail, ['gender']) ?? 'other'));
         $isActive = $this->toBool($this->pick($detail, ['isActive', 'active', 'is_active']), true);
 
+        $planName = $this->extractPlanName($this->pick($detail, ['paymentPlan.planName', 'paymentPlanName', 'paymentPlan', 'payment_plan', 'planName', 'plan']));
+        $planPrice = $this->toDecimal($this->pick($detail, ['paymentPlan.price', 'price', 'amount', 'planPrice', 'plan_price']));
+
         $memberStatus = 'updated';
 
         DB::transaction(function () use (
@@ -391,13 +395,16 @@ class SyncLegacyMembersCommand extends Command
             $lastName,
             $gender,
             $isActive,
+            $planName,
+            $planPrice,
             &$existingMember,
             &$memberStatus
         ) {
             if (!$existingMember) {
                 $existingMember = new Member;
                 $existingMember->tenant_id = $tenant->id;
-                $existingMember->member_id = $this->resolveLocalMemberCode($detail, $legacyId);
+                $existingMember->biometric_member_id = $this->resolveLocalMemberCode($tenant, $detail, $legacyId);
+                $existingMember->biometric_last_synced_at = now();
                 $memberStatus = 'created';
             }
 
@@ -411,12 +418,10 @@ class SyncLegacyMembersCommand extends Command
             $existingMember->phone_number = $this->toText($this->pick($detail, ['mobile', 'mobileNumber', 'mobile_number', 'phone', 'phoneNumber', 'phone_number']));
             $existingMember->nic = $this->toText($this->pick($detail, ['nicNumber', 'nic_number', 'nic', 'nationalId', 'national_id']));
             $existingMember->date_of_birth = $this->parseDate($this->pick($detail, ['birthDay', 'birthday', 'dateOfBirth', 'date_of_birth', 'dob']));
-            $existingMember->age = $this->toInt($this->pick($detail, ['age']));
             $existingMember->address = $this->toText($this->pick($detail, ['address']));
-            $existingMember->member_role = $this->toText($this->pick($detail, ['Role.name', 'role.name'])) ?: 'member';
             $existingMember->admission_fee = $this->toDecimal($this->pick($detail, ['entryFee', 'entry_fee', 'admissionFee', 'admission_fee', 'registrationFee', 'registration_fee']));
-            $existingMember->payment_plan = $this->extractPlanName($this->pick($detail, ['paymentPlan.planName', 'paymentPlanName', 'paymentPlan', 'payment_plan', 'planName', 'plan']));
-            $existingMember->price = $this->toDecimal($this->pick($detail, ['paymentPlan.price', 'price', 'amount', 'planPrice', 'plan_price']));
+            $existingMember->payment_plan_id = $planName !== '' ? $this->resolveOrCreatePaymentPlan($tenant, $planName, $planPrice) : null;
+            $existingMember->price = $planPrice;
             $existingMember->joined_date = $this->parseDate($this->pick($detail, ['dateOfJoin', 'date_of_join', 'joinedDate', 'joined_date', 'joinDate', 'join_date'])) ?? ($existingMember->joined_date ?: now()->toDateString());
             $existingMember->comment = $this->toText($this->pick($detail, ['remark', 'comment', 'note', 'notes']));
             $existingMember->is_active = $isActive;
@@ -426,7 +431,7 @@ class SyncLegacyMembersCommand extends Command
 
         return [
             'member' => $memberStatus,
-            'member_id' => $existingMember?->member_id,
+            'biometric_member_id' => $existingMember?->biometric_member_id,
         ];
     }
 
@@ -614,9 +619,9 @@ class SyncLegacyMembersCommand extends Command
         return $this->toText($value);
     }
 
-    private function resolveLocalMemberCode(array $detail, string $legacyId): string
+    private function resolveLocalMemberCode(Tenant $tenant, array $detail, string $legacyId): string
     {
-        $candidate = (string) ($this->pick($detail, [
+        $raw = (string) ($this->pick($detail, [
             'memberId',
             'memberid',
             'memberCode',
@@ -627,16 +632,39 @@ class SyncLegacyMembersCommand extends Command
             'membership_no',
         ]) ?? '');
 
-        $candidate = trim($candidate);
+        $candidate = trim($raw);
 
-        if ($candidate !== '' && !Member::where('member_id', $candidate)->exists()) {
-            return $candidate;
+        // Only accept pure-numeric candidates
+        if ($candidate !== '' && ctype_digit($candidate)) {
+            if (!Member::where('tenant_id', $tenant->id)->where('biometric_member_id', $candidate)->exists()) {
+                return $candidate;
+            }
         }
 
-        if (!Member::where('member_id', $legacyId)->exists()) {
+        // Use numeric legacyId if available and free within the tenant
+        if (ctype_digit($legacyId) && !Member::where('tenant_id', $tenant->id)->where('biometric_member_id', $legacyId)->exists()) {
             return $legacyId;
         }
 
-        return Member::generateMemberId();
+        return Member::generateBiometricMemberId($tenant->id);
+    }
+
+    private function resolveOrCreatePaymentPlan(Tenant $tenant, string $name, ?float $price): int
+    {
+        $plan = PaymentPlan::where('tenant_id', $tenant->id)
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->first();
+
+        if ($plan) {
+            return $plan->id;
+        }
+
+        return PaymentPlan::create([
+            'tenant_id' => $tenant->id,
+            'name' => $name,
+            'duration_days' => 30,
+            'price' => $price ?? 0,
+            'is_active' => true,
+        ])->id;
     }
 }

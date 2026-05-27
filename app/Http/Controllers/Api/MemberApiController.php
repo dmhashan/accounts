@@ -14,9 +14,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MemberApiController extends Controller
 {
-    public function __construct(private readonly MemberService $memberService)
-    {
-    }
+    public function __construct(private readonly MemberService $memberService) {}
 
     public function meta(): JsonResponse
     {
@@ -32,8 +30,9 @@ class MemberApiController extends Controller
         $perPage = min((int) $request->integer('per_page', 15), 50);
         $search = trim((string) $request->query('search', ''));
         $isTemp = $request->has('is_temp') ? filter_var($request->query('is_temp'), FILTER_VALIDATE_BOOLEAN) : null;
+        $planId = $request->has('plan_id') ? (int) $request->query('plan_id') : null;
 
-        return response()->json($this->memberService->index($tenant->id, $currentUser, $perPage, $search, $isTemp));
+        return response()->json($this->memberService->index($tenant->id, $currentUser, $perPage, $search, $isTemp, $planId));
     }
 
     public function exportGoogleContacts(): StreamedResponse
@@ -73,12 +72,9 @@ class MemberApiController extends Controller
             'whatsapp_number' => ['nullable', 'string', 'max:20'],
             'nic' => ['nullable', 'string', 'max:50'],
             'date_of_birth' => ['required', 'date', 'before_or_equal:today'],
-            'age' => ['required', 'integer', 'min:1', 'max:120'],
             'address' => ['nullable', 'string', 'max:1000'],
-            'member_role' => ['required', 'string', 'max:50'],
             'admission_fee' => ['nullable', 'numeric', 'min:0'],
-            'payment_plan' => ['required', 'string', 'max:100'],
-            'price' => ['required', 'numeric', 'min:0'],
+            'payment_plan_id' => ['required', 'integer', 'exists:payment_plans,id'],
             'joined_date' => ['required', 'date'],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -154,6 +150,7 @@ class MemberApiController extends Controller
 
         $userUsernameRule = Rule::unique('users')->where(fn ($query) => $query->where('tenant_id', $tenant->id));
         $userEmailRule = Rule::unique('users')->where(fn ($query) => $query->where('tenant_id', $tenant->id));
+
         if ($member->user_id) {
             $userUsernameRule = $userUsernameRule->ignore($member->user_id);
             $userEmailRule = $userEmailRule->ignore($member->user_id);
@@ -171,12 +168,9 @@ class MemberApiController extends Controller
             'whatsapp_number' => ['nullable', 'string', 'max:20'],
             'nic' => ['nullable', 'string', 'max:50'],
             'date_of_birth' => ['required', 'date', 'before_or_equal:today'],
-            'age' => ['required', 'integer', 'min:1', 'max:120'],
             'address' => ['nullable', 'string', 'max:1000'],
-            'member_role' => ['required', 'string', 'max:50'],
             'admission_fee' => ['nullable', 'numeric', 'min:0'],
-            'payment_plan' => ['required', 'string', 'max:100'],
-            'price' => ['required', 'numeric', 'min:0'],
+            'payment_plan_id' => ['required', 'integer', 'exists:payment_plans,id'],
             'joined_date' => ['required', 'date'],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -248,22 +242,22 @@ class MemberApiController extends Controller
         $records = MemberAttendance::where('tenant_id', $tenant->id)
             ->where(function ($q) use ($member) {
                 $q->where('member_id', $member->id)
-                  ->orWhere(function ($q2) use ($member) {
-                      if ($member->username) {
-                          $q2->whereNull('member_id')->where('username', $member->username);
-                      } else {
-                          $q2->whereRaw('0=1');
-                      }
-                  });
+                    ->orWhere(function ($q2) use ($member) {
+                        if ($member->username) {
+                            $q2->whereNull('member_id')->where('username', $member->username);
+                        } else {
+                            $q2->whereRaw('0=1');
+                        }
+                    });
             })
             ->whereYear('attended_date', $year)
             ->orderBy('attended_date')
             ->get(['id', 'attended_date']);
 
         return response()->json([
-            'data'  => $records,
+            'data' => $records,
             'total' => $records->count(),
-            'year'  => $year,
+            'year' => $year,
         ]);
     }
 }

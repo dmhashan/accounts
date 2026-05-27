@@ -22,6 +22,14 @@ class PaymentApiController extends Controller
         return response()->json($this->paymentService->meta(app('tenant')->id));
     }
 
+    public function memberPaymentInfo(Member $member): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $this->memberService->ensureTenantMember($member, $tenantId);
+
+        return response()->json($this->paymentService->memberPaymentInfo($member, $tenantId));
+    }
+
     public function memberPayments(Request $request, Member $member): JsonResponse
     {
         $tenantId = app('tenant')->id;

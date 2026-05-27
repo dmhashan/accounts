@@ -10,7 +10,7 @@ class Member extends Model
     protected $fillable = [
         'tenant_id',
         'user_id',
-        'member_id',
+        'biometric_member_id',
         'first_name',
         'last_name',
         'username',
@@ -24,11 +24,9 @@ class Member extends Model
         'whatsapp_number',
         'nic',
         'date_of_birth',
-        'age',
         'address',
-        'member_role',
         'admission_fee',
-        'payment_plan',
+        'payment_plan_id',
         'price',
         'current_balance',
         'joined_date',
@@ -36,6 +34,7 @@ class Member extends Model
         'is_active',
         'is_verified',
         'is_temp',
+        'biometric_last_synced_at',
     ];
 
     protected $casts = [
@@ -61,24 +60,18 @@ class Member extends Model
         return $this->belongsTo(User::class);
     }
 
-    public static function generateMemberId(): string
+    /**
+     * Generate the next numeric biometric_member_id for a tenant.
+     * Finds the highest existing purely-numeric ID for the tenant and returns max+1.
+     */
+    public static function generateBiometricMemberId(int $tenantId): string
     {
-        // Default format: MEM-YYYY-XXXX (e.g., MEM-2025-0001)
-        // This can be configured in settings later
-        $year = date('Y');
-        $prefix = 'MEM';
-        
-        $lastMember = self::where('member_id', 'like', "{$prefix}-{$year}-%")
-            ->orderBy('member_id', 'desc')
-            ->first();
-        
-        if ($lastMember) {
-            $lastNumber = (int) substr($lastMember->member_id, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-        
-        return sprintf("%s-%s-%04d", $prefix, $year, $newNumber);
+        $max = (int) self::where('tenant_id', $tenantId)
+            ->whereNotNull('biometric_member_id')
+            ->whereRaw("biometric_member_id REGEXP '^[0-9]+$'")
+            ->selectRaw('MAX(CAST(biometric_member_id AS UNSIGNED)) as max_id')
+            ->value('max_id');
+
+        return (string) ($max + 1);
     }
 }

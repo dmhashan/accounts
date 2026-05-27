@@ -10,9 +10,7 @@ use Illuminate\Support\Str;
 
 class VoucherService
 {
-    public function __construct(private readonly AuditService $auditService)
-    {
-    }
+    public function __construct(private readonly AuditService $auditService) {}
 
     // ── Admin management ──────────────────────────────────────────────
 
@@ -31,7 +29,7 @@ class VoucherService
             $term = '%' . $filters['search'] . '%';
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
-                  ->orWhere('uuid', 'like', $term);
+                    ->orWhere('uuid', 'like', $term);
             });
         }
 
@@ -42,9 +40,9 @@ class VoucherService
             'data' => collect($paginated->items())->map(fn (Voucher $v) => $this->serialize($v)),
             'meta' => [
                 'current_page' => $paginated->currentPage(),
-                'last_page'    => $paginated->lastPage(),
-                'per_page'     => $paginated->perPage(),
-                'total'        => $paginated->total(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
             ],
         ];
     }
@@ -52,11 +50,11 @@ class VoucherService
     public function store(int $tenantId, array $validated, int $createdBy): Voucher
     {
         $voucher = Voucher::create([
-            'tenant_id'  => $tenantId,
-            'name'       => trim($validated['name']),
-            'uuid'       => Str::uuid()->toString(),
-            'amount'     => (float) $validated['amount'],
-            'status'     => $validated['status'] ?? 'active',
+            'tenant_id' => $tenantId,
+            'name' => trim($validated['name']),
+            'uuid' => Str::uuid()->toString(),
+            'amount' => (float) $validated['amount'],
+            'status' => $validated['status'] ?? 'active',
             'valid_from' => $validated['valid_from'] ?? null,
             'valid_until' => $validated['valid_until'] ?? null,
             'created_by' => $createdBy,
@@ -80,9 +78,9 @@ class VoucherService
         $before = $this->serialize($voucher);
 
         $voucher->update([
-            'name'       => trim($validated['name']),
-            'amount'     => (float) $validated['amount'],
-            'status'     => $validated['status'],
+            'name' => trim($validated['name']),
+            'amount' => (float) $validated['amount'],
+            'status' => $validated['status'],
             'valid_from' => $validated['valid_from'] ?? null,
             'valid_until' => $validated['valid_until'] ?? null,
         ]);
@@ -150,11 +148,11 @@ class VoucherService
             }
 
             $redemption = VoucherRedemption::create([
-                'tenant_id'   => $tenantId,
-                'voucher_id'  => $voucher->id,
-                'member_id'   => $lockedMember->id,
+                'tenant_id' => $tenantId,
+                'voucher_id' => $voucher->id,
+                'member_id' => $lockedMember->id,
                 'redeemed_by' => $redeemedBy,
-                'notes'       => filled($notes) ? trim($notes) : null,
+                'notes' => filled($notes) ? trim($notes) : null,
             ]);
 
             $voucher->update(['status' => 'redeemed']);
@@ -164,13 +162,13 @@ class VoucherService
             ]);
 
             $this->auditService->log($tenantId, 'voucher_redeem', $redemption, [], [
-                'voucher_id'  => $voucher->id,
+                'voucher_id' => $voucher->id,
                 'voucher_uuid' => $voucher->uuid,
-                'amount'      => (float) $voucher->amount,
-                'member_id'   => $lockedMember->id,
+                'amount' => (float) $voucher->amount,
+                'member_id' => $lockedMember->id,
             ]);
 
-            return $redemption->load(['voucher', 'member:id,first_name,last_name,name,member_id', 'redeemedBy:id,name']);
+            return $redemption->load(['voucher', 'member:id,first_name,last_name,name,biometric_member_id', 'redeemedBy:id,name']);
         });
     }
 
@@ -187,9 +185,9 @@ class VoucherService
             'data' => collect($paginated->items())->map(fn (VoucherRedemption $r) => $this->serializeRedemption($r)),
             'meta' => [
                 'current_page' => $paginated->currentPage(),
-                'last_page'    => $paginated->lastPage(),
-                'per_page'     => $paginated->perPage(),
-                'total'        => $paginated->total(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
             ],
         ];
     }
@@ -199,29 +197,29 @@ class VoucherService
     private function serialize(Voucher $voucher): array
     {
         return [
-            'id'          => $voucher->id,
-            'name'        => $voucher->name,
-            'uuid'        => $voucher->uuid,
-            'amount'      => (float) $voucher->amount,
-            'status'      => $voucher->status,
-            'valid_from'  => $voucher->valid_from?->toDateString(),
+            'id' => $voucher->id,
+            'name' => $voucher->name,
+            'uuid' => $voucher->uuid,
+            'amount' => (float) $voucher->amount,
+            'status' => $voucher->status,
+            'valid_from' => $voucher->valid_from?->toDateString(),
             'valid_until' => $voucher->valid_until?->toDateString(),
-            'created_by'  => $voucher->createdBy ? ['id' => $voucher->createdBy->id, 'name' => $voucher->createdBy->name] : null,
-            'created_at'  => $voucher->created_at?->toISOString(),
+            'created_by' => $voucher->createdBy ? ['id' => $voucher->createdBy->id, 'name' => $voucher->createdBy->name] : null,
+            'created_at' => $voucher->created_at?->toISOString(),
         ];
     }
 
     private function serializeRedemption(VoucherRedemption $redemption): array
     {
         return [
-            'id'          => $redemption->id,
-            'voucher'     => $redemption->voucher ? [
-                'id'     => $redemption->voucher->id,
-                'name'   => $redemption->voucher->name,
-                'uuid'   => $redemption->voucher->uuid,
+            'id' => $redemption->id,
+            'voucher' => $redemption->voucher ? [
+                'id' => $redemption->voucher->id,
+                'name' => $redemption->voucher->name,
+                'uuid' => $redemption->voucher->uuid,
                 'amount' => (float) $redemption->voucher->amount,
             ] : null,
-            'notes'       => $redemption->notes,
+            'notes' => $redemption->notes,
             'redeemed_by' => $redemption->redeemedBy ? ['id' => $redemption->redeemedBy->id, 'name' => $redemption->redeemedBy->name] : null,
             'redeemed_at' => $redemption->created_at?->toISOString(),
         ];

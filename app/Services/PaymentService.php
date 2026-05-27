@@ -18,7 +18,7 @@ class PaymentService
             ->where('tenant_id', $tenantId)
             ->orderBy('first_name')
             ->orderBy('last_name')
-            ->get(['id', 'first_name', 'last_name', 'name', 'phone_number', 'payment_plan', 'price']);
+            ->get(['id', 'first_name', 'last_name', 'name', 'phone_number']);
 
         $accounts = CompanyAccount::query()
             ->where('tenant_id', $tenantId)
@@ -47,8 +47,6 @@ class PaymentService
                     'label' => $name . ' (' . $phone . ')',
                     'name' => $name,
                     'phone_number' => $phone,
-                    'payment_plan' => $member->payment_plan,
-                    'price' => (float) ($member->price ?? 0),
                 ];
             })->values(),
             'accounts' => $accounts->map(fn (CompanyAccount $account) => [
@@ -68,6 +66,78 @@ class PaymentService
                 'duration_days' => $p->duration_days,
                 'price' => (float) $p->price,
             ])->values(),
+        ];
+    }
+
+    public function memberPaymentInfo(Member $member, int $tenantId): array
+    {
+        $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
+
+        if ($name === '') {
+            $name = $member->name ?: 'Member';
+        }
+
+        // Resolve the member's default plan
+        $currentPlan = null;
+
+        if ($member->payment_plan_id) {
+            $plan = PaymentPlan::find($member->payment_plan_id);
+
+            if ($plan) {
+                $currentPlan = [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'duration_days' => $plan->duration_days,
+                    'price' => (float) $plan->price,
+                ];
+            }
+        }
+
+        // Find the last membership for this member (latest end_date)
+        $lastMembership = PaymentMembership::query()
+            ->whereHas('payment', fn ($q) => $q
+                ->where('tenant_id', $tenantId)
+                ->where('member_id', $member->id),
+            )
+            ->with(['payment', 'plan'])
+            ->whereNotNull('end_date')
+            ->latest('end_date')
+            ->first();
+
+        $lastPayment = null;
+        $nextStartDate = now()->toDateString();
+
+        if ($lastMembership) {
+            $lastPayment = [
+                'payment_date' => $lastMembership->payment?->payment_date?->toDateString(),
+                'end_date' => $lastMembership->end_date?->toDateString(),
+            ];
+            $nextStartDate = $lastMembership->end_date->copy()->addDay()->toDateString();
+
+            // Fall back to last payment's plan if no default set on member
+            if (!$currentPlan && $lastMembership->plan) {
+                $p = $lastMembership->plan;
+                $currentPlan = [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'duration_days' => $p->duration_days,
+                    'price' => (float) $p->price,
+                ];
+            }
+        }
+
+        return [
+            'id' => $member->id,
+            'member_id' => $member->biometric_member_id,
+            'name' => $name,
+            'username' => $member->username,
+            'phone_number' => $member->phone_number,
+            'address' => $member->address,
+            'joined_date' => $member->joined_date?->toDateString(),
+            'current_plan' => $currentPlan,
+            'member_price' => $member->price ? (float) $member->price : null,
+            'last_payment' => $lastPayment,
+            'next_start_date' => $nextStartDate,
         ];
     }
 

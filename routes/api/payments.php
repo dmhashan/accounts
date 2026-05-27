@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
     Route::get('/payments/meta', [PaymentApiController::class, 'meta']);
+    Route::get('/payments/member/{member}/payment-info', [PaymentApiController::class, 'memberPaymentInfo']);
     Route::get('/payments', [PaymentApiController::class, 'index']);
     Route::post('/payments', [PaymentApiController::class, 'store']);
     Route::get('/payments/{payment}', [PaymentApiController::class, 'show']);

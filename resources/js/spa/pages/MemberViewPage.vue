@@ -92,6 +92,16 @@
             :member-id="member.id"
             :joined-date="member.joined_date"
           />
+
+          <MemberBiometricTab
+            v-if="activeTab === 'biometric'"
+            :member-id="member.id"
+            :biometric-member-id="member.biometric_member_id"
+            :last-synced-at="member.biometric_last_synced_at"
+            :can-sync="permissions.edit"
+            @synced="member = { ...member, biometric_last_synced_at: $event }"
+            @assigned="member = { ...member, biometric_member_id: $event }"
+          />
         </template>
 
         <div v-else-if="!loading" class="p-8 text-center text-sm text-secondary-400 dark:text-secondary-500">
@@ -100,11 +110,23 @@
       </div><!-- max-w-4xl -->
     </div><!-- app-page-scroll -->
   </section>
+
+  <AppConfirmModal
+    v-if="deleteMemberConfirm"
+    title="Delete Member"
+    message="Are you sure you want to delete this member? This cannot be undone."
+    confirm-label="Delete"
+    loading-label="Deleting..."
+    :loading="actionInProgress === 'delete'"
+    @confirm="confirmRemoveMember"
+    @cancel="deleteMemberConfirm = false"
+  />
 </template>
 
 <script setup>
 import { nextTick, onMounted, ref } from 'vue';
-import { Banknote, CalendarDays, Dumbbell, FileText, ShoppingBag, UserRound, Wallet } from 'lucide-vue-next';
+import AppConfirmModal from '../components/AppConfirmModal.vue';
+import { Banknote, CalendarDays, Cpu, Dumbbell, FileText, ShoppingBag, UserRound, Wallet } from 'lucide-vue-next';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import MemberHeroCard from '../components/member/MemberHeroCard.vue';
@@ -115,6 +137,7 @@ import MemberSalesTab from '../components/member/MemberSalesTab.vue';
 import MemberWorkoutsTab from '../components/member/MemberWorkoutsTab.vue';
 import MemberDocumentsTab from '../components/member/MemberDocumentsTab.vue';
 import MemberAttendanceTab from '../components/member/MemberAttendanceTab.vue';
+import MemberBiometricTab from '../components/member/MemberBiometricTab.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -135,6 +158,7 @@ const tabs = [
     { id: 'workouts',  label: 'Workouts',  icon: Dumbbell },
     { id: 'documents', label: 'Documents', icon: FileText },
     { id: 'calendar',  label: 'Calendar',  icon: CalendarDays },
+    { id: 'biometric', label: 'Biometric', icon: Cpu },
 ];
 const activeTab = ref('overview');
 
@@ -217,9 +241,16 @@ async function toggleVerification() {
     }
 }
 
-async function removeMember() {
-    if (!member.value || !window.confirm('Are you sure you want to delete this member?')) return;
+const deleteMemberConfirm = ref(false);
+
+function removeMember() {
+    if (!member.value) return;
+    deleteMemberConfirm.value = true;
+}
+
+async function confirmRemoveMember() {
     actionInProgress.value = 'delete';
+    deleteMemberConfirm.value = false;
     errorMessage.value = '';
     successMessage.value = '';
     try {

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
-use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class MemberController extends Controller
 {
@@ -54,6 +54,7 @@ class MemberController extends Controller
         // Pre-format workout data for Alpine.js preview modals
         $workoutsData = $assignedWorkouts->map(function ($assignment) {
             $program = $assignment->assignedProgram;
+
             return [
                 'title' => $program->title ?? 'N/A',
                 'duration_weeks' => $program->duration_weeks,
@@ -119,19 +120,20 @@ class MemberController extends Controller
             'salesData' => $salesData,
         ]);
     }
+
     public function index()
     {
         $members = Member::where('tenant_id', app('tenant')->id)
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         return view('members.index', compact('members'));
     }
 
     public function create()
     {
-        $generatedMemberId = Member::generateMemberId();
+        $generatedMemberId = Member::generateBiometricMemberId(app('tenant')->id);
 
         return view('members.create', compact('generatedMemberId'));
     }
@@ -171,7 +173,7 @@ class MemberController extends Controller
         ]);
 
         // Generate member ID server-side and compose full name
-        $validated['member_id'] = Member::generateMemberId();
+        $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
         $validated['tenant_id'] = $tenant->id;
         $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $validated['is_active'] = true;
@@ -297,11 +299,11 @@ class MemberController extends Controller
         }
 
         $member->update([
-            'is_active' => !$member->is_active
+            'is_active' => !$member->is_active,
         ]);
 
         $status = $member->is_active ? 'activated' : 'deactivated';
-        
+
         return redirect()->route('members.index')
             ->with('success', "Member {$status} successfully.");
     }
@@ -314,11 +316,11 @@ class MemberController extends Controller
         }
 
         $member->update([
-            'is_verified' => !$member->is_verified
+            'is_verified' => !$member->is_verified,
         ]);
 
         $status = $member->is_verified ? 'verified' : 'unverified';
-        
+
         return redirect()->route('members.index')
             ->with('success', "Member {$status} successfully.");
     }
@@ -352,7 +354,7 @@ class MemberController extends Controller
             ->where('user_id', auth()->id())
             ->with('user')
             ->firstOrFail();
-        
+
         return view('members.profile', compact('member'));
     }
 }

@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Member;
 use App\Models\MemberActivityLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class MemberActivityLogController extends Controller
 {
@@ -17,18 +15,18 @@ class MemberActivityLogController extends Controller
     {
         $tenant = app('tenant');
 
-        $query = MemberActivityLog::with('member:id,first_name,last_name,name,member_id')
+        $query = MemberActivityLog::with('member:id,first_name,last_name,name,biometric_member_id')
             ->where('tenant_id', $tenant->id)
             ->orderByDesc('created_at');
 
         // Filters
         if ($request->filled('member_search')) {
-            $search = '%'.trim($request->member_search).'%';
+            $search = '%' . trim($request->member_search) . '%';
             $query->whereHas('member', fn ($q) => $q
                 ->where('first_name', 'like', $search)
                 ->orWhere('last_name', 'like', $search)
                 ->orWhere('name', 'like', $search)
-                ->orWhere('member_id', 'like', $search)
+                ->orWhere('biometric_member_id', 'like', $search),
             );
         }
 
@@ -68,7 +66,7 @@ class MemberActivityLogController extends Controller
     {
         $tenant = app('tenant');
 
-        $query = MemberActivityLog::with('member:id,first_name,last_name,name,member_id')
+        $query = MemberActivityLog::with('member:id,first_name,last_name,name,biometric_member_id')
             ->where('tenant_id', $tenant->id)
             ->orderByDesc('created_at');
 
@@ -92,12 +90,12 @@ class MemberActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $filename = 'activity-logs-'.now()->format('Y-m-d').'.csv';
+        $filename = 'activity-logs-' . now()->format('Y-m-d') . '.csv';
 
         $headers = [
-            'Content-Type'        => 'text/csv',
+            'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
         ];
 
         $callback = function () use ($query) {
@@ -120,7 +118,7 @@ class MemberActivityLogController extends Controller
 
                     fputcsv($handle, [
                         $log->created_at->format('Y-m-d H:i:s'),
-                        $log->member?->member_id ?? '',
+                        $log->member?->biometric_member_id ?? '',
                         $memberName,
                         $log->session_id,
                         $log->event_type,
@@ -148,20 +146,20 @@ class MemberActivityLogController extends Controller
             : null;
 
         return [
-            'id'              => $log->id,
-            'session_id'      => $log->session_id,
-            'event_type'      => $log->event_type,
-            'device_type'     => $log->device_type,
-            'browser'         => $log->browser,
-            'os'              => $log->os,
-            'ip_address'      => $log->ip_address,
-            'screen_width'    => $log->screen_width,
-            'screen_height'   => $log->screen_height,
-            'metadata'        => $log->metadata,
-            'created_at'      => $log->created_at?->toISOString(),
-            'member_id'       => $log->member_id,
-            'member_name'     => $memberName,
-            'member_ref_id'   => $member?->member_id,
+            'id' => $log->id,
+            'session_id' => $log->session_id,
+            'event_type' => $log->event_type,
+            'device_type' => $log->device_type,
+            'browser' => $log->browser,
+            'os' => $log->os,
+            'ip_address' => $log->ip_address,
+            'screen_width' => $log->screen_width,
+            'screen_height' => $log->screen_height,
+            'metadata' => $log->metadata,
+            'created_at' => $log->created_at?->toISOString(),
+            'member_id' => $log->member_id,
+            'member_name' => $memberName,
+            'member_ref_id' => $member?->biometric_member_id,
         ];
     }
 }

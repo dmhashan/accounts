@@ -12,9 +12,7 @@ use Illuminate\Http\Request;
 
 class VoucherApiController extends Controller
 {
-    public function __construct(private readonly VoucherService $voucherService)
-    {
-    }
+    public function __construct(private readonly VoucherService $voucherService) {}
 
     // ── Admin management ──────────────────────────────────────────────
 
@@ -34,26 +32,26 @@ class VoucherApiController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'amount'      => ['required', 'numeric', 'min:0.01'],
-            'status'      => ['required', 'in:active,inactive'],
-            'valid_from'  => ['nullable', 'date'],
+            'name' => ['required', 'string', 'max:255'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'status' => ['required', 'in:active,inactive'],
+            'valid_from' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date', 'after_or_equal:valid_from'],
         ]);
 
         $voucher = $this->voucherService->store($tenant->id, $validated, $request->user()->id);
 
         return response()->json(['voucher' => [
-            'id'               => $voucher->id,
-            'name'             => $voucher->name,
-            'uuid'             => $voucher->uuid,
-            'amount'           => (float) $voucher->amount,
-            'status'           => $voucher->status,
-            'valid_from'       => $voucher->valid_from?->toDateString(),
-            'valid_until'      => $voucher->valid_until?->toDateString(),
-            'created_by'       => $voucher->createdBy ? ['id' => $voucher->createdBy->id, 'name' => $voucher->createdBy->name] : null,
+            'id' => $voucher->id,
+            'name' => $voucher->name,
+            'uuid' => $voucher->uuid,
+            'amount' => (float) $voucher->amount,
+            'status' => $voucher->status,
+            'valid_from' => $voucher->valid_from?->toDateString(),
+            'valid_until' => $voucher->valid_until?->toDateString(),
+            'created_by' => $voucher->createdBy ? ['id' => $voucher->createdBy->id, 'name' => $voucher->createdBy->name] : null,
             'redemption_count' => 0,
-            'created_at'       => $voucher->created_at?->toISOString(),
+            'created_at' => $voucher->created_at?->toISOString(),
         ]], 201);
     }
 
@@ -66,26 +64,26 @@ class VoucherApiController extends Controller
             abort(404);
         }
 
-        $voucher->load(['createdBy:id,name', 'redemption.member:id,first_name,last_name,name,member_id', 'redemption.redeemedBy:id,name']);
+        $voucher->load(['createdBy:id,name', 'redemption.member:id,first_name,last_name,name,biometric_member_id', 'redemption.redeemedBy:id,name']);
 
         return response()->json([
-            'id'               => $voucher->id,
-            'name'             => $voucher->name,
-            'uuid'             => $voucher->uuid,
-            'amount'           => (float) $voucher->amount,
-            'status'           => $voucher->status,
-            'valid_from'       => $voucher->valid_from?->toDateString(),
-            'valid_until'      => $voucher->valid_until?->toDateString(),
-            'created_by'       => $voucher->createdBy ? ['id' => $voucher->createdBy->id, 'name' => $voucher->createdBy->name] : null,
-            'created_at'       => $voucher->created_at?->toISOString(),
-            'redemption'       => $voucher->redemption ? [
-                'id'          => $voucher->redemption->id,
-                'member'      => $voucher->redemption->member ? [
-                    'id'        => $voucher->redemption->member->id,
-                    'name'      => trim(($voucher->redemption->member->first_name ?? '') . ' ' . ($voucher->redemption->member->last_name ?? '')) ?: $voucher->redemption->member->name,
-                    'member_id' => $voucher->redemption->member->member_id,
+            'id' => $voucher->id,
+            'name' => $voucher->name,
+            'uuid' => $voucher->uuid,
+            'amount' => (float) $voucher->amount,
+            'status' => $voucher->status,
+            'valid_from' => $voucher->valid_from?->toDateString(),
+            'valid_until' => $voucher->valid_until?->toDateString(),
+            'created_by' => $voucher->createdBy ? ['id' => $voucher->createdBy->id, 'name' => $voucher->createdBy->name] : null,
+            'created_at' => $voucher->created_at?->toISOString(),
+            'redemption' => $voucher->redemption ? [
+                'id' => $voucher->redemption->id,
+                'member' => $voucher->redemption->member ? [
+                    'id' => $voucher->redemption->member->id,
+                    'name' => trim(($voucher->redemption->member->first_name ?? '') . ' ' . ($voucher->redemption->member->last_name ?? '')) ?: $voucher->redemption->member->name,
+                    'member_id' => $voucher->redemption->member->biometric_member_id,
                 ] : null,
-                'notes'       => $voucher->redemption->notes,
+                'notes' => $voucher->redemption->notes,
                 'redeemed_by' => $voucher->redemption->redeemedBy ? ['id' => $voucher->redemption->redeemedBy->id, 'name' => $voucher->redemption->redeemedBy->name] : null,
                 'redeemed_at' => $voucher->redemption->created_at?->toISOString(),
             ] : null,
@@ -98,10 +96,10 @@ class VoucherApiController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'amount'      => ['required', 'numeric', 'min:0.01'],
-            'status'      => ['required', 'in:active,inactive'],
-            'valid_from'  => ['nullable', 'date'],
+            'name' => ['required', 'string', 'max:255'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'status' => ['required', 'in:active,inactive'],
+            'valid_from' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date', 'after_or_equal:valid_from'],
         ]);
 
@@ -132,7 +130,7 @@ class VoucherApiController extends Controller
         }
 
         $validated = $request->validate([
-            'uuid'  => ['required', 'string', 'max:36'],
+            'uuid' => ['required', 'string', 'max:36'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -147,7 +145,7 @@ class VoucherApiController extends Controller
         $member->refresh();
 
         return response()->json([
-            'redemption'      => $redemption,
+            'redemption' => $redemption,
             'current_balance' => round((float) $member->current_balance, 2),
         ], 201);
     }

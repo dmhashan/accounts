@@ -358,6 +358,21 @@
       </div>
     </div>
 
+    <!-- Delete Document Confirmation Modal -->
+    <AppConfirmModal
+      v-if="docToDelete"
+      title="Delete Document"
+      :confirm-label="'Delete'"
+      :loading-label="'Deleting...'"
+      :loading="docDeleting"
+      @confirm="confirmDeleteDoc"
+      @cancel="docToDelete = null"
+    >
+      <p class="text-sm text-secondary-700 dark:text-secondary-300">
+        Delete <strong class="text-secondary-900 dark:text-white">{{ docToDelete.name }}</strong>? This cannot be undone.
+      </p>
+    </AppConfirmModal>
+
     <!-- Fill Form Modal -->
     <div v-if="formFillModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/45" @click="closeFormFillModal" />
@@ -550,6 +565,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { apiRequest } from '../../composables/useApiClient';
+import AppConfirmModal from '../AppConfirmModal.vue';
 import AppSignaturePad from '../AppSignaturePad.vue';
 
 const props = defineProps({
@@ -687,15 +703,26 @@ function downloadDocView() {
     }
 }
 
-async function deleteDoc(doc) {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm(`Delete "${doc.name}"? This cannot be undone.`)) return;
+const docToDelete = ref(null);
+const docDeleting = ref(false);
+
+function deleteDoc(doc) {
+    docToDelete.value = doc;
+}
+
+async function confirmDeleteDoc() {
+    if (!docToDelete.value) return;
+    docDeleting.value = true;
     try {
-        await apiRequest(`/api/members/${props.memberId}/documents/${doc.id}`, { method: 'delete' });
-        documents.value = documents.value.filter(d => d.id !== doc.id);
+        await apiRequest(`/api/members/${props.memberId}/documents/${docToDelete.value.id}`, { method: 'delete' });
+        documents.value = documents.value.filter(d => d.id !== docToDelete.value.id);
+        docToDelete.value = null;
         showSuccess('Document deleted.');
     } catch (err) {
         showError(err?.response?.data?.message || 'Failed to delete document.');
+        docToDelete.value = null;
+    } finally {
+        docDeleting.value = false;
     }
 }
 

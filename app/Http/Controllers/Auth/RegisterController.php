@@ -17,7 +17,7 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         $tenant = app('tenant');
-        
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'gender' => ['required', 'in:male,female,other'],
@@ -29,7 +29,7 @@ class RegisterController extends Controller
 
         Member::create([
             'tenant_id' => $tenant->id,
-            'member_id' => Member::generateMemberId(),
+            'biometric_member_id' => Member::generateBiometricMemberId($tenant->id),
             'name' => $validated['name'],
             'email' => $validated['email'],
             'gender' => $validated['gender'],

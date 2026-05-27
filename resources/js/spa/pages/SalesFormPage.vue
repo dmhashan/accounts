@@ -1,253 +1,302 @@
 <template>
-    <section class="flex h-full min-h-0 flex-col overflow-y-auto pb-24">
-        <AppPageHeader :show-back="true">
-            <template #extra-slot>
-                <div class="flex items-center flex-nowrap gap-2 pb-1">
-                <div class="inline-flex shrink-0 rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                    <button
-                        type="button"
-                        class="px-3 py-2"
-                        :class="form.customer_type === 'local' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
-                        title="Local"
-                        aria-label="Local"
-                        @click="form.customer_type = 'local'"
-                    >
-                        <House class="h-4 w-4" />
-                    </button>
-                    <button
-                        type="button"
-                        class="px-3 py-2"
-                        :class="form.customer_type === 'foreign' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
-                        title="Foreign"
-                        aria-label="Foreign"
-                        @click="form.customer_type = 'foreign'"
-                    >
-                        <Globe class="h-4 w-4" />
-                    </button>
-                </div>
+  <section class="flex h-full min-h-0 flex-col overflow-y-auto pb-24">
+    <AppPageHeader show-back>
+      <template #extra-slot>
+        <div class="flex items-center flex-nowrap gap-2 pb-1">
+          <div class="inline-flex shrink-0 rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+            <button
+              type="button"
+              class="px-3 py-2"
+              :class="form.customer_type === 'local' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+              title="Local"
+              aria-label="Local"
+              @click="form.customer_type = 'local'"
+            >
+              <House class="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              class="px-3 py-2"
+              :class="form.customer_type === 'foreign' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
+              title="Foreign"
+              aria-label="Foreign"
+              @click="form.customer_type = 'foreign'"
+            >
+              <Globe class="h-4 w-4" />
+            </button>
+          </div>
 
-                <div class="shrink-0 w-[240px] md:w-auto md:flex-1 md:min-w-0 md:max-w-md">
-                    <AppSearchableDropdown
-                        v-model="form.customer_member_id"
-                        :options="[...members]"
-                        :option-label="option => option.label"
-                        :option-key="option => option.id"
-                        placeholder="Walk-in (optional)"
-                        search-placeholder="Search customer..."
-                        no-results-text="No customers found."
-                        @update:modelValue="selectCustomer"
-                    />
-                </div>
-                </div>
-            </template>
-        </AppPageHeader>
+          <div class="shrink-0 w-[240px] md:w-auto md:flex-1 md:min-w-0 md:max-w-md">
+            <AppSearchableDropdown
+              v-model="form.customer_member_id"
+              :options="[...members]"
+              :option-label="option => option.label"
+              :option-key="option => option.id"
+              placeholder="Walk-in (optional)"
+              search-placeholder="Search customer..."
+              no-results-text="No customers found."
+              @update:model-value="selectCustomer"
+            />
+          </div>
+        </div>
+      </template>
+    </AppPageHeader>
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+    <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      {{ errorMessage }}
+    </div>
+
+    <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
+      <div class="grid md:min-h-[calc(100vh-280px)] min-h-[calc(100vh-360px)] flex-1 grid-cols-12 gap-2 md:gap-4">
+        <div class="col-span-5 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
+              Products
+            </h3>
+          </div>
+          <div class="mb-3">
+            <AppFormInput
+              v-model="productSearch"
+              type="text"
+              placeholder="Search product..."
+            />
+          </div>
+          <div class="min-h-0 flex-1 overflow-y-auto pr-1">
+            <div class="space-y-2">
+              <article
+                v-for="variation in filteredVariationOptions"
+                :key="variation.id"
+                role="button"
+                tabindex="0"
+                class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2 md:p-3 flex items-center justify-between gap-2 md:gap-3 transition-colors"
+                :class="[
+                  variation.available_stock > 0 ? 'cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-800' : 'cursor-not-allowed opacity-60',
+                  activeProductId === variation.id ? 'ring-2 ring-primary-500/60 bg-primary-50 dark:bg-primary-900/20' : ''
+                ]"
+                @click="handleProductActivate(variation)"
+                @keydown.enter.prevent="handleProductActivate(variation)"
+                @keydown.space.prevent="handleProductActivate(variation)"
+              >
+                <div class="min-w-0">
+                  <p class="text-xs md:text-sm font-semibold text-secondary-900 dark:text-white truncate">
+                    {{ variation.label }}
+                  </p>
+                  <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">
+                    Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}
+                  </p>
+                </div>
+              </article>
+              <p v-if="filteredVariationOptions.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
+                No products found.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
-            <div class="grid md:min-h-[calc(100vh-280px)] min-h-[calc(100vh-360px)] flex-1 grid-cols-12 gap-2 md:gap-4">
-                <div class="col-span-5 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
-                    <div class="mb-3 flex items-center justify-between gap-3">
-                        <h3 class="text-base font-semibold text-secondary-900 dark:text-white">Products</h3>
-                    </div>
-                    <div class="mb-3">
-                        <AppFormInput
-                            v-model="productSearch"
-                            type="text"
-                            placeholder="Search product..."
-                        />
-                    </div>
-                    <div class="min-h-0 flex-1 overflow-y-auto pr-1">
-                        <div class="space-y-2">
-                            <article
-                                v-for="variation in filteredVariationOptions"
-                                :key="variation.id"
-                                role="button"
-                                tabindex="0"
-                                class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2 md:p-3 flex items-center justify-between gap-2 md:gap-3 transition-colors"
-                                :class="[
-                                    variation.available_stock > 0 ? 'cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-800' : 'cursor-not-allowed opacity-60',
-                                    activeProductId === variation.id ? 'ring-2 ring-primary-500/60 bg-primary-50 dark:bg-primary-900/20' : ''
-                                ]"
-                                @click="handleProductActivate(variation)"
-                                @keydown.enter.prevent="handleProductActivate(variation)"
-                                @keydown.space.prevent="handleProductActivate(variation)"
-                            >
-                                <div class="min-w-0">
-                                    <p class="text-xs md:text-sm font-semibold text-secondary-900 dark:text-white truncate">{{ variation.label }}</p>
-                                    <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}</p>
-                                </div>
-                            </article>
-                            <p v-if="filteredVariationOptions.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
-                                No products found.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-span-7 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+          <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">
+            Cart
+          </h3>
 
-                <div class="col-span-7 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
-                    <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">Cart</h3>
-
-                    <div ref="cartListRef" class="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1">
-                        <article
-                            v-for="item in form.items"
-                            :key="item.key"
-                            :ref="(element) => setCartItemRef(item.key, element)"
-                            class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3 transition-colors"
-                            :class="activeCartKey === item.key ? 'ring-2 ring-primary-500/50 bg-primary-50/60 dark:bg-primary-900/20' : ''"
-                        >
-                            <div class="flex items-start justify-between gap-2">
-                                <div>
-                                    <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ selectedVariation(item.product_variation_id)?.label || 'Item' }}</p>
-                                    <p class="text-xs text-secondary-500 dark:text-secondary-400">Unit: {{ money(unitPrice(item)) }}</p>
-                                </div>
-                                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeByKey(item.key)">Remove</button>
-                            </div>
-
-                            <div class="mt-2 flex items-center justify-between">
-                                <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                                    <button type="button" class="px-3 py-1.5 text-sm" @click="decrementQty(item)">-</button>
-                                    <div class="px-3 py-1.5 text-sm min-w-10 text-center">{{ item.quantity }}</div>
-                                    <button type="button" class="px-3 py-1.5 text-sm" @click="incrementQty(item)">+</button>
-                                </div>
-                                <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ money(itemSubtotal(item)) }}</p>
-                            </div>
-                        </article>
-
-                        <div v-if="form.items.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No items in cart.</div>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="sticky top-300 z-10 mt-8 flex items-center justify-between gap-3 rounded-xl border border-secondary-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-secondary-700 dark:bg-secondary-900/95">
+          <div ref="cartListRef" class="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1">
+            <article
+              v-for="item in form.items"
+              :key="item.key"
+              :ref="(element) => setCartItemRef(item.key, element)"
+              class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-3 transition-colors"
+              :class="activeCartKey === item.key ? 'ring-2 ring-primary-500/50 bg-primary-50/60 dark:bg-primary-900/20' : ''"
+            >
+              <div class="flex items-start justify-between gap-2">
                 <div>
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400">Grand Total</p>
-                    <p class="text-xl font-bold text-secondary-900 dark:text-white">{{ money(totalAmount) }}</p>
+                  <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                    {{ selectedVariation(item.product_variation_id)?.label || 'Item' }}
+                  </p>
+                  <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                    Unit: {{ money(unitPrice(item)) }}
+                  </p>
                 </div>
-                <button
-                    v-if="isEdit && canEditSale"
-                    type="submit"
-                    class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
-                    :disabled="submitDisabled"
-                >
-                    {{ submitting ? 'Updating...' : 'Update Sale' }}
+                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeByKey(item.key)">
+                  Remove
                 </button>
-                <div v-else-if="canCreateSale" class="flex items-center gap-2">
-                    <button
-                        type="button"
-                        class="px-5 py-3 text-base font-semibold border border-secondary-300 dark:border-secondary-600 text-secondary-800 dark:text-secondary-100 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 disabled:opacity-50"
-                        :disabled="saveDisabled"
-                        @click="submitSale('save')"
-                    >
-                        {{ submitting ? 'Saving...' : 'Save' }}
-                    </button>
-                    <button
-                        type="button"
-                        class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
-                        :disabled="submitDisabled"
-                        @click="openPayNowModal"
-                    >
-                        {{ submitting ? 'Processing...' : 'Pay Now' }}
-                    </button>
+              </div>
+
+              <div class="mt-2 flex items-center justify-between">
+                <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+                  <button type="button" class="px-3 py-1.5 text-sm" @click="decrementQty(item)">
+                    -
+                  </button>
+                  <div class="px-3 py-1.5 text-sm min-w-10 text-center">
+                    {{ item.quantity }}
+                  </div>
+                  <button type="button" class="px-3 py-1.5 text-sm" @click="incrementQty(item)">
+                    +
+                  </button>
                 </div>
+                <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                  {{ money(itemSubtotal(item)) }}
+                </p>
+              </div>
+            </article>
+
+            <div v-if="form.items.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
+              No items in cart.
             </div>
-        </form>
+          </div>
+        </div>
+      </div>
 
-        <div v-if="payNowModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/45" @click="closePayNowModal"></div>
-            <div class="relative z-10 w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4 md:p-5 shadow-xl">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Select Company Account</h3>
-                        <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">Choose where this sale payment should be recorded.</p>
-                    </div>
-                    <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNowModal">✕</button>
-                </div>
+      <div class="sticky top-300 z-10 mt-8 flex items-center justify-between gap-3 rounded-xl border border-secondary-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-secondary-700 dark:bg-secondary-900/95">
+        <div>
+          <p class="text-xs text-secondary-500 dark:text-secondary-400">
+            Grand Total
+          </p>
+          <p class="text-xl font-bold text-secondary-900 dark:text-white">
+            {{ money(totalAmount) }}
+          </p>
+        </div>
+        <button
+          v-if="isEdit && canEditSale"
+          type="submit"
+          class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
+          :disabled="submitDisabled"
+        >
+          {{ submitting ? 'Updating...' : 'Update Sale' }}
+        </button>
+        <div v-else-if="canCreateSale" class="flex items-center gap-2">
+          <button
+            type="button"
+            class="px-5 py-3 text-base font-semibold border border-secondary-300 dark:border-secondary-600 text-secondary-800 dark:text-secondary-100 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 disabled:opacity-50"
+            :disabled="saveDisabled"
+            @click="submitSale('save')"
+          >
+            {{ submitting ? 'Saving...' : 'Save' }}
+          </button>
+          <button
+            type="button"
+            class="px-6 py-3 text-base font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
+            :disabled="submitDisabled"
+            @click="openPayNowModal"
+          >
+            {{ submitting ? 'Processing...' : 'Pay Now' }}
+          </button>
+        </div>
+      </div>
+    </form>
 
-                <div class="mt-4">
-                    <AppFormField label="Company Account">
-                        <AppCompanyAccountSelect
-                            v-model="selectedPayNowAccountId"
-                            :accounts="companyAccounts"
-                            :member-id="selectedMember?.id ?? undefined"
-                            :amount="totalAmount"
-                        />
-                    </AppFormField>
-                    <p v-if="companyAccounts.length === 0 && !selectedMember" class="mt-2 text-sm text-red-600 dark:text-red-400">No company account found. Add one before using Pay Now.</p>
-                </div>
-
-                <div class="mt-5 flex items-center justify-end gap-2">
-                    <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNowModal">Cancel</button>
-                    <button
-                        type="button"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
-                        :disabled="submitting || !selectedPayNowAccountId"
-                        @click="submitSale('pay_now')"
-                    >
-                        {{ submitting ? 'Processing...' : 'Confirm Payment' }}
-                    </button>
-                </div>
-            </div>
+    <div v-if="payNowModalOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/45" @click="closePayNowModal" />
+      <div class="relative z-10 w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4 md:p-5 shadow-xl">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
+              Select Company Account
+            </h3>
+            <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+              Choose where this sale payment should be recorded.
+            </p>
+          </div>
+          <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNowModal">
+            ✕
+          </button>
         </div>
 
-        <!-- Post-sale success modal -->
-        <div v-if="successModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/50"></div>
-            <div class="relative z-10 w-full max-w-lg rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-                <!-- Header -->
-                <div class="px-5 py-4 border-b border-secondary-200 dark:border-secondary-700 flex items-center gap-3 shrink-0">
-                    <div class="h-9 w-9 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
-                        <CheckCircle class="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                        <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
-                            {{ saleResult?.isPaid ? 'Payment Complete' : 'Sale Saved' }}
-                        </h3>
-                        <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                            {{ saleResult?.isPaid ? 'Sale has been paid and recorded.' : 'Sale saved as outstanding.' }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Body -->
-                <div class="overflow-y-auto flex-1 p-5">
-                    <!-- Available Stock — large -->
-                    <div v-if="updatedStockItems.length > 0" class="grid grid-cols-2 gap-2">
-                        <div
-                            v-for="stock in updatedStockItems"
-                            :key="stock.id"
-                            class="rounded-xl bg-secondary-50 dark:bg-secondary-800 px-4 py-3"
-                        >
-                            <p class="text-sm font-medium text-secondary-600 dark:text-secondary-300 leading-tight mb-1 truncate">{{ stock.label }}</p>
-                            <p
-                                class="text-4xl font-bold leading-none"
-                                :class="stock.available_stock > 0 ? 'text-secondary-900 dark:text-white' : 'text-red-500 dark:text-red-400'"
-                            >{{ stock.available_stock }}</p>
-                            <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">units left</p>
-                        </div>
-                    </div>
-                    <p v-else class="text-sm text-secondary-500 dark:text-secondary-400">No stock data available.</p>
-                </div>
-
-                <!-- Footer actions -->
-                <div class="px-5 py-4 border-t border-secondary-200 dark:border-secondary-700 flex items-center gap-2 shrink-0">
-                    <button
-                        type="button"
-                        class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800"
-                        @click="resetForNewSale"
-                    >New Sale</button>
-                    <button
-                        type="button"
-                        class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white"
-                        @click="goToSales"
-                    >View Sales</button>
-                </div>
-            </div>
+        <div class="mt-4">
+          <AppFormField label="Company Account">
+            <AppCompanyAccountSelect
+              v-model="selectedPayNowAccountId"
+              :accounts="companyAccounts"
+              :member-id="selectedMember?.id ?? undefined"
+              :amount="totalAmount"
+            />
+          </AppFormField>
+          <p v-if="companyAccounts.length === 0 && !selectedMember" class="mt-2 text-sm text-red-600 dark:text-red-400">
+            No company account found. Add one before using Pay Now.
+          </p>
         </div>
-    </section>
+
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNowModal">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
+            :disabled="submitting || !selectedPayNowAccountId"
+            @click="submitSale('pay_now')"
+          >
+            {{ submitting ? 'Processing...' : 'Confirm Payment' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post-sale success modal -->
+    <div v-if="successModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50" />
+      <div class="relative z-10 w-full max-w-lg rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <!-- Header -->
+        <div class="px-5 py-4 border-b border-secondary-200 dark:border-secondary-700 flex items-center gap-3 shrink-0">
+          <div class="h-9 w-9 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
+            <CheckCircle class="h-5 w-5 text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
+              {{ saleResult?.isPaid ? 'Payment Complete' : 'Sale Saved' }}
+            </h3>
+            <p class="text-xs text-secondary-500 dark:text-secondary-400">
+              {{ saleResult?.isPaid ? 'Sale has been paid and recorded.' : 'Sale saved as outstanding.' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="overflow-y-auto flex-1 p-5">
+          <!-- Available Stock — large -->
+          <div v-if="updatedStockItems.length > 0" class="grid grid-cols-2 gap-2">
+            <div
+              v-for="stock in updatedStockItems"
+              :key="stock.id"
+              class="rounded-xl bg-secondary-50 dark:bg-secondary-800 px-4 py-3"
+            >
+              <p class="text-sm font-medium text-secondary-600 dark:text-secondary-300 leading-tight mb-1 truncate">
+                {{ stock.label }}
+              </p>
+              <p
+                class="text-4xl font-bold leading-none"
+                :class="stock.available_stock > 0 ? 'text-secondary-900 dark:text-white' : 'text-red-500 dark:text-red-400'"
+              >
+                {{ stock.available_stock }}
+              </p>
+              <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">
+                units left
+              </p>
+            </div>
+          </div>
+          <p v-else class="text-sm text-secondary-500 dark:text-secondary-400">
+            No stock data available.
+          </p>
+        </div>
+
+        <!-- Footer actions -->
+        <div class="px-5 py-4 border-t border-secondary-200 dark:border-secondary-700 flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+            @click="resetForNewSale"
+          >
+            New Sale
+          </button>
+          <button
+            type="button"
+            class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white"
+            @click="goToSales"
+          >
+            View Sales
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script setup>
@@ -316,15 +365,6 @@ const selectedMember = computed(() => {
     }
 
     return members.value.find((member) => member.id === form.value.customer_member_id) || null;
-});
-
-const filteredMembers = computed(() => {
-    const term = memberSearch.value.trim().toLowerCase();
-    if (!term) {
-        return members.value;
-    }
-
-    return members.value.filter((member) => member.label.toLowerCase().includes(term));
 });
 
 const filteredVariationOptions = computed(() => {
@@ -489,34 +529,11 @@ function removeByKey(key) {
     form.value.items = form.value.items.filter((item) => item.key !== key);
 }
 
-function paymentButtonClass(method) {
-    const disabled = method === 'member_wallet' && !selectedMember.value;
-    if (disabled) {
-        return 'border-secondary-200 text-secondary-400 dark:border-secondary-700 dark:text-secondary-500 cursor-not-allowed';
-    }
-
-    return form.value.payment_method === method
-        ? 'bg-primary-600 border-primary-600 text-white'
-        : 'border-secondary-300 dark:border-secondary-700 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800';
-}
-
-function selectPaymentMethod(method) {
-    if (method === 'member_wallet' && !selectedMember.value) {
-        return;
-    }
-
-    form.value.payment_method = method;
-}
-
 function selectCustomer(memberId) {
     form.value.customer_member_id = memberId;
 }
 
 // Removed: handleDocumentClick
-
-async function loadWalletBalance() {
-    // No-op: wallet balance is now fetched inside AppCompanyAccountSelect component
-}
 
 async function loadMeta() {
     if (!hasActionPermission.value) {
@@ -688,10 +705,6 @@ function openPayNowModal() {
     payNowModalOpen.value = true;
 }
 
-function submitWalletSale() {
-    // No-op: wallet is now selected via the account dropdown inside the Pay Now modal
-}
-
 function closePayNowModal() {
     if (submitting.value) {
         return;
@@ -722,7 +735,7 @@ function goToSales() {
     router.push('/sales');
 }
 
-onMounted(() => {
+onMounted(async () => {
     if (!hasActionPermission.value) {
         errorMessage.value = isEdit.value
             ? 'You do not have permission to edit sales.'
@@ -730,8 +743,13 @@ onMounted(() => {
         return;
     }
 
-    loadMeta();
+    await loadMeta();
     loadSale();
+
+    const qMemberId = route.query.member_id ? Number(route.query.member_id) : null;
+    if (qMemberId && !isEdit.value) {
+        selectCustomer(qMemberId);
+    }
 });
 
 onBeforeUnmount(() => {
@@ -746,7 +764,7 @@ onBeforeUnmount(() => {
 
 watch(
     () => form.value.customer_member_id,
-    (newId) => {
+    (_newId) => {
         if (!selectedMember.value && form.value.payment_method === 'member_wallet') {
             form.value.payment_method = 'cash';
         }

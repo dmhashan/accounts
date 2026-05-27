@@ -23,6 +23,19 @@ class TenantConfigurationService
         'notifications.sms.user_id' => ['SMS User ID',                  ''],
         'notifications.sms.api_key' => ['SMS API Key',                  ''],
         'notifications.sms.sender_id' => ['SMS Sender ID',                ''],
+
+        // Biometric device integration
+        'biometric.enabled' => ['Biometric Integration',        '0'],
+        'biometric.device_maker' => ['Device Maker',                 ''],
+        'biometric.device_model' => ['Device Model',                 ''],
+        'biometric.device_ip' => ['Device IP / Hostname',         ''],
+        'biometric.device_port' => ['Device Port',                  '80'],
+        'biometric.device_username' => ['Device Username',              'admin'],
+        'biometric.device_password' => ['Device Password',              ''],
+        'biometric.sync_members' => ['Sync Members to Device',       '0'],
+        'biometric.sync_attendance' => ['Sync Attendance from Device',  '0'],
+        'biometric.access_control' => ['Enforce Access by Payment',    '0'],
+        'biometric.grace_period_days' => ['Access Grace Period (days)',   '0'],
     ];
 
     /**

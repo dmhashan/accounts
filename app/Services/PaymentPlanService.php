@@ -9,6 +9,7 @@ class PaymentPlanService
     public function index(int $tenantId): array
     {
         $plans = PaymentPlan::where('tenant_id', $tenantId)
+            ->withCount('members')
             ->orderBy('duration_days')
             ->orderBy('name')
             ->get();
@@ -41,10 +42,25 @@ class PaymentPlanService
         ]);
     }
 
-    public function destroy(PaymentPlan $plan, int $tenantId): void
+    public function destroy(PaymentPlan $plan, int $tenantId, bool $force = false): array
     {
         $this->ensureTenant($plan, $tenantId);
-        $plan->delete();
+
+        $memberCount = $plan->members()->count();
+
+        if ($memberCount > 0 && !$force) {
+            return ['blocked' => true, 'member_count' => $memberCount];
+        }
+
+        if ($memberCount > 0) {
+            // Archive (soft delete) — preserves member assignments and payment history
+            $plan->delete();
+        } else {
+            // No members — permanently remove
+            $plan->forceDelete();
+        }
+
+        return ['blocked' => false];
     }
 
     public function serialize(PaymentPlan $plan): array
@@ -55,6 +71,7 @@ class PaymentPlanService
             'duration_days' => $plan->duration_days,
             'price' => (float) $plan->price,
             'is_active' => (bool) $plan->is_active,
+            'member_count' => (int) ($plan->members_count ?? 0),
             'created_at' => $plan->created_at?->toDateString(),
         ];
     }

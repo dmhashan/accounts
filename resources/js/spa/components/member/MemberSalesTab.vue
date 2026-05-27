@@ -1,9 +1,17 @@
 <template>
   <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
+    <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-3">
       <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">
         Sales History
       </h2>
+      <RouterLink
+        v-if="canCreateSale"
+        :to="`/sales/new?member_id=${memberId}`"
+        class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+      >
+        <Plus class="w-3.5 h-3.5" />
+        <span class="hidden sm:inline">Add Sale</span>
+      </RouterLink>
     </div>
     <div v-if="salesLoading" class="px-5 py-6 text-center text-sm text-secondary-400">
       Loading...
@@ -70,13 +78,19 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { RouterLink } from 'vue-router';
+import { Plus } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
 import { useMemberFormatters } from '../../composables/useMemberFormatters';
+import { useAppContext } from '../../composables/useAppContext';
 
 const props = defineProps({
     memberId: { type: [Number, String], required: true },
 });
+
+const context = useAppContext();
+const canCreateSale = computed(() => Boolean(context.permissions?.salesCreate));
 
 const { formatMoney } = useMemberFormatters();
 

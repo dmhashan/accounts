@@ -26,6 +26,7 @@ const SettingsPage = () => import('./pages/SettingsPage.vue');
 const GeneralSettingsPage = () => import('./pages/GeneralSettingsPage.vue');
 const LegacyToolsPage = () => import('./pages/LegacyToolsPage.vue');
 const ConfigurationPage = () => import('./pages/ConfigurationPage.vue');
+const BiometricSettingsPage = () => import('./pages/BiometricSettingsPage.vue');
 const ProfilePage = () => import('./pages/ProfilePage.vue');
 const WorkoutPage = () => import('./pages/WorkoutPage.vue');
 const WorkoutExerciseFormPage = () => import('./pages/WorkoutExerciseFormPage.vue');
@@ -122,6 +123,7 @@ const routes = [
     { path: '/settings/roles', component: SettingsPage, meta: { title: 'Roles Settings' } },
     { path: '/settings/legacy-tools', component: LegacyToolsPage, meta: { title: 'Manual Commands' } },
     { path: '/settings/configuration', component: ConfigurationPage, meta: { title: 'Configuration' } },
+    { path: '/settings/biometric', component: BiometricSettingsPage, meta: { title: 'Biometric Device' } },
     { path: '/profile', component: ProfilePage, meta: { title: 'My Profile' } },
     { path: '/workout', component: WorkoutPage, meta: { title: 'Workout' } },
     { path: '/workout/exercises', component: WorkoutPage, meta: { title: 'Exercises' } },

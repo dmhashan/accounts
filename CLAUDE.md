@@ -323,3 +323,154 @@ SMSLENZ_SENDER_ID=SMSlenzDEMO
 8. **Audit logs** — use `AuditService::log()` for any destructive or sensitive mutations.
 9. **Public Profile token** — stored in Laravel Cache, not DB. Key: `pp_token:{token}` → `['tenant_id', 'member_id']`.
 10. **Member ID format** — auto-generated as `MEM-{YEAR}-{0001}` by `Member::generateMemberId()`.
+
+---
+
+## Biometric Device Integration
+
+Per-tenant biometric access control system. Supports HikVision devices via ISAPI (HTTP Digest Auth). Configuration stored in `tenant_configurations` under `biometric.*` keys. All device communication is backend-only.
+
+### Architecture Overview
+
+```
+BiometricSettingsPage.vue  →  BiometricApiController  →  BiometricSyncService  →  HikvisionService
+MemberBiometricTab.vue     →  BiometricApiController  →  BiometricSyncService  →  HikvisionService
+MemberService (hooks)      →  BiometricSyncService    →  HikvisionService      →  Device ISAPI
+Scheduler (every 30 min)   →  BiometricSyncService::pullAttendance()
+```
+
+### Database
+
+**`biometric_sync_logs`** — audit trail for all device sync events:
+- `tenant_id` (FK), `member_id` (FK nullable)
+- `direction` enum(`up`, `down`)
+- `action` enum(`create`, `update`, `delete`, `attendance`, `manual_sync`, `test`)
+- `status` enum(`success`, `failed`)
+- `device_maker`, `device_model` (strings)
+- `payload` JSON nullable — request sent to device
+- `response` JSON nullable — raw device response
+- `error_message` text nullable
+- `synced_at`, `created_at` timestamps
+
+**`members` table additions:**
+- `biometric_last_synced_at` — nullable timestamp, updated silently (`$member->timestamps = false`) to avoid polluting `updated_at`
+
+**Model:** `app/Models/BiometricSyncLog.php` — `$timestamps = false`, casts `payload`/`response` as array, `synced_at`/`created_at` as datetime.
+
+### Tenant Configuration Keys (`biometric.*`)
+
+Stored in `tenant_configurations` via `TenantConfigurationService`. All keys start with `biometric.`:
+
+| Key | Default | Purpose |
+|---|---|---|
+| `biometric.enabled` | `0` | Master on/off switch |
+| `biometric.device_maker` | `''` | e.g. `hikvision` |
+| `biometric.device_model` | `''` | e.g. `DS-K1T320MFWX-B` |
+| `biometric.device_ip` | `''` | IP or hostname |
+| `biometric.device_port` | `80` | TCP port |
+| `biometric.device_username` | `admin` | Device admin username |
+| `biometric.device_password` | `''` | Device admin password |
+| `biometric.sync_members` | `0` | Auto push members to device on create/update/delete |
+| `biometric.sync_attendance` | `0` | Pull attendance from device every 30 min |
+| `biometric.access_control` | `0` | Restrict device access by payment validity |
+| `biometric.grace_period_days` | `0` | Extra days past payment end date to allow access |
+
+These keys are read/written via the standard `GET/PUT /api/settings/configuration` endpoint. Biometric validation rules are in `ConfigurationApiController::update()`.
+
+### Services
+
+**`app/Services/HikvisionService.php`** — raw ISAPI client:
+- Constructor: `(string $ip, int $port, string $username, string $password)`
+- Uses `Http::withDigestAuth($user, $pass)->withoutVerifying()->timeout(15)`
+- Methods: `testConnection()`, `addPerson(array $payload)`, `updatePerson(array $payload)`, `deletePerson(string $employeeNo)`, `getAttendanceEvents(string $startTime, string $endTime, int $offset, int $maxResults)`
+- All methods return `['success' => bool, 'data' => array, 'message' => string]` — never throw
+- Success detection: `statusCode === 1` in ISAPI response body (not HTTP status alone)
+- ISAPI base: `http://{ip}:{port}`; key endpoints:
+  - `POST /ISAPI/AccessControl/UserInfo/Record?format=json` — add person
+  - `PUT /ISAPI/AccessControl/UserInfo/Modify?format=json` — update person
+  - `PUT /ISAPI/AccessControl/UserInfo/Delete?format=json` — delete person
+  - `POST /ISAPI/AccessControl/AcsEvent?format=json` — fetch attendance events
+  - `GET /ISAPI/System/deviceInfo?format=json` — connection test
+
+**`app/Services/BiometricSyncService.php`** — orchestration layer:
+- Constructor injects `TenantConfigurationService $config`
+- `buildDriver(int $tenantId): ?HikvisionService` — reads config, instantiates `HikvisionService`; returns `null` if not configured
+- `isEnabled()`, `isMemberSyncEnabled()`, `isAttendanceSyncEnabled()`, `isAccessControlEnabled()`, `getGracePeriodDays()` — helpers reading `biometric.*` config
+- `syncMember(Member $member, string $action)`: action = `create|update|delete|manual_sync`
+  - Calls `addPerson()` on create; on `deviceUserAlreadyExist` subStatusCode falls back to `updatePerson()`
+  - Calls `updatePerson()` on update; `deletePerson()` on delete
+  - Payload built by `buildPersonPayload()` — sets `Valid` block if `access_control` is ON
+  - Updates `biometric_last_synced_at` with `$member->timestamps = false`
+  - Logs every attempt to `biometric_sync_logs`
+- `syncAllMembers(Tenant $tenant)`: loops all non-temp active members, calls `syncMember(..., 'manual_sync')`, returns `['synced' => int, 'failed' => int, 'message' => string]`
+- `pullAttendance(Tenant $tenant)`: paginated ISAPI fetch (`maxResults=100`); only persists minor codes 75 (face), 38 (card), 113 (fingerprint); uses `MemberAttendance::firstOrCreate()` to avoid duplicates; logs batch result
+- `testConnection(Tenant $tenant)`: calls `HikvisionService::testConnection()`, logs result, returns `['success' => bool, 'message' => string]`
+- `buildPersonPayload(Member $member, int $tenantId)`: constructs HikVision person DTO; when `access_control` is ON, calls `getMemberValidUntil()` to set `Valid.enable` and `Valid.endTime`
+- `getMemberValidUntil(Member $member, int $graceDays)`: queries `PaymentMembership` joined via `payment.member_id`, takes `max(end_date)`, adds grace days; returns Carbon or null
+
+### Controller & Routes
+
+**`app/Http/Controllers/Api/BiometricApiController.php`**
+
+Settings routes (guard: `auth` + `permission:settings.manage`):
+
+| Method | Path | Action |
+|---|---|---|
+| `POST` | `/api/settings/biometric/test-connection` | `testConnection()` |
+| `POST` | `/api/settings/biometric/sync-all` | `syncAllMembers()` |
+| `POST` | `/api/settings/biometric/sync-attendance` | `syncAttendance()` |
+| `GET` | `/api/settings/biometric/recent-logs` | `recentLogs()` — last 20 logs with member info |
+
+Member routes (guard: `auth` + `permission:users.edit`):
+
+| Method | Path | Action |
+|---|---|---|
+| `POST` | `/api/members/{member}/biometric-sync` | `syncMember()` — manual sync, returns `biometric_last_synced_at` |
+| `GET` | `/api/members/{member}/biometric-logs` | `memberLogs()` — last 20 logs for this member |
+
+### Member Sync Hooks
+
+`MemberService` injects `BiometricSyncService` alongside `MediaStorageService`. Hooks are fire-and-forget (errors never bubble up):
+
+- `store()`: after `Member::create()` → `$this->biometric->syncMember($member, 'create')`
+- `update()`: after member save + user sync → `$this->biometric->syncMember($member, 'update')`
+- `destroy()`: **before** delete → `$this->biometric->syncMember($member, 'delete')`
+- `show()`: includes `'biometric_last_synced_at'` in the returned array
+
+### Scheduled Command
+
+**`app/Console/Commands/SyncBiometricAttendance.php`**
+- Signature: `biometric:sync-attendance {--tenant= : Specific tenant domain}`
+- Loops all (or one) tenants; calls `BiometricSyncService::pullAttendance($tenant)` when `isAttendanceSyncEnabled()` is true
+- Scheduled in `routes/console.php`: `Schedule::command('biometric:sync-attendance')->everyThirtyMinutes()`
+
+### Frontend
+
+**`resources/js/spa/pages/BiometricSettingsPage.vue`** — settings page at `/#/settings/biometric`:
+- Card 1 — **Device Setup**: master enable toggle + conditional config form (device maker select, model select, IP, port, username, password). "Test Connection" saves config first, then calls `POST /api/settings/biometric/test-connection`.
+- Card 2 — **Sync Settings** (shown only when `biometric.enabled = 1`): up-sync toggle + "Sync All Members" button; down-sync toggle + "Pull Attendance Now" button; access control toggle + grace period input.
+- Card 3 — **Recent Sync Events**: table of last 20 log entries from `GET /api/settings/biometric/recent-logs`.
+- `DEVICE_REGISTRY` constant defines supported makers/models — add new devices here: `{ hikvision: { label: 'HikVision', models: [{ value: 'DS-K1T320MFWX-B', label: '...' }] } }`
+
+**`resources/js/spa/components/member/MemberBiometricTab.vue`** — biometric tab on member detail view:
+- Props: `memberId` (Number), `lastSyncedAt` (String nullable), `canSync` (Boolean)
+- Emits: `synced(biometric_last_synced_at)` — parent updates member record
+- On mount: checks if `biometric.sync_members === '1'` via `/api/settings/configuration`; shows "not configured" notice if false
+- Shows last synced timestamp + "Sync to Device" button → `POST /api/members/{id}/biometric-sync`
+- Shows sync history table from `GET /api/members/{id}/biometric-logs`
+
+**Router entry** (`resources/js/spa/router.js`):
+```js
+{ path: '/settings/biometric', component: BiometricSettingsPage, meta: { title: 'Biometric Device' } }
+```
+
+**Navigation** (`resources/js/spa/composables/useNavigation.js`):
+- "Biometric" entry added to settings children, guarded by `context.permissions?.settings`
+
+### Adding a New Device Maker
+
+1. Create `app/Services/{Maker}Service.php` implementing the same interface as `HikvisionService` (methods: `testConnection`, `addPerson`, `updatePerson`, `deletePerson`, `getAttendanceEvents`)
+2. Add to `BiometricSyncService::DRIVERS`: `'newmaker' => NewMakerService::class`
+3. Update `BiometricSyncService::buildDriver()` to instantiate the new service
+4. Add models to `DEVICE_REGISTRY` in `BiometricSettingsPage.vue`
+5. Map attendance event minor codes in `BiometricSyncService::persistAttendanceEvent()`

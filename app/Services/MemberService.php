@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Member;
+use App\Models\PaymentPlan;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -10,22 +11,27 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MemberService
 {
-    public function __construct(private readonly MediaStorageService $media) {}
+    public function __construct(
+        private readonly MediaStorageService $media,
+        private readonly BiometricSyncService $biometric,
+    ) {}
+
     public function meta(): array
     {
         return [
-            'generated_member_id' => Member::generateMemberId(),
+            'generated_member_id' => Member::generateBiometricMemberId(0), // preview only
         ];
     }
 
-    public function index(int $tenantId, User $currentUser, int $perPage, string $search, ?bool $isTemp = null): array
+    public function index(int $tenantId, User $currentUser, int $perPage, string $search, ?bool $isTemp = null, ?int $planId = null): array
     {
         $members = Member::query()
             ->where('tenant_id', $tenantId)
             ->when($isTemp !== null, fn ($q) => $q->where('is_temp', $isTemp))
+            ->when($planId !== null, fn ($q) => $q->where('payment_plan_id', $planId))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
-                    $innerQuery->where('member_id', 'like', "%{$search}%")
+                    $innerQuery->where('biometric_member_id', 'like', "%{$search}%")
                         ->orWhere('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('phone_number', 'like', "%{$search}%");
@@ -40,7 +46,7 @@ class MemberService
 
                 return [
                     'id' => $member->id,
-                    'member_id' => $member->member_id,
+                    'biometric_member_id' => $member->biometric_member_id,
                     'name' => $member->name,
                     'first_name' => $firstName,
                     'last_name' => $lastName,
@@ -112,7 +118,7 @@ class MemberService
 
         $tenantId = $tenant->id;
         $tenantName = (string) $tenant->name;
-        $fileName = 'google-contacts-members-'.now()->format('Ymd_His').'.csv';
+        $fileName = 'google-contacts-members-' . now()->format('Ymd_His') . '.csv';
 
         return response()->streamDownload(function () use ($headers, $tenantId, $tenantName) {
             $output = fopen('php://output', 'w');
@@ -122,13 +128,14 @@ class MemberService
             foreach (Member::query()->where('tenant_id', $tenantId)->orderBy('created_at', 'desc')->cursor() as $member) {
                 [$firstName, $lastName] = $this->resolveFirstAndLastName($member);
 
-                $fileAs = trim($firstName.' '.$lastName);
+                $fileAs = trim($firstName . ' ' . $lastName);
+
                 if ($fileAs === '') {
                     $fileAs = trim((string) ($member->name ?? ''));
                 }
 
                 $genderLabel = $member->gender === 'female' ? 'Female' : 'Male';
-                $namePrefix = trim($tenantName.' '.$genderLabel.' '.(string) ($member->member_id ?? ''));
+                $namePrefix = trim($tenantName . ' ' . $genderLabel . ' ' . (string) ($member->biometric_member_id ?? ''));
 
                 fputcsv($output, [
                     '',
@@ -164,7 +171,7 @@ class MemberService
                     '',
                     '',
                     'Member ID',
-                    (string) ($member->member_id ?? ''),
+                    (string) ($member->biometric_member_id ?? ''),
                     (string) ($member->comment ?? ''),
                     'Members',
                 ]);
@@ -181,7 +188,7 @@ class MemberService
         $firstName = trim($validated['first_name'] ?? '');
         $lastName = trim($validated['last_name'] ?? '');
 
-        $validated['member_id'] = Member::generateMemberId();
+        $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
         $validated['tenant_id'] = $tenant->id;
         $validated['name'] = trim("$firstName $lastName") ?: $firstName ?: $lastName;
         $validated['is_active'] = true;
@@ -193,13 +200,24 @@ class MemberService
 
     public function store(Tenant $tenant, array $validated): Member
     {
-        $validated['member_id'] = Member::generateMemberId();
+        $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
         $validated['tenant_id'] = $tenant->id;
-        $validated['name'] = trim($validated['first_name'].' '.$validated['last_name']);
+        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $validated['is_active'] = true;
         $validated['is_verified'] = true;
 
+        if (!empty($validated['payment_plan_id'])) {
+            $plan = PaymentPlan::find($validated['payment_plan_id']);
+
+            if ($plan) {
+                $validated['payment_plan'] = $plan->name;
+                $validated['price'] = $plan->price;
+            }
+        }
+
         $member = Member::create($validated);
+
+        $this->biometric->syncMember($member, 'create');
 
         return $member;
     }
@@ -210,7 +228,7 @@ class MemberService
 
         return [
             'id' => $member->id,
-            'member_id' => $member->member_id,
+            'biometric_member_id' => $member->biometric_member_id,
             'name' => $member->name,
             'first_name' => $firstName,
             'last_name' => $lastName,
@@ -223,10 +241,11 @@ class MemberService
             'whatsapp_number' => $member->whatsapp_number,
             'nic' => $member->nic,
             'date_of_birth' => optional($member->date_of_birth)->format('Y-m-d'),
-            'age' => $member->age,
+            'age' => null,
             'address' => $member->address,
-            'member_role' => $member->member_role,
+            'member_role' => null,
             'admission_fee' => $member->admission_fee,
+            'payment_plan_id' => $member->payment_plan_id,
             'payment_plan' => $member->payment_plan,
             'price' => $member->price,
             'current_balance' => $member->current_balance,
@@ -239,12 +258,23 @@ class MemberService
                 ? $this->media->url($member->profile_photo_path)
                 : null,
             'created_at' => optional($member->created_at)->toDateString(),
+            'biometric_last_synced_at' => optional($member->biometric_last_synced_at)->toISOString(),
         ];
     }
 
     public function update(Member $member, array $validated): void
     {
-        $validated['name'] = trim($validated['first_name'].' '.$validated['last_name']);
+        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
+
+        if (!empty($validated['payment_plan_id'])) {
+            $plan = PaymentPlan::find($validated['payment_plan_id']);
+
+            if ($plan) {
+                $validated['payment_plan'] = $plan->name;
+                $validated['price'] = $plan->price;
+            }
+        }
+
         $member->update($validated);
 
         if ($member->user) {
@@ -254,6 +284,8 @@ class MemberService
                 'username' => $validated['username'],
             ]);
         }
+
+        $this->biometric->syncMember($member, 'update');
     }
 
     public function toggleStatus(Member $member): array
@@ -282,6 +314,8 @@ class MemberService
 
     public function destroy(Member $member): void
     {
+        $this->biometric->syncMember($member, 'delete');
+
         if ($member->user) {
             $member->user->delete();
         }
@@ -305,7 +339,7 @@ class MemberService
 
     public function deleteAvatar(Member $member): void
     {
-        if (! $member->profile_photo_path) {
+        if (!$member->profile_photo_path) {
             return;
         }
 

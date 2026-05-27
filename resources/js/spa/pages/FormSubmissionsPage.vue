@@ -54,7 +54,7 @@
                   <div class="min-w-0 flex-1">
                     <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">
                       {{ s.member?.name || '—' }}
-                      <span v-if="s.member?.member_id" class="text-xs font-normal text-secondary-400 dark:text-secondary-500 ml-1.5">{{ s.member.member_id }}</span>
+                      <span v-if="s.member?.biometric_member_id" class="text-xs font-normal text-secondary-400 dark:text-secondary-500 ml-1.5">{{ s.member.biometric_member_id }}</span>
                     </p>
                     <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       Submitted {{ s.submitted_at }}
@@ -110,7 +110,7 @@
                       {{ s.member?.name || '—' }}
                     </td>
                     <td class="app-table-td text-secondary-500 dark:text-secondary-400 font-mono text-xs">
-                      {{ s.member?.member_id || '—' }}
+                      {{ s.member?.biometric_member_id || '—' }}
                     </td>
                     <td class="app-table-td text-secondary-500 dark:text-secondary-400 whitespace-nowrap">
                       {{ s.submitted_at }}
@@ -486,7 +486,7 @@ const filtered = computed(() => {
     if (!q) return submissions.value;
     return submissions.value.filter(s =>
         (s.member?.name || '').toLowerCase().includes(q) ||
-        (s.member?.member_id || '').toLowerCase().includes(q),
+        (s.member?.biometric_member_id || '').toLowerCase().includes(q),
     );
 });
 
@@ -564,7 +564,7 @@ function searchMembers() {
             memberResults.value = (res.data || []).map(m => ({
                 id: m.id,
                 label: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.name || '',
-                member_id: m.member_id,
+                member_id: m.biometric_member_id,
             }));
         } catch {
             memberResults.value = [];

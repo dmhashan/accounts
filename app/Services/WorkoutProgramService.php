@@ -4,12 +4,12 @@ namespace App\Services;
 
 use App\Models\Exercise;
 use App\Models\ExerciseVariation;
+use App\Models\Member;
 use App\Models\WorkoutDayExercise;
 use App\Models\WorkoutProgram;
 use App\Models\WorkoutProgramAssignment;
 use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutProgramExtra;
-use App\Models\Member;
 use Illuminate\Support\Carbon;
 
 class WorkoutProgramService
@@ -32,7 +32,7 @@ class WorkoutProgramService
         return [
             'data' => collect($members->items())->map(fn (Member $member) => [
                 'id' => $member->id,
-                'member_id' => $member->member_id,
+                'member_id' => $member->biometric_member_id,
                 'name' => $member->name,
                 'email' => $member->email,
                 'phone_number' => $member->phone_number,
@@ -76,7 +76,7 @@ class WorkoutProgramService
         $assignments = WorkoutProgramAssignment::query()
             ->where('tenant_id', $tenantId)
             ->with([
-                'member:id,name,member_id,email,phone_number',
+                'member:id,name,biometric_member_id,email,phone_number',
                 'sourceProgram:id,title',
                 'assignedProgram:id,title',
                 'creator:id,name',
@@ -104,6 +104,7 @@ class WorkoutProgramService
         $assignedProgram = $this->resolveAssignedProgramWithSnapshot($sourceProgram, $tenantId, $createdBy, $validated);
 
         $created = [];
+
         foreach ($validated['member_ids'] as $memberId) {
             $member = Member::query()->findOrFail((int) $memberId);
             $this->ensureMemberTenant($member, $tenantId);
@@ -425,10 +426,10 @@ class WorkoutProgramService
 
         return [
             'programTitle' => $program->title,
-            'duration' => $program->duration_weeks.' weeks',
+            'duration' => $program->duration_weeks . ' weeks',
             'days' => $program->days->map(function (WorkoutProgramDay $day) {
                 return [
-                    'day' => 'Day '.str_pad((string) $day->day_number, 2, '0', STR_PAD_LEFT),
+                    'day' => 'Day ' . str_pad((string) $day->day_number, 2, '0', STR_PAD_LEFT),
                     'title' => $day->title,
                     'exercises' => $day->dayExercises->map(function (WorkoutDayExercise $item) {
                         return [
@@ -438,7 +439,7 @@ class WorkoutProgramService
                             'sets' => (int) $item->sets,
                             'reps' => $item->reps,
                             'tempo' => $item->tempo,
-                            'rest' => (int) $item->rest_seconds.'s',
+                            'rest' => (int) $item->rest_seconds . 's',
                         ];
                     })->values(),
                 ];
@@ -498,6 +499,7 @@ class WorkoutProgramService
 
             if ($variationId) {
                 $row = $exercise->variations()->where('id', $variationId)->first();
+
                 if ($row) {
                     $row->update($data);
                     $keepIds[] = $variationId;
@@ -510,6 +512,7 @@ class WorkoutProgramService
         }
 
         $deleteIds = array_diff($existingIds, $keepIds);
+
         if (!empty($deleteIds)) {
             $exercise->variations()->whereIn('id', $deleteIds)->delete();
         }
@@ -537,7 +540,7 @@ class WorkoutProgramService
             'id' => $assignment->id,
             'member_id' => $assignment->member_id,
             'member_name' => $assignment->member?->name,
-            'member_code' => $assignment->member?->member_id,
+            'member_code' => $assignment->member?->biometric_member_id,
             'member_email' => $assignment->member?->email,
             'member_phone' => $assignment->member?->phone_number,
             'source_program_id' => $assignment->source_program_id,

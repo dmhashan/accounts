@@ -47,9 +47,17 @@ class PaymentPlanApiController extends Controller
         return response()->json(['data' => $this->planService->serialize($paymentPlan->fresh())]);
     }
 
-    public function destroy(PaymentPlan $paymentPlan): JsonResponse
+    public function destroy(Request $request, PaymentPlan $paymentPlan): JsonResponse
     {
-        $this->planService->destroy($paymentPlan, app('tenant')->id);
+        $force = $request->boolean('force');
+        $result = $this->planService->destroy($paymentPlan, app('tenant')->id, $force);
+
+        if ($result['blocked']) {
+            return response()->json([
+                'message' => "This plan has {$result['member_count']} member(s) assigned and cannot be deleted.",
+                'member_count' => $result['member_count'],
+            ], 422);
+        }
 
         return response()->json(null, 204);
     }

@@ -45,17 +45,17 @@ class NotificationApiController extends Controller
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('name', 'like', "%{$search}%")
-                        ->orWhere('member_id', 'like', "%{$search}%")
+                        ->orWhere('biometric_member_id', 'like', "%{$search}%")
                         ->orWhere('phone_number', 'like', "%{$search}%");
                 });
             })
             ->orderBy('name')
-            ->get(['id', 'member_id', 'name', 'phone_number', 'is_active']);
+            ->get(['id', 'biometric_member_id', 'name', 'phone_number', 'is_active']);
 
         return response()->json([
             'data' => $members->map(fn (Member $m) => [
                 'id' => $m->id,
-                'member_id' => $m->member_id,
+                'member_id' => $m->biometric_member_id,
                 'name' => $m->name,
                 'phone_number' => $m->phone_number,
                 'is_active' => (bool) $m->is_active,

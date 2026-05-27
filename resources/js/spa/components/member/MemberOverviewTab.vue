@@ -1,10 +1,10 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Personal Info -->
+    <!-- Personal Details -->
     <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
       <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
         <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">
-          Personal
+          Personal Details
         </h2>
       </div>
       <dl class="divide-y divide-secondary-100 dark:divide-secondary-800">
@@ -22,6 +22,14 @@
           </dt>
           <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
             {{ displayValue(member.last_name) }}
+          </dd>
+        </div>
+        <div class="flex items-center justify-between px-5 py-3">
+          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
+            NIC
+          </dt>
+          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
+            {{ displayValue(member.nic) }}
           </dd>
         </div>
         <div class="flex items-center justify-between px-5 py-3">
@@ -48,22 +56,14 @@
             {{ displayValue(member.age) }}
           </dd>
         </div>
-        <div class="flex items-center justify-between px-5 py-3">
-          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
-            NIC
-          </dt>
-          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
-            {{ displayValue(member.nic) }}
-          </dd>
-        </div>
       </dl>
     </div>
 
-    <!-- Contact & Access -->
+    <!-- Contact Details -->
     <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
       <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
         <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">
-          Contact & Access
+          Contact Details
         </h2>
       </div>
       <dl class="divide-y divide-secondary-100 dark:divide-secondary-800">
@@ -77,7 +77,7 @@
         </div>
         <div class="flex items-start justify-between px-5 py-3 gap-3">
           <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28 pt-0.5">
-            Phone
+            Phone Number
           </dt>
           <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
             <span>{{ displayValue(member.phone_number) }}</span>
@@ -95,14 +95,6 @@
             {{ member.whatsapp_number }}
           </dd>
         </div>
-        <div class="flex items-center justify-between px-5 py-3">
-          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
-            Username
-          </dt>
-          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
-            {{ displayValue(member.username) }}
-          </dd>
-        </div>
         <div class="flex items-start justify-between px-5 py-3 gap-3">
           <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28 pt-0.5">
             Address
@@ -114,22 +106,14 @@
       </dl>
     </div>
 
-    <!-- Plan & Billing -->
+    <!-- Payment Details -->
     <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
       <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
         <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">
-          Plan & Billing
+          Payment Details
         </h2>
       </div>
       <dl class="divide-y divide-secondary-100 dark:divide-secondary-800">
-        <div class="flex items-center justify-between px-5 py-3">
-          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
-            Role
-          </dt>
-          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
-            {{ displayValue(member.member_role) }}
-          </dd>
-        </div>
         <div class="flex items-center justify-between px-5 py-3">
           <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
             Payment Plan
@@ -162,21 +146,50 @@
             {{ formatMoney(member.current_balance) }}
           </dd>
         </div>
+        <div class="flex items-center justify-between px-5 py-3">
+          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
+            Role
+          </dt>
+          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
+            {{ displayValue(member.member_role) }}
+          </dd>
+        </div>
       </dl>
     </div>
 
-    <!-- Notes -->
+    <!-- Other Details -->
     <div class="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200 dark:border-secondary-700 shadow-sm overflow-hidden">
       <div class="px-5 py-3.5 border-b border-secondary-100 dark:border-secondary-800">
         <h2 class="text-xs font-semibold uppercase tracking-widest text-secondary-400 dark:text-secondary-500">
-          Notes
+          Other Details
         </h2>
       </div>
-      <div class="px-5 py-4">
-        <p class="text-sm text-secondary-700 dark:text-secondary-300 whitespace-pre-line leading-relaxed">
-          {{ member.comment || 'No notes added for this member.' }}
-        </p>
-      </div>
+      <dl class="divide-y divide-secondary-100 dark:divide-secondary-800">
+        <div class="flex items-center justify-between px-5 py-3">
+          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
+            Username
+          </dt>
+          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
+            {{ displayValue(member.username) }}
+          </dd>
+        </div>
+        <div class="flex items-center justify-between px-5 py-3">
+          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
+            Joined Date
+          </dt>
+          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
+            {{ formatDate(member.joined_date) }}
+          </dd>
+        </div>
+        <div class="flex items-start justify-between px-5 py-3 gap-3">
+          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28 pt-0.5">
+            Comment
+          </dt>
+          <dd class="text-sm text-secondary-700 dark:text-secondary-300 text-right whitespace-pre-line leading-relaxed">
+            {{ member.comment || '—' }}
+          </dd>
+        </div>
+      </dl>
     </div>
   </div>
 </template>

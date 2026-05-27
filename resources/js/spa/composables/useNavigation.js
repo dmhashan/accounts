@@ -113,6 +113,7 @@ export function useNavigation() {
             if (context.permissions?.users) settingsChildren.push({ label: 'Users', path: '/settings' });
             if (context.permissions?.roles) settingsChildren.push({ label: 'Roles', path: '/settings/roles' });
             if (context.permissions?.settings) settingsChildren.push({ label: 'Configuration', path: '/settings/configuration' });
+            if (context.permissions?.settings) settingsChildren.push({ label: 'Biometric', path: '/settings/biometric' });
             if (context.permissions?.settings) settingsChildren.push({ label: 'Manual Commands', path: '/settings/legacy-tools' });
             items.push({
                 label: 'Settings', shortLabel: 'Settings', path: '/settings', icon: ICONS.settings,

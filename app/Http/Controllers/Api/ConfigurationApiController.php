@@ -38,6 +38,19 @@ class ConfigurationApiController extends Controller
             'notifications.sms.user_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notifications.sms.api_key' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notifications.sms.sender_id' => ['sometimes', 'nullable', 'string', 'max:50'],
+
+            // Biometric device
+            'biometric.enabled' => ['sometimes', 'in:0,1'],
+            'biometric.device_maker' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'biometric.device_model' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'biometric.device_ip' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'biometric.device_port' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
+            'biometric.device_username' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'biometric.device_password' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'biometric.sync_members' => ['sometimes', 'in:0,1'],
+            'biometric.sync_attendance' => ['sometimes', 'in:0,1'],
+            'biometric.access_control' => ['sometimes', 'in:0,1'],
+            'biometric.grace_period_days' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
         ]);
 
         $tenant = app('tenant');

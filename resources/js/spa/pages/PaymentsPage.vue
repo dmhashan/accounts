@@ -2,12 +2,24 @@
   <section class="app-page-frame">
     <AppPageHeader>
       <template #cta-slot>
-        <AppHeaderAction
-          v-if="canManage && activeTab === 'payments'"
-          to="/payments/new"
-          :icon="CreditCard"
-          label="New Payment"
-        />
+        <template v-if="canManage && activeTab === 'payments'">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors"
+            @click="openMembershipModal"
+          >
+            <component :is="CreditCard" class="w-4 h-4" />
+            Membership Payment
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-secondary-300 dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-800 text-secondary-700 dark:text-secondary-300 text-sm font-semibold transition-colors"
+            @click="openOtherModal"
+          >
+            <component :is="Plus" class="w-4 h-4" />
+            Other Payment
+          </button>
+        </template>
         <button
           v-if="canManage && activeTab === 'plans'"
           type="button"
@@ -170,13 +182,22 @@
                       {{ money(plan.price) }}
                     </p>
                   </div>
-                  <div v-if="canManage" class="flex gap-2 shrink-0">
-                    <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="openPlanModal(plan)">
-                      Edit
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      class="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50"
+                      @click="router.push(`/members?plan_id=${plan.id}&plan_name=${encodeURIComponent(plan.name)}`)"
+                    >
+                      {{ plan.member_count }} member{{ plan.member_count !== 1 ? 's' : '' }}
                     </button>
-                    <button type="button" class="text-xs text-red-500 hover:underline" @click="deletePlan(plan)">
-                      Delete
-                    </button>
+                    <div v-if="canManage" class="flex gap-2">
+                      <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="openPlanModal(plan)">
+                        Edit
+                      </button>
+                      <button type="button" class="text-xs text-red-500 hover:underline" @click="deletePlan(plan)">
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <span
@@ -203,6 +224,9 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                       Status
                     </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Members
+                    </th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                       Price
                     </th>
@@ -223,6 +247,15 @@
                         :class="plan.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-secondary-100 dark:bg-secondary-800 text-secondary-500'"
                       >{{ plan.is_active ? 'Active' : 'Inactive' }}</span>
                     </td>
+                    <td class="px-6 py-4">
+                      <button
+                        type="button"
+                        class="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50"
+                        @click="router.push(`/members?plan_id=${plan.id}&plan_name=${encodeURIComponent(plan.name)}`)"
+                      >
+                        {{ plan.member_count }} member{{ plan.member_count !== 1 ? 's' : '' }}
+                      </button>
+                    </td>
                     <td class="px-6 py-4 text-sm font-semibold text-right text-primary-600 dark:text-primary-400">
                       {{ money(plan.price) }}
                     </td>
@@ -236,7 +269,7 @@
                     </td>
                   </tr>
                   <tr v-if="plans.length === 0">
-                    <td colspan="5" class="px-6 py-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    <td colspan="6" class="px-6 py-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
                       No payment plans defined yet.
                     </td>
                   </tr>
@@ -363,18 +396,89 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Plan archive confirmation modal -->
+    <AppConfirmModal
+      v-if="planToArchive"
+      title="Cannot Delete Plan"
+      confirm-label="Archive Plan"
+      loading-label="Archiving..."
+      variant="warning"
+      :loading="planArchiving"
+      @confirm="forceDeletePlan"
+      @cancel="planToArchive = null"
+    >
+      <div class="space-y-3">
+        <p class="text-sm text-secondary-700 dark:text-secondary-300">
+          <strong class="text-secondary-900 dark:text-white">{{ planToArchive.name }}</strong>
+          has <strong>{{ planToArchive.member_count }} member{{ planToArchive.member_count !== 1 ? 's' : '' }}</strong> assigned.
+          It cannot be permanently deleted while members are on this plan.
+        </p>
+        <p class="text-sm text-secondary-600 dark:text-secondary-400">
+          You can <strong>archive</strong> it instead — the plan will be hidden from active plans but member assignments and payment history are preserved.
+        </p>
+      </div>
+    </AppConfirmModal>
+
+    <!-- Plan delete confirmation modal -->
+    <AppConfirmModal
+      v-if="planToDeleteSimple"
+      title="Delete Plan"
+      confirm-label="Delete"
+      loading-label="Deleting..."
+      :loading="planDeleteSimpleLoading"
+      @confirm="confirmDeletePlan"
+      @cancel="planToDeleteSimple = null"
+    >
+      <p class="text-sm text-secondary-700 dark:text-secondary-300">
+        Delete plan <strong class="text-secondary-900 dark:text-white">{{ planToDeleteSimple.name }}</strong>?
+        Existing payments linked to this plan will not be affected.
+      </p>
+    </AppConfirmModal>
+
+    <!-- Membership payment modal -->
+    <Teleport to="body">
+      <div v-if="memModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
+        <PaymentMembershipForm
+          :accounts="metaAccounts"
+          :plans="metaPlans"
+          :members="metaMembers"
+          :saving="memModalSaving"
+          :error="memModalError"
+          @submit="submitMembershipPayment"
+          @cancel="closeMembershipModal"
+        />
+      </div>
+    </Teleport>
+
+    <!-- Other payment modal -->
+    <Teleport to="body">
+      <div v-if="otherModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
+        <PaymentOtherForm
+          :accounts="metaAccounts"
+          :plans="metaPlans"
+          :members="metaMembers"
+          :saving="otherModalSaving"
+          :error="otherModalError"
+          @submit="submitOtherPayment"
+          @cancel="closeOtherModal"
+        />
+      </div>
+    </Teleport>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { CreditCard, Tag, X } from 'lucide-vue-next';
+import { CreditCard, Plus, Tag, X } from 'lucide-vue-next';
+import AppConfirmModal from '../components/AppConfirmModal.vue';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
-import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
+import PaymentMembershipForm from '../components/forms/PaymentMembershipForm.vue';
+import PaymentOtherForm from '../components/forms/PaymentOtherForm.vue';
 
 const context = useAppContext();
 const router = useRouter();
@@ -498,20 +602,135 @@ async function savePlan() {
     }
 }
 
+// ── Plan delete / archive ──────────────────────────────────
+const planToArchive = ref(null);
+const planArchiving = ref(false);
+
+const planToDeleteSimple = ref(null);
+const planDeleteSimpleLoading = ref(false);
+
 async function deletePlan(plan) {
-    if (!confirm(`Delete plan "${plan.name}"? Existing payments linked to this plan will not be affected.`)) return;
+    if (plan.member_count > 0) {
+        planToArchive.value = plan;
+        return;
+    }
+    planToDeleteSimple.value = plan;
+}
+
+async function confirmDeletePlan() {
+    if (!planToDeleteSimple.value) return;
+    planDeleteSimpleLoading.value = true;
     try {
-        await apiRequest(`/api/payment-plans/${plan.id}`, { method: 'delete' });
+        await apiRequest(`/api/payment-plans/${planToDeleteSimple.value.id}`, { method: 'delete' });
+        planToDeleteSimple.value = null;
         await loadPlans();
     } catch {
         plansError.value = 'Failed to delete plan.';
+        planToDeleteSimple.value = null;
+    } finally {
+        planDeleteSimpleLoading.value = false;
     }
 }
 
-// ── Init ──────────────────────────────────────────────────
+async function forceDeletePlan() {
+    if (!planToArchive.value) return;
+    planArchiving.value = true;
+    try {
+        await apiRequest(`/api/payment-plans/${planToArchive.value.id}?force=1`, { method: 'delete' });
+        planToArchive.value = null;
+        await loadPlans();
+    } catch (err) {
+        plansError.value = err?.response?.data?.message || 'Failed to archive plan.';
+        planToArchive.value = null;
+    } finally {
+        planArchiving.value = false;
+    }
+}
+
+// ── Meta for modals ───────────────────────────────────────
+const metaLoaded = ref(false);
+const metaMembers = ref([]);
+const metaAccounts = ref([]);
+const metaPlans = ref([]);
+
+async function loadMeta() {
+    if (metaLoaded.value) return;
+    try {
+        const response = await apiRequest('/api/payments/meta');
+        metaMembers.value = response.members || [];
+        metaAccounts.value = response.accounts || [];
+        metaPlans.value = (response.plans || []).filter(p => p.is_active !== false);
+        metaLoaded.value = true;
+    } catch {
+        // silent — modal errors will surface if submit is attempted without data
+    }
+}
+
+// ── Membership payment modal ──────────────────────────────
+const memModalOpen = ref(false);
+const memModalSaving = ref(false);
+const memModalError = ref('');
+
+function openMembershipModal() {
+    memModalError.value = '';
+    memModalSaving.value = false;
+    memModalOpen.value = true;
+    loadMeta();
+}
+
+function closeMembershipModal() {
+    memModalOpen.value = false;
+}
+
+async function submitMembershipPayment(payload) {
+    memModalSaving.value = true;
+    memModalError.value = '';
+    try {
+        await apiRequest('/api/payments', { method: 'post', data: payload });
+        closeMembershipModal();
+        loadPayments();
+    } catch (err) {
+        memModalError.value = err?.response?.data?.message || 'Failed to record payment.';
+    } finally {
+        memModalSaving.value = false;
+    }
+}
+
+// ── Other payment modal ───────────────────────────────────────────────
+const otherModalOpen = ref(false);
+const otherModalSaving = ref(false);
+const otherModalError = ref('');
+
+function openOtherModal() {
+    otherModalError.value = '';
+    otherModalSaving.value = false;
+    otherModalOpen.value = true;
+    loadMeta();
+}
+
+function closeOtherModal() {
+    otherModalOpen.value = false;
+}
+
+async function submitOtherPayment(payload) {
+    otherModalSaving.value = true;
+    otherModalError.value = '';
+    try {
+        await apiRequest('/api/payments', { method: 'post', data: payload });
+        closeOtherModal();
+        loadPayments();
+    } catch (err) {
+        otherModalError.value = err?.response?.data?.message || 'Failed to record payment.';
+    } finally {
+        otherModalSaving.value = false;
+    }
+}
+
+// ── Init ────────────────────────────────────────────────────────────
 onMounted(() => {
     loadPayments();
     loadPlans();
+    loadMeta();
 });
 </script>
 
