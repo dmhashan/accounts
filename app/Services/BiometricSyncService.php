@@ -27,6 +27,16 @@ class BiometricSyncService
         'hikvision' => HikvisionService::class,
     ];
 
+    /**
+     * Hikvision Value Series (K1T320 family) does NOT implement the remote
+     * fingerprint-enrolment trigger (PUT /ISAPI/AccessControl/Fingerprint/SetUp).
+     * Attempting it returns HTTP 400 / subStatusCode "methodNotAllowed".
+     * Fingerprint enrolment on these devices must be done physically at the terminal.
+     */
+    private const FINGERPRINT_SETUP_UNSUPPORTED_MODELS = [
+        'DS-K1T320', // Value Series — all variants
+    ];
+
     public function __construct(
         private readonly TenantConfigurationService $config,
     ) {}
@@ -385,6 +395,38 @@ class BiometricSyncService
         return $result;
     }
 
+    /**
+     * Trigger fingerprint enrolment on the device for a member.
+     * Returns ['success' => bool, 'message' => string].
+     */
+    public function setupMemberFingerprint(Member $member): array
+    {
+        $allConfig = $this->config->all($member->tenant_id);
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver) {
+            return ['success' => false, 'message' => 'Device not configured.'];
+        }
+
+        $employeeNo = $member->biometric_member_id;
+
+        if (!$employeeNo) {
+            return ['success' => false, 'message' => 'No biometric ID assigned to this member.'];
+        }
+
+        $model = $allConfig['biometric.device_model'] ?? '';
+
+        if ($this->modelLacksRemoteFingerprintSetup($model)) {
+            return [
+                'success' => false,
+                'message' => "Remote fingerprint enrolment is not supported on {$model}. "
+                    . 'Enrol the fingerprint directly at the terminal (device screen → Personnel).',
+            ];
+        }
+
+        return $driver->setupFingerprint($employeeNo);
+    }
+
     // -------------------------------------------------------------------------
     // Device record query
     // -------------------------------------------------------------------------
@@ -482,6 +524,7 @@ class BiometricSyncService
             'connection_failed' => false,
             'not_assigned' => false,
             'not_found' => false,
+            'fingerprint_setup_supported' => !$this->modelLacksRemoteFingerprintSetup($allConfig['biometric.device_model'] ?? ''),
             'person' => [
                 'employee_no' => $person['employeeNo'] ?? $employeeNo,
                 'name' => $person['name'] ?? '',
@@ -612,6 +655,21 @@ class BiometricSyncService
 
         // Fallback: strip non-numeric characters
         return preg_replace('/[^0-9]/', '', $biometricMemberId);
+    }
+
+    /**
+     * Returns true when the configured device model is known NOT to support the
+     * remote fingerprint-enrolment trigger via ISAPI.
+     */
+    private function modelLacksRemoteFingerprintSetup(string $model): bool
+    {
+        foreach (self::FINGERPRINT_SETUP_UNSUPPORTED_MODELS as $prefix) {
+            if (str_starts_with(strtoupper($model), strtoupper($prefix))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

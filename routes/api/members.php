@@ -68,6 +68,7 @@ Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
 Route::middleware(['auth', 'permission:users.edit'])->group(function () {
     Route::post('/members/{member}/biometric-assign-id', [BiometricApiController::class, 'assignMemberId']);
     Route::post('/members/{member}/biometric-sync', [BiometricApiController::class, 'syncMember']);
+    Route::post('/members/{member}/biometric-setup-fingerprint', [BiometricApiController::class, 'setupFingerprint']);
     Route::get('/members/{member}/biometric-logs', [BiometricApiController::class, 'memberLogs']);
     Route::get('/members/{member}/biometric-device-info', [BiometricApiController::class, 'memberDeviceInfo']);
 });

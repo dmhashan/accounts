@@ -169,6 +169,24 @@ class HikvisionService
         ]);
     }
 
+    /**
+     * Trigger fingerprint enrolment on the device for a person.
+     * The device enters collection mode and prompts the person to scan.
+     *
+     * @param  int  $fingerNo  0–9 (finger slot index)
+     */
+    public function setupFingerprint(string $employeeNo, int $fingerNo = 0): array
+    {
+        return $this->put('/ISAPI/AccessControl/Fingerprint/SetUp', [
+            'FingerPrint' => [
+                'employeeNo' => $employeeNo,
+                'fingerNo' => $fingerNo,
+                'fingerType' => 'normalFinger',
+                'deleteFingerPrint' => false,
+            ],
+        ]);
+    }
+
     // -------------------------------------------------------------------------
     // Internal HTTP helpers
     // -------------------------------------------------------------------------

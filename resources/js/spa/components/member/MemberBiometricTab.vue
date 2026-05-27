@@ -53,14 +53,9 @@
         <div v-else-if="deviceInfo.connection_failed" class="px-4 py-6">
           <div class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 flex gap-3 items-start">
             <WifiOff class="w-5 h-5 text-red-500 dark:text-red-400 shrink-0 mt-0.5" :stroke-width="2" />
-            <div>
-              <p class="text-sm font-semibold text-red-700 dark:text-red-400">
-                Failed to connect to device
-              </p>
-              <p class="text-xs text-red-600 dark:text-red-500 mt-0.5">
-                {{ deviceInfo.message }}
-              </p>
-            </div>
+            <p class="text-sm font-semibold text-red-700 dark:text-red-400">
+              Failed to connect to device
+            </p>
           </div>
         </div>
 
@@ -68,14 +63,9 @@
         <div v-else-if="deviceInfo.not_assigned" class="px-4 py-6">
           <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 flex gap-3 items-start">
             <AlertTriangle class="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" :stroke-width="2" />
-            <div>
-              <p class="text-sm font-semibold text-amber-700 dark:text-amber-400">
-                No biometric ID assigned
-              </p>
-              <p class="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
-                Assign a biometric ID to this member before querying the device.
-              </p>
-            </div>
+            <p class="text-sm font-semibold text-amber-700 dark:text-amber-400">
+              No biometric ID assigned
+            </p>
           </div>
         </div>
 
@@ -83,14 +73,9 @@
         <div v-else-if="deviceInfo.not_found" class="px-4 py-6">
           <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 flex gap-3 items-start">
             <AlertTriangle class="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" :stroke-width="2" />
-            <div>
-              <p class="text-sm font-semibold text-amber-700 dark:text-amber-400">
-                Member not mapped on device
-              </p>
-              <p class="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
-                This member has no record on the device. Use <span class="font-medium">Sync to Device</span> to push their profile.
-              </p>
-            </div>
+            <p class="text-sm font-semibold text-amber-700 dark:text-amber-400">
+              Member not mapped on device
+            </p>
           </div>
         </div>
 
@@ -212,7 +197,7 @@
                     :stroke-width="2"
                   />
                 </div>
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                   <p class="text-xs font-medium" style="color: var(--text-strong)">
                     Fingerprint
                   </p>
@@ -223,6 +208,22 @@
                     {{ deviceInfo.fingerprint.enrolled ? `${deviceInfo.fingerprint.count} enrolled` : 'Not enrolled' }}
                   </p>
                 </div>
+                <template v-if="canSync">
+                  <button
+                    v-if="deviceInfo.fingerprint_setup_supported !== false"
+                    type="button"
+                    class="shrink-0 inline-flex items-center gap-1 rounded-lg border border-secondary-200 dark:border-secondary-700 px-2 py-1 text-[11px] font-medium text-secondary-600 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
+                    :disabled="fpSetupLoading"
+                    @click="setupFingerprint"
+                  >
+                    <Fingerprint class="w-3 h-3" :stroke-width="2" />
+                    {{ fpSetupLoading ? 'Setting up…' : 'Setup' }}
+                  </button>
+                  <span
+                    v-else
+                    class="shrink-0 text-[10px] text-secondary-400 dark:text-secondary-500 italic max-w-[80px] text-right leading-tight"
+                  >Enrol at terminal</span>
+                </template>
               </div>
 
               <!-- Card -->
@@ -263,6 +264,14 @@
                 </div>
               </div>
             </div>
+            <!-- Fingerprint setup feedback -->
+            <p
+              v-if="fpSetupMessage"
+              class="text-xs rounded-lg px-3 py-1.5"
+              :class="fpSetupSuccess ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'"
+            >
+              {{ fpSetupMessage }}
+            </p>
           </div>
         </div>
       </div>
@@ -397,6 +406,11 @@ const logs        = ref([]);
 const deviceInfoLoading = ref(false);
 const deviceInfo        = ref(null); // null = not yet fetched
 
+// Fingerprint setup
+const fpSetupLoading  = ref(false);
+const fpSetupMessage  = ref('');
+const fpSetupSuccess  = ref(false);
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(iso) {
     if (!iso) return '—';
@@ -452,6 +466,7 @@ async function syncNow() {
 async function fetchDeviceInfo() {
     deviceInfoLoading.value = true;
     deviceInfo.value        = null;
+    fpSetupMessage.value    = '';
     try {
         const res = await apiRequest(`/api/members/${props.memberId}/biometric-device-info`);
         deviceInfo.value = res;
@@ -464,6 +479,23 @@ async function fetchDeviceInfo() {
         };
     } finally {
         deviceInfoLoading.value = false;
+    }
+}
+
+async function setupFingerprint() {
+    fpSetupLoading.value = true;
+    fpSetupMessage.value = '';
+    try {
+        const res = await apiRequest(`/api/members/${props.memberId}/biometric-setup-fingerprint`, { method: 'POST' });
+        fpSetupSuccess.value = res.success !== false;
+        fpSetupMessage.value = fpSetupSuccess.value
+            ? 'Device is ready — ask the member to scan their fingerprint.'
+            : (res.message || 'Setup failed.');
+    } catch (err) {
+        fpSetupSuccess.value = false;
+        fpSetupMessage.value = err?.response?.data?.message || 'Setup failed.';
+    } finally {
+        fpSetupLoading.value = false;
     }
 }
 

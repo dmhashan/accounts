@@ -156,6 +156,25 @@ class BiometricApiController extends Controller
     }
 
     /**
+     * POST /api/members/{member}/biometric-setup-fingerprint
+     *
+     * Triggers fingerprint enrolment on the device for the given member.
+     */
+    public function setupFingerprint(Request $request, Member $member): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        if ($member->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $result = $this->biometric->setupMemberFingerprint($member);
+
+        return response()->json($result);
+    }
+
+    /**
      * GET /api/members/{member}/biometric-device-info
      *
      * Queries the biometric device directly for the current record of this member.
