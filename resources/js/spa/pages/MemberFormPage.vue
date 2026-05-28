@@ -23,25 +23,11 @@
             <AppFormField label="NIC" optional>
               <AppFormInput v-model="form.nic" placeholder="Old (9+V/X) or New (12 digits)" />
               <div v-if="nicValidation.status === 'valid'" class="mt-1.5 flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-3.5 w-3.5 shrink-0"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
+                <CheckCircle class="h-3.5 w-3.5 shrink-0" />
                 <span>{{ nicValidation.gender === 'male' ? 'Male' : 'Female' }} · Born {{ nicValidation.dateOfBirth }}</span>
               </div>
               <div v-else-if="nicValidation.status === 'invalid'" class="mt-1.5 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-3.5 w-3.5 shrink-0"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
+                <AlertCircle class="h-3.5 w-3.5 shrink-0" />
                 <span>{{ nicValidation.message }}</span>
               </div>
             </AppFormField>
@@ -207,6 +193,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { CheckCircle, AlertCircle } from 'lucide-vue-next';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';

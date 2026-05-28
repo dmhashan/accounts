@@ -20,17 +20,7 @@
             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-secondary-300 dark:border-secondary-600 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-700 dark:text-secondary-300 transition-colors"
             @click="openFormFillModal"
           >
-            <svg
-              class="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-            /></svg>
+            <ClipboardList class="w-3.5 h-3.5" />
             Fill Form
           </button>
           <button
@@ -38,17 +28,7 @@
             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
             @click="openDocUpload"
           >
-            <svg
-              class="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2.5"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-            /></svg>
+            <Upload class="w-3.5 h-3.5" />
             Upload
           </button>
         </div>
@@ -58,17 +38,7 @@
       </div>
       <div v-else-if="documents.length === 0" class="px-5 py-10 text-center">
         <div class="mx-auto w-12 h-12 rounded-xl bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center mb-3">
-          <svg
-            class="w-6 h-6 text-secondary-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          /></svg>
+          <FileText class="w-6 h-6 text-secondary-400" />
         </div>
         <p class="text-sm text-secondary-500 dark:text-secondary-400">
           No documents uploaded yet.
@@ -86,17 +56,7 @@
         <div v-for="doc in documents" :key="doc.id" class="flex items-start justify-between px-5 py-3.5 gap-3">
           <div class="min-w-0 flex items-start gap-3">
             <div class="shrink-0 w-9 h-9 rounded-lg bg-secondary-100 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 flex items-center justify-center mt-0.5">
-              <svg
-                class="w-4 h-4 text-secondary-500 dark:text-secondary-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              /></svg>
+              <FileText class="w-4 h-4 text-secondary-500 dark:text-secondary-400" />
             </div>
             <div class="min-w-0">
               <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">
@@ -123,22 +83,7 @@
               class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-secondary-200 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-500 dark:text-secondary-400 transition-colors"
               @click="viewDoc(doc)"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              /><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              /></svg>
+              <Eye class="w-4 h-4" />
             </button>
             <button
               v-if="canManage"
@@ -147,17 +92,7 @@
               class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors"
               @click="deleteDoc(doc)"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              /></svg>
+              <Trash2 class="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -187,17 +122,7 @@
               :disabled="docViewLoading"
               @click="downloadDocView"
             >
-              <svg
-                class="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              /></svg>
+              <Download class="w-3.5 h-3.5" />
               Download
             </button>
             <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors" @click="closeDocView">
@@ -229,17 +154,7 @@
           </div>
           <div v-else class="flex flex-col items-center justify-center gap-4 py-16 px-6">
             <div class="w-16 h-16 rounded-2xl bg-secondary-200 dark:bg-secondary-800 flex items-center justify-center">
-              <svg
-                class="w-8 h-8 text-secondary-500 dark:text-secondary-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              /></svg>
+              <FileText class="w-8 h-8 text-secondary-500 dark:text-secondary-400" />
             </div>
             <div class="text-center">
               <p class="text-sm font-medium text-secondary-700 dark:text-secondary-300">
@@ -250,17 +165,7 @@
               </p>
             </div>
             <button type="button" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors" @click="downloadDocView">
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              /></svg>
+              <Download class="w-4 h-4" />
               Download File
             </button>
           </div>
@@ -418,17 +323,7 @@
                     {{ t.description }}
                   </p>
                 </div>
-                <svg
-                  class="w-4 h-4 text-secondary-400 shrink-0 mt-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
-                /></svg>
+                <ChevronRight class="w-4 h-4 text-secondary-400 shrink-0 mt-0.5" />
               </button>
             </div>
           </div>
@@ -564,6 +459,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
+import { ClipboardList, Upload, FileText, Eye, Trash2, Download, ChevronRight } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
 import AppConfirmModal from '../AppConfirmModal.vue';
 import AppSignaturePad from '../AppSignaturePad.vue';

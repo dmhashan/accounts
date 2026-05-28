@@ -16,19 +16,7 @@
             class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200 transition-colors"
             @click="cancel"
           >
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <X class="w-5 h-5" />
           </button>
         </div>
 
@@ -80,19 +68,7 @@
               :title="'Zoom out'"
               @click="stepZoom(-1)"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
-                />
-              </svg>
+              <ZoomOut class="w-4 h-4" />
             </button>
             <input
               type="range"
@@ -111,19 +87,7 @@
               :title="'Zoom in'"
               @click="stepZoom(1)"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-                />
-              </svg>
+              <ZoomIn class="w-4 h-4" />
             </button>
           </div>
           <p class="mt-1 text-[11px] text-secondary-400 dark:text-secondary-500">
@@ -157,6 +121,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { X, ZoomIn, ZoomOut } from 'lucide-vue-next';
 
 const props = defineProps({
     imageSrc:     { type: String,  required: true },

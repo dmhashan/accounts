@@ -29,17 +29,7 @@
       >
         <div class="min-w-0 flex items-start gap-3">
           <div class="shrink-0 w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 flex items-center justify-center mt-0.5">
-            <svg
-              class="w-4 h-4 text-primary-600 dark:text-primary-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-            /></svg>
+            <FolderOpen class="w-4 h-4 text-primary-600 dark:text-primary-400" />
           </div>
           <div class="min-w-0">
             <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">
@@ -51,17 +41,7 @@
             </p>
           </div>
         </div>
-        <svg
-          class="w-4 h-4 text-secondary-400 shrink-0 mt-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        ><path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M9 5l7 7-7 7"
-        /></svg>
+        <ChevronRight class="w-4 h-4 text-secondary-400 shrink-0 mt-2" />
       </RouterLink>
     </div>
     <div v-if="workoutsMeta.last_page > 1" class="px-5 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-2">
@@ -155,7 +135,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { Plus, X } from 'lucide-vue-next';
+import { Plus, X, FolderOpen, ChevronRight } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
 import { useMemberFormatters } from '../../composables/useMemberFormatters';
 import { useAppContext } from '../../composables/useAppContext';

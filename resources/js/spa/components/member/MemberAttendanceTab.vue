@@ -8,17 +8,7 @@
           class="w-7 h-7 flex items-center justify-center rounded-lg border border-secondary-200 dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-500 dark:text-secondary-400 transition-colors"
           @click="changeAttendanceYear(-1)"
         >
-          <svg
-            class="w-3.5 h-3.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            d="M15 19l-7-7 7-7"
-          /></svg>
+          <ChevronLeft class="w-3.5 h-3.5" :stroke-width="2.5" />
         </button>
         <span class="text-sm font-bold text-secondary-900 dark:text-white tabular-nums w-10 text-center">{{ attendanceYear }}</span>
         <button
@@ -27,17 +17,7 @@
           :disabled="attendanceYear >= currentYear"
           @click="changeAttendanceYear(1)"
         >
-          <svg
-            class="w-3.5 h-3.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            d="M9 5l7 7-7 7"
-          /></svg>
+          <ChevronRight class="w-3.5 h-3.5" :stroke-width="2.5" />
         </button>
       </div>
       <div class="flex items-center gap-2">
@@ -131,6 +111,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
 
 const props = defineProps({

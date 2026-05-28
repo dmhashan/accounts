@@ -1,94 +1,103 @@
 <template>
-    <div class="min-h-screen bg-[#f5f5f5] flex flex-col">
+  <div class="min-h-screen bg-[#f5f5f5] flex flex-col">
+    <LoadingScreen v-if="screen === 'loading'" />
 
-        <LoadingScreen v-if="screen === 'loading'" />
+    <IdentifyScreen
+      v-else-if="screen === 'identify'"
+      v-model="phone"
+      :tenant-name="tenantName"
+      :tenant-logo-url="tenantLogoUrl"
+      :error="error"
+      :is-loading="isLoading"
+      @submit="requestOtp"
+    />
 
-        <IdentifyScreen
-            v-else-if="screen === 'identify'"
-            v-model="phone"
-            :tenant-name="tenantName"
-            :tenant-logo-url="tenantLogoUrl"
-            :error="error"
-            :is-loading="isLoading"
-            @submit="requestOtp"
-        />
+    <OtpScreen
+      v-else-if="screen === 'otp'"
+      v-model="otpCode"
+      :phone="phone"
+      :error="error"
+      :is-loading="isLoading"
+      @submit="verifyOtp"
+      @back="backToIdentify"
+    />
 
-        <OtpScreen
-            v-else-if="screen === 'otp'"
-            v-model="otpCode"
-            :phone="phone"
-            :error="error"
-            :is-loading="isLoading"
-            @submit="verifyOtp"
-            @back="backToIdentify"
-        />
+    <!-- ── Scrollable body (profile screens) ──────────── -->
+    <template v-else>
+      <main class="flex-1 overflow-y-auto pb-28">
+        <div class="max-w-lg mx-auto px-5">
+          <router-view v-slot="{ Component }">
+            <component
+              :is="Component"
+              :meta="meta"
+              :greeting="greeting"
+              :first-name="firstName"
+              :last-name="lastName"
+              :initials="initials"
+              :workouts-data="workoutsData"
+              :sales-data="salesData"
+              :wallet-transactions="walletTransactions"
+              :wallet-tx-meta="walletTxMeta"
+              :tenant-logo-url="tenantLogoUrl"
+              @open-workout="openWorkout"
+              @open-sale="openSale"
+              @logout="logout"
+            />
+          </router-view>
+        </div>
+      </main>
 
-        <!-- ── Scrollable body (profile screens) ──────────── -->
-        <template v-else>
-            <main class="flex-1 overflow-y-auto pb-28">
-                <div class="max-w-lg mx-auto px-5">
+      <BottomNavBar />
 
-                    <router-view v-slot="{ Component }">
-                        <component
-                            :is="Component"
-                            :meta="meta"
-                            :greeting="greeting"
-                            :first-name="firstName"
-                            :last-name="lastName"
-                            :initials="initials"
-                            :workouts-data="workoutsData"
-                            :sales-data="salesData"
-                            :wallet-transactions="walletTransactions"
-                            :wallet-tx-meta="walletTxMeta"
-                            :tenant-logo-url="tenantLogoUrl"
-                            @open-workout="openWorkout"
-                            @open-sale="openSale"
-                            @logout="logout"
-                        />
-                    </router-view>
+      <!-- ── Workout Preview Modal ──────────────────────── -->
+      <Teleport to="body">
+        <!-- eslint-disable-next-line vue/valid-v-on -->
+        <div v-if="activeWorkout" class="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 overflow-y-auto" @keydown.escape.window="closeWorkout">
+          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeWorkout" />
+          <div class="relative w-full max-w-4xl my-4">
+            <div class="flex justify-end mb-2">
+              <button
+                type="button"
+                class="p-2 rounded-xl bg-white text-gray-500 hover:text-gray-700 shadow-md transition-colors"
+                aria-label="Close"
+                @click="closeWorkout"
+              >
+                <X class="w-5 h-5" :stroke-width="2" />
+              </button>
+            </div>
+            <WorkoutProgramPreviewCard :program="activeWorkout" />
+          </div>
+        </div>
+      </Teleport>
 
-                </div>
-            </main>
-
-            <BottomNavBar />
-
-            <!-- ── Workout Preview Modal ──────────────────────── -->
-            <Teleport to="body">
-                <div v-if="activeWorkout" class="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 overflow-y-auto" @keydown.escape.window="closeWorkout">
-                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeWorkout"></div>
-                    <div class="relative w-full max-w-4xl my-4">
-                        <div class="flex justify-end mb-2">
-                            <button type="button" class="p-2 rounded-xl bg-white text-gray-500 hover:text-gray-700 shadow-md transition-colors" @click="closeWorkout" aria-label="Close">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            </button>
-                        </div>
-                        <WorkoutProgramPreviewCard :program="activeWorkout" />
-                    </div>
-                </div>
-            </Teleport>
-
-            <!-- ── Sale Invoice Preview Modal ─────────────────── -->
-            <Teleport to="body">
-                <div v-if="activeSale" class="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 overflow-y-auto" @keydown.escape.window="closeSale">
-                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeSale"></div>
-                    <div class="relative w-full max-w-2xl my-4">
-                        <div class="flex justify-end mb-2">
-                            <button type="button" class="p-2 rounded-xl bg-white text-gray-500 hover:text-gray-700 shadow-md transition-colors" @click="closeSale" aria-label="Close">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            </button>
-                        </div>
-                        <SaleInvoicePreviewCard :sale="activeSale" />
-                    </div>
-                </div>
-            </Teleport>
-        </template>
-
-    </div>
+      <!-- ── Sale Invoice Preview Modal ─────────────────── -->
+      <Teleport to="body">
+        <!-- eslint-disable-next-line vue/valid-v-on -->
+        <div v-if="activeSale" class="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 overflow-y-auto" @keydown.escape.window="closeSale">
+          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeSale" />
+          <div class="relative w-full max-w-2xl my-4">
+            <div class="flex justify-end mb-2">
+              <button
+                type="button"
+                class="p-2 rounded-xl bg-white text-gray-500 hover:text-gray-700 shadow-md transition-colors"
+                aria-label="Close"
+                @click="closeSale"
+              >
+                <X class="w-5 h-5" :stroke-width="2" />
+              </button>
+            </div>
+            <SaleInvoicePreviewCard :sale="activeSale" />
+          </div>
+        </div>
+      </Teleport>
+    </template>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { X } from 'lucide-vue-next';
 
 import LoadingScreen    from '../components/PublicProfileApp/LoadingScreen.vue';
 import IdentifyScreen   from '../components/PublicProfileApp/IdentifyScreen.vue';

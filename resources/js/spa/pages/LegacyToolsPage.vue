@@ -120,17 +120,7 @@
             Run Command
           </h3>
           <button type="button" class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200 transition-colors" @click="closeModal">
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            /></svg>
+            <X class="w-5 h-5" :stroke-width="2" />
           </button>
         </div>
 
@@ -216,14 +206,7 @@
         <!-- Modal footer -->
         <div class="px-5 py-4 border-t border-secondary-200 dark:border-secondary-700 flex items-center justify-between gap-3 shrink-0">
           <span v-if="runState === 'queued' || runState === 'polling'" class="text-sm text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1.5">
-            <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+            <Loader2 class="animate-spin h-3.5 w-3.5" />
             Running in background…
           </span>
           <span v-else-if="runState === 'success'" class="text-sm text-green-600 dark:text-green-400 font-medium">Completed successfully</span>
@@ -250,7 +233,7 @@
 
 <script setup>
 import { onMounted, onUnmounted, reactive, ref, watch } from 'vue';
-import { Terminal } from 'lucide-vue-next';
+import { Terminal, X, Loader2 } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient.js';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';

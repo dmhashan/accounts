@@ -21,19 +21,7 @@
       @touchstart.passive="startTouchDrag"
     >
       <div class="flex items-center gap-2">
-        <svg
-          class="w-4 h-4 text-primary-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
+        <Calculator class="w-4 h-4 text-primary-500" />
         <span class="text-sm font-semibold text-secondary-900 dark:text-white">Calculator</span>
       </div>
       <button
@@ -42,19 +30,7 @@
         aria-label="Close calculator"
         @click="$emit('close')"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
+        <X class="w-5 h-5" />
       </button>
     </div>
 
@@ -142,6 +118,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { Calculator, X } from 'lucide-vue-next';
 
 const emit = defineEmits(['close']);
 

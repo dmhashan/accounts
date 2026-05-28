@@ -1,33 +1,28 @@
 <template>
-    <div
-        v-if="visible"
-        class="mb-6 rounded-xl border px-4 py-3 md:px-5 md:py-4 flex items-start gap-3"
-        :class="toneClasses"
-        role="alert"
+  <div
+    v-if="visible"
+    class="mb-6 rounded-xl border px-4 py-3 md:px-5 md:py-4 flex items-start gap-3"
+    :class="toneClasses"
+    role="alert"
+  >
+    <CircleCheck class="h-5 w-5 mt-0.5 shrink-0" aria-hidden="true" />
+    <p class="text-sm md:text-base font-medium leading-relaxed">
+      {{ message }}
+    </p>
+    <button
+      type="button"
+      class="ml-auto shrink-0 rounded-md p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+      aria-label="Dismiss notification"
+      @click="visible = false"
     >
-        <svg class="h-5 w-5 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path
-                fill-rule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clip-rule="evenodd"
-            />
-        </svg>
-        <p class="text-sm md:text-base font-medium leading-relaxed">{{ message }}</p>
-        <button
-            type="button"
-            class="ml-auto shrink-0 rounded-md p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            @click="visible = false"
-            aria-label="Dismiss notification"
-        >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-    </div>
+      <X class="h-4 w-4" aria-hidden="true" />
+    </button>
+  </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue';
+import { CircleCheck, X } from 'lucide-vue-next';
 
 const props = defineProps({
     message: {

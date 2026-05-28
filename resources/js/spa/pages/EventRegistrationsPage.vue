@@ -20,17 +20,7 @@
               </h2>
               <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-secondary-500 dark:text-secondary-400">
                 <span class="inline-flex items-center gap-1">
-                  <svg
-                    class="w-3 h-3 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  ><path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M5 13l4 4L19 7"
-                  /></svg>
+                  <Check class="w-3 h-3 text-blue-500" :stroke-width="2.5" />
                   Attended: <strong class="text-secondary-700 dark:text-secondary-200 ml-0.5">{{ regMeta.attended_total }}</strong>
                 </span>
                 <span class="text-secondary-300 dark:text-secondary-600">|</span>
@@ -51,17 +41,7 @@
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors shrink-0"
                 @click="openRegModal"
               >
-                <svg
-                  class="w-3.5 h-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2.5"
-                  d="M12 4v16m8-8H4"
-                /></svg>
+                <Plus class="w-3.5 h-3.5" :stroke-width="2.5" />
                 Add Registration
               </button>
             </div>
@@ -249,17 +229,7 @@
                 </td>
                 <td class="px-4 py-3 text-center">
                   <span v-if="reg.is_paid" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                    <svg
-                      class="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    ><path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2.5"
-                      d="M5 13l4 4L19 7"
-                    /></svg>
+                    <Check class="w-3 h-3" :stroke-width="2.5" />
                     Paid
                   </span>
                   <button
@@ -277,17 +247,7 @@
                     v-if="reg.is_attended"
                     class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                   >
-                    <svg
-                      class="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    ><path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2.5"
-                      d="M5 13l4 4L19 7"
-                    /></svg>
+                    <Check class="w-3 h-3" :stroke-width="2.5" />
                     Attended
                   </span>
                   <button
@@ -364,17 +324,7 @@
         </AppFormField>
 
         <div v-if="regEditTarget && regEditTarget.member" class="flex items-center gap-2 px-3 py-2 bg-secondary-50 dark:bg-secondary-800/50 rounded-xl text-sm">
-          <svg
-            class="w-4 h-4 text-primary-500 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          /></svg>
+          <User class="w-4 h-4 text-primary-500 shrink-0" />
           <span class="font-medium text-primary-700 dark:text-primary-300">{{ regEditTarget.member.name }}</span>
           <span class="text-secondary-400 text-xs">{{ regEditTarget.member.biometric_member_id }}</span>
         </div>
@@ -601,6 +551,7 @@
 
 <script setup>
 import { onMounted, ref, computed, watch } from 'vue';
+import { Check, Plus, User } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
