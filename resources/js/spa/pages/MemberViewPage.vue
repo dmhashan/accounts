@@ -98,9 +98,11 @@
             :member-id="member.id"
             :biometric-member-id="member.biometric_member_id"
             :last-synced-at="member.biometric_last_synced_at"
+            :profile-photo-url="member.profile_photo_url"
             :can-sync="permissions.edit"
             @synced="member = { ...member, biometric_last_synced_at: $event }"
             @assigned="member = { ...member, biometric_member_id: $event }"
+            @photo-uploaded="member = { ...member, profile_photo_url: $event }"
           />
         </template>
 
@@ -202,11 +204,26 @@ async function loadMember() {
         const response = await apiRequest(`/api/members/${route.params.id}`);
         member.value = response.data || null;
         permissions.value = response.permissions || permissions.value;
+
+        // Silently pull face photo from biometric device if member has no photo yet
+        if (member.value?.biometric_member_id && !member.value?.profile_photo_url) {
+            syncFacePhotoSilently(member.value.id);
+        }
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load member details.';
     } finally {
         loading.value = false;
     }
+}
+
+function syncFacePhotoSilently(memberId) {
+    apiRequest(`/api/members/${memberId}/biometric-upload-face-photo`, { method: 'POST' })
+        .then((res) => {
+            if (res.profile_photo_url && member.value) {
+                member.value = { ...member.value, profile_photo_url: res.profile_photo_url };
+            }
+        })
+        .catch(() => { /* silent — device may be unreachable */ });
 }
 
 async function toggleStatus() {

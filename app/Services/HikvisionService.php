@@ -187,6 +187,32 @@ class HikvisionService
         ]);
     }
 
+    /**
+     * Fetch an absolute URL from the device (e.g. a face image) using digest auth.
+     * Returns raw body bytes and content-type so the caller can proxy the response.
+     */
+    public function proxyImage(string $url): array
+    {
+        try {
+            $response = Http::withDigestAuth($this->username, $this->password)
+                ->timeout(10)
+                ->withoutVerifying()
+                ->get($url);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'body' => $response->body(),
+                    'content_type' => $response->header('Content-Type') ?: 'image/jpeg',
+                ];
+            }
+
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        } catch (ConnectionException $e) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Internal HTTP helpers
     // -------------------------------------------------------------------------

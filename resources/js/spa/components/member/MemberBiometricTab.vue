@@ -157,15 +157,25 @@
                   ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
                   : 'border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800/50'"
               >
-                <div
-                  class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  :class="deviceInfo.face.enrolled ? 'bg-green-100 dark:bg-green-900/40' : 'bg-secondary-100 dark:bg-secondary-700'"
-                >
-                  <ScanFace
-                    class="w-4 h-4"
-                    :class="deviceInfo.face.enrolled ? 'text-green-600 dark:text-green-400' : 'text-secondary-400 dark:text-secondary-500'"
-                    :stroke-width="2"
+                <!-- Face thumbnail when enrolled, icon otherwise -->
+                <div class="shrink-0">
+                  <img
+                    v-if="deviceInfo.face.face_url"
+                    :src="`/api/members/${memberId}/biometric-face-image`"
+                    alt="Enrolled face"
+                    class="w-10 h-10 rounded-lg object-cover border border-green-200 dark:border-green-700"
                   />
+                  <div
+                    v-else
+                    class="w-8 h-8 rounded-lg flex items-center justify-center"
+                    :class="deviceInfo.face.enrolled ? 'bg-green-100 dark:bg-green-900/40' : 'bg-secondary-100 dark:bg-secondary-700'"
+                  >
+                    <ScanFace
+                      class="w-4 h-4"
+                      :class="deviceInfo.face.enrolled ? 'text-green-600 dark:text-green-400' : 'text-secondary-400 dark:text-secondary-500'"
+                      :stroke-width="2"
+                    />
+                  </div>
                 </div>
                 <div class="min-w-0">
                   <p class="text-xs font-medium" style="color: var(--text-strong)">
@@ -219,10 +229,6 @@
                     <Fingerprint class="w-3 h-3" :stroke-width="2" />
                     {{ fpSetupLoading ? 'Setting up…' : 'Setup' }}
                   </button>
-                  <span
-                    v-else
-                    class="shrink-0 text-[10px] text-secondary-400 dark:text-secondary-500 italic max-w-[80px] text-right leading-tight"
-                  >Enrol at terminal</span>
                 </template>
               </div>
 
@@ -384,10 +390,11 @@ const props = defineProps({
     memberId:          { type: Number, required: true },
     biometricMemberId: { type: String, default: null },
     lastSyncedAt:      { type: String, default: null },
+    profilePhotoUrl:   { type: String, default: null },
     canSync:           { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['synced', 'assigned']);
+const emit = defineEmits(['synced', 'assigned', 'photoUploaded']);
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const biometricEnabled  = ref(false);
@@ -411,6 +418,9 @@ const deviceInfo        = ref(null); // null = not yet fetched
 const fpSetupLoading  = ref(false);
 const fpSetupMessage  = ref('');
 const fpSetupSuccess  = ref(false);
+
+// Face photo upload
+const photoUploading = ref(false);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const { formatDate, formatDateTime } = useDateTimeFormat();
@@ -462,6 +472,12 @@ async function fetchDeviceInfo() {
     try {
         const res = await apiRequest(`/api/members/${props.memberId}/biometric-device-info`);
         deviceInfo.value = res;
+
+        // Auto-upload face as member photo when device has a face enrolled
+        // and the member currently has no profile photo.
+        if (res.face?.face_url && !props.profilePhotoUrl) {
+            uploadFaceAsPhoto();
+        }
     } catch (err) {
         deviceInfo.value = {
             connection_failed: true,
@@ -471,6 +487,18 @@ async function fetchDeviceInfo() {
         };
     } finally {
         deviceInfoLoading.value = false;
+    }
+}
+
+async function uploadFaceAsPhoto() {
+    photoUploading.value = true;
+    try {
+        const res = await apiRequest(`/api/members/${props.memberId}/biometric-upload-face-photo`, { method: 'POST' });
+        emit('photoUploaded', res.profile_photo_url);
+    } catch {
+        // fail silently — photo upload is best-effort
+    } finally {
+        photoUploading.value = false;
     }
 }
 

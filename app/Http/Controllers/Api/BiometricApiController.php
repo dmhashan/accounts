@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Services\BiometricSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class BiometricApiController extends Controller
 {
@@ -191,6 +192,58 @@ class BiometricApiController extends Controller
         $result = $this->biometric->getMemberDeviceInfo($member);
 
         return response()->json($result);
+    }
+
+    /**
+     * POST /api/members/{member}/biometric-upload-face-photo
+     *
+     * Pulls the enrolled face from the device and sets it as the member's profile photo.
+     * Only proceeds when the member has no existing photo.
+     */
+    public function uploadFaceAsPhoto(Request $request, Member $member): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        if ($member->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $result = $this->biometric->uploadFaceAsAvatar($member);
+
+        if (!$result['success']) {
+            return response()->json(['message' => $result['message']], 422);
+        }
+
+        return response()->json([
+            'profile_photo_url' => $result['profile_photo_url'],
+        ]);
+    }
+
+    /**
+     * GET /api/members/{member}/biometric-face-image
+     *
+     * Proxies the enrolled face image from the device with digest auth.
+     */
+    public function faceImage(Request $request, Member $member): Response
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        if ($member->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $result = $this->biometric->getMemberFaceImage($member);
+
+        if (!$result['success'] || $result['body'] === '') {
+            abort(404);
+        }
+
+        return response($result['body'], 200, [
+            'Content-Type' => $result['content_type'],
+            'Cache-Control' => 'private, max-age=300',
+        ]);
     }
 
     /**

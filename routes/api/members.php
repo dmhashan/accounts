@@ -71,4 +71,6 @@ Route::middleware(['auth', 'permission:users.edit'])->group(function () {
     Route::post('/members/{member}/biometric-setup-fingerprint', [BiometricApiController::class, 'setupFingerprint']);
     Route::get('/members/{member}/biometric-logs', [BiometricApiController::class, 'memberLogs']);
     Route::get('/members/{member}/biometric-device-info', [BiometricApiController::class, 'memberDeviceInfo']);
+    Route::get('/members/{member}/biometric-face-image', [BiometricApiController::class, 'faceImage']);
+    Route::post('/members/{member}/biometric-upload-face-photo', [BiometricApiController::class, 'uploadFaceAsPhoto']);
 });

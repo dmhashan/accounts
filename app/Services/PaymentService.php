@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentService
 {
+    public function __construct(
+        private readonly BiometricSyncService $biometric,
+    ) {}
+
     public function meta(int $tenantId): array
     {
         $members = Member::query()
@@ -206,7 +210,7 @@ class PaymentService
 
     public function storePayment(int $tenantId, array $validated): MemberPayment
     {
-        return DB::transaction(function () use ($tenantId, $validated) {
+        $payment = DB::transaction(function () use ($tenantId, $validated) {
             $isWalletPayment = ($validated['payment_method'] ?? 'cash') === 'member_wallet';
 
             if (!empty($validated['member_id'])) {
@@ -257,10 +261,16 @@ class PaymentService
 
             return $payment;
         });
+
+        $this->triggerBiometricSync($payment->member_id, $tenantId);
+
+        return $payment;
     }
 
     public function updatePayment(MemberPayment $payment, int $tenantId, array $validated): void
     {
+        $oldMemberId = $payment->member_id;
+
         DB::transaction(function () use ($payment, $tenantId, $validated) {
             $lockedPayment = MemberPayment::query()
                 ->where('tenant_id', $tenantId)
@@ -293,6 +303,12 @@ class PaymentService
             $this->syncMembership($lockedPayment, $tenantId, $validated);
             $this->syncTransaction($lockedPayment, $tenantId);
         });
+
+        $newMemberId = !empty($validated['member_id']) ? (int) $validated['member_id'] : null;
+
+        foreach (array_unique(array_filter([$oldMemberId, $newMemberId])) as $memberId) {
+            $this->triggerBiometricSync($memberId, $tenantId);
+        }
     }
 
     public function destroyPayment(MemberPayment $payment, int $tenantId): void
@@ -304,6 +320,8 @@ class PaymentService
         if (!$lockedPayment) {
             abort(404);
         }
+
+        $memberId = $lockedPayment->member_id;
 
         // Refund wallet if this was a wallet payment
         if ($lockedPayment->payment_method === 'member_wallet' && $lockedPayment->member_id) {
@@ -325,6 +343,21 @@ class PaymentService
             ->delete();
 
         $lockedPayment->delete();
+
+        $this->triggerBiometricSync($memberId, $tenantId);
+    }
+
+    private function triggerBiometricSync(?int $memberId, int $tenantId): void
+    {
+        if (!$memberId) {
+            return;
+        }
+
+        $member = Member::where('id', $memberId)->where('tenant_id', $tenantId)->first();
+
+        if ($member) {
+            $this->biometric->syncMember($member, 'update');
+        }
     }
 
     private function syncMembership(MemberPayment $payment, int $tenantId, array $validated): void

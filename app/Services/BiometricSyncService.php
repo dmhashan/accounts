@@ -9,6 +9,7 @@ use App\Models\PaymentMembership;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * BiometricSyncService
@@ -39,6 +40,7 @@ class BiometricSyncService
 
     public function __construct(
         private readonly TenantConfigurationService $config,
+        private readonly MediaStorageService $media,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -485,38 +487,27 @@ class BiometricSyncService
         $person = (array) $userInfoList[0];
         $valid = $person['Valid'] ?? [];
 
-        // ── Face info ─────────────────────────────────────────────────────────
-        $faceResult = $driver->getFaceInfo($employeeNo);
-        $faceCount = 0;
+        // ── Credential counts from UserInfo (avoids separate search endpoints
+        //    that many device models return notSupport for) ───────────────────
+        $faceCount = (int) ($person['numOfFace'] ?? 0);
+        $fpCount = (int) ($person['numOfFP'] ?? 0);
+        $cardCount = (int) ($person['numOfCard'] ?? 0);
+        $faceUrl = ($person['faceURL'] ?? '') ?: null;
 
-        if ($faceResult['success']) {
-            $faceSearch = $faceResult['data']['FaceInfoSearch'] ?? [];
-            $faceCount = (int) ($faceSearch['numOfMatches'] ?? 0);
-        }
-
-        // ── Fingerprint info ──────────────────────────────────────────────────
-        $fpResult = $driver->getFingerprintInfo($employeeNo);
-        $fpCount = 0;
-
-        if ($fpResult['success']) {
-            $fpSearch = $fpResult['data']['FingerPrintInfo'] ?? [];
-            $fpCount = (int) ($fpSearch['numOfMatches'] ?? 0);
-        }
-
-        // ── Card info ─────────────────────────────────────────────────────────
-        $cardResult = $driver->getCardInfo($employeeNo);
-        $cardCount = 0;
+        // ── Card numbers — only query when the device reports cards assigned ──
         $cardNumbers = [];
 
-        if ($cardResult['success']) {
-            $cardSearch = $cardResult['data']['CardInfoSearch'] ?? [];
-            $cardCount = (int) ($cardSearch['numOfMatches'] ?? 0);
-            $cardList = $cardSearch['CardInfo'] ?? [];
+        if ($cardCount > 0) {
+            $cardResult = $driver->getCardInfo($employeeNo);
 
-            if (!empty($cardList)) {
-                // Device may return a single object instead of array
-                $cardArr = isset($cardList[0]) ? $cardList : [$cardList];
-                $cardNumbers = array_values(array_filter(array_map(fn ($c) => $c['cardNo'] ?? '', $cardArr)));
+            if ($cardResult['success']) {
+                $cardSearch = $cardResult['data']['CardInfoSearch'] ?? [];
+                $cardList = $cardSearch['CardInfo'] ?? [];
+
+                if (!empty($cardList)) {
+                    $cardArr = isset($cardList[0]) ? $cardList : [$cardList];
+                    $cardNumbers = array_values(array_filter(array_map(fn ($c) => $c['cardNo'] ?? '', $cardArr)));
+                }
             }
         }
 
@@ -534,10 +525,80 @@ class BiometricSyncService
                 'valid_begin' => $valid['beginTime'] ?? null,
                 'valid_end' => $valid['endTime'] ?? null,
             ],
-            'face' => ['enrolled' => $faceCount > 0, 'count' => $faceCount],
-            'fingerprint' => ['enrolled' => $fpCount > 0,   'count' => $fpCount],
+            'face' => ['enrolled' => $faceCount > 0, 'count' => $faceCount, 'face_url' => $faceUrl],
+            'fingerprint' => ['enrolled' => $fpCount > 0, 'count' => $fpCount],
             'card' => ['assigned' => $cardCount > 0, 'count' => $cardCount, 'card_numbers' => $cardNumbers],
         ];
+    }
+
+    /**
+     * Upload the enrolled face image from the device as the member's profile photo.
+     * Only uploads when the member has no existing photo.
+     * Returns ['success', 'profile_photo_url'] on success.
+     */
+    public function uploadFaceAsAvatar(Member $member): array
+    {
+        if ($member->profile_photo_path) {
+            return ['success' => false, 'message' => 'Member already has a profile photo.'];
+        }
+
+        $imageResult = $this->getMemberFaceImage($member);
+
+        if (!$imageResult['success'] || $imageResult['body'] === '') {
+            return ['success' => false, 'message' => 'Could not retrieve face image from device.'];
+        }
+
+        $extension = str_contains($imageResult['content_type'], 'png') ? 'png' : 'jpg';
+        $filename = 'member-avatars/face_' . $member->id . '_' . Str::random(8) . '.' . $extension;
+
+        $path = $this->media->storeContent($imageResult['body'], $filename);
+
+        $member->update(['profile_photo_path' => $path]);
+
+        return [
+            'success' => true,
+            'profile_photo_url' => $this->media->url($path),
+        ];
+    }
+
+    /**
+     * Proxy the enrolled face image for a member from the device.
+     * Returns ['success', 'body', 'content_type'] for streaming to the browser.
+     */
+    public function getMemberFaceImage(Member $member): array
+    {
+        $tenantId = $member->tenant_id;
+        $allConfig = $this->config->all($tenantId);
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver || !$member->biometric_member_id) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        $employeeNo = $this->extractEmployeeNo($member->biometric_member_id);
+        $personResult = $driver->getUserInfo($employeeNo);
+
+        if (!$personResult['success']) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        $userInfoList = $personResult['data']['UserInfoSearch']['UserInfo'] ?? [];
+
+        if (!empty($userInfoList) && !isset($userInfoList[0])) {
+            $userInfoList = [$userInfoList];
+        }
+
+        if (empty($userInfoList)) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        $faceUrl = ((array) $userInfoList[0])['faceURL'] ?? null;
+
+        if (!$faceUrl) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        return $driver->proxyImage($faceUrl);
     }
 
     // -------------------------------------------------------------------------
