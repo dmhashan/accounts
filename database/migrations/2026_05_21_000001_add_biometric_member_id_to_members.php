@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('members', function (Blueprint $table) {
-            $table->string('biometric_member_id', 20)->nullable()->after('member_id');
+            $table->string('biometric_member_id', 20)->nullable();
             $table->unique(['tenant_id', 'biometric_member_id'], 'members_tenant_biometric_member_id_unique');
         });
     }
