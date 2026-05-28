@@ -209,6 +209,7 @@ import { computed, onMounted, ref } from 'vue';
 import { ClipboardList, ClipboardCheck, Settings } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
@@ -240,10 +241,7 @@ const statusClass = computed(() => {
     return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
 });
 
-function formatTime(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-}
+const { formatTime } = useDateTimeFormat();
 
 async function loadToday() {
     loading.value = true;

@@ -422,7 +422,7 @@
                       {{ log.error_message || '—' }}
                     </td>
                     <td class="px-4 py-2.5 text-secondary-500 dark:text-secondary-400 text-xs whitespace-nowrap">
-                      {{ log.synced_at ? new Date(log.synced_at).toLocaleString() : '—' }}
+                      {{ formatDateTime(log.synced_at) }}
                     </td>
                   </tr>
                 </tbody>
@@ -507,7 +507,8 @@ import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
-
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
+const { formatDateTime } = useDateTimeFormat();
 // ── Supported device registry ──────────────────────────────────────────────
 const DEVICE_REGISTRY = {
     hikvision: {

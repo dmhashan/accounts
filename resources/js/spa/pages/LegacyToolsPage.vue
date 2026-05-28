@@ -166,10 +166,10 @@
             <template v-if="selectedCommand === 'legacy:sync-attendance'">
               <div class="grid grid-cols-2 gap-4">
                 <AppFormField label="Date Start" required>
-                  <AppFormInput v-model="form.date_start" type="date" />
+                  <AppFormDateInput v-model="form.date_start" />
                 </AppFormField>
                 <AppFormField label="Date End" required>
-                  <AppFormInput v-model="form.date_end" type="date" />
+                  <AppFormDateInput v-model="form.date_end" />
                 </AppFormField>
               </div>
             </template>
@@ -178,10 +178,10 @@
             <template v-else-if="selectedCommand === 'legacy:sync-payments'">
               <div class="grid grid-cols-2 gap-4">
                 <AppFormField label="Date Start" optional>
-                  <AppFormInput v-model="form.date_start" type="date" />
+                  <AppFormDateInput v-model="form.date_start" />
                 </AppFormField>
                 <AppFormField label="Date End" optional>
-                  <AppFormInput v-model="form.date_end" type="date" />
+                  <AppFormDateInput v-model="form.date_end" />
                 </AppFormField>
               </div>
               <div class="grid grid-cols-2 gap-4">
@@ -239,6 +239,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 
 const commands = [

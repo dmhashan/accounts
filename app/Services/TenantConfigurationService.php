@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\DateFormat;
+use App\Enums\TimeFormat;
 use App\Models\TenantConfiguration;
 
 class TenantConfigurationService
@@ -23,6 +25,10 @@ class TenantConfigurationService
         'notifications.sms.user_id' => ['SMS User ID',                  ''],
         'notifications.sms.api_key' => ['SMS API Key',                  ''],
         'notifications.sms.sender_id' => ['SMS Sender ID',                ''],
+
+        // General display preferences
+        'general.date_format' => ['Date Format', DateFormat::DayMonYear->value],
+        'general.time_format' => ['Time Format', TimeFormat::H24->value],
 
         // Biometric device integration
         'biometric.enabled' => ['Biometric Integration',        '0'],

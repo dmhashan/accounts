@@ -250,6 +250,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 
 const loading = ref(false);
@@ -288,23 +289,7 @@ const normalizedGender = computed(() => {
     return member.value.gender.charAt(0).toUpperCase() + member.value.gender.slice(1);
 });
 
-function formatDate(value) {
-    if (!value) {
-        return 'Not provided';
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return value;
-    }
-
-    return date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
+const { formatDate } = useDateTimeFormat();
 
 function formatMoney(value) {
     if (value === null || value === undefined || value === '') {

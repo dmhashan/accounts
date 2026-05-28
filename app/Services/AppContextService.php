@@ -9,23 +9,30 @@ class AppContextService
 {
     public function __construct(
         private readonly MediaStorageService $media,
+        private readonly TenantConfigurationService $config,
     ) {}
 
     public function build(User $user, Tenant $tenant): array
     {
+        $cfg = $this->config->all($tenant->id);
+
         return [
+            'settings' => [
+                'dateFormat' => $cfg['general.date_format'] ?? 'D MMM YYYY',
+                'timeFormat' => $cfg['general.time_format'] ?? 'HH:mm',
+            ],
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
             ],
             'tenant' => [
-                'id'       => $tenant->id,
-                'name'     => $tenant->name,
-                'domain'   => $tenant->domain,
-                'address'  => $tenant->address,
-                'email'    => $tenant->email,
-                'phone'    => $tenant->phone,
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'domain' => $tenant->domain,
+                'address' => $tenant->address,
+                'email' => $tenant->email,
+                'phone' => $tenant->phone,
                 'logo_url' => $tenant->logo_path ? $this->media->url($tenant->logo_path) : null,
             ],
             'permissions' => [
@@ -47,13 +54,13 @@ class AppContextService
                 'stats' => $user->hasPermission('sales.process'),
                 'workout' => $user->hasPermission('workouts.manage'),
                 'paymentsManage' => $user->hasPermission('payments.manage'),
-                'notifications'            => $user->hasPermission('notifications.send'),
-                'events'                   => $user->hasPermission('events.manage'),
-                'activity'                => $user->hasPermission('activity.view'),
-                'reconciliationPerform'   => $user->hasPermission('reconciliation.perform'),
-                'reconciliationManage'    => $user->hasPermission('reconciliation.manage'),
-                'vouchersManage'          => $user->hasPermission('vouchers.manage'),
-                'formsManage'             => $user->hasPermission('forms.manage'),
+                'notifications' => $user->hasPermission('notifications.send'),
+                'events' => $user->hasPermission('events.manage'),
+                'activity' => $user->hasPermission('activity.view'),
+                'reconciliationPerform' => $user->hasPermission('reconciliation.perform'),
+                'reconciliationManage' => $user->hasPermission('reconciliation.manage'),
+                'vouchersManage' => $user->hasPermission('vouchers.manage'),
+                'formsManage' => $user->hasPermission('forms.manage'),
             ],
         ];
     }

@@ -407,7 +407,7 @@
               </div>
               <div v-else-if="field.type === 'date'">
                 <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
-                <input v-model="formFillResponses[field.id]" type="date" class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <AppFormDateInput v-model="formFillResponses[field.id]" input-class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div v-else-if="field.type === 'number'">
                 <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span></label>
@@ -463,6 +463,7 @@ import { ClipboardList, Upload, FileText, Eye, Trash2, Download, ChevronRight } 
 import { apiRequest } from '../../composables/useApiClient';
 import AppConfirmModal from '../AppConfirmModal.vue';
 import AppSignaturePad from '../AppSignaturePad.vue';
+import AppFormDateInput from '../forms/AppFormDateInput.vue';
 
 const props = defineProps({
     memberId: { type: [Number, String], required: true },

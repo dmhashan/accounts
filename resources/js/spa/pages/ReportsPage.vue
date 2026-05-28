@@ -372,6 +372,7 @@ import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 
 const route = useRoute();
 
@@ -402,7 +403,7 @@ const stats = ref(defaultStats());
 
 const numberFormatter = new Intl.NumberFormat();
 const moneyFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const { formatDateTime } = useDateTimeFormat();
 
 const rangeValueLabel = computed(() => {
     const labels = { week: 'Week', month: 'Month', year: 'Year' };
@@ -427,12 +428,6 @@ function defaultStats() {
 
 function formatNumber(value) { return numberFormatter.format(Number(value || 0)); }
 function formatMoney(value) { return moneyFormatter.format(Number(value || 0)); }
-
-function formatDateTime(value) {
-    if (!value) return '-';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value : dateTimeFormatter.format(date);
-}
 
 function paymentMethodLabel(value) {
     return { cash: 'Cash', card: 'Card', bank: 'Bank Transfer', member_wallet: 'Member Wallet' }[value] || 'Other';

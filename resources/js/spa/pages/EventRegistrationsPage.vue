@@ -130,7 +130,7 @@
                     {{ formatFee(reg.total_fee) }}
                   </p>
                   <p class="text-xs text-secondary-400">
-                    {{ formatDate(reg.created_at) }}
+                    {{ formatDateTime(reg.created_at) }}
                   </p>
                   <div class="flex items-center justify-end gap-1.5 flex-wrap">
                     <span v-if="reg.is_paid" class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Paid</span>
@@ -225,7 +225,7 @@
                   {{ formatFee(reg.total_fee) }}
                 </td>
                 <td class="px-4 py-3 text-secondary-500 dark:text-secondary-400 whitespace-nowrap">
-                  {{ formatDate(reg.created_at) }}
+                  {{ formatDateTime(reg.created_at) }}
                 </td>
                 <td class="px-4 py-3 text-center">
                   <span v-if="reg.is_paid" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
@@ -554,6 +554,7 @@ import { onMounted, ref, computed, watch } from 'vue';
 import { Check, Plus, User } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppSearchField from '../components/AppSearchField.vue';
@@ -838,10 +839,7 @@ watch(regSearch, () => {
     _regSearchTimer = setTimeout(() => loadRegistrations(1), 350);
 });
 
-function formatDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+const { formatDateTime } = useDateTimeFormat();
 
 function formatFee(fee) {
     return Number(fee) > 0 ? `$${Number(fee).toFixed(2)}` : 'Free';

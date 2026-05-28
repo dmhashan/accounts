@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\DateFormat;
+use App\Enums\TimeFormat;
 use App\Http\Controllers\Controller;
 use App\Services\TenantConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Enum;
 
 class ConfigurationApiController extends Controller
 {
@@ -22,9 +25,21 @@ class ConfigurationApiController extends Controller
         ]);
     }
 
+    public function formatOptions(): JsonResponse
+    {
+        return response()->json([
+            'date_formats' => DateFormat::options(),
+            'time_formats' => TimeFormat::options(),
+        ]);
+    }
+
     public function update(Request $request): JsonResponse
     {
         $request->validate([
+            // General display preferences
+            'general.date_format' => ['sometimes', new Enum(DateFormat::class)],
+            'general.time_format' => ['sometimes', new Enum(TimeFormat::class)],
+
             'notifications.inapp.enabled' => ['sometimes', 'in:0,1'],
             'notifications.email.enabled' => ['sometimes', 'in:0,1'],
             'notifications.email.smtp_host' => ['sometimes', 'nullable', 'string', 'max:255'],

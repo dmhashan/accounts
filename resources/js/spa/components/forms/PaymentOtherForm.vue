@@ -68,11 +68,10 @@
 
       <div>
         <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Date <span class="text-red-500">*</span></label>
-        <input
+        <AppFormDateInput
           v-model="form.payment_date"
-          type="date"
           required
-          class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          input-class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 
@@ -80,19 +79,17 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Membership Start</label>
-            <input
+            <AppFormDateInput
               v-model="form.start_date"
-              type="date"
-              class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              input-class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               @change="onStartDateChange"
             />
           </div>
           <div>
             <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Membership End</label>
-            <input
+            <AppFormDateInput
               v-model="form.end_date"
-              type="date"
-              class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              input-class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
         </div>
@@ -144,6 +141,7 @@ import { computed, ref, watch } from 'vue';
 import { X } from 'lucide-vue-next';
 import AppCompanyAccountSelect from './AppCompanyAccountSelect.vue';
 import AppSearchableDropdown from './AppSearchableDropdown.vue';
+import AppFormDateInput from './AppFormDateInput.vue';
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },

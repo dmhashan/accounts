@@ -47,7 +47,7 @@
               />
             </AppFormField>
             <AppFormField label="Date of Birth" required>
-              <AppFormInput v-model="form.date_of_birth" type="date" required />
+              <AppFormDateInput v-model="form.date_of_birth" required />
             </AppFormField>
           </div>
         </div>
@@ -173,7 +173,7 @@
               </p>
             </AppFormField>
             <AppFormField label="Joined Date" required>
-              <AppFormInput v-model="form.joined_date" type="date" required />
+              <AppFormDateInput v-model="form.joined_date" required />
             </AppFormField>
             <AppFormField label="Comment" class="md:col-span-2" optional>
               <AppFormTextarea v-model="form.comment" rows="2" />
@@ -199,6 +199,7 @@ import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 

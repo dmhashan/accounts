@@ -78,18 +78,16 @@
         </option>
       </select>
 
-      <input
+      <AppFormDateInput
         v-model="filters.date_from"
-        type="date"
-        class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
         placeholder="From date"
+        input-class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
         @change="load(1)"
       />
-      <input
+      <AppFormDateInput
         v-model="filters.date_to"
-        type="date"
-        class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
         placeholder="To date"
+        input-class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-1.5 text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
         @change="load(1)"
       />
 
@@ -142,7 +140,7 @@
                       <span v-if="log.browser">{{ log.browser }}</span>
                       <span v-if="log.os">{{ log.os }}</span>
                       <span v-if="log.ip_address">{{ log.ip_address }}</span>
-                      <span>{{ formatDate(log.created_at) }}</span>
+                      <span>{{ formatDateTime(log.created_at) }}</span>
                     </div>
                   </div>
                   <button
@@ -200,7 +198,7 @@
                     @click="toggleDetail(log.id)"
                   >
                     <td class="px-4 py-3 text-secondary-500 dark:text-secondary-400 whitespace-nowrap text-xs">
-                      {{ formatDate(log.created_at) }}
+                      {{ formatDateTime(log.created_at) }}
                     </td>
                     <td class="px-4 py-3">
                       <span v-if="log.member_name" class="font-medium text-secondary-900 dark:text-white">{{ log.member_name }}</span>
@@ -265,7 +263,11 @@ import { Download } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import AppPagination from '../components/AppPagination.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import { apiRequest } from '../composables/useApiClient.js';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat.js';
+
+const { formatDateTime } = useDateTimeFormat();
 
 const logs        = ref([]);
 const loading     = ref(false);
@@ -336,11 +338,6 @@ function toggleDetail(id) {
 }
 
 // ── Formatting helpers ─────────────────────────────────────
-function formatDate(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
 
 function capitalize(str) {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';

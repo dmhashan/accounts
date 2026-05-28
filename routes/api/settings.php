@@ -14,6 +14,7 @@ Route::middleware(['auth', 'permission:settings.manage'])->group(function () {
     Route::get('/settings/legacy-tools/logs', [SettingsApiController::class, 'legacyToolLogs']);
 
     Route::get('/settings/configuration', [ConfigurationApiController::class, 'index']);
+    Route::get('/settings/configuration/format-options', [ConfigurationApiController::class, 'formatOptions']);
     Route::put('/settings/configuration', [ConfigurationApiController::class, 'update']);
 
     // Biometric device

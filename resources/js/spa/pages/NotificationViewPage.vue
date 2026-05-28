@@ -26,7 +26,7 @@
         <div v-if="notification.status === 'sent'" class="mb-4 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 px-4 py-3 flex items-center gap-2">
           <CheckCircle class="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
           <span class="text-sm text-green-700 dark:text-green-300">
-            Sent on {{ formatDate(notification.sent_at) }} &bull; {{ notification.recipients.length }} recipient{{ notification.recipients.length === 1 ? '' : 's' }}
+            Sent on {{ formatDateTime(notification.sent_at) }} &bull; {{ notification.recipients.length }} recipient{{ notification.recipients.length === 1 ? '' : 's' }}
           </span>
         </div>
 
@@ -97,7 +97,7 @@
                 Created
               </p>
               <p class="mt-1 text-secondary-800 dark:text-secondary-200">
-                {{ formatDate(notification.created_at) }}
+                {{ formatDateTime(notification.created_at) }}
               </p>
             </div>
           </div>
@@ -209,6 +209,7 @@ import AppConfirmModal from '../components/AppConfirmModal.vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { CheckCircle, Clock, Send } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import AppPageHeader from '../components/AppPageHeader.vue';
 
 const route = useRoute();
@@ -285,10 +286,7 @@ function capitalize(str) {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }
 
-function formatDate(str) {
-    if (!str) return '';
-    return new Date(str).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+const { formatDateTime } = useDateTimeFormat();
 
 onMounted(() => load());
 </script>

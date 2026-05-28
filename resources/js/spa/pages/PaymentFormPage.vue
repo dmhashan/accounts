@@ -68,20 +68,19 @@
           </AppFormField>
 
           <AppFormField label="Payment Date" required>
-            <AppFormInput
+            <AppFormDateInput
               v-model="form.payment_date"
-              type="date"
               required
               @change="onPaymentDateChange"
             />
           </AppFormField>
 
           <AppFormField label="Membership Start Date" optional>
-            <AppFormInput v-model="form.start_date" type="date" @change="onStartDateChange" />
+            <AppFormDateInput v-model="form.start_date" @change="onStartDateChange" />
           </AppFormField>
 
           <AppFormField label="Membership End Date" optional>
-            <AppFormInput v-model="form.end_date" type="date" />
+            <AppFormDateInput v-model="form.end_date" />
           </AppFormField>
 
           <AppFormField label="Reference" help="Receipt ID, transaction reference, etc." optional>
@@ -119,6 +118,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
 

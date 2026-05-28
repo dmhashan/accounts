@@ -29,7 +29,7 @@
             />
           </AppFormField>
           <AppFormField label="Effective Date" required>
-            <AppFormInput v-model="form.effective_date" type="date" required />
+            <AppFormDateInput v-model="form.effective_date" required />
           </AppFormField>
         </div>
 
@@ -63,7 +63,7 @@ import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
 import AppFormField from '../components/forms/AppFormField.vue';
-import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 
 const route = useRoute();

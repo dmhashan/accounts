@@ -133,9 +133,9 @@
                 Valid Period
               </p>
               <p class="text-sm font-medium" style="color: var(--text-strong)">
-                {{ deviceInfo.person.valid_begin ? formatDeviceDate(deviceInfo.person.valid_begin) : '—' }}
+                {{ deviceInfo.person.valid_begin ? formatDate(deviceInfo.person.valid_begin) : '—' }}
                 <span class="text-secondary-400 dark:text-secondary-500 mx-1">→</span>
-                {{ deviceInfo.person.valid_end ? formatDeviceDate(deviceInfo.person.valid_end) : '—' }}
+                {{ deviceInfo.person.valid_end ? formatDate(deviceInfo.person.valid_end) : '—' }}
               </p>
             </div>
           </div>
@@ -285,7 +285,7 @@
             </p>
             <div class="flex items-center gap-2">
               <span class="text-xs text-secondary-400 dark:text-secondary-500 hidden sm:inline">
-                Last synced: {{ localLastSyncedAt ? formatDate(localLastSyncedAt) : 'Never' }}
+                Last synced: {{ localLastSyncedAt ? formatDateTime(localLastSyncedAt) : 'Never' }}
               </span>
               <button
                 v-if="canSync"
@@ -306,7 +306,7 @@
             {{ syncMessage }}
           </p>
           <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1 sm:hidden">
-            Last synced: {{ localLastSyncedAt ? formatDate(localLastSyncedAt) : 'Never' }}
+            Last synced: {{ localLastSyncedAt ? formatDateTime(localLastSyncedAt) : 'Never' }}
           </p>
         </div>
 
@@ -359,7 +359,7 @@
                   {{ log.error_message || '—' }}
                 </td>
                 <td class="px-4 py-2.5 text-secondary-400 text-xs whitespace-nowrap">
-                  {{ log.synced_at ? new Date(log.synced_at).toLocaleString() : '—' }}
+                  {{ formatDateTime(log.synced_at) }}
                 </td>
               </tr>
             </tbody>
@@ -378,6 +378,7 @@ import {
     Hash, RefreshCw, ScanFace, WifiOff, XCircle,
 } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
+import { useDateTimeFormat } from '../../composables/useDateTimeFormat';
 
 const props = defineProps({
     memberId:          { type: Number, required: true },
@@ -412,16 +413,7 @@ const fpSetupMessage  = ref('');
 const fpSetupSuccess  = ref(false);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function formatDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString();
-}
-
-function formatDeviceDate(str) {
-    if (!str) return '—';
-    // HikVision ISO format: 2024-01-01T00:00:00
-    try { return new Date(str).toLocaleDateString(); } catch { return str; }
-}
+const { formatDate, formatDateTime } = useDateTimeFormat();
 
 // ── API calls ─────────────────────────────────────────────────────────────────
 async function checkBiometricEnabled() {

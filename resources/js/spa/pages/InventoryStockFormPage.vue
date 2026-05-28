@@ -82,11 +82,11 @@
         </AppFormField>
 
         <AppFormField label="Manufacturing Date" optional>
-          <AppFormInput v-model="form.manufacturing_date" type="date" />
+          <AppFormDateInput v-model="form.manufacturing_date" />
         </AppFormField>
 
         <AppFormField label="Expiry Date" optional>
-          <AppFormInput v-model="form.expiry_date" type="date" />
+          <AppFormDateInput v-model="form.expiry_date" />
         </AppFormField>
       </div>
 
@@ -112,6 +112,7 @@ import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const route = useRoute();

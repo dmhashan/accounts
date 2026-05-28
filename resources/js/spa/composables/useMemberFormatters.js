@@ -1,22 +1,19 @@
+import { useDateTimeFormat } from './useDateTimeFormat';
+
 const moneyFormatter = new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
 });
 
 export function useMemberFormatters() {
+    const { formatDate } = useDateTimeFormat();
+
     function capitalize(value = '') {
         return value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
     }
 
     function displayValue(value) {
         return value === null || value === undefined || value === '' ? 'Not provided' : value;
-    }
-
-    function formatDate(value) {
-        if (!value) return 'Not provided';
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return value;
-        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
     function formatMoney(value) {

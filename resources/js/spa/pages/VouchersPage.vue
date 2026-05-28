@@ -231,18 +231,16 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Valid From <span class="text-xs text-secondary-400">(optional)</span></label>
-              <input
+              <AppFormDateInput
                 v-model="form.valid_from"
-                type="date"
-                class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                input-class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
               <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Valid Until <span class="text-xs text-secondary-400">(optional)</span></label>
-              <input
+              <AppFormDateInput
                 v-model="form.valid_until"
-                type="date"
-                class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                input-class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>
@@ -265,12 +263,14 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ChevronRight, Ticket } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppEmptyState from '../components/AppEmptyState.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 
 const context = useAppContext();
 const router = useRouter();
@@ -351,12 +351,7 @@ function formatMoney(v) {
     return moneyFormatter.format(Number(v) || 0);
 }
 
-function formatDate(value) {
-    if (!value) return '—';
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return value;
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
+const { formatDate } = useDateTimeFormat();
 
 function capitalize(s) {
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';

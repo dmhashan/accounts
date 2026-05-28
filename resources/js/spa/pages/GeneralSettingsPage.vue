@@ -127,6 +127,60 @@
           </form>
         </div>
       </div>
+
+      <!-- Date & Time Format -->  
+      <div class="app-surface rounded-2xl p-4 md:p-6 mt-6">
+        <h3 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide mb-4">
+          Date &amp; Time Format
+        </h3>
+
+        <div v-if="formatsLoading" class="py-4 text-center text-sm text-secondary-500 dark:text-secondary-400">
+          Loading...
+        </div>
+
+        <template v-else>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AppFormField label="Date Format" required>
+              <select
+                v-model="formats.dateFormat"
+                class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option v-for="opt in dateFormatOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }} ({{ opt.example }})
+                </option>
+              </select>
+            </AppFormField>
+
+            <AppFormField label="Time Format" required>
+              <select
+                v-model="formats.timeFormat"
+                class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option v-for="opt in timeFormatOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }} ({{ opt.example }})
+                </option>
+              </select>
+            </AppFormField>
+          </div>
+
+          <div class="mt-1">
+            <p class="text-xs text-secondary-400 dark:text-secondary-500">
+              Preview: <span class="font-medium text-secondary-700 dark:text-secondary-300">{{ formatPreview }}</span>
+            </p>
+          </div>
+
+          <div class="mt-4 flex items-center justify-end">
+            <button
+              type="button"
+              class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              :disabled="formatsSaving"
+              @click="saveFormats"
+            >
+              {{ formatsSaving ? 'Saving...' : 'Save Format' }}
+            </button>
+          </div>
+        </template>
+      </div>
     </div>
 
     <!-- Logo Crop Modal -->
@@ -144,7 +198,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { ImageIcon, Upload, Trash2 } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
@@ -170,6 +224,32 @@ const form = ref({
     address: '',
 });
 
+const formatsLoading = ref(false);
+const formatsSaving = ref(false);
+const formats = ref({ dateFormat: 'D MMM YYYY', timeFormat: 'HH:mm' });
+const dateFormatOptions = ref([]);
+const timeFormatOptions = ref([]);
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const formatPreview = computed(() => {
+    const now = new Date();
+    const d = now.getDate(), m = now.getMonth(), y = now.getFullYear();
+    const mm = String(m + 1).padStart(2, '0'), dd = String(d).padStart(2, '0');
+    let datePart;
+    switch (formats.value.dateFormat) {
+        case 'DD/MM/YYYY':  datePart = `${dd}/${mm}/${y}`; break;
+        case 'MM/DD/YYYY':  datePart = `${mm}/${dd}/${y}`; break;
+        case 'YYYY-MM-DD':  datePart = `${y}-${mm}-${dd}`; break;
+        case 'MMM D, YYYY': datePart = `${MONTHS_SHORT[m]} ${d}, ${y}`; break;
+        default:            datePart = `${d} ${MONTHS_SHORT[m]} ${y}`;
+    }
+    const h = now.getHours(), min = String(now.getMinutes()).padStart(2, '0');
+    const timePart = formats.value.timeFormat === 'h:mm A'
+        ? `${h % 12 || 12}:${min} ${h < 12 ? 'AM' : 'PM'}`
+        : `${String(h).padStart(2, '0')}:${min}`;
+    return `${datePart} ${timePart}`;
+});
+
 async function load() {
     loading.value = true;
     loadError.value = '';
@@ -187,6 +267,45 @@ async function load() {
         loadError.value = 'Failed to load settings.';
     } finally {
         loading.value = false;
+    }
+}
+
+async function loadFormats() {
+    formatsLoading.value = true;
+    try {
+        const [cfgRes, optRes] = await Promise.all([
+            apiRequest('/api/settings/configuration'),
+            apiRequest('/api/settings/configuration/format-options'),
+        ]);
+        const cfg = cfgRes.data || {};
+        formats.value = {
+            dateFormat: cfg['general.date_format'] || 'D MMM YYYY',
+            timeFormat: cfg['general.time_format'] || 'HH:mm',
+        };
+        dateFormatOptions.value = optRes.date_formats || [];
+        timeFormatOptions.value = optRes.time_formats || [];
+    } catch { /* ignore */ } finally {
+        formatsLoading.value = false;
+    }
+}
+
+async function saveFormats() {
+    formatsSaving.value = true;
+    saveError.value = '';
+    try {
+        await apiRequest('/api/settings/configuration', {
+            method: 'put',
+            data: {
+                'general.date_format': formats.value.dateFormat,
+                'general.time_format': formats.value.timeFormat,
+            },
+        });
+        successMessage.value = 'Format settings saved. Reload the page to see updated dates.';
+        setTimeout(() => { successMessage.value = ''; }, 4000);
+    } catch (error) {
+        saveError.value = error?.response?.data?.message || 'Failed to save format settings.';
+    } finally {
+        formatsSaving.value = false;
     }
 }
 
@@ -278,5 +397,5 @@ async function removeLogo() {
     }
 }
 
-onMounted(load);
+onMounted(() => { load(); loadFormats(); });
 </script>

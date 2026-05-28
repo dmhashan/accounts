@@ -131,6 +131,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { BellPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppSearchField from '../components/AppSearchField.vue';
@@ -169,10 +170,7 @@ function capitalize(str) {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }
 
-function formatDate(str) {
-    if (!str) return '';
-    return new Date(str).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
+const { formatDate } = useDateTimeFormat();
 
 onMounted(() => load());
 </script>

@@ -51,7 +51,7 @@
                       </span>
                     </div>
                     <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
-                      {{ formatDatetime(ev.start_datetime) }}
+                      {{ formatDateTime(ev.start_datetime) }}
                       <template v-if="ev.venue">
                         &bull; {{ ev.venue }}
                       </template>
@@ -114,7 +114,7 @@
                     <span class="ml-1.5 text-xs text-secondary-400 font-mono">/{{ ev.slug }}</span>
                   </td>
                   <td class="px-4 py-3 text-secondary-600 dark:text-secondary-400">
-                    <div>{{ formatDatetime(ev.start_datetime) }}</div>
+                    <div>{{ formatDateTime(ev.start_datetime) }}</div>
                     <div v-if="ev.venue" class="text-xs text-secondary-400">
                       {{ ev.venue }}
                     </div>
@@ -161,6 +161,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { CalendarPlus } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppSearchField from '../components/AppSearchField.vue';
@@ -189,13 +190,7 @@ async function load(page = 1) {
     }
 }
 
-function formatDatetime(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString(undefined, {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-    });
-}
+const { formatDateTime } = useDateTimeFormat();
 
 function formatFee(fee) {
     return fee > 0 ? `$${Number(fee).toFixed(2)}` : 'Free';

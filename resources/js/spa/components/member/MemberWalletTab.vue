@@ -184,11 +184,10 @@
           </div>
           <div>
             <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300 mb-1">Date <span class="text-red-500">*</span></label>
-            <input
+            <AppFormDateInput
               v-model="topupForm.topup_date"
-              type="date"
               required
-              class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              input-class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
@@ -350,6 +349,7 @@ import jsQR from 'jsqr';
 import { apiRequest } from '../../composables/useApiClient';
 import { useMemberFormatters } from '../../composables/useMemberFormatters';
 import { Ticket, Camera, Image as ImageIcon } from 'lucide-vue-next';
+import AppFormDateInput from '../forms/AppFormDateInput.vue';
 
 const props = defineProps({
     memberId: { type: [Number, String], required: true },

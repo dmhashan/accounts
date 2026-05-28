@@ -67,7 +67,7 @@
           </AppFormField>
 
           <AppFormField label="Expense Date" required>
-            <AppFormInput v-model="form.expense_date" type="date" required />
+            <AppFormDateInput v-model="form.expense_date" required />
           </AppFormField>
 
           <AppFormField
@@ -110,6 +110,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 

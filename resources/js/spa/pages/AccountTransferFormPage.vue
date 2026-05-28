@@ -61,7 +61,7 @@
           </AppFormField>
 
           <AppFormField label="Transfer Date">
-            <AppFormInput v-model="form.transfer_date" type="date" />
+            <AppFormDateInput v-model="form.transfer_date" />
           </AppFormField>
 
           <AppFormField label="Reference Number" class="md:col-span-2" optional>
@@ -104,6 +104,7 @@ import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 

@@ -59,7 +59,7 @@
               Start
             </p>
             <p class="font-medium text-secondary-800 dark:text-secondary-200">
-              {{ formatDatetime(event.start_datetime) }}
+              {{ formatDateTime(event.start_datetime) }}
             </p>
           </div>
           <div>
@@ -67,7 +67,7 @@
               End
             </p>
             <p class="font-medium text-secondary-800 dark:text-secondary-200">
-              {{ event.end_datetime ? formatDatetime(event.end_datetime) : '—' }}
+              {{ event.end_datetime ? formatDateTime(event.end_datetime) : '—' }}
             </p>
           </div>
           <div>
@@ -148,6 +148,7 @@
 import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import AppPageHeader from '../components/AppPageHeader.vue';
 
 const route  = useRoute();
@@ -200,13 +201,7 @@ async function copyLink() {
     }
 }
 
-function formatDatetime(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString(undefined, {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-    });
-}
+const { formatDateTime } = useDateTimeFormat();
 
 function formatFee(fee) {
     return Number(fee) > 0 ? `$${Number(fee).toFixed(2)}` : 'Free';

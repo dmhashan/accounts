@@ -143,6 +143,9 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppBadge from '../components/AppBadge.vue';
 import AppEmptyState from '../components/AppEmptyState.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useDateTimeFormat } from '../composables/useDateTimeFormat';
+
+const { formatDateTime } = useDateTimeFormat();
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -226,7 +229,7 @@ async function exportCurrentStockImage() {
 
         context.fillStyle = '#64748b';
         context.font = '500 20px sans-serif';
-        context.fillText(`Generated: ${new Date().toLocaleString()}`, paddingX, 100);
+        context.fillText(`Generated: ${formatDateTime(new Date())}`, paddingX, 100);
 
         const summaryY = titleSectionHeight;
         context.fillStyle = '#e2e8f0';

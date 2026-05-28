@@ -6,7 +6,7 @@
           Record Member Payment
         </h3>
         <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">
-          Select the plan and number of installments.
+          Select the plan and record the payment.
         </p>
       </div>
       <button type="button" class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200 mt-0.5 shrink-0" @click="$emit('cancel')">
@@ -96,18 +96,6 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Installment</label>
-        <input
-          v-model.number="form.installments"
-          type="number"
-          min="1"
-          max="24"
-          required
-          class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
-      </div>
-
-      <div>
         <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Membership Payment <span class="text-red-500">*</span></label>
         <input
           v-model="form.amount"
@@ -131,11 +119,10 @@
 
       <div>
         <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Date <span class="text-red-500">*</span></label>
-        <input
+        <AppFormDateInput
           v-model="form.payment_date"
-          type="date"
           required
-          class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          input-class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 
@@ -175,6 +162,7 @@ import { apiRequest } from '../../composables/useApiClient';
 import { useMemberFormatters } from '../../composables/useMemberFormatters';
 import AppCompanyAccountSelect from './AppCompanyAccountSelect.vue';
 import AppSearchableDropdown from './AppSearchableDropdown.vue';
+import AppFormDateInput from './AppFormDateInput.vue';
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -209,7 +197,7 @@ function calcEndDate(startDate, durationDays) {
     return d.toISOString().slice(0, 10);
 }
 
-const form = ref({ member_id: null, plan_id: null, installments: 1, amount: '', payment_date: todayStr(), notes: '' });
+const form = ref({ member_id: null, plan_id: null, amount: '', payment_date: todayStr(), notes: '' });
 const accountValue = ref(null);
 const memberInfoLoading = ref(false);
 const memberInfo = ref(null);
@@ -217,17 +205,17 @@ const memberInfo = ref(null);
 const effectiveMemberId = computed(() => props.memberId ? Number(props.memberId) : (form.value.member_id ?? null));
 const selectedPlan = computed(() => props.plans.find(p => p.id === form.value.plan_id) || null);
 const startDate = computed(() => memberInfo.value?.next_start_date || todayStr());
-const endDate = computed(() => calcEndDate(startDate.value, (selectedPlan.value?.duration_days || 0) * form.value.installments));
+const endDate = computed(() => calcEndDate(startDate.value, selectedPlan.value?.duration_days || 0));
 const nextPaymentDate = computed(() => {
     if (!startDate.value || !selectedPlan.value) return '';
     const d = new Date(startDate.value + 'T00:00:00');
-    d.setDate(d.getDate() + selectedPlan.value.duration_days * Number(form.value.installments));
+    d.setDate(d.getDate() + selectedPlan.value.duration_days);
     return d.toISOString().slice(0, 10);
 });
 
-watch([() => form.value.plan_id, () => form.value.installments], () => {
+watch(() => form.value.plan_id, () => {
     if (selectedPlan.value) {
-        form.value.amount = String((selectedPlan.value.price * Number(form.value.installments)).toFixed(2));
+        form.value.amount = String(selectedPlan.value.price.toFixed(2));
     }
 });
 
@@ -251,7 +239,7 @@ async function loadMemberInfo(id) {
         memberInfo.value = info;
         if (info.current_plan) {
             form.value.plan_id = info.current_plan.id;
-            form.value.amount = String((info.current_plan.price * form.value.installments).toFixed(2));
+            form.value.amount = String(info.current_plan.price.toFixed(2));
         }
     } catch { /* ignore */ } finally {
         memberInfoLoading.value = false;
