@@ -1,15 +1,15 @@
 <template>
-    <component
-        :is="componentTag"
-        v-bind="componentAttrs"
-        :class="classes"
-        :aria-label="label"
-        :title="label"
-        @click="handleClick"
-    >
-        <component :is="icon" class="h-4 w-4 shrink-0" />
-        <span class="hidden sm:inline">{{ label }}</span>
-    </component>
+  <component
+    :is="componentTag"
+    v-bind="componentAttrs"
+    :class="classes"
+    :aria-label="label"
+    :title="label"
+    @click="handleClick"
+  >
+    <component :is="icon" class="h-4 w-4 shrink-0" />
+    <span class="hidden sm:inline">{{ label }}</span>
+  </component>
 </template>
 
 <script setup>

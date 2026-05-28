@@ -1,61 +1,60 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" title="Edit Assignment" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back title="Edit Assignment" />
 
-        <div v-if="loadError" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ loadError }}
+    <div v-if="loadError" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      {{ loadError }}
+    </div>
+
+    <div v-if="loading" class="flex flex-1 items-center justify-center text-sm text-secondary-500 dark:text-secondary-400">
+      Loading…
+    </div>
+
+    <div v-else-if="!assignment" class="flex flex-1 items-center justify-center text-sm text-secondary-500 dark:text-secondary-400">
+      Assignment not found.
+    </div>
+
+    <div v-else class="app-page-scroll">
+      <form class="app-surface rounded-2xl p-4 md:p-5 space-y-4" @submit.prevent="submit">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AppFormField label="Workout Program" required>
+            <AppSearchableDropdown
+              v-model="form.program_id"
+              :options="programs.map(p => ({ id: p.id, label: p.title }))"
+              :option-label="option => option.label"
+              :option-key="option => option.id"
+              placeholder="Select program"
+              no-results-text="No programs found."
+              required
+            />
+          </AppFormField>
+          <AppFormField label="Effective Date" required>
+            <AppFormInput v-model="form.effective_date" type="date" required />
+          </AppFormField>
         </div>
 
-        <div v-if="loading" class="flex flex-1 items-center justify-center text-sm text-secondary-500 dark:text-secondary-400">
-            Loading…
+        <div v-if="formError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+          {{ formError }}
         </div>
 
-        <div v-else-if="!assignment" class="flex flex-1 items-center justify-center text-sm text-secondary-500 dark:text-secondary-400">
-            Assignment not found.
+        <div class="flex justify-end gap-3">
+          <RouterLink
+            to="/workout?tab=assignments"
+            class="px-4 py-2 rounded-lg text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+          >
+            Cancel
+          </RouterLink>
+          <button
+            type="submit"
+            :disabled="submitting"
+            class="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-semibold"
+          >
+            {{ submitting ? 'Saving…' : 'Save Changes' }}
+          </button>
         </div>
-
-        <div v-else class="app-page-scroll">
-            <form class="app-surface rounded-2xl p-4 md:p-5 space-y-4" @submit.prevent="submit">
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <AppFormField label="Workout Program" :required="true">
-                        <AppSearchableDropdown
-                            v-model="form.program_id"
-                            :options="programs.map(p => ({ id: p.id, label: p.title }))"
-                            :option-label="option => option.label"
-                            :option-key="option => option.id"
-                            placeholder="Select program"
-                            no-results-text="No programs found."
-                            required
-                        />
-                    </AppFormField>
-                    <AppFormField label="Effective Date" :required="true">
-                        <AppFormInput v-model="form.effective_date" type="date" required />
-                    </AppFormField>
-                </div>
-
-                <div v-if="formError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-                    {{ formError }}
-                </div>
-
-                <div class="flex justify-end gap-3">
-                    <RouterLink
-                        to="/workout?tab=assignments"
-                        class="px-4 py-2 rounded-lg text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-                    >
-                        Cancel
-                    </RouterLink>
-                    <button
-                        type="submit"
-                        :disabled="submitting"
-                        class="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-semibold"
-                    >
-                        {{ submitting ? 'Saving…' : 'Save Changes' }}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </section>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>

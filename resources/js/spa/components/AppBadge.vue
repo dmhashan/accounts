@@ -1,7 +1,7 @@
 <template>
-    <span class="app-badge" :class="colorClass">
-        <slot />
-    </span>
+  <span class="app-badge" :class="colorClass">
+    <slot />
+  </span>
 </template>
 
 <script setup>

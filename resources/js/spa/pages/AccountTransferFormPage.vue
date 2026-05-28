@@ -1,65 +1,98 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true">
-            <template #cta-slot>
-                <AppHeaderAction :to="{ path: '/accounts', query: { tab: 'transfers' } }" :icon="ArrowRightLeft" label="Transfers" variant="secondary" />
-            </template>
-        </AppPageHeader>
+  <section class="app-page-frame">
+    <AppPageHeader show-back>
+      <template #cta-slot>
+        <AppHeaderAction
+          :to="{ path: '/accounts', query: { tab: 'transfers' } }"
+          :icon="ArrowRightLeft"
+          label="Transfers"
+          variant="secondary"
+        />
+      </template>
+    </AppPageHeader>
 
-        <div class="app-page-scroll">
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+    <div class="app-page-scroll">
+      <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        {{ errorMessage }}
+      </div>
+
+      <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AppFormField label="Source Account">
+            <AppFormSelect v-model="form.source_account_id">
+              <option value="">
+                Select source account
+              </option>
+              <option v-for="account in accounts" :key="account.id" :value="String(account.id)">
+                {{ accountOptionLabel(account) }}
+              </option>
+            </AppFormSelect>
+            <p v-if="sourceAccount" class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
+              Available balance: {{ money(sourceAccount.current_balance) }}
+            </p>
+          </AppFormField>
+
+          <AppFormField label="Destination Account">
+            <AppFormSelect v-model="form.destination_account_id">
+              <option value="">
+                Select destination account
+              </option>
+              <option
+                v-for="account in accounts"
+                :key="account.id"
+                :value="String(account.id)"
+                :disabled="String(account.id) === String(form.source_account_id)"
+              >
+                {{ accountOptionLabel(account) }}
+              </option>
+            </AppFormSelect>
+            <p v-if="destinationAccount" class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
+              Current balance: {{ money(destinationAccount.current_balance) }}
+            </p>
+          </AppFormField>
+
+          <AppFormField label="Amount">
+            <AppFormInput
+              v-model="form.amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+            />
+          </AppFormField>
+
+          <AppFormField label="Transfer Date">
+            <AppFormInput v-model="form.transfer_date" type="date" />
+          </AppFormField>
+
+          <AppFormField label="Reference Number" class="md:col-span-2" optional>
+            <AppFormInput v-model="form.reference_number" type="text" maxlength="255" />
+          </AppFormField>
+
+          <div class="md:col-span-2 min-w-0">
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Notes</label>
+              <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="insertDenominationTemplate">
+                Insert Cash Count Template
+              </button>
+            </div>
+            <AppFormTextarea v-model="form.notes" rows="4" maxlength="1000" />
+            <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+              Format: denomination - count, e.g. 5000 - 3, 2000 - 5, etc.
+            </p>
+          </div>
         </div>
 
-        <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AppFormField label="Source Account">
-                    <AppFormSelect v-model="form.source_account_id">
-                        <option value="">Select source account</option>
-                        <option v-for="account in accounts" :key="account.id" :value="String(account.id)">{{ accountOptionLabel(account) }}</option>
-                    </AppFormSelect>
-                    <p v-if="sourceAccount" class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">Available balance: {{ money(sourceAccount.current_balance) }}</p>
-                </AppFormField>
-
-                <AppFormField label="Destination Account">
-                    <AppFormSelect v-model="form.destination_account_id">
-                        <option value="">Select destination account</option>
-                        <option v-for="account in accounts" :key="account.id" :value="String(account.id)" :disabled="String(account.id) === String(form.source_account_id)">{{ accountOptionLabel(account) }}</option>
-                    </AppFormSelect>
-                    <p v-if="destinationAccount" class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">Current balance: {{ money(destinationAccount.current_balance) }}</p>
-                </AppFormField>
-
-                <AppFormField label="Amount">
-                    <AppFormInput v-model="form.amount" type="number" min="0.01" step="0.01" />
-                </AppFormField>
-
-                <AppFormField label="Transfer Date">
-                    <AppFormInput v-model="form.transfer_date" type="date" />
-                </AppFormField>
-
-                <AppFormField label="Reference Number" class="md:col-span-2" :optional="true">
-                    <AppFormInput v-model="form.reference_number" type="text" maxlength="255" />
-                </AppFormField>
-
-                <div class="md:col-span-2 min-w-0">
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Notes</label>
-                        <button type="button" @click="insertDenominationTemplate" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">Insert Cash Count Template</button>
-                    </div>
-                    <AppFormTextarea v-model="form.notes" rows="4" maxlength="1000" />
-                    <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">Format: denomination - count, e.g. 5000 - 3, 2000 - 5, etc.</p>
-                </div>
-            </div>
-
-            <div class="mt-5 flex items-center justify-end gap-2">
-                <RouterLink :to="{ path: '/accounts', query: { tab: 'transfers' } }" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">Cancel</RouterLink>
-                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
-                    {{ submitting ? 'Saving...' : (isEdit ? 'Update Transfer' : 'Create Transfer') }}
-                </button>
-            </div>
-        </form>
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <RouterLink :to="{ path: '/accounts', query: { tab: 'transfers' } }" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">
+            Cancel
+          </RouterLink>
+          <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
+            {{ submitting ? 'Saving...' : (isEdit ? 'Update Transfer' : 'Create Transfer') }}
+          </button>
         </div>
-    </section>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>
@@ -128,7 +161,7 @@ async function loadTransfer() {
     form.value = {
         source_account_id: transfer.source_account_id ? String(transfer.source_account_id) : '',
         destination_account_id: transfer.destination_account_id ? String(transfer.destination_account_id) : '',
-        amount: transfer.amount != null ? String(transfer.amount) : '',
+        amount: transfer.amount !== null ? String(transfer.amount) : '',
         transfer_date: transfer.transfer_date || new Date().toISOString().slice(0, 10),
         reference_number: transfer.reference_number || '',
         notes: transfer.notes || '',

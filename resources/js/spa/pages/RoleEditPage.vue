@@ -1,61 +1,63 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back />
 
-        <div class="app-page-scroll">
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+    <div class="app-page-scroll">
+      <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        {{ errorMessage }}
+      </div>
+
+      <form class="app-surface rounded-2xl p-5 md:p-6 mb-4" @submit.prevent="saveRole">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AppFormField label="Name">
+            <AppFormInput v-model="role.name" :disabled="!role.is_editable" />
+          </AppFormField>
+          <AppFormField label="Slug">
+            <AppFormInput v-model="role.slug" :disabled="!role.is_editable" />
+          </AppFormField>
+          <AppFormField label="Description" class="md:col-span-2" optional>
+            <AppFormTextarea v-model="role.description" rows="2" :disabled="!role.is_editable" />
+          </AppFormField>
         </div>
-
-        <form class="app-surface rounded-2xl p-5 md:p-6 mb-4" @submit.prevent="saveRole">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AppFormField label="Name">
-                    <AppFormInput v-model="role.name" :disabled="!role.is_editable" />
-                </AppFormField>
-                <AppFormField label="Slug">
-                    <AppFormInput v-model="role.slug" :disabled="!role.is_editable" />
-                </AppFormField>
-                <AppFormField label="Description" class="md:col-span-2" :optional="true">
-                    <AppFormTextarea v-model="role.description" rows="2" :disabled="!role.is_editable" />
-                </AppFormField>
-            </div>
-            <div class="mt-4 flex justify-end">
-                <button type="submit" :disabled="!role.is_editable || savingRole" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50">
-                    {{ savingRole ? 'Saving...' : 'Save Role' }}
-                </button>
-            </div>
-        </form>
-
-        <form class="space-y-4" @submit.prevent="savePermissions">
-            <article v-for="(group, feature) in permissionsByFeature" :key="feature" class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                <div class="px-4 py-3 bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
-                    <h3 class="font-semibold text-secondary-900 dark:text-white">{{ feature }}</h3>
-                </div>
-                <div class="p-4 space-y-3">
-                    <label v-for="permission in group" :key="permission.id" class="flex items-start gap-3">
-                        <input
-                            type="checkbox"
-                            :value="permission.id"
-                            v-model="selectedPermissionIds"
-                            :disabled="!role.is_editable"
-                            class="mt-1"
-                        >
-                        <div>
-                            <p class="text-sm font-medium text-secondary-800 dark:text-secondary-200">{{ permission.name }}</p>
-                            <p v-if="permission.description" class="text-xs text-secondary-500 dark:text-secondary-400">{{ permission.description }}</p>
-                        </div>
-                    </label>
-                </div>
-            </article>
-
-            <div class="flex justify-end">
-                <button type="submit" :disabled="!role.is_editable || savingPermissions" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50">
-                    {{ savingPermissions ? 'Saving...' : 'Update Permissions' }}
-                </button>
-            </div>
-        </form>
+        <div class="mt-4 flex justify-end">
+          <button type="submit" :disabled="!role.is_editable || savingRole" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50">
+            {{ savingRole ? 'Saving...' : 'Save Role' }}
+          </button>
         </div>
-    </section>
+      </form>
+
+      <form class="space-y-4" @submit.prevent="savePermissions">
+        <article v-for="(group, feature) in permissionsByFeature" :key="feature" class="bg-white dark:bg-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+          <div class="px-4 py-3 bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+            <h3 class="font-semibold text-secondary-900 dark:text-white">
+              {{ feature }}
+            </h3>
+          </div>
+          <div class="p-4 space-y-3">
+            <label v-for="permission in group" :key="permission.id" class="flex items-start gap-3">
+              <input
+                v-model="selectedPermissionIds"
+                type="checkbox"
+                :value="permission.id"
+                :disabled="!role.is_editable"
+                class="mt-1"
+              />
+              <div>
+                <p class="text-sm font-medium text-secondary-800 dark:text-secondary-200">{{ permission.name }}</p>
+                <p v-if="permission.description" class="text-xs text-secondary-500 dark:text-secondary-400">{{ permission.description }}</p>
+              </div>
+            </label>
+          </div>
+        </article>
+
+        <div class="flex justify-end">
+          <button type="submit" :disabled="!role.is_editable || savingPermissions" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50">
+            {{ savingPermissions ? 'Saving...' : 'Update Permissions' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>

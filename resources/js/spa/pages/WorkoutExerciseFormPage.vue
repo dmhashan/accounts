@@ -1,75 +1,122 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" :title="isEdit ? 'Edit Exercise' : 'Add Exercise'" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back :title="isEdit ? 'Edit Exercise' : 'Add Exercise'" />
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+    <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      {{ errorMessage }}
+    </div>
+
+    <div class="app-page-scroll">
+      <form class="app-surface rounded-2xl p-4 md:p-5 grid gap-3" @submit.prevent="submit">
+        <div class="grid gap-3 md:grid-cols-2">
+          <AppFormField label="Exercise Name" required>
+            <AppFormInput
+              v-model="form.name"
+              type="text"
+              placeholder="Exercise Name"
+              required
+            />
+          </AppFormField>
+          <AppFormField label="Status" required>
+            <AppSearchableDropdown
+              v-model="form.status"
+              :options="[
+                { id: 'active', label: 'Active' },
+                { id: 'inactive', label: 'Inactive' }
+              ]"
+              :option-label="option => option.label"
+              :option-key="option => option.id"
+              placeholder="Select status"
+              no-results-text="No status found."
+              :searchable="false"
+              required
+            />
+          </AppFormField>
         </div>
 
-        <div class="app-page-scroll">
-        <form class="app-surface rounded-2xl p-4 md:p-5 grid gap-3" @submit.prevent="submit">
-            <div class="grid gap-3 md:grid-cols-2">
-                <AppFormField label="Exercise Name" :required="true">
-                    <AppFormInput v-model="form.name" type="text" placeholder="Exercise Name" required />
-                </AppFormField>
-                <AppFormField label="Status" :required="true">
-                    <AppSearchableDropdown
-                        v-model="form.status"
-                        :options="[
-                            { id: 'active', label: 'Active' },
-                            { id: 'inactive', label: 'Inactive' }
-                        ]"
-                        :option-label="option => option.label"
-                        :option-key="option => option.id"
-                        placeholder="Select status"
-                        no-results-text="No status found."
-                        :searchable="false"
-                        required
-                    />
-                </AppFormField>
-            </div>
-
-            <div class="grid gap-2 md:grid-cols-4">
-                <AppFormField label="Default Sets" :required="true">
-                    <AppFormInput v-model.number="form.default_sets" type="number" min="1" placeholder="Default Sets" required />
-                </AppFormField>
-                <AppFormField label="Default Reps" :required="true">
-                    <AppFormInput v-model="form.default_reps" type="text" placeholder="Default Reps" required />
-                </AppFormField>
-                <AppFormField label="Default Tempo" :required="true">
-                    <AppFormInput v-model="form.default_tempo" type="text" placeholder="Default Tempo" required />
-                </AppFormField>
-                <AppFormField label="Default Rest" :required="true">
-                    <AppFormInput v-model.number="form.default_rest" type="number" min="0" placeholder="Default Rest" required />
-                </AppFormField>
-            </div>
-
-            <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4 space-y-3">
-                <div class="flex items-center justify-between gap-2">
-                    <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">Exercise Variations (Names)</h4>
-                    <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addVariation">Add Variation</button>
-                </div>
-
-                <div class="space-y-3">
-                    <div v-for="(variation, index) in form.variations" :key="variation.localKey" class="rounded-lg border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50 dark:bg-secondary-800/40 space-y-2">
-                        <div class="flex items-center justify-between gap-2">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">Variation {{ index + 1 }}</p>
-                            <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeVariation(index)">Remove</button>
-                        </div>
-                        <AppFormInput v-model="variation.variation_name" type="text" placeholder="Variation Name" class="dark:bg-secondary-900" required />
-                    </div>
-                </div>
-
-                <p v-if="form.variations.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No variations added. Add at least one variation for this exercise.</p>
-            </div>
-
-            <div class="flex justify-end gap-2 mt-2">
-                <RouterLink to="/workout?tab=exercises" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600">Cancel</RouterLink>
-                <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50" :disabled="submitting">{{ submitting ? 'Saving...' : 'Save Exercise' }}</button>
-            </div>
-        </form>
+        <div class="grid gap-2 md:grid-cols-4">
+          <AppFormField label="Default Sets" required>
+            <AppFormInput
+              v-model.number="form.default_sets"
+              type="number"
+              min="1"
+              placeholder="Default Sets"
+              required
+            />
+          </AppFormField>
+          <AppFormField label="Default Reps" required>
+            <AppFormInput
+              v-model="form.default_reps"
+              type="text"
+              placeholder="Default Reps"
+              required
+            />
+          </AppFormField>
+          <AppFormField label="Default Tempo" required>
+            <AppFormInput
+              v-model="form.default_tempo"
+              type="text"
+              placeholder="Default Tempo"
+              required
+            />
+          </AppFormField>
+          <AppFormField label="Default Rest" required>
+            <AppFormInput
+              v-model.number="form.default_rest"
+              type="number"
+              min="0"
+              placeholder="Default Rest"
+              required
+            />
+          </AppFormField>
         </div>
-    </section>
+
+        <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 md:p-4 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">
+              Exercise Variations (Names)
+            </h4>
+            <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addVariation">
+              Add Variation
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <div v-for="(variation, index) in form.variations" :key="variation.localKey" class="rounded-lg border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50 dark:bg-secondary-800/40 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">
+                  Variation {{ index + 1 }}
+                </p>
+                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeVariation(index)">
+                  Remove
+                </button>
+              </div>
+              <AppFormInput
+                v-model="variation.variation_name"
+                type="text"
+                placeholder="Variation Name"
+                class="dark:bg-secondary-900"
+                required
+              />
+            </div>
+          </div>
+
+          <p v-if="form.variations.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
+            No variations added. Add at least one variation for this exercise.
+          </p>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-2">
+          <RouterLink to="/workout?tab=exercises" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600">
+            Cancel
+          </RouterLink>
+          <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50" :disabled="submitting">
+            {{ submitting ? 'Saving...' : 'Save Exercise' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>

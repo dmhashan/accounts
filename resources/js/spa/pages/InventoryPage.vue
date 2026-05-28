@@ -1,297 +1,459 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader>
-            <template #cta-slot>
-                <AppHeaderAction v-if="tabCta" :to="tabCta.to" :icon="tabCta.icon" :label="tabCta.label" />
-            </template>
+  <section class="app-page-frame">
+    <AppPageHeader>
+      <template #cta-slot>
+        <AppHeaderAction
+          v-if="tabCta"
+          :to="tabCta.to"
+          :icon="tabCta.icon"
+          :label="tabCta.label"
+        />
+      </template>
 
-            <template #extra-slot>
-                <AppSearchField v-model="search" placeholder="Search current list" :disabled="loadingProducts || loadingStock" @search="triggerActiveSearch" />
-            </template>
-        </AppPageHeader>
+      <template #extra-slot>
+        <AppSearchField
+          v-model="search"
+          placeholder="Search current list"
+          :disabled="loadingProducts || loadingStock"
+          @search="triggerActiveSearch"
+        />
+      </template>
+    </AppPageHeader>
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
-        </div>
+    <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      {{ errorMessage }}
+    </div>
 
-        <div v-if="activeTab === 'products'" class="min-h-0 flex flex-1 flex-col">
-            <div class="app-page-scroll">
-                <div class="app-surface rounded-2xl overflow-hidden">
-                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="product in filteredProducts" :key="product.id" class="p-4 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/inventory/products/' + product.id)">
-                        <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ product.name }}</p>
-                        <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">Variations: {{ product.variations_count }}</p>
-                    </article>
-                    <div v-if="filteredProducts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No products found.</div>
-                </div>
-
-                    <div class="hidden md:block app-table-scroll">
-                    <table class="w-full">
-                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Variations</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="product in filteredProducts" :key="product.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer" @click="router.push('/inventory/products/' + product.id)">
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">#{{ product.id }}</td>
-                                <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">{{ product.name }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ product.variations_count }}</td>
-                            </tr>
-                            <tr v-if="filteredProducts.length === 0">
-                                <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No products found.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
+    <div v-if="activeTab === 'products'" class="min-h-0 flex flex-1 flex-col">
+      <div class="app-page-scroll">
+        <div class="app-surface rounded-2xl overflow-hidden">
+          <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+            <article
+              v-for="product in filteredProducts"
+              :key="product.id"
+              class="p-4 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
+              @click="router.push('/inventory/products/' + product.id)"
+            >
+              <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                {{ product.name }}
+              </p>
+              <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                Variations: {{ product.variations_count }}
+              </p>
+            </article>
+            <div v-if="filteredProducts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+              No products found.
             </div>
+          </div>
 
-            <div class="app-page-pagination">
-                <AppPagination
-                    :current-page="productMeta.current_page"
-                    :last-page="productMeta.last_page"
-                    :per-page="productPerPage"
-                    :total="productMeta.total"
-                    :disabled="loadingProducts"
-                    @page-change="handleProductPageChange"
-                    @limit-change="handleProductLimitChange"
+          <div class="hidden md:block app-table-scroll">
+            <table class="w-full">
+              <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    ID
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Name
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Variations
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                <tr
+                  v-for="product in filteredProducts"
+                  :key="product.id"
+                  class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer"
+                  @click="router.push('/inventory/products/' + product.id)"
+                >
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    #{{ product.id }}
+                  </td>
+                  <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">
+                    {{ product.name }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ product.variations_count }}
+                  </td>
+                </tr>
+                <tr v-if="filteredProducts.length === 0">
+                  <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    No products found.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-page-pagination">
+        <AppPagination
+          :current-page="productMeta.current_page"
+          :last-page="productMeta.last_page"
+          :per-page="productPerPage"
+          :total="productMeta.total"
+          :disabled="loadingProducts"
+          @page-change="handleProductPageChange"
+          @limit-change="handleProductLimitChange"
+        />
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'stock'" class="min-h-0 flex flex-1 flex-col">
+      <div class="app-page-scroll">
+        <div class="app-surface rounded-2xl overflow-hidden">
+          <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+            <article
+              v-for="entry in filteredStockEntries"
+              :key="entry.id"
+              class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
+              @click="router.push('/inventory/stock/' + entry.id)"
+            >
+              <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                {{ entry.product_name }} - {{ entry.variation_name }}
+              </p>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div><span class="text-secondary-500 dark:text-secondary-400">Total Stock:</span> {{ entry.quantity }}</div>
+                <div><span class="text-secondary-500 dark:text-secondary-400">On Display:</span> {{ entry.display_quantity }}</div>
+                <div><span class="text-secondary-500 dark:text-secondary-400">MFG:</span> {{ entry.manufacturing_date || '-' }}</div>
+                <div><span class="text-secondary-500 dark:text-secondary-400">EXP:</span> {{ entry.expiry_date || '-' }}</div>
+              </div>
+              <div class="text-xs text-secondary-700 dark:text-secondary-300">
+                Local: {{ money(entry.local_selling_price) }} | Foreign: {{ money(entry.foreign_selling_price) }}
+              </div>
+            </article>
+            <div v-if="filteredStockEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+              No stock entries found.
+            </div>
+          </div>
+
+          <div class="hidden md:block app-table-scroll">
+            <table class="w-full">
+              <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Product
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Variation
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Total Stock
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    On Display
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    MFG
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Expiry
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Local
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Foreign
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                <tr
+                  v-for="entry in filteredStockEntries"
+                  :key="entry.id"
+                  class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer"
+                  @click="router.push('/inventory/stock/' + entry.id)"
+                >
+                  <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">
+                    {{ entry.product_name }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">
+                    {{ entry.variation_name }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ entry.quantity }}
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <span class="text-secondary-700 dark:text-secondary-300">{{ entry.display_quantity }}</span>
+                    <span v-if="entry.is_low_stock" class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">Low</span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ entry.manufacturing_date || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ entry.expiry_date || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ money(entry.local_selling_price) }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ money(entry.foreign_selling_price) }}
+                  </td>
+                </tr>
+                <tr v-if="filteredStockEntries.length === 0">
+                  <td colspan="8" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    No stock entries found.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-page-pagination">
+        <AppPagination
+          :current-page="stockMeta.current_page"
+          :last-page="stockMeta.last_page"
+          :per-page="stockPerPage"
+          :total="stockMeta.total"
+          :disabled="loadingStock"
+          @page-change="handleStockPageChange"
+          @limit-change="handleStockLimitChange"
+        />
+      </div>
+    </div>
+
+    <!-- Display Tab -->
+    <div v-if="activeTab === 'display'" class="min-h-0 flex flex-1 flex-col">
+      <div class="app-page-scroll">
+        <div class="app-surface rounded-2xl overflow-hidden">
+          <!-- Mobile cards -->
+          <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+            <article v-for="entry in displayEntries" :key="entry.id" class="p-4 space-y-2">
+              <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                {{ entry.product_name }} - {{ entry.variation_name }}
+              </p>
+              <div class="grid grid-cols-2 gap-2 text-xs text-secondary-600 dark:text-secondary-400">
+                <div><span>Total Stock:</span> {{ entry.quantity }}</div>
+                <div><span>Backroom:</span> {{ entry.quantity - entry.display_quantity }}</div>
+              </div>
+              <div class="flex items-center gap-2 mt-2">
+                <label class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0">Display Qty:</label>
+                <input
+                  v-model.number="displayDraft[entry.id]"
+                  type="number"
+                  min="0"
+                  :max="entry.quantity"
+                  class="w-20 rounded border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2 py-1 text-sm text-secondary-900 dark:text-white"
                 />
+                <button
+                  type="button"
+                  class="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded"
+                  :disabled="savingDisplay[entry.id]"
+                  @click="saveDisplayQty(entry)"
+                >
+                  {{ savingDisplay[entry.id] ? 'Saving…' : 'Save' }}
+                </button>
+              </div>
+              <p v-if="displayErrors[entry.id]" class="text-xs text-red-500">
+                {{ displayErrors[entry.id] }}
+              </p>
+            </article>
+            <div v-if="displayEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+              No stock entries found.
             </div>
+          </div>
+
+          <!-- Desktop table -->
+          <div class="hidden md:block app-table-scroll">
+            <table class="w-full">
+              <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Product
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Variation
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Total Stock
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Backroom
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Display Qty
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Expiry
+                  </th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                <tr v-for="entry in displayEntries" :key="entry.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                  <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">
+                    {{ entry.product_name }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">
+                    {{ entry.variation_name }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ entry.quantity }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ entry.quantity - entry.display_quantity }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <input
+                        v-model.number="displayDraft[entry.id]"
+                        type="number"
+                        min="0"
+                        :max="entry.quantity"
+                        class="w-24 rounded border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2 py-1 text-sm text-secondary-900 dark:text-white"
+                      />
+                      <p v-if="displayErrors[entry.id]" class="text-xs text-red-500">
+                        {{ displayErrors[entry.id] }}
+                      </p>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ entry.expiry_date || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <button
+                      type="button"
+                      class="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded"
+                      :disabled="savingDisplay[entry.id]"
+                      @click="saveDisplayQty(entry)"
+                    >
+                      {{ savingDisplay[entry.id] ? 'Saving…' : 'Release to Display' }}
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="displayEntries.length === 0">
+                  <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    No stock entries found.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
+      </div>
 
-        <div v-if="activeTab === 'stock'" class="min-h-0 flex flex-1 flex-col">
-            <div class="app-page-scroll">
-                <div class="app-surface rounded-2xl overflow-hidden">
-                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                    <article v-for="entry in filteredStockEntries" :key="entry.id" class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors" @click="router.push('/inventory/stock/' + entry.id)">
-                        <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ entry.product_name }} - {{ entry.variation_name }}</p>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div><span class="text-secondary-500 dark:text-secondary-400">Total Stock:</span> {{ entry.quantity }}</div>
-                            <div><span class="text-secondary-500 dark:text-secondary-400">On Display:</span> {{ entry.display_quantity }}</div>
-                            <div><span class="text-secondary-500 dark:text-secondary-400">MFG:</span> {{ entry.manufacturing_date || '-' }}</div>
-                            <div><span class="text-secondary-500 dark:text-secondary-400">EXP:</span> {{ entry.expiry_date || '-' }}</div>
-                        </div>
-                        <div class="text-xs text-secondary-700 dark:text-secondary-300">Local: {{ money(entry.local_selling_price) }} | Foreign: {{ money(entry.foreign_selling_price) }}</div>
-                    </article>
-                    <div v-if="filteredStockEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</div>
+      <div class="app-page-pagination">
+        <AppPagination
+          :current-page="displayMeta.current_page"
+          :last-page="displayMeta.last_page"
+          :per-page="displayPerPage"
+          :total="displayMeta.total"
+          :disabled="loadingDisplay"
+          @page-change="handleDisplayPageChange"
+          @limit-change="handleDisplayLimitChange"
+        />
+      </div>
+    </div>
+
+    <!-- Audit Tab -->
+    <div v-if="activeTab === 'audit'" class="min-h-0 flex flex-1 flex-col">
+      <div class="app-page-scroll">
+        <div class="app-surface rounded-2xl overflow-hidden">
+          <!-- Mobile cards -->
+          <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+            <article v-for="log in auditLogs" :key="log.id" class="p-4 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded" :class="auditActionClass(log.action)">{{ formatAuditAction(log.action) }}</span>
+                <span class="text-xs text-secondary-500 dark:text-secondary-400">{{ log.created_at }}</span>
+              </div>
+              <p class="text-sm text-secondary-900 dark:text-white">
+                {{ log.user }} <span class="text-secondary-500">· Entry #{{ log.auditable_id }}</span>
+              </p>
+              <div class="grid grid-cols-2 gap-1 text-xs text-secondary-600 dark:text-secondary-400 pt-1">
+                <div v-if="log.before_data">
+                  <p class="font-medium text-secondary-500 mb-0.5">
+                    Before
+                  </p>
+                  <p v-for="(val, key) in log.before_data" :key="key">
+                    {{ key }}: {{ val }}
+                  </p>
                 </div>
-
-                    <div class="hidden md:block app-table-scroll">
-                    <table class="w-full">
-                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Product</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Variation</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Total Stock</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">On Display</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">MFG</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Expiry</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Local</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Foreign</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                            <tr v-for="entry in filteredStockEntries" :key="entry.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer" @click="router.push('/inventory/stock/' + entry.id)">
-                                <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.product_name }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.variation_name }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.quantity }}</td>
-                                <td class="px-6 py-4 text-sm">
-                                    <span class="text-secondary-700 dark:text-secondary-300">{{ entry.display_quantity }}</span>
-                                    <span v-if="entry.is_low_stock" class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">Low</span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.manufacturing_date || '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.expiry_date || '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(entry.local_selling_price) }}</td>
-                                <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ money(entry.foreign_selling_price) }}</td>
-                            </tr>
-                            <tr v-if="filteredStockEntries.length === 0">
-                                <td colspan="8" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>
+                <div v-if="log.after_data">
+                  <p class="font-medium text-secondary-500 mb-0.5">
+                    After
+                  </p>
+                  <p v-for="(val, key) in log.after_data" :key="key">
+                    {{ key }}: {{ val }}
+                  </p>
                 </div>
+              </div>
+            </article>
+            <div v-if="auditLogs.length === 0 && !loadingAudit" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+              No audit logs found.
             </div>
+          </div>
 
-            <div class="app-page-pagination">
-                <AppPagination
-                    :current-page="stockMeta.current_page"
-                    :last-page="stockMeta.last_page"
-                    :per-page="stockPerPage"
-                    :total="stockMeta.total"
-                    :disabled="loadingStock"
-                    @page-change="handleStockPageChange"
-                    @limit-change="handleStockLimitChange"
-                />
-            </div>
+          <!-- Desktop table -->
+          <div class="hidden md:block app-table-scroll">
+            <table class="w-full">
+              <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Date / Time
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    User
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Action
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Entry #
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Before
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    After
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
+                  <td class="px-6 py-4 text-xs text-secondary-500 dark:text-secondary-400 whitespace-nowrap">
+                    {{ log.created_at }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">
+                    {{ log.user }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded" :class="auditActionClass(log.action)">{{ formatAuditAction(log.action) }}</span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    #{{ log.auditable_id }}
+                  </td>
+                  <td class="px-6 py-4 text-xs text-secondary-600 dark:text-secondary-400 space-y-0.5">
+                    <p v-for="(val, key) in log.before_data" :key="key">
+                      {{ key }}: {{ val }}
+                    </p>
+                    <span v-if="!log.before_data">—</span>
+                  </td>
+                  <td class="px-6 py-4 text-xs text-secondary-600 dark:text-secondary-400 space-y-0.5">
+                    <p v-for="(val, key) in log.after_data" :key="key">
+                      {{ key }}: {{ val }}
+                    </p>
+                    <span v-if="!log.after_data">—</span>
+                  </td>
+                </tr>
+                <tr v-if="auditLogs.length === 0 && !loadingAudit">
+                  <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    No audit logs found.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        <!-- Display Tab -->
-        <div v-if="activeTab === 'display'" class="min-h-0 flex flex-1 flex-col">
-            <div class="app-page-scroll">
-                <div class="app-surface rounded-2xl overflow-hidden">
-                    <!-- Mobile cards -->
-                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                        <article v-for="entry in displayEntries" :key="entry.id" class="p-4 space-y-2">
-                            <p class="text-sm font-semibold text-secondary-900 dark:text-white">{{ entry.product_name }} - {{ entry.variation_name }}</p>
-                            <div class="grid grid-cols-2 gap-2 text-xs text-secondary-600 dark:text-secondary-400">
-                                <div><span>Total Stock:</span> {{ entry.quantity }}</div>
-                                <div><span>Backroom:</span> {{ entry.quantity - entry.display_quantity }}</div>
-                            </div>
-                            <div class="flex items-center gap-2 mt-2">
-                                <label class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0">Display Qty:</label>
-                                <input
-                                    v-model.number="displayDraft[entry.id]"
-                                    type="number"
-                                    min="0"
-                                    :max="entry.quantity"
-                                    class="w-20 rounded border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2 py-1 text-sm text-secondary-900 dark:text-white"
-                                />
-                                <button
-                                    type="button"
-                                    class="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded"
-                                    :disabled="savingDisplay[entry.id]"
-                                    @click="saveDisplayQty(entry)"
-                                >{{ savingDisplay[entry.id] ? 'Saving…' : 'Save' }}</button>
-                            </div>
-                            <p v-if="displayErrors[entry.id]" class="text-xs text-red-500">{{ displayErrors[entry.id] }}</p>
-                        </article>
-                        <div v-if="displayEntries.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</div>
-                    </div>
-
-                    <!-- Desktop table -->
-                    <div class="hidden md:block app-table-scroll">
-                        <table class="w-full">
-                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Product</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Variation</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Total Stock</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Backroom</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Display Qty</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Expiry</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                                <tr v-for="entry in displayEntries" :key="entry.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
-                                    <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.product_name }}</td>
-                                    <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ entry.variation_name }}</td>
-                                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.quantity }}</td>
-                                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.quantity - entry.display_quantity }}</td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                v-model.number="displayDraft[entry.id]"
-                                                type="number"
-                                                min="0"
-                                                :max="entry.quantity"
-                                                class="w-24 rounded border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2 py-1 text-sm text-secondary-900 dark:text-white"
-                                            />
-                                            <p v-if="displayErrors[entry.id]" class="text-xs text-red-500">{{ displayErrors[entry.id] }}</p>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">{{ entry.expiry_date || '-' }}</td>
-                                    <td class="px-6 py-4 text-center">
-                                        <button
-                                            type="button"
-                                            class="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded"
-                                            :disabled="savingDisplay[entry.id]"
-                                            @click="saveDisplayQty(entry)"
-                                        >{{ savingDisplay[entry.id] ? 'Saving…' : 'Release to Display' }}</button>
-                                    </td>
-                                </tr>
-                                <tr v-if="displayEntries.length === 0">
-                                    <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No stock entries found.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="app-page-pagination">
-                <AppPagination
-                    :current-page="displayMeta.current_page"
-                    :last-page="displayMeta.last_page"
-                    :per-page="displayPerPage"
-                    :total="displayMeta.total"
-                    :disabled="loadingDisplay"
-                    @page-change="handleDisplayPageChange"
-                    @limit-change="handleDisplayLimitChange"
-                />
-            </div>
-        </div>
-
-        <!-- Audit Tab -->
-        <div v-if="activeTab === 'audit'" class="min-h-0 flex flex-1 flex-col">
-            <div class="app-page-scroll">
-                <div class="app-surface rounded-2xl overflow-hidden">
-                    <!-- Mobile cards -->
-                    <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-                        <article v-for="log in auditLogs" :key="log.id" class="p-4 space-y-1">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded" :class="auditActionClass(log.action)">{{ formatAuditAction(log.action) }}</span>
-                                <span class="text-xs text-secondary-500 dark:text-secondary-400">{{ log.created_at }}</span>
-                            </div>
-                            <p class="text-sm text-secondary-900 dark:text-white">{{ log.user }} <span class="text-secondary-500">· Entry #{{ log.auditable_id }}</span></p>
-                            <div class="grid grid-cols-2 gap-1 text-xs text-secondary-600 dark:text-secondary-400 pt-1">
-                                <div v-if="log.before_data">
-                                    <p class="font-medium text-secondary-500 mb-0.5">Before</p>
-                                    <p v-for="(val, key) in log.before_data" :key="key">{{ key }}: {{ val }}</p>
-                                </div>
-                                <div v-if="log.after_data">
-                                    <p class="font-medium text-secondary-500 mb-0.5">After</p>
-                                    <p v-for="(val, key) in log.after_data" :key="key">{{ key }}: {{ val }}</p>
-                                </div>
-                            </div>
-                        </article>
-                        <div v-if="auditLogs.length === 0 && !loadingAudit" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">No audit logs found.</div>
-                    </div>
-
-                    <!-- Desktop table -->
-                    <div class="hidden md:block app-table-scroll">
-                        <table class="w-full">
-                            <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Date / Time</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Action</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Entry #</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">Before</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">After</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-                                <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top">
-                                    <td class="px-6 py-4 text-xs text-secondary-500 dark:text-secondary-400 whitespace-nowrap">{{ log.created_at }}</td>
-                                    <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">{{ log.user }}</td>
-                                    <td class="px-6 py-4">
-                                        <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded" :class="auditActionClass(log.action)">{{ formatAuditAction(log.action) }}</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">#{{ log.auditable_id }}</td>
-                                    <td class="px-6 py-4 text-xs text-secondary-600 dark:text-secondary-400 space-y-0.5">
-                                        <p v-for="(val, key) in log.before_data" :key="key">{{ key }}: {{ val }}</p>
-                                        <span v-if="!log.before_data">—</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-xs text-secondary-600 dark:text-secondary-400 space-y-0.5">
-                                        <p v-for="(val, key) in log.after_data" :key="key">{{ key }}: {{ val }}</p>
-                                        <span v-if="!log.after_data">—</span>
-                                    </td>
-                                </tr>
-                                <tr v-if="auditLogs.length === 0 && !loadingAudit">
-                                    <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">No audit logs found.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script setup>

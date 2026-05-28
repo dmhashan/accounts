@@ -1,79 +1,98 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true">
-            <template #cta-slot>
-                <template v-if="sale.id && !sale.is_paid">
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
-                        :disabled="payNowLoading"
-                        @click="openPayNow"
-                    >
-                        Pay Now
-                    </button>
-                    <RouterLink
-                        v-if="permissions.edit"
-                        :to="`/sales/${route.params.id}/edit`"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
-                    >
-                        Edit Sale
-                    </RouterLink>
-                    <button
-                        v-if="permissions.delete"
-                        type="button"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
-                        :disabled="deleting"
-                        @click="deleteSale"
-                    >Delete</button>
-                </template>
-            </template>
-        </AppPageHeader>
+  <section class="app-page-frame">
+    <AppPageHeader show-back>
+      <template #cta-slot>
+        <template v-if="sale.id && !sale.is_paid">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            :disabled="payNowLoading"
+            @click="openPayNow"
+          >
+            Pay Now
+          </button>
+          <RouterLink
+            v-if="permissions.edit"
+            :to="`/sales/${route.params.id}/edit`"
+            class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            Edit Sale
+          </RouterLink>
+          <button
+            v-if="permissions.delete"
+            type="button"
+            class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            :disabled="deleting"
+            @click="deleteSale"
+          >
+            Delete
+          </button>
+        </template>
+      </template>
+    </AppPageHeader>
 
-        <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading...</div>
+    <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+      Loading...
+    </div>
 
-        <div v-else-if="errorMessage" class="p-6 text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</div>
+    <div v-else-if="errorMessage" class="p-6 text-sm text-red-600 dark:text-red-400">
+      {{ errorMessage }}
+    </div>
 
-        <div v-else class="app-page-scroll">
-            <SaleInvoicePreviewCard v-if="sale.id" :sale="sale" />
+    <div v-else class="app-page-scroll">
+      <SaleInvoicePreviewCard v-if="sale.id" :sale="sale" />
+    </div>
+
+    <!-- Pay Now Modal -->
+    <div v-if="payNowOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/45" @click="closePayNow" />
+      <div class="relative z-10 w-full max-w-md rounded-2xl app-surface p-4 md:p-5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
+              Pay Outstanding Sale
+            </h3>
+            <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+              Select the company account that received payment for sale #{{ sale.id }}.
+            </p>
+          </div>
+          <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNow">
+            ✕
+          </button>
         </div>
 
-        <!-- Pay Now Modal -->
-        <div v-if="payNowOpen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/45" @click="closePayNow"></div>
-            <div class="relative z-10 w-full max-w-md rounded-2xl app-surface p-4 md:p-5">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">Pay Outstanding Sale</h3>
-                        <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">Select the company account that received payment for sale #{{ sale.id }}.</p>
-                    </div>
-                    <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNow">✕</button>
-                </div>
+        <div class="mt-4 space-y-3">
+          <div class="rounded-xl app-surface-soft px-3 py-2 text-sm text-secondary-700 dark:text-secondary-200">
+            <p>Total: <span class="font-semibold">{{ money(sale.total_amount) }}</span></p>
+            <p>Customer: <span class="font-semibold">{{ sale.customer_name || 'Walk-in' }}</span></p>
+          </div>
 
-                <div class="mt-4 space-y-3">
-                    <div class="rounded-xl app-surface-soft px-3 py-2 text-sm text-secondary-700 dark:text-secondary-200">
-                        <p>Total: <span class="font-semibold">{{ money(sale.total_amount) }}</span></p>
-                        <p>Customer: <span class="font-semibold">{{ sale.customer_name || 'Walk-in' }}</span></p>
-                    </div>
-
-                    <AppFormField label="Company Account">
-                        <AppCompanyAccountSelect
-                            v-model="selectedAccountId"
-                            :accounts="companyAccounts"
-                            :member-id="sale.customer_member_id ?? undefined"
-                            :amount="Number(sale.total_amount || 0)"
-                        />
-                    </AppFormField>
-                </div>
-
-                <div class="mt-5 flex items-center justify-end gap-2">
-                    <button type="button" class="px-4 py-2 text-sm rounded-xl border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNow">Cancel</button>
-                    <button type="button" class="px-4 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white disabled:opacity-50" :disabled="payNowLoading || !selectedAccountId" @click="confirmPayNow">
-                        {{ payNowLoading ? 'Processing...' : 'Confirm Payment' }}
-                    </button>
-                </div>
-            </div>
+          <AppFormField label="Company Account">
+            <AppCompanyAccountSelect
+              v-model="selectedAccountId"
+              :accounts="companyAccounts"
+              :member-id="sale.customer_member_id ?? undefined"
+              :amount="Number(sale.total_amount || 0)"
+            />
+          </AppFormField>
         </div>
-    </section>
+
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <button type="button" class="px-4 py-2 text-sm rounded-xl border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNow">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-primary-500 to-primary-700 text-white disabled:opacity-50"
+            :disabled="payNowLoading || !selectedAccountId"
+            @click="confirmPayNow"
+          >
+            {{ payNowLoading ? 'Processing...' : 'Confirm Payment' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script setup>

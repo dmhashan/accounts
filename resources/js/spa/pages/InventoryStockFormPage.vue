@@ -1,70 +1,108 @@
 <template>
-    <section class="flex h-full min-h-0 flex-col overflow-y-auto pb-8">
-        <AppPageHeader :show-back="true" />
+  <section class="flex h-full min-h-0 flex-col overflow-y-auto pb-8">
+    <AppPageHeader show-back />
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
-        </div>
+    <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      {{ errorMessage }}
+    </div>
 
-        <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="save">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                <AppFormField label="Product" :required="true">
-                    <AppFormSelect v-model.number="form.product_id" required>
-                        <option :value="null">Select product</option>
-                        <option v-for="product in productsMeta" :key="product.id" :value="product.id">{{ product.name }}</option>
-                    </AppFormSelect>
-                </AppFormField>
+    <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="save">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <AppFormField label="Product" required>
+          <AppFormSelect v-model.number="form.product_id" required>
+            <option :value="null">
+              Select product
+            </option>
+            <option v-for="product in productsMeta" :key="product.id" :value="product.id">
+              {{ product.name }}
+            </option>
+          </AppFormSelect>
+        </AppFormField>
 
-                <AppFormField label="Variation" :required="true">
-                    <AppFormSelect v-model.number="form.product_variation_id" required>
-                        <option :value="null">Select variation</option>
-                        <option v-for="variation in filteredVariations" :key="variation.id" :value="variation.id">{{ variation.label }}</option>
-                    </AppFormSelect>
-                </AppFormField>
+        <AppFormField label="Variation" required>
+          <AppFormSelect v-model.number="form.product_variation_id" required>
+            <option :value="null">
+              Select variation
+            </option>
+            <option v-for="variation in filteredVariations" :key="variation.id" :value="variation.id">
+              {{ variation.label }}
+            </option>
+          </AppFormSelect>
+        </AppFormField>
 
-                <AppFormField label="Quantity" :required="true">
-                    <AppFormInput v-model.number="form.quantity" type="number" min="0" required />
-                </AppFormField>
+        <AppFormField label="Quantity" required>
+          <AppFormInput
+            v-model.number="form.quantity"
+            type="number"
+            min="0"
+            required
+          />
+        </AppFormField>
 
-                <AppFormField label="Display Quantity" :optional="true">
-                    <AppFormInput v-model.number="form.display_quantity" type="number" min="0" :max="form.quantity" />
-                    <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">How many to release to the display shelf immediately (max: {{ form.quantity }}).</p>
-                </AppFormField>
+        <AppFormField label="Display Quantity" optional>
+          <AppFormInput
+            v-model.number="form.display_quantity"
+            type="number"
+            min="0"
+            :max="form.quantity"
+          />
+          <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+            How many to release to the display shelf immediately (max: {{ form.quantity }}).
+          </p>
+        </AppFormField>
 
-                <AppFormField label="Purchasing Price" :required="true">
-                    <AppFormInput v-model.number="form.purchasing_price" type="number" min="0" step="0.01" required />
-                </AppFormField>
+        <AppFormField label="Purchasing Price" required>
+          <AppFormInput
+            v-model.number="form.purchasing_price"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+          />
+        </AppFormField>
 
-                <AppFormField label="Local Selling Price" :required="true">
-                    <AppFormInput v-model.number="form.local_selling_price" type="number" min="0" step="0.01" required />
-                </AppFormField>
+        <AppFormField label="Local Selling Price" required>
+          <AppFormInput
+            v-model.number="form.local_selling_price"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+          />
+        </AppFormField>
 
-                <AppFormField label="Foreign Selling Price" :required="true">
-                    <AppFormInput v-model.number="form.foreign_selling_price" type="number" min="0" step="0.01" required />
-                </AppFormField>
+        <AppFormField label="Foreign Selling Price" required>
+          <AppFormInput
+            v-model.number="form.foreign_selling_price"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+          />
+        </AppFormField>
 
-                <AppFormField label="Manufacturing Date" :optional="true">
-                    <AppFormInput v-model="form.manufacturing_date" type="date" />
-                </AppFormField>
+        <AppFormField label="Manufacturing Date" optional>
+          <AppFormInput v-model="form.manufacturing_date" type="date" />
+        </AppFormField>
 
-                <AppFormField label="Expiry Date" :optional="true">
-                    <AppFormInput v-model="form.expiry_date" type="date" />
-                </AppFormField>
-            </div>
+        <AppFormField label="Expiry Date" optional>
+          <AppFormInput v-model="form.expiry_date" type="date" />
+        </AppFormField>
+      </div>
 
-            <div class="mt-4 flex flex-col sm:flex-row gap-2">
-                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm">
-                    {{ isEdit ? 'Update Stock Entry' : 'Create Stock Entry' }}
-                </button>
-                <RouterLink
-                    to="/inventory?tab=stock"
-                    class="inline-flex items-center justify-center px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-200"
-                >
-                    Cancel
-                </RouterLink>
-            </div>
-        </form>
-    </section>
+      <div class="mt-4 flex flex-col sm:flex-row gap-2">
+        <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm">
+          {{ isEdit ? 'Update Stock Entry' : 'Create Stock Entry' }}
+        </button>
+        <RouterLink
+          to="/inventory?tab=stock"
+          class="inline-flex items-center justify-center px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-200"
+        >
+          Cancel
+        </RouterLink>
+      </div>
+    </form>
+  </section>
 </template>
 
 <script setup>

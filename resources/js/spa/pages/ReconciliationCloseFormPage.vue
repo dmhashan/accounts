@@ -1,73 +1,87 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back />
 
-        <div class="app-page-scroll">
-            <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-                {{ errorMessage }}
-            </div>
+    <div class="app-page-scroll">
+      <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        {{ errorMessage }}
+      </div>
 
-            <div v-if="loading" class="app-surface rounded-2xl p-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
-                Loading…
-            </div>
+      <div v-if="loading" class="app-surface rounded-2xl p-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
+        Loading…
+      </div>
 
-            <form v-else class="space-y-4" @submit.prevent="goToComparison">
-                <!-- Accounts -->
-                <div v-if="accounts.length" class="app-surface rounded-2xl p-5 md:p-6 space-y-4">
-                    <h2 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide">Account Balances — Closing</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <AppFormField v-for="item in accounts" :key="item.reference_id" :label="item.label" :required="true">
-                            <AppFormInput
-                                v-model.number="accountEntries[item.reference_id]"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                required
-                            />
-                            <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
-                                Opening: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.opening_value }}</span>
-                                &nbsp;|&nbsp;
-                                Expected: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.expected_close }}</span>
-                            </p>
-                        </AppFormField>
-                    </div>
-                </div>
-
-                <!-- Stock -->
-                <div v-if="products.length" class="app-surface rounded-2xl p-5 md:p-6 space-y-4">
-                    <h2 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide">Stock Quantities — Closing</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <AppFormField v-for="item in products" :key="item.reference_id" :label="item.label" :required="true">
-                            <AppFormInput
-                                v-model.number="stockEntries[item.reference_id]"
-                                type="number"
-                                min="0"
-                                required
-                            />
-                            <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
-                                Opening: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.opening_value }}</span>
-                                &nbsp;|&nbsp;
-                                Expected: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.expected_close }}</span>
-                            </p>
-                        </AppFormField>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-3">
-                    <RouterLink to="/reconciliation" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
-                        Cancel
-                    </RouterLink>
-                    <button
-                        type="submit"
-                        class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium"
-                        :disabled="saving"
-                    >
-                        {{ saving ? 'Saving…' : 'Review Comparison →' }}
-                    </button>
-                </div>
-            </form>
+      <form v-else class="space-y-4" @submit.prevent="goToComparison">
+        <!-- Accounts -->
+        <div v-if="accounts.length" class="app-surface rounded-2xl p-5 md:p-6 space-y-4">
+          <h2 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide">
+            Account Balances — Closing
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AppFormField
+              v-for="item in accounts"
+              :key="item.reference_id"
+              :label="item.label"
+              required
+            >
+              <AppFormInput
+                v-model.number="accountEntries[item.reference_id]"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+              />
+              <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
+                Opening: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.opening_value }}</span>
+                &nbsp;|&nbsp;
+                Expected: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.expected_close }}</span>
+              </p>
+            </AppFormField>
+          </div>
         </div>
-    </section>
+
+        <!-- Stock -->
+        <div v-if="products.length" class="app-surface rounded-2xl p-5 md:p-6 space-y-4">
+          <h2 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide">
+            Stock Quantities — Closing
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AppFormField
+              v-for="item in products"
+              :key="item.reference_id"
+              :label="item.label"
+              required
+            >
+              <AppFormInput
+                v-model.number="stockEntries[item.reference_id]"
+                type="number"
+                min="0"
+                required
+              />
+              <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
+                Opening: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.opening_value }}</span>
+                &nbsp;|&nbsp;
+                Expected: <span class="font-medium text-secondary-600 dark:text-secondary-300">{{ item.expected_close }}</span>
+              </p>
+            </AppFormField>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3">
+          <RouterLink to="/reconciliation" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
+            Cancel
+          </RouterLink>
+          <button
+            type="submit"
+            class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium"
+            :disabled="saving"
+          >
+            {{ saving ? 'Saving…' : 'Review Comparison →' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>

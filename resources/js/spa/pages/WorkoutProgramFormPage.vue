@@ -1,217 +1,307 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" :title="isEdit ? 'Edit Workout Program' : 'Create Workout Program'">
-            <template #extra-slot>
-                <div class="inline-flex rounded-xl app-surface-soft p-1">
-                    <button
-                        type="button"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                        :class="builderTab === 'builder' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                        @click="builderTab = 'builder'"
-                    >
-                        Builder
-                    </button>
-                    <button
-                        type="button"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                        :class="builderTab === 'preview' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
-                        @click="builderTab = 'preview'"
-                    >
-                        Preview
-                    </button>
-                </div>
-            </template>
-        </AppPageHeader>
-
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+  <section class="app-page-frame">
+    <AppPageHeader show-back :title="isEdit ? 'Edit Workout Program' : 'Create Workout Program'">
+      <template #extra-slot>
+        <div class="inline-flex rounded-xl app-surface-soft p-1">
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
+            :class="builderTab === 'builder' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+            @click="builderTab = 'builder'"
+          >
+            Builder
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
+            :class="builderTab === 'preview' ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-sm' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'"
+            @click="builderTab = 'preview'"
+          >
+            Preview
+          </button>
         </div>
+      </template>
+    </AppPageHeader>
 
-        <div v-if="builderTab === 'builder'" class="app-page-scroll pr-1">
-            <section class="space-y-4">
-                <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
-                    <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">Program Details</h4>
-                    <div class="mt-3 grid gap-3 md:grid-cols-2">
-                        <AppFormField label="Program Title" class="md:col-span-2" :required="true">
-                            <AppFormInput v-model="builderForm.title" type="text" placeholder="Program title" required />
-                        </AppFormField>
-                        <AppFormField label="Description" class="md:col-span-2" :optional="true">
-                            <AppFormTextarea v-model="builderForm.description" rows="4" placeholder="Program description" />
-                        </AppFormField>
-                    </div>
-                </article>
+    <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      {{ errorMessage }}
+    </div>
 
-                <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <div>
-                            <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">Workout Days</h4>
-                            <p class="text-xs text-secondary-500 dark:text-secondary-400">Build the exact day-by-day structure shown in the final plan.</p>
-                        </div>
-                        <button type="button" class="rounded-lg bg-primary-600 hover:bg-primary-700 px-3 py-2 text-sm font-semibold text-white" @click="addBuilderDay">Add Day</button>
-                    </div>
+    <div v-if="builderTab === 'builder'" class="app-page-scroll pr-1">
+      <section class="space-y-4">
+        <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
+          <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">
+            Program Details
+          </h4>
+          <div class="mt-3 grid gap-3 md:grid-cols-2">
+            <AppFormField label="Program Title" class="md:col-span-2" required>
+              <AppFormInput
+                v-model="builderForm.title"
+                type="text"
+                placeholder="Program title"
+                required
+              />
+            </AppFormField>
+            <AppFormField label="Description" class="md:col-span-2" optional>
+              <AppFormTextarea v-model="builderForm.description" rows="4" placeholder="Program description" />
+            </AppFormField>
+          </div>
+        </article>
 
-                    <div class="mt-4 space-y-4">
-                        <article v-for="(day, dayIndex) in orderedBuilderDays" :key="day.localKey" class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 overflow-hidden">
-                            <div class="border-b border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800 px-4 py-3 flex items-center justify-between gap-3">
-                                <div class="grid flex-1 gap-2 md:grid-cols-[120px_1fr]">
-                                    <AppFormField label="Day Number">
-                                        <AppFormInput v-model.number="day.day_number" type="number" min="1" max="7" placeholder="Day #" />
-                                    </AppFormField>
-                                    <AppFormField label="Day Title">
-                                        <AppFormInput v-model="day.title" type="text" placeholder="Day title (Push / Pull / Legs)" />
-                                    </AppFormField>
-                                </div>
-                                <button type="button" class="text-sm font-semibold text-red-600 dark:text-red-400" @click="removeBuilderDay(dayIndex)">Remove</button>
-                            </div>
-
-                            <div class="p-4 space-y-3">
-                                <div class="flex items-center justify-between gap-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">Exercise Rows</p>
-                                    <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addExerciseRow(day)">Add Exercise Row</button>
-                                </div>
-
-                                <div class="space-y-3">
-                                    <div v-for="(row, rowIndex) in orderedExerciseRows(day.exercises)" :key="row.localKey" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50/70 dark:bg-secondary-800/40">
-                                        <div class="flex items-center justify-between gap-2 mb-3">
-                                            <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">Exercise {{ rowIndex + 1 }}</p>
-                                            <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeExerciseRow(day, rowIndex)">Remove</button>
-                                        </div>
-                                        <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
-                                            <AppFormField label="Exercise" class="xl:col-span-2">
-                                                <AppSearchableDropdown
-                                                    v-model="row.exercise_id"
-                                                    :options="exercises.map(e => ({ id: e.id, label: e.name }))"
-                                                    :option-label="option => option.label"
-                                                    :option-key="option => option.id"
-                                                    placeholder="Select exercise"
-                                                    no-results-text="No exercises found."
-                                                    @update:modelValue="() => handleExerciseChange(row)"
-                                                />
-                                            </AppFormField>
-                                            <AppFormField label="Week 1 / 3">
-                                                <AppSearchableDropdown
-                                                    v-model="row.w1_w3_exercise"
-                                                    :options="getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))"
-                                                    :option-label="option => option.label"
-                                                    :option-key="option => option.id"
-                                                    placeholder="W1 / W3 Variation"
-                                                    no-results-text="No variations found."
-                                                    :disabled="!row.exercise_id"
-                                                />
-                                            </AppFormField>
-                                            <AppFormField label="Week 2 / 4">
-                                                <AppSearchableDropdown
-                                                    v-model="row.w2_w4_exercise"
-                                                    :options="getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))"
-                                                    :option-label="option => option.label"
-                                                    :option-key="option => option.id"
-                                                    placeholder="W2 / W4 Variation"
-                                                    no-results-text="No variations found."
-                                                    :disabled="!row.exercise_id"
-                                                />
-                                            </AppFormField>
-                                            <AppFormField label="Sets">
-                                                <AppFormInput v-model.number="row.sets" type="number" min="1" placeholder="Sets" />
-                                            </AppFormField>
-                                        </div>
-                                        <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-3">
-                                            <AppFormField label="Reps">
-                                                <AppFormInput v-model="row.reps" type="text" placeholder="Reps" />
-                                            </AppFormField>
-                                            <AppFormField label="Tempo">
-                                                <AppFormInput v-model="row.tempo" type="text" placeholder="Tempo" />
-                                            </AppFormField>
-                                            <AppFormField label="Rest Seconds">
-                                                <AppFormInput v-model.number="row.rest_seconds" type="number" min="0" placeholder="Rest Seconds" />
-                                            </AppFormField>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-
-                        <p v-if="builderDays.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No workout days added yet.</p>
-                    </div>
-                </article>
-
-                <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">Core Section</h4>
-                        <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addCoreExtra">Add Row</button>
-                    </div>
-                    <div class="mt-3 space-y-3">
-                        <div v-for="(item, index) in builderCoreExtras" :key="item.localKey" class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-3 space-y-2">
-                            <div class="flex items-center justify-between gap-2">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">Core Row {{ index + 1 }}</p>
-                                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeCoreExtra(index)">Remove</button>
-                            </div>
-                            <AppFormField label="Exercise Name">
-                                <AppFormInput v-model="item.exercise_name" type="text" placeholder="Exercise name" />
-                            </AppFormField>
-                            <div class="grid grid-cols-2 gap-2">
-                                <AppFormField label="Sets">
-                                    <AppFormInput v-model.number="item.sets" type="number" min="1" placeholder="Sets" />
-                                </AppFormField>
-                                <AppFormField label="Reps / Time">
-                                    <AppFormInput v-model="item.reps_or_time" type="text" placeholder="Reps / Time" />
-                                </AppFormField>
-                            </div>
-                            <AppFormField label="Rest" :optional="true">
-                                <AppFormInput v-model="item.rest" type="text" placeholder="Rest" />
-                            </AppFormField>
-                            <AppFormField label="Notes" :optional="true">
-                                <AppFormTextarea v-model="item.notes" rows="2" placeholder="Notes" />
-                            </AppFormField>
-                        </div>
-                        <p v-if="builderCoreExtras.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No core rows added.</p>
-                    </div>
-                </article>
-
-                <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">Cardio Section</h4>
-                        <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addCardioExtra">Add Row</button>
-                    </div>
-                    <div class="mt-3 space-y-3">
-                        <div v-for="(item, index) in builderCardioExtras" :key="item.localKey" class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-3 space-y-2">
-                            <div class="flex items-center justify-between gap-2">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">Cardio Row {{ index + 1 }}</p>
-                                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeCardioExtra(index)">Remove</button>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <AppFormField label="Times / Week">
-                                    <AppFormInput v-model.number="item.frequency_per_week" type="number" min="1" max="14" placeholder="Times / Week" />
-                                </AppFormField>
-                                <AppFormField label="Minutes">
-                                    <AppFormInput v-model.number="item.duration_minutes" type="number" min="1" placeholder="Minutes" />
-                                </AppFormField>
-                            </div>
-                            <AppFormField label="Cardio Type">
-                                <AppFormInput v-model="item.cardio_type" type="text" placeholder="Cardio type" />
-                            </AppFormField>
-                            <AppFormField label="Notes" :optional="true">
-                                <AppFormTextarea v-model="item.notes" rows="2" placeholder="Notes" />
-                            </AppFormField>
-                        </div>
-                        <p v-if="builderCardioExtras.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">No cardio rows added.</p>
-                    </div>
-                </article>
-            </section>
-        </div>
-
-        <div v-else class="app-page-scroll bg-secondary-100/80 dark:bg-secondary-950 p-4 md:p-6 rounded-2xl">
-            <WorkoutProgramPreviewCard :program="previewProgram" />
-        </div>
-
-        <div class="mt-4 flex items-center justify-between gap-3">
-            <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600" @click="builderTab = 'preview'">Preview Output</button>
-            <div class="flex items-center gap-2">
-                <RouterLink to="/workout?tab=programs" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600">Cancel</RouterLink>
-                <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600" @click="printBuilderPreview">Print</button>
-                <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50" :disabled="saving" @click="saveProgramBuilder">{{ saving ? 'Saving...' : 'Save Program' }}</button>
+        <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">
+                Workout Days
+              </h4>
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Build the exact day-by-day structure shown in the final plan.
+              </p>
             </div>
-        </div>
-    </section>
+            <button type="button" class="rounded-lg bg-primary-600 hover:bg-primary-700 px-3 py-2 text-sm font-semibold text-white" @click="addBuilderDay">
+              Add Day
+            </button>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <article v-for="(day, dayIndex) in orderedBuilderDays" :key="day.localKey" class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 overflow-hidden">
+              <div class="border-b border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800 px-4 py-3 flex items-center justify-between gap-3">
+                <div class="grid flex-1 gap-2 md:grid-cols-[120px_1fr]">
+                  <AppFormField label="Day Number">
+                    <AppFormInput
+                      v-model.number="day.day_number"
+                      type="number"
+                      min="1"
+                      max="7"
+                      placeholder="Day #"
+                    />
+                  </AppFormField>
+                  <AppFormField label="Day Title">
+                    <AppFormInput v-model="day.title" type="text" placeholder="Day title (Push / Pull / Legs)" />
+                  </AppFormField>
+                </div>
+                <button type="button" class="text-sm font-semibold text-red-600 dark:text-red-400" @click="removeBuilderDay(dayIndex)">
+                  Remove
+                </button>
+              </div>
+
+              <div class="p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">
+                    Exercise Rows
+                  </p>
+                  <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addExerciseRow(day)">
+                    Add Exercise Row
+                  </button>
+                </div>
+
+                <div class="space-y-3">
+                  <div v-for="(row, rowIndex) in orderedExerciseRows(day.exercises)" :key="row.localKey" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50/70 dark:bg-secondary-800/40">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">
+                        Exercise {{ rowIndex + 1 }}
+                      </p>
+                      <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeExerciseRow(day, rowIndex)">
+                        Remove
+                      </button>
+                    </div>
+                    <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
+                      <AppFormField label="Exercise" class="xl:col-span-2">
+                        <AppSearchableDropdown
+                          v-model="row.exercise_id"
+                          :options="exercises.map(e => ({ id: e.id, label: e.name }))"
+                          :option-label="option => option.label"
+                          :option-key="option => option.id"
+                          placeholder="Select exercise"
+                          no-results-text="No exercises found."
+                          @update:model-value="() => handleExerciseChange(row)"
+                        />
+                      </AppFormField>
+                      <AppFormField label="Week 1 / 3">
+                        <AppSearchableDropdown
+                          v-model="row.w1_w3_exercise"
+                          :options="getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))"
+                          :option-label="option => option.label"
+                          :option-key="option => option.id"
+                          placeholder="W1 / W3 Variation"
+                          no-results-text="No variations found."
+                          :disabled="!row.exercise_id"
+                        />
+                      </AppFormField>
+                      <AppFormField label="Week 2 / 4">
+                        <AppSearchableDropdown
+                          v-model="row.w2_w4_exercise"
+                          :options="getExerciseVariationOptions(row).map(v => ({ id: v.variation_name, label: v.variation_name }))"
+                          :option-label="option => option.label"
+                          :option-key="option => option.id"
+                          placeholder="W2 / W4 Variation"
+                          no-results-text="No variations found."
+                          :disabled="!row.exercise_id"
+                        />
+                      </AppFormField>
+                      <AppFormField label="Sets">
+                        <AppFormInput
+                          v-model.number="row.sets"
+                          type="number"
+                          min="1"
+                          placeholder="Sets"
+                        />
+                      </AppFormField>
+                    </div>
+                    <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-3">
+                      <AppFormField label="Reps">
+                        <AppFormInput v-model="row.reps" type="text" placeholder="Reps" />
+                      </AppFormField>
+                      <AppFormField label="Tempo">
+                        <AppFormInput v-model="row.tempo" type="text" placeholder="Tempo" />
+                      </AppFormField>
+                      <AppFormField label="Rest Seconds">
+                        <AppFormInput
+                          v-model.number="row.rest_seconds"
+                          type="number"
+                          min="0"
+                          placeholder="Rest Seconds"
+                        />
+                      </AppFormField>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <p v-if="builderDays.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
+              No workout days added yet.
+            </p>
+          </div>
+        </article>
+
+        <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">
+              Core Section
+            </h4>
+            <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addCoreExtra">
+              Add Row
+            </button>
+          </div>
+          <div class="mt-3 space-y-3">
+            <div v-for="(item, index) in builderCoreExtras" :key="item.localKey" class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-3 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">
+                  Core Row {{ index + 1 }}
+                </p>
+                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeCoreExtra(index)">
+                  Remove
+                </button>
+              </div>
+              <AppFormField label="Exercise Name">
+                <AppFormInput v-model="item.exercise_name" type="text" placeholder="Exercise name" />
+              </AppFormField>
+              <div class="grid grid-cols-2 gap-2">
+                <AppFormField label="Sets">
+                  <AppFormInput
+                    v-model.number="item.sets"
+                    type="number"
+                    min="1"
+                    placeholder="Sets"
+                  />
+                </AppFormField>
+                <AppFormField label="Reps / Time">
+                  <AppFormInput v-model="item.reps_or_time" type="text" placeholder="Reps / Time" />
+                </AppFormField>
+              </div>
+              <AppFormField label="Rest" optional>
+                <AppFormInput v-model="item.rest" type="text" placeholder="Rest" />
+              </AppFormField>
+              <AppFormField label="Notes" optional>
+                <AppFormTextarea v-model="item.notes" rows="2" placeholder="Notes" />
+              </AppFormField>
+            </div>
+            <p v-if="builderCoreExtras.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
+              No core rows added.
+            </p>
+          </div>
+        </article>
+
+        <article class="rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/70 dark:bg-secondary-800/40 p-4">
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">
+              Cardio Section
+            </h4>
+            <button type="button" class="text-sm font-semibold text-primary-600 dark:text-primary-400" @click="addCardioExtra">
+              Add Row
+            </button>
+          </div>
+          <div class="mt-3 space-y-3">
+            <div v-for="(item, index) in builderCardioExtras" :key="item.localKey" class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-3 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">
+                  Cardio Row {{ index + 1 }}
+                </p>
+                <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeCardioExtra(index)">
+                  Remove
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <AppFormField label="Times / Week">
+                  <AppFormInput
+                    v-model.number="item.frequency_per_week"
+                    type="number"
+                    min="1"
+                    max="14"
+                    placeholder="Times / Week"
+                  />
+                </AppFormField>
+                <AppFormField label="Minutes">
+                  <AppFormInput
+                    v-model.number="item.duration_minutes"
+                    type="number"
+                    min="1"
+                    placeholder="Minutes"
+                  />
+                </AppFormField>
+              </div>
+              <AppFormField label="Cardio Type">
+                <AppFormInput v-model="item.cardio_type" type="text" placeholder="Cardio type" />
+              </AppFormField>
+              <AppFormField label="Notes" optional>
+                <AppFormTextarea v-model="item.notes" rows="2" placeholder="Notes" />
+              </AppFormField>
+            </div>
+            <p v-if="builderCardioExtras.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
+              No cardio rows added.
+            </p>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <div v-else class="app-page-scroll bg-secondary-100/80 dark:bg-secondary-950 p-4 md:p-6 rounded-2xl">
+      <WorkoutProgramPreviewCard :program="previewProgram" />
+    </div>
+
+    <div class="mt-4 flex items-center justify-between gap-3">
+      <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600" @click="builderTab = 'preview'">
+        Preview Output
+      </button>
+      <div class="flex items-center gap-2">
+        <RouterLink to="/workout?tab=programs" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600">
+          Cancel
+        </RouterLink>
+        <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600" @click="printBuilderPreview">
+          Print
+        </button>
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
+          :disabled="saving"
+          @click="saveProgramBuilder"
+        >
+          {{ saving ? 'Saving...' : 'Save Program' }}
+        </button>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script setup>
@@ -385,15 +475,6 @@ function handleExerciseChange(row) {
     if (!hasW2) {
         row.w2_w4_exercise = '';
     }
-}
-
-function formatRest(value) {
-    return value === null || value === undefined || value === '' ? '-' : `${value}s`;
-}
-
-function formatFrequency(value) {
-    if (!value) return '-';
-    return `${value} time${value > 1 ? 's' : ''} a week`;
 }
 
 function meaningfulCoreExtras(items) {

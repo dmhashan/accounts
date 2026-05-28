@@ -1,81 +1,105 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back />
 
-        <div class="app-page-scroll">
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+    <div class="app-page-scroll">
+      <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        {{ errorMessage }}
+      </div>
+
+      <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AppFormField label="Account" required>
+            <AppSearchableDropdown
+              v-model="form.company_account_id"
+              :options="accounts"
+              :option-label="option => option.name + (option.current_balance != null ? ' • ' + money(option.current_balance) : '')"
+              :option-key="option => option.id"
+              placeholder="Select account..."
+              search-placeholder="Search account..."
+              no-results-text="No accounts found."
+            />
+          </AppFormField>
+
+          <AppFormField label="Category" required>
+            <AppFormInput
+              v-if="form.category_custom"
+              v-model="form.category"
+              type="text"
+              required
+              maxlength="255"
+              placeholder="Enter custom category"
+            />
+            <AppFormSelect
+              v-else
+              v-model="form.category"
+              required
+              @change="handleCategoryChange"
+            >
+              <option value="">
+                Select category
+              </option>
+              <option v-for="cat in expenseCategories" :key="cat" :value="cat">
+                {{ cat }}
+              </option>
+              <option value="__other__">
+                Other (custom)
+              </option>
+            </AppFormSelect>
+            <button
+              v-if="form.category_custom"
+              type="button"
+              class="mt-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
+              @click="resetCategoryToSelect"
+            >
+              Choose from list
+            </button>
+          </AppFormField>
+
+          <AppFormField label="Amount" required>
+            <AppFormInput
+              v-model="form.amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+            />
+          </AppFormField>
+
+          <AppFormField label="Expense Date" required>
+            <AppFormInput v-model="form.expense_date" type="date" required />
+          </AppFormField>
+
+          <AppFormField
+            label="Reference"
+            class="md:col-span-2"
+            help="Invoice number, receipt ID, etc."
+            optional
+          >
+            <AppFormInput
+              v-model="form.reference_number"
+              type="text"
+              maxlength="255"
+              placeholder="Invoice number, receipt ID, etc."
+            />
+          </AppFormField>
+
+          <AppFormField label="Notes" class="md:col-span-2" optional>
+            <AppFormTextarea v-model="form.notes" rows="3" maxlength="1000" />
+          </AppFormField>
         </div>
 
-        <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AppFormField label="Account" :required="true">
-                    <AppSearchableDropdown
-                        v-model="form.company_account_id"
-                        :options="accounts"
-                        :option-label="option => option.name + (option.current_balance != null ? ' • ' + money(option.current_balance) : '')"
-                        :option-key="option => option.id"
-                        placeholder="Select account..."
-                        search-placeholder="Search account..."
-                        no-results-text="No accounts found."
-                    />
-                </AppFormField>
-
-                <AppFormField label="Category" :required="true">
-                    <AppFormInput
-                        v-if="form.category_custom"
-                        v-model="form.category"
-                        type="text"
-                        required
-                        maxlength="255"
-                        placeholder="Enter custom category"
-                    />
-                    <AppFormSelect
-                        v-else
-                        v-model="form.category"
-                        required
-                        @change="handleCategoryChange"
-                    >
-                        <option value="">Select category</option>
-                        <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
-                        <option value="__other__">Other (custom)</option>
-                    </AppFormSelect>
-                    <button
-                        v-if="form.category_custom"
-                        type="button"
-                        class="mt-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
-                        @click="resetCategoryToSelect"
-                    >
-                        Choose from list
-                    </button>
-                </AppFormField>
-
-                <AppFormField label="Amount" :required="true">
-                    <AppFormInput v-model="form.amount" type="number" min="0.01" step="0.01" required />
-                </AppFormField>
-
-                <AppFormField label="Expense Date" :required="true">
-                    <AppFormInput v-model="form.expense_date" type="date" required />
-                </AppFormField>
-
-                <AppFormField label="Reference" class="md:col-span-2" help="Invoice number, receipt ID, etc." :optional="true">
-                    <AppFormInput v-model="form.reference_number" type="text" maxlength="255" placeholder="Invoice number, receipt ID, etc." />
-                </AppFormField>
-
-                <AppFormField label="Notes" class="md:col-span-2" :optional="true">
-                    <AppFormTextarea v-model="form.notes" rows="3" maxlength="1000" />
-                </AppFormField>
-            </div>
-
-            <div class="mt-5 flex items-center justify-end gap-2">
-                <RouterLink :to="{ path: '/accounts', query: { tab: 'expenses' } }" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">Cancel</RouterLink>
-                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
-                    {{ submitting ? 'Saving...' : (isEdit ? 'Update Expense' : 'Record Expense') }}
-                </button>
-            </div>
-        </form>
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <RouterLink :to="{ path: '/accounts', query: { tab: 'expenses' } }" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
+            Cancel
+          </RouterLink>
+          <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
+            {{ submitting ? 'Saving...' : (isEdit ? 'Update Expense' : 'Record Expense') }}
+          </button>
         </div>
-    </section>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>
@@ -160,7 +184,7 @@ async function loadExpense() {
         company_account_id: expense.company_account_id ?? null,
         category: expense.category || '',
         category_custom: !isKnownCategory && Boolean(expense.category),
-        amount: expense.amount != null ? String(expense.amount) : '',
+        amount: expense.amount !== null ? String(expense.amount) : '',
         expense_date: expense.expense_date || new Date().toISOString().slice(0, 10),
         reference_number: expense.reference_number || '',
         notes: expense.notes || '',

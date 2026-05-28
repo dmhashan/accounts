@@ -5,15 +5,15 @@
         ref="triggerRef"
         type="button"
         class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-left flex items-center gap-1"
-        @click="toggleDropdown"
         :disabled="disabled"
+        @click="toggleDropdown"
       >
         <span class="flex-1 truncate" :class="selectedLabel ? '' : 'text-secondary-400 dark:text-secondary-500'">{{ selectedLabel || placeholder }}</span>
         <span
           v-if="clearable && selectedLabel && !disabled"
           class="flex-shrink-0 flex items-center justify-center w-4 h-4 rounded-full text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
-          @click.stop="clearValue"
           aria-label="Clear selection"
+          @click.stop="clearValue"
         >✕</span>
         <span class="flex-shrink-0 text-secondary-500">▾</span>
       </button>
@@ -59,12 +59,12 @@ import AppFormField from './AppFormField.vue';
 import AppFormInput from './AppFormInput.vue';
 
 const props = defineProps({
-  modelValue: [String, Number, Object, null],
+  modelValue: { type: [String, Number, Object], default: null },
   options: {
     type: Array,
     required: true,
   },
-  label: String,
+  label: { type: String, default: '' },
   placeholder: {
     type: String,
     default: 'Select...'
@@ -89,7 +89,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  error: String,
+  error: { type: String, default: null },
   disabled: Boolean,
   noResultsText: {
     type: String,
@@ -107,7 +107,7 @@ const panelRef = ref(null);
 const dropdownStyle = ref({});
 
 const selectedLabel = computed(() => {
-  if (props.modelValue == null) return '';
+  if (props.modelValue === null || props.modelValue === undefined) return '';
   const found = props.options.find(opt => props.optionKey(opt) === props.modelValue || opt === props.modelValue);
   return found ? props.optionLabel(found) : '';
 });

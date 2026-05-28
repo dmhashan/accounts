@@ -1,5 +1,5 @@
 <template>
-    <LegacyBladeView title="Attendance" description="View attendance module in SPA navigation while using existing Blade attendance views." :url="context.legacyUrls?.attendance" />
+  <LegacyBladeView title="Attendance" description="View attendance module in SPA navigation while using existing Blade attendance views." :url="context.legacyUrls?.attendance" />
 </template>
 
 <script setup>

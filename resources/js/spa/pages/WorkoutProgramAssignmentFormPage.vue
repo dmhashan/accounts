@@ -1,86 +1,95 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" title="Assign Program to Member(s)" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back title="Assign Program to Member(s)" />
 
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+    <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      {{ errorMessage }}
+    </div>
+
+    <div class="app-page-scroll">
+      <form class="space-y-5" @submit.prevent="submit">
+        <!-- Program selector -->
+        <div class="app-surface rounded-2xl p-4 space-y-4">
+          <h3 class="text-sm font-semibold text-secondary-900 dark:text-white">
+            Program Details
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AppFormField label="Workout Program" required>
+              <AppFormSelect v-model="form.program_id" required>
+                <option value="">
+                  — Select program —
+                </option>
+                <option v-for="p in programs" :key="p.id" :value="p.id">
+                  {{ p.title }}
+                </option>
+              </AppFormSelect>
+            </AppFormField>
+            <AppFormField label="Effective Date" required>
+              <AppFormInput v-model="form.effective_date" type="date" required />
+            </AppFormField>
+          </div>
         </div>
 
-        <div class="app-page-scroll">
-            <form class="space-y-5" @submit.prevent="submit">
+        <!-- Member multi-picker -->
+        <div class="app-surface rounded-2xl p-4 space-y-3">
+          <h3 class="text-sm font-semibold text-secondary-900 dark:text-white">
+            Select Members
+          </h3>
 
-                <!-- Program selector -->
-                <div class="app-surface rounded-2xl p-4 space-y-4">
-                    <h3 class="text-sm font-semibold text-secondary-900 dark:text-white">Program Details</h3>
+          <AppFormInput
+            v-model="memberSearchQuery"
+            type="text"
+            placeholder="Search members by name or code..."
+            @input="searchMembers"
+          />
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <AppFormField label="Workout Program" :required="true">
-                            <AppFormSelect v-model="form.program_id" required>
-                                <option value="">— Select program —</option>
-                                <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.title }}</option>
-                            </AppFormSelect>
-                        </AppFormField>
-                        <AppFormField label="Effective Date" :required="true">
-                            <AppFormInput v-model="form.effective_date" type="date" required />
-                        </AppFormField>
-                    </div>
-                </div>
+          <div v-if="memberOptions.length > 0" class="max-h-52 overflow-y-auto rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 divide-y divide-secondary-100 dark:divide-secondary-700">
+            <button
+              v-for="m in memberOptions"
+              :key="m.id"
+              type="button"
+              class="w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-secondary-50 dark:hover:bg-secondary-700/50"
+              :class="form.member_ids.includes(m.id) ? 'text-primary-600 dark:text-primary-400 font-semibold' : 'text-secondary-800 dark:text-secondary-200'"
+              @click="toggleMember(m)"
+            >
+              <span>{{ m.name }} <span class="text-secondary-400 font-normal">({{ m.phone_number }})</span></span>
+              <span v-if="form.member_ids.includes(m.id)" class="text-primary-500">✓</span>
+            </button>
+          </div>
+          <p v-else-if="memberSearchQuery.trim().length > 0" class="text-xs text-secondary-400">
+            No members found.
+          </p>
 
-                <!-- Member multi-picker -->
-                <div class="app-surface rounded-2xl p-4 space-y-3">
-                    <h3 class="text-sm font-semibold text-secondary-900 dark:text-white">Select Members</h3>
-
-                    <AppFormInput
-                        v-model="memberSearchQuery"
-                        type="text"
-                        placeholder="Search members by name or code..."
-                        @input="searchMembers"
-                    />
-
-                    <div v-if="memberOptions.length > 0" class="max-h-52 overflow-y-auto rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 divide-y divide-secondary-100 dark:divide-secondary-700">
-                        <button
-                            v-for="m in memberOptions"
-                            :key="m.id"
-                            type="button"
-                            class="w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-secondary-50 dark:hover:bg-secondary-700/50"
-                            :class="form.member_ids.includes(m.id) ? 'text-primary-600 dark:text-primary-400 font-semibold' : 'text-secondary-800 dark:text-secondary-200'"
-                            @click="toggleMember(m)"
-                        >
-                            <span>{{ m.name }} <span class="text-secondary-400 font-normal">({{ m.phone_number }})</span></span>
-                            <span v-if="form.member_ids.includes(m.id)" class="text-primary-500">✓</span>
-                        </button>
-                    </div>
-                    <p v-else-if="memberSearchQuery.trim().length > 0" class="text-xs text-secondary-400">No members found.</p>
-
-                    <!-- Selected chips -->
-                    <div v-if="selectedMemberObjects.length > 0" class="flex flex-wrap gap-2 pt-1">
-                        <span
-                            v-for="m in selectedMemberObjects"
-                            :key="m.id"
-                            class="inline-flex items-center gap-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs px-3 py-1"
-                        >
-                            {{ m.name }}
-                            <button type="button" class="ml-1 text-primary-400 hover:text-primary-600" @click="toggleMember(m)">×</button>
-                        </span>
-                    </div>
-                </div>
-
-                <div v-if="formError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-                    {{ formError }}
-                </div>
-
-                <div class="flex justify-end">
-                    <button
-                        type="submit"
-                        :disabled="submitting"
-                        class="inline-flex items-center px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-semibold"
-                    >
-                        {{ submitting ? 'Assigning…' : 'Assign Program' }}
-                    </button>
-                </div>
-            </form>
+          <!-- Selected chips -->
+          <div v-if="selectedMemberObjects.length > 0" class="flex flex-wrap gap-2 pt-1">
+            <span
+              v-for="m in selectedMemberObjects"
+              :key="m.id"
+              class="inline-flex items-center gap-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs px-3 py-1"
+            >
+              {{ m.name }}
+              <button type="button" class="ml-1 text-primary-400 hover:text-primary-600" @click="toggleMember(m)">×</button>
+            </span>
+          </div>
         </div>
-    </section>
+
+        <div v-if="formError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+          {{ formError }}
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            :disabled="submitting"
+            class="inline-flex items-center px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-semibold"
+          >
+            {{ submitting ? 'Assigning…' : 'Assign Program' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>

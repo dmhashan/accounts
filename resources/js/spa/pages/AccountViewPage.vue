@@ -1,48 +1,68 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true">
-            <template #cta-slot>
-                <RouterLink
-                    :to="`/accounts/${route.params.id}/edit`"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
-                >
-                    Edit Account
-                </RouterLink>
-                <button
-                    type="button"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
-                    :disabled="deleting"
-                    @click="deleteAccount"
-                >Delete</button>
-            </template>
-        </AppPageHeader>
+  <section class="app-page-frame">
+    <AppPageHeader show-back>
+      <template #cta-slot>
+        <RouterLink
+          :to="`/accounts/${route.params.id}/edit`"
+          class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
+        >
+          Edit Account
+        </RouterLink>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+          :disabled="deleting"
+          @click="deleteAccount"
+        >
+          Delete
+        </button>
+      </template>
+    </AppPageHeader>
 
-        <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">Loading...</div>
+    <div v-if="loading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+      Loading...
+    </div>
 
-        <div v-else-if="errorMessage" class="p-6 text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</div>
+    <div v-else-if="errorMessage" class="p-6 text-sm text-red-600 dark:text-red-400">
+      {{ errorMessage }}
+    </div>
 
-        <div v-else class="app-page-scroll space-y-5">
-            <div class="app-surface rounded-2xl p-4 md:p-6">
-                <h1 class="text-xl font-bold text-secondary-900 dark:text-white mb-4">{{ account.name }}</h1>
+    <div v-else class="app-page-scroll space-y-5">
+      <div class="app-surface rounded-2xl p-4 md:p-6">
+        <h1 class="text-xl font-bold text-secondary-900 dark:text-white mb-4">
+          {{ account.name }}
+        </h1>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                    <div>
-                        <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">Opening Balance</p>
-                        <p class="font-medium text-secondary-800 dark:text-secondary-200">{{ money(account.opening_balance) }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">Current Balance</p>
-                        <p class="font-bold text-lg text-secondary-900 dark:text-white">{{ money(account.current_balance) }}</p>
-                    </div>
-                </div>
-
-                <div v-if="account.description" class="mt-4">
-                    <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">Description</p>
-                    <p class="text-sm text-secondary-800 dark:text-secondary-200 whitespace-pre-wrap">{{ account.description }}</p>
-                </div>
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+          <div>
+            <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+              Opening Balance
+            </p>
+            <p class="font-medium text-secondary-800 dark:text-secondary-200">
+              {{ money(account.opening_balance) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+              Current Balance
+            </p>
+            <p class="font-bold text-lg text-secondary-900 dark:text-white">
+              {{ money(account.current_balance) }}
+            </p>
+          </div>
         </div>
-    </section>
+
+        <div v-if="account.description" class="mt-4">
+          <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+            Description
+          </p>
+          <p class="text-sm text-secondary-800 dark:text-secondary-200 whitespace-pre-wrap">
+            {{ account.description }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script setup>

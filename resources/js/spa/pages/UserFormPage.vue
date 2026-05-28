@@ -1,53 +1,52 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back />
 
-        <div class="app-page-scroll">
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
+    <div class="app-page-scroll">
+      <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        {{ errorMessage }}
+      </div>
+
+      <form class="app-surface rounded-2xl p-5 md:p-6 space-y-4" @submit.prevent="submit">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AppFormField label="Name" class="md:col-span-2" required>
+            <AppFormInput v-model="form.name" type="text" required />
+          </AppFormField>
+
+          <AppFormField label="Email" class="md:col-span-2" required>
+            <AppFormInput v-model="form.email" type="email" required />
+          </AppFormField>
+
+          <AppFormField label="Role" required>
+            <AppSearchableDropdown
+              v-model="form.role_id"
+              :options="[...roles.map(role => ({ id: String(role.id), label: role.name }))]"
+              :option-label="option => option.label"
+              :option-key="option => option.id"
+              placeholder="Select role"
+              no-results-text="No roles found."
+              required
+            />
+          </AppFormField>
         </div>
 
-        <form class="app-surface rounded-2xl p-5 md:p-6 space-y-4" @submit.prevent="submit">
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AppFormField label="Name" class="md:col-span-2" :required="true">
-                    <AppFormInput v-model="form.name" type="text" required />
-                </AppFormField>
-
-                <AppFormField label="Email" class="md:col-span-2" :required="true">
-                    <AppFormInput v-model="form.email" type="email" required />
-                </AppFormField>
-
-                <AppFormField label="Role" :required="true">
-                    <AppSearchableDropdown
-                        v-model="form.role_id"
-                        :options="[...roles.map(role => ({ id: String(role.id), label: role.name }))]"
-                        :option-label="option => option.label"
-                        :option-key="option => option.id"
-                        placeholder="Select role"
-                        no-results-text="No roles found."
-                        required
-                    />
-                </AppFormField>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AppFormField label="Password" :required="!isEdit" :optional="isEdit">
-                    <AppFormInput v-model="form.password" type="password" :required="!isEdit" />
-                </AppFormField>
-                <AppFormField label="Confirm Password" :required="!isEdit" :optional="isEdit">
-                    <AppFormInput v-model="form.password_confirmation" type="password" :required="!isEdit" />
-                </AppFormField>
-            </div>
-
-            <div class="flex justify-end">
-                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg" :disabled="submitting">
-                    {{ submitting ? 'Saving...' : (isEdit ? 'Update User' : 'Create User') }}
-                </button>
-            </div>
-        </form>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AppFormField label="Password" :required="!isEdit" :optional="isEdit">
+            <AppFormInput v-model="form.password" type="password" :required="!isEdit" />
+          </AppFormField>
+          <AppFormField label="Confirm Password" :required="!isEdit" :optional="isEdit">
+            <AppFormInput v-model="form.password_confirmation" type="password" :required="!isEdit" />
+          </AppFormField>
         </div>
-    </section>
+
+        <div class="flex justify-end">
+          <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg" :disabled="submitting">
+            {{ submitting ? 'Saving...' : (isEdit ? 'Update User' : 'Create User') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>

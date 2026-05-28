@@ -1,44 +1,62 @@
 <template>
-    <section class="app-page-frame">
-        <AppPageHeader :show-back="true" />
+  <section class="app-page-frame">
+    <AppPageHeader show-back />
 
-        <div class="app-page-scroll">
-        <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-            {{ errorMessage }}
-        </div>
+    <div class="app-page-scroll">
+      <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+        {{ errorMessage }}
+      </div>
 
-        <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
-            <div class="space-y-4">
-                <AppFormField label="Product Name" :required="true">
-                    <AppFormInput v-model="form.name" type="text" required maxlength="255" />
-                </AppFormField>
+      <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
+        <div class="space-y-4">
+          <AppFormField label="Product Name" required>
+            <AppFormInput
+              v-model="form.name"
+              type="text"
+              required
+              maxlength="255"
+            />
+          </AppFormField>
 
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Variation List</label>
-                        <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-secondary-300 dark:border-secondary-700" @click="addVariation">Add Variation</button>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div v-for="(variation, index) in form.variations" :key="variation.key" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
-                            <AppFormInput v-model="variation.name" type="text" maxlength="255" placeholder="Variation name" />
-                            <button type="button" class="px-3 py-2 text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-lg" @click="removeVariation(index)">Remove</button>
-                        </div>
-                    </div>
-
-                    <p class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">Empty variation rows are ignored on save.</p>
-                </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Variation List</label>
+              <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-secondary-300 dark:border-secondary-700" @click="addVariation">
+                Add Variation
+              </button>
             </div>
 
-            <div class="mt-5 flex items-center justify-end gap-2">
-                <RouterLink to="/inventory" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">Cancel</RouterLink>
-                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
-                    {{ submitting ? 'Saving...' : (isEdit ? 'Update Product' : 'Create Product') }}
+            <div class="space-y-2">
+              <div v-for="(variation, index) in form.variations" :key="variation.key" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
+                <AppFormInput
+                  v-model="variation.name"
+                  type="text"
+                  maxlength="255"
+                  placeholder="Variation name"
+                />
+                <button type="button" class="px-3 py-2 text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-lg" @click="removeVariation(index)">
+                  Remove
                 </button>
+              </div>
             </div>
-        </form>
+
+            <p class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
+              Empty variation rows are ignored on save.
+            </p>
+          </div>
         </div>
-    </section>
+
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <RouterLink to="/inventory" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">
+            Cancel
+          </RouterLink>
+          <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
+            {{ submitting ? 'Saving...' : (isEdit ? 'Update Product' : 'Create Product') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 </template>
 
 <script setup>
