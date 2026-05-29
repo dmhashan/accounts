@@ -138,7 +138,7 @@ class BiometricApiController extends Controller
         }
 
         $logs = BiometricSyncLog::where('tenant_id', $tenant->id)
-            ->where('biometric_member_id', $member->id)
+            ->where('member_id', $member->id)
             ->orderByDesc('created_at')
             ->limit(20)
             ->get()

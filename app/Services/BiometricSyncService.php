@@ -209,7 +209,8 @@ class BiometricSyncService
 
             $this->writeLog([
                 'tenant_id' => $tenantId,
-                'biometric_member_id' => $member->id,
+                'member_id' => $member->id,
+                'biometric_member_id' => $member->biometric_member_id,
                 'direction' => 'up',
                 'action' => $action,
                 'status' => $status,
@@ -257,7 +258,7 @@ class BiometricSyncService
 
             // Check the latest log for this member
             $log = BiometricSyncLog::where('tenant_id', $tenant->id)
-                ->where('biometric_member_id', $member->id)
+                ->where('member_id', $member->id)
                 ->latest('created_at')
                 ->first();
 
@@ -311,6 +312,7 @@ class BiometricSyncService
                 if (!$result['success']) {
                     $this->writeLog([
                         'tenant_id' => $tenantId,
+                        'member_id' => null,
                         'biometric_member_id' => null,
                         'direction' => 'down',
                         'action' => 'attendance',
@@ -346,6 +348,7 @@ class BiometricSyncService
 
             $this->writeLog([
                 'tenant_id' => $tenantId,
+                'member_id' => null,
                 'biometric_member_id' => null,
                 'direction' => 'down',
                 'action' => 'attendance',
@@ -383,6 +386,7 @@ class BiometricSyncService
 
         $this->writeLog([
             'tenant_id' => $tenant->id,
+            'member_id' => null,
             'biometric_member_id' => null,
             'direction' => 'up',
             'action' => 'test',

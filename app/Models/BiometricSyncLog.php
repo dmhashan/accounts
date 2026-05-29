@@ -11,6 +11,7 @@ class BiometricSyncLog extends Model
 
     protected $fillable = [
         'tenant_id',
+        'member_id',
         'biometric_member_id',
         'direction',
         'action',
@@ -38,6 +39,6 @@ class BiometricSyncLog extends Model
 
     public function member(): BelongsTo
     {
-        return $this->belongsTo(Member::class, 'biometric_member_id');
+        return $this->belongsTo(Member::class, 'member_id');
     }
 }
