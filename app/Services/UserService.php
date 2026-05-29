@@ -38,7 +38,7 @@ class UserService
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role ? [
+                'role' => $user->role instanceof Role ? [
                     'id' => $user->role->id,
                     'name' => $user->role->name,
                     'slug' => $user->role->slug,
