@@ -65,12 +65,16 @@ class User extends Authenticatable
 
     public function hasPermission(string $permissionSlug): bool
     {
-        return $this->role?->hasPermission($permissionSlug) ?? false;
+        $role = $this->getRelationValue('role');
+
+        return $role instanceof Role && $role->hasPermission($permissionSlug);
     }
 
     public function hasRole(string $roleSlug): bool
     {
-        return $this->role?->slug === $roleSlug;
+        $role = $this->getRelationValue('role');
+
+        return $role instanceof Role && $role->slug === $roleSlug;
     }
 
     public function isAdmin(): bool
