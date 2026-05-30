@@ -286,4 +286,80 @@ class BiometricApiController extends Controller
             ],
         ]);
     }
+
+    // -------------------------------------------------------------------------
+    // Real-time webhook management
+    // -------------------------------------------------------------------------
+
+    /**
+     * POST /api/settings/biometric/webhook/generate-token
+     *
+     * Generate a fresh webhook token and save it to the tenant configuration.
+     * Any previously configured webhook on the device will need to be re-applied.
+     */
+    public function generateWebhookToken(): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $token = \Illuminate\Support\Str::random(48);
+
+        app(\App\Services\TenantConfigurationService::class)
+            ->updateBatch($tenant->id, ['biometric.webhook_token' => $token]);
+
+        return response()->json([
+            'message' => 'New webhook token generated.',
+            'token' => $token,
+        ]);
+    }
+
+    /**
+     * POST /api/settings/biometric/webhook/configure
+     *
+     * Push the HTTP notification configuration to the device so it sends
+     * real-time events to our webhook URL.
+     */
+    public function configureWebhook(): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $result = $this->biometric->configureWebhook($tenant);
+
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['success']
+                ? 'Device configured for real-time event push.'
+                : ($result['message'] ?? 'Configuration failed.'),
+        ], $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * GET /api/settings/biometric/webhook/status
+     *
+     * Read the current HTTP notification config from the device.
+     */
+    public function webhookStatus(): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $result = $this->biometric->getWebhookConfig($tenant);
+
+        if (!$result['success']) {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Failed to read device config.'], 422);
+        }
+
+        $host = $result['data']['HttpHostNotification'] ?? [];
+
+        return response()->json([
+            'success' => true,
+            'config' => [
+                'ip' => $host['ipAddress'] ?? null,
+                'port' => $host['portNo'] ?? null,
+                'path' => $host['url'] ?? null,
+                'protocol' => $host['protocolType'] ?? null,
+            ],
+        ]);
+    }
 }

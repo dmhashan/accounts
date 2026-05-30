@@ -368,6 +368,116 @@ class BiometricSyncService
     }
 
     // -------------------------------------------------------------------------
+    // Real-time webhook: configure device + handle incoming events
+    // -------------------------------------------------------------------------
+
+    /**
+     * Configure the biometric device to push real-time access events to our webhook URL.
+     *
+     * Requires `biometric.webhook_server_host` and `biometric.webhook_token` to be set.
+     * Returns ['success' => bool, 'message' => string].
+     */
+    public function configureWebhook(Tenant $tenant): array
+    {
+        $tenantId = $tenant->id;
+
+        if (!$this->isEnabled($tenantId)) {
+            return ['success' => false, 'message' => 'Biometric integration is disabled.'];
+        }
+
+        $allConfig = $this->config->all($tenantId);
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver) {
+            return ['success' => false, 'message' => 'No device configured.'];
+        }
+
+        $serverHost = $allConfig['biometric.webhook_server_host'] ?? '';
+        $serverPort = (int) ($allConfig['biometric.webhook_server_port'] ?? 80);
+        $token = $allConfig['biometric.webhook_token'] ?? '';
+
+        if (!$serverHost) {
+            return ['success' => false, 'message' => 'Webhook server host is not set. Enter the IP or hostname of this server reachable from the device.'];
+        }
+
+        if (!$token) {
+            return ['success' => false, 'message' => 'No webhook token. Generate one first.'];
+        }
+
+        $path = '/api/biometric/events/' . $tenant->domain . '?token=' . $token;
+        $maker = $allConfig['biometric.device_maker'] ?? '';
+        $model = $allConfig['biometric.device_model'] ?? '';
+        $result = $driver->configureHttpNotification($serverHost, $serverPort, $path);
+
+        $this->writeLog([
+            'tenant_id' => $tenantId,
+            'member_id' => null,
+            'biometric_member_id' => null,
+            'direction' => 'up',
+            'action' => 'webhook_configure',
+            'status' => $result['success'] ? 'success' : 'failed',
+            'device_maker' => $maker,
+            'device_model' => $model,
+            'payload' => ['server_host' => $serverHost, 'server_port' => $serverPort, 'path' => $path],
+            'response' => $result['data'],
+            'error_message' => $result['success'] ? null : $result['message'],
+        ]);
+
+        return $result;
+    }
+
+    /**
+     * Read the current HTTP notification host config from the device.
+     * Returns the raw result from the driver.
+     */
+    public function getWebhookConfig(Tenant $tenant): array
+    {
+        $allConfig = $this->config->all($tenant->id);
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver) {
+            return ['success' => false, 'message' => 'No device configured.', 'data' => []];
+        }
+
+        return $driver->getHttpNotificationConfig();
+    }
+
+    /**
+     * Process a single real-time access event received via the webhook endpoint.
+     * Logs the event and delegates to persistAttendanceEvent.
+     */
+    public function handleIncomingEvent(Tenant $tenant, array $event): void
+    {
+        $employeeNo = $event['employeeNoString'] ?? null;
+        $minor = (int) ($event['minor'] ?? 0);
+
+        // Log every accepted access event
+        $member = $employeeNo
+            ? Member::where('tenant_id', $tenant->id)
+                ->where('biometric_member_id', 'like', '%-' . str_pad($employeeNo, 4, '0', STR_PAD_LEFT))
+                ->first()
+            : null;
+
+        $allConfig = $this->config->all($tenant->id);
+
+        $this->writeLog([
+            'tenant_id' => $tenant->id,
+            'member_id' => $member?->id,
+            'biometric_member_id' => $member?->biometric_member_id,
+            'direction' => 'down',
+            'action' => 'webhook_event',
+            'status' => 'success',
+            'device_maker' => $allConfig['biometric.device_maker'] ?? '',
+            'device_model' => $allConfig['biometric.device_model'] ?? '',
+            'payload' => null,
+            'response' => $event,
+            'error_message' => null,
+        ]);
+
+        $this->persistAttendanceEvent($tenant, $event);
+    }
+
+    // -------------------------------------------------------------------------
     // Connection test (for settings UI)
     // -------------------------------------------------------------------------
 

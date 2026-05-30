@@ -22,4 +22,9 @@ Route::middleware(['auth', 'permission:settings.manage'])->group(function () {
     Route::post('/settings/biometric/sync-all', [BiometricApiController::class, 'syncAllMembers']);
     Route::post('/settings/biometric/sync-attendance', [BiometricApiController::class, 'syncAttendance']);
     Route::get('/settings/biometric/recent-logs', [BiometricApiController::class, 'recentLogs']);
+
+    // Biometric real-time webhook management
+    Route::post('/settings/biometric/webhook/generate-token', [BiometricApiController::class, 'generateWebhookToken']);
+    Route::post('/settings/biometric/webhook/configure', [BiometricApiController::class, 'configureWebhook']);
+    Route::get('/settings/biometric/webhook/status', [BiometricApiController::class, 'webhookStatus']);
 });

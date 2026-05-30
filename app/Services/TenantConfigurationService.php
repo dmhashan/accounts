@@ -42,6 +42,10 @@ class TenantConfigurationService
         'biometric.sync_attendance' => ['Sync Attendance from Device',  '0'],
         'biometric.access_control' => ['Enforce Access by Payment',    '0'],
         'biometric.grace_period_days' => ['Access Grace Period (days)',   '0'],
+        'biometric.webhook_enabled' => ['Real-Time Event Push',          '0'],
+        'biometric.webhook_server_host' => ['Webhook Server Host',           ''],
+        'biometric.webhook_server_port' => ['Webhook Server Port',           '80'],
+        'biometric.webhook_token' => ['Webhook Token',                  ''],
     ];
 
     /**

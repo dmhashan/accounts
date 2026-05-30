@@ -66,6 +66,9 @@ class ConfigurationApiController extends Controller
             'biometric.sync_attendance' => ['sometimes', 'in:0,1'],
             'biometric.access_control' => ['sometimes', 'in:0,1'],
             'biometric.grace_period_days' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'biometric.webhook_enabled' => ['sometimes', 'in:0,1'],
+            'biometric.webhook_server_host' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'biometric.webhook_server_port' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
         ]);
 
         $tenant = app('tenant');

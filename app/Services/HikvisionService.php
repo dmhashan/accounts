@@ -214,8 +214,203 @@ class HikvisionService
     }
 
     // -------------------------------------------------------------------------
+    // Real-time event push (HTTP notification / webhook)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Configure the device to push real-time access events to our server.
+     *
+     * DS-K1T320 (Value Series) requires XML for the httpHosts endpoint — JSON
+     * is rejected with "Invalid Format". We send raw XML and strip ?format=json.
+     *
+     * @param  string  $host  Our server IP or hostname reachable from the device
+     * @param  int  $port  Our server port (typically 80 or 443)
+     * @param  string  $path  URL path + query, e.g. /api/biometric/events/gymname?token=xxx
+     */
+    public function configureHttpNotification(string $host, int $port, string $path): array
+    {
+        // Detect whether $host is a hostname (not a bare IPv4) so we can set
+        // addressingFormatType correctly. The device rejects 'ipaddress' for hostnames.
+        $isIp = filter_var($host, FILTER_VALIDATE_IP) !== false;
+        $addrType = $isIp ? 'ipaddress' : 'hostname';
+        $addrTag = $isIp ? "<ipAddress>{$host}</ipAddress>" : "<hostName>{$host}</hostName>";
+
+        $xml = <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <HttpHostNotification version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">
+              <id>1</id>
+              <url><![CDATA[{$path}]]></url>
+              <protocolType>HTTP</protocolType>
+              <parameterFormatType>XML</parameterFormatType>
+              <addressingFormatType>{$addrType}</addressingFormatType>
+              {$addrTag}
+              <portNo>{$port}</portNo>
+              <httpAuthenticationMethod>none</httpAuthenticationMethod>
+              <heartbeatInterval>30</heartbeatInterval>
+              <heartbeatIntervalEffectiveTime>60</heartbeatIntervalEffectiveTime>
+            </HttpHostNotification>
+            XML;
+
+        return $this->putXml('/ISAPI/Event/notification/httpHosts/1', $xml);
+    }
+
+    /**
+     * Read the current HTTP notification host configuration from the device.
+     * Returns parsed fields under data['HttpHostNotification'].
+     */
+    public function getHttpNotificationConfig(): array
+    {
+        return $this->getXml('/ISAPI/Event/notification/httpHosts/1');
+    }
+
+    /**
+     * Disable HTTP event push by zeroing out the notification host.
+     */
+    public function disableHttpNotification(): array
+    {
+        $xml = <<<'XML'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <HttpHostNotification version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">
+              <id>1</id>
+              <url>/</url>
+              <protocolType>HTTP</protocolType>
+              <parameterFormatType>XML</parameterFormatType>
+              <addressingFormatType>ipaddress</addressingFormatType>
+              <ipAddress>0.0.0.0</ipAddress>
+              <portNo>80</portNo>
+              <httpAuthenticationMethod>none</httpAuthenticationMethod>
+              <heartbeatInterval>0</heartbeatInterval>
+            </HttpHostNotification>
+            XML;
+
+        return $this->putXml('/ISAPI/Event/notification/httpHosts/1', $xml);
+    }
+
+    // -------------------------------------------------------------------------
     // Internal HTTP helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * PUT with a raw XML body (no ?format=json — device rejects it on some endpoints).
+     * Parses the XML response and normalises it to the standard ['success','data','message'] shape.
+     */
+    private function putXml(string $path, string $xmlBody): array
+    {
+        try {
+            Log::debug('HikVision PUT (XML)', ['url' => $this->baseUrl . $path]);
+
+            $response = Http::withDigestAuth($this->username, $this->password)
+                ->timeout(15)
+                ->withoutVerifying()
+                ->withHeaders(['Content-Type' => 'application/xml'])
+                ->withBody(trim($xmlBody), 'application/xml')
+                ->put($this->baseUrl . $path);
+
+            Log::debug('HikVision PUT (XML) response', ['status' => $response->status(), 'body' => $response->body()]);
+
+            return $this->parseXmlResponse($response);
+        } catch (ConnectionException $e) {
+            Log::warning('HikVision connection error (XML PUT)', ['ip' => $this->ip, 'path' => $path, 'error' => $e->getMessage()]);
+
+            return ['success' => false, 'data' => [], 'message' => 'Connection failed: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * GET that returns XML, parsed into ['success','data','message'].
+     * data['HttpHostNotification'] contains the notification config fields.
+     */
+    private function getXml(string $path): array
+    {
+        try {
+            $response = Http::withDigestAuth($this->username, $this->password)
+                ->timeout(15)
+                ->withoutVerifying()
+                ->withHeaders(['Accept' => 'application/xml'])
+                ->get($this->baseUrl . $path);
+
+            return $this->parseXmlResponse($response);
+        } catch (ConnectionException $e) {
+            Log::warning('HikVision connection error (XML GET)', ['ip' => $this->ip, 'error' => $e->getMessage()]);
+
+            return ['success' => false, 'data' => [], 'message' => 'Connection failed: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Parse an XML response from the device into the standard result array.
+     * Handles both status responses (ResponseStatus) and data responses (e.g. HttpHostNotification).
+     */
+    private function parseXmlResponse(\Illuminate\Http\Client\Response $response): array
+    {
+        $body = $response->body();
+
+        if (!$response->successful()) {
+            // Try to extract an error message from the XML body
+            $msg = $this->extractXmlStatusString($body) ?? ('HTTP ' . $response->status());
+
+            return ['success' => false, 'data' => [], 'message' => $msg];
+        }
+
+        // An empty 200 body counts as success (device accepted the config)
+        if (trim($body) === '') {
+            return ['success' => true, 'data' => [], 'message' => 'OK'];
+        }
+
+        libxml_use_internal_errors(true);
+        $node = simplexml_load_string($body);
+        libxml_clear_errors();
+
+        if (!$node) {
+            // Body present but not parseable — if HTTP was 2xx, treat as success
+            return ['success' => true, 'data' => [], 'message' => 'OK'];
+        }
+
+        $localName = $node->getName();
+
+        // ResponseStatus node means the device is reporting an explicit status code
+        if ($localName === 'ResponseStatus') {
+            $statusCode = (int) (string) ($node->statusCode ?? 0);
+            $statusStr = (string) ($node->statusString ?? '');
+            $isOk = $statusCode === 1 || strtolower($statusStr) === 'ok';
+
+            return [
+                'success' => $isOk,
+                'data' => ['statusCode' => $statusCode, 'statusString' => $statusStr,
+                    'subStatusCode' => (string) ($node->subStatusCode ?? '')],
+                'message' => $statusStr ?: ($isOk ? 'OK' : 'Device error'),
+            ];
+        }
+
+        // Data response (e.g. HttpHostNotification) — flatten to array and return
+        $data = $this->xmlToArray($node);
+
+        return ['success' => true, 'data' => [$localName => $data], 'message' => 'OK'];
+    }
+
+    /** Extract statusString from an XML body string without fully parsing it. */
+    private function extractXmlStatusString(string $body): ?string
+    {
+        if (preg_match('/<statusString>([^<]+)<\/statusString>/i', $body, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
+    /** Recursively convert a SimpleXMLElement to a plain array. */
+    private function xmlToArray(\SimpleXMLElement $node): array
+    {
+        $result = [];
+
+        foreach ($node->children() as $child) {
+            $name = $child->getName();
+            $children = $child->children();
+            $result[$name] = count($children) > 0 ? $this->xmlToArray($child) : (string) $child;
+        }
+
+        return $result;
+    }
 
     private function get(string $path): array
     {

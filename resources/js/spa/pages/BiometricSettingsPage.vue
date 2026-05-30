@@ -347,7 +347,180 @@
           </div>
         </Transition>
 
-        <!-- ── Card 3: Recent Sync Logs ── -->
+        <!-- ── Card 3: Real-Time Event Push ── -->
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out"
+          enter-from-class="opacity-0 -translate-y-1"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition-all duration-150 ease-in"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 -translate-y-1"
+        >
+          <div v-if="form['biometric.enabled'] === '1'" class="app-surface rounded-2xl overflow-hidden mb-4">
+            <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
+              <Zap class="w-5 h-5 text-yellow-500 flex-shrink-0" :stroke-width="2" />
+              <div>
+                <h2 class="text-base font-semibold" style="color: var(--text-strong)">
+                  Real-Time Event Push
+                </h2>
+                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                  Device pushes access events instantly instead of waiting for the 30-min poll
+                </p>
+              </div>
+            </div>
+
+            <div class="px-4 md:px-6 py-4 space-y-4">
+              <!-- Enable toggle -->
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0">
+                    <Zap class="w-4 h-4 text-yellow-600 dark:text-yellow-400" :stroke-width="2" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium" style="color: var(--text-strong)">
+                      Enable Real-Time Push
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                      Accept incoming events from the device webhook
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="form['biometric.webhook_enabled'] === '1'"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                  :class="form['biometric.webhook_enabled'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                  @click="toggle('biometric.webhook_enabled')"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                    :class="form['biometric.webhook_enabled'] === '1' ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-1"
+              >
+                <div v-if="form['biometric.webhook_enabled'] === '1'" class="ml-0 md:ml-12 space-y-4">
+                  <!-- Server config -->
+                  <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                    <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                      Server Reachability
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
+                      Enter the IP address or hostname of this server as seen from the biometric device (LAN or public IP).
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div class="sm:col-span-2">
+                        <AppFormField label="Server Host (reachable from device)">
+                          <AppFormInput
+                            v-model="form['biometric.webhook_server_host']"
+                            type="text"
+                            placeholder="192.168.1.10 or myserver.com"
+                            maxlength="255"
+                          />
+                        </AppFormField>
+                      </div>
+                      <AppFormField label="Server Port">
+                        <AppFormInput
+                          v-model="form['biometric.webhook_server_port']"
+                          type="number"
+                          placeholder="80"
+                          min="1"
+                          max="65535"
+                        />
+                      </AppFormField>
+                    </div>
+                  </div>
+
+                  <!-- Webhook token -->
+                  <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                    <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                      Webhook Token
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
+                      A secret token included in the device's webhook URL. Regenerate to invalidate any existing device configuration.
+                    </p>
+                    <div class="flex items-center gap-2">
+                      <div class="flex-1 min-w-0 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-xs font-mono text-secondary-600 dark:text-secondary-300 truncate">
+                        {{ webhookToken || '— not generated yet —' }}
+                      </div>
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors flex-shrink-0"
+                        :disabled="generatingToken"
+                        @click="generateToken"
+                      >
+                        <RefreshCw class="w-3.5 h-3.5" :class="generatingToken ? 'animate-spin' : ''" :stroke-width="2" />
+                        {{ generatingToken ? '' : 'Regenerate' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Webhook URL preview -->
+                  <div v-if="webhookToken && form['biometric.webhook_server_host']" class="rounded-xl border border-blue-200 dark:border-blue-800 p-4 bg-blue-50/50 dark:bg-blue-900/10">
+                    <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
+                      Device Webhook URL
+                    </p>
+                    <p class="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">
+                      {{ webhookUrlPreview }}
+                    </p>
+                  </div>
+
+                  <!-- Apply to device -->
+                  <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 transition-colors"
+                      :disabled="configuringWebhook || !webhookToken || !form['biometric.webhook_server_host']"
+                      @click="configureWebhook"
+                    >
+                      <Zap class="w-4 h-4" :stroke-width="2" />
+                      {{ configuringWebhook ? 'Applying…' : 'Apply to Device' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-4 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
+                      :disabled="checkingWebhookStatus"
+                      @click="checkWebhookStatus"
+                    >
+                      <MonitorCheck class="w-4 h-4" :stroke-width="2" />
+                      {{ checkingWebhookStatus ? 'Checking…' : 'Check Device Config' }}
+                    </button>
+                  </div>
+
+                  <p v-if="webhookConfigResult" class="text-xs font-medium" :class="webhookConfigOk ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    {{ webhookConfigResult }}
+                  </p>
+
+                  <!-- Device current config readback -->
+                  <div v-if="deviceWebhookConfig" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30 text-xs space-y-1.5">
+                    <p class="font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">
+                      Current Device Notification Config
+                    </p>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                      <span class="text-secondary-500 dark:text-secondary-400">Host</span>
+                      <span class="font-mono text-secondary-700 dark:text-secondary-300">{{ deviceWebhookConfig.ip || '—' }}</span>
+                      <span class="text-secondary-500 dark:text-secondary-400">Port</span>
+                      <span class="font-mono text-secondary-700 dark:text-secondary-300">{{ deviceWebhookConfig.port || '—' }}</span>
+                      <span class="text-secondary-500 dark:text-secondary-400">Path</span>
+                      <span class="font-mono text-secondary-700 dark:text-secondary-300 break-all">{{ deviceWebhookConfig.path || '—' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+        </Transition>
+
+        <!-- ── Card 4: Recent Sync Logs ── -->
         <div v-if="form['biometric.enabled'] === '1'" class="app-surface rounded-2xl overflow-hidden mb-4">
           <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
             <Activity class="w-5 h-5 text-secondary-400 flex-shrink-0" :stroke-width="2" />
@@ -496,12 +669,14 @@ import {
     ChevronRight,
     Cpu,
     Download,
+    MonitorCheck,
     Power,
     RefreshCw,
     ShieldCheck,
     Upload,
     Users,
     Wifi,
+    Zap,
 } from 'lucide-vue-next';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -536,6 +711,23 @@ const syncResult = ref('');
 const attendanceSyncing    = ref(false);
 const attendanceSyncResult = ref('');
 
+// Real-time webhook
+const webhookToken           = ref('');
+const generatingToken        = ref(false);
+const configuringWebhook     = ref(false);
+const webhookConfigResult    = ref('');
+const webhookConfigOk        = ref(false);
+const checkingWebhookStatus  = ref(false);
+const deviceWebhookConfig    = ref(null);
+
+const webhookUrlPreview = computed(() => {
+    const host  = form.value['biometric.webhook_server_host'];
+    const port  = form.value['biometric.webhook_server_port'] || '80';
+    const token = webhookToken.value;
+    if (!host || !token) return '';
+    return `http://${host}:${port}/api/biometric/events/{tenantDomain}?token=${token}`;
+});
+
 const logsLoading    = ref(false);
 const recentLogs     = ref([]);
 const logsFailedCount = ref(0);
@@ -555,17 +747,20 @@ const paginationPages = computed(() => {
 });
 
 const form = ref({
-    'biometric.enabled':           '0',
-    'biometric.device_maker':      '',
-    'biometric.device_model':      '',
-    'biometric.device_ip':         '',
-    'biometric.device_port':       '80',
-    'biometric.device_username':   'admin',
-    'biometric.device_password':   '',
-    'biometric.sync_members':      '0',
-    'biometric.sync_attendance':   '0',
-    'biometric.access_control':    '0',
-    'biometric.grace_period_days': '0',
+    'biometric.enabled':             '0',
+    'biometric.device_maker':        '',
+    'biometric.device_model':        '',
+    'biometric.device_ip':           '',
+    'biometric.device_port':         '80',
+    'biometric.device_username':     'admin',
+    'biometric.device_password':     '',
+    'biometric.sync_members':        '0',
+    'biometric.sync_attendance':     '0',
+    'biometric.access_control':      '0',
+    'biometric.grace_period_days':   '0',
+    'biometric.webhook_enabled':     '0',
+    'biometric.webhook_server_host': '',
+    'biometric.webhook_server_port': '80',
 });
 
 // ── Computed ───────────────────────────────────────────────────────────────
@@ -593,6 +788,10 @@ async function load() {
         Object.keys(form.value).forEach((key) => {
             if (data[key] !== undefined) form.value[key] = data[key];
         });
+        // Load webhook token (not part of the form, managed separately)
+        if (data['biometric.webhook_token']) {
+            webhookToken.value = data['biometric.webhook_token'];
+        }
         if (form.value['biometric.enabled'] === '1') loadRecentLogs();
     } catch {
         loadError.value = 'Failed to load configuration.';
@@ -663,8 +862,62 @@ async function syncAttendance() {
     }
 }
 
-async function loadRecentLogs(page = 1) {
-    logsLoading.value = true;
+async function generateToken() {
+    generatingToken.value = true;
+    try {
+        const res = await apiRequest('/api/settings/biometric/webhook/generate-token', { method: 'POST' });
+        webhookToken.value = res.token || '';
+        webhookConfigResult.value = '';
+        deviceWebhookConfig.value = null;
+    } catch (err) {
+        saveError.value = err?.response?.data?.message || 'Failed to generate token.';
+    } finally {
+        generatingToken.value = false;
+    }
+}
+
+async function configureWebhook() {
+    configuringWebhook.value = true;
+    webhookConfigResult.value = '';
+    webhookConfigOk.value = false;
+
+    // Save server host/port and webhook_enabled first
+    await save();
+
+    try {
+        const res = await apiRequest('/api/settings/biometric/webhook/configure', { method: 'POST' });
+        webhookConfigOk.value = res.success !== false;
+        webhookConfigResult.value = res.message || (webhookConfigOk.value ? 'Device configured.' : 'Failed.');
+        if (webhookConfigOk.value) loadRecentLogs();
+    } catch (err) {
+        webhookConfigOk.value = false;
+        webhookConfigResult.value = err?.response?.data?.message || 'Configuration failed.';
+    } finally {
+        configuringWebhook.value = false;
+    }
+}
+
+async function checkWebhookStatus() {
+    checkingWebhookStatus.value = true;
+    deviceWebhookConfig.value = null;
+    webhookConfigResult.value = '';
+    try {
+        const res = await apiRequest('/api/settings/biometric/webhook/status');
+        if (res.success) {
+            deviceWebhookConfig.value = res.config;
+        } else {
+            webhookConfigOk.value = false;
+            webhookConfigResult.value = res.message || 'Could not read device config.';
+        }
+    } catch (err) {
+        webhookConfigOk.value = false;
+        webhookConfigResult.value = err?.response?.data?.message || 'Failed to read device config.';
+    } finally {
+        checkingWebhookStatus.value = false;
+    }
+}
+
+async function loadRecentLogs(page = 1) {    logsLoading.value = true;
     try {
         const res = await apiRequest(`/api/settings/biometric/recent-logs?page=${page}&per_page=20`);
         recentLogs.value      = res.data || [];
