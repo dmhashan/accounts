@@ -21,15 +21,8 @@
       <AppBottomNav @open-menu="mobileMenuOpen = true" />
     </div>
 
-    <!-- Calculator FAB -->
-    <button
-      type="button"
-      aria-label="Open calculator"
-      class="fixed right-4 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] lg:bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-500/30 text-white transition-transform hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
-      @click="calculatorOpen = true"
-    >
-      <Calculator class="w-5 h-5" />
-    </button>
+    <!-- AssistiveTouch -->
+    <AssistiveTouchButton :actions="assistiveActions" />
 
     <CalculatorModal v-if="calculatorOpen" @close="calculatorOpen = false" />
   </div>
@@ -41,9 +34,25 @@ import { Calculator } from 'lucide-vue-next';
 import AppSidebar from './layout/AppSidebar.vue';
 import AppMobileDrawer from './layout/AppMobileDrawer.vue';
 import AppBottomNav from './layout/AppBottomNav.vue';
+import AssistiveTouchButton from './components/AssistiveTouchButton.vue';
 import CalculatorModal from './components/CalculatorModal.vue';
 import { routeLoader } from './routeLoader';
 
 const mobileMenuOpen = ref(false);
 const calculatorOpen = ref(false);
+
+/**
+ * AssistiveTouch actions registry.
+ * To add a new option later: push a new entry here.
+ * Each entry: { id, label, icon (Lucide component), handler }
+ */
+const assistiveActions = [
+  {
+    id: 'calculator',
+    label: 'Calculator',
+    icon: Calculator,
+    color: 'orange',
+    handler: () => { calculatorOpen.value = true; },
+  },
+];
 </script>
