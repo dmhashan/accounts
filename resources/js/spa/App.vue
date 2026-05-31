@@ -145,19 +145,10 @@ async function handleAssistiveMenuOpen() {
  * Each entry: { id, label, icon (Lucide component), handler }
  */
 const assistiveActions = computed(() => {
-  const base = [
-    {
-      id: 'calculator',
-      label: 'Calculator',
-      icon: Calculator,
-      color: 'orange',
-      handler: () => { calculatorOpen.value = true; },
-    },
-  ];
-
   if (biometricConnected.value) {
     if (doorStatusLoading.value) {
-      base.push({
+      return [
+        {
         id: 'biometric-status-loading',
         label: 'Checking Door...',
         icon: LoaderCircle,
@@ -165,13 +156,19 @@ const assistiveActions = computed(() => {
         loading: true,
         disabled: true,
         handler: () => {},
-      });
-
-      return base;
+        },
+      ];
     }
 
     if (!doorKeepUnlocked.value) {
-      base.push(
+      return [
+        {
+          id: 'calculator',
+          label: 'Calculator',
+          icon: Calculator,
+          color: 'orange',
+          handler: () => { calculatorOpen.value = true; },
+        },
         {
           id: 'biometric-unlock',
           label: 'Door Unlock',
@@ -188,24 +185,32 @@ const assistiveActions = computed(() => {
             onSuccess: () => { doorKeepUnlocked.value = true; },
           }),
         },
-      );
-    } else {
-      base.push(
-        {
-          id: 'biometric-reset-mode',
-          label: 'Reset to Usual Access',
-          icon: RotateCcw,
-          color: 'amber',
-          handler: () => triggerBiometricAction('/api/settings/biometric/close', {
-            successMessage: 'Door reset to usual mode. Only valid authenticated access is allowed.',
-            onSuccess: () => { doorKeepUnlocked.value = false; },
-          }),
-        },
-      );
+      ];
     }
+
+    return [
+      {
+        id: 'biometric-reset-mode',
+        label: 'Reset to Usual Access',
+        icon: RotateCcw,
+        color: 'amber',
+        handler: () => triggerBiometricAction('/api/settings/biometric/close', {
+          successMessage: 'Door reset to usual mode. Only valid authenticated access is allowed.',
+          onSuccess: () => { doorKeepUnlocked.value = false; },
+        }),
+      },
+    ];
   }
 
-  return base;
+  return [
+    {
+      id: 'calculator',
+      label: 'Calculator',
+      icon: Calculator,
+      color: 'orange',
+      handler: () => { calculatorOpen.value = true; },
+    },
+  ];
 });
 
 onMounted(() => {
