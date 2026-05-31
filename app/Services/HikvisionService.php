@@ -44,6 +44,125 @@ class HikvisionService
     }
 
     // -------------------------------------------------------------------------
+    // Door control
+    // -------------------------------------------------------------------------
+
+    /**
+     * Trigger one-time unlock on a door.
+     */
+    public function unlockDoor(int $doorNo = 1): array
+    {
+        return $this->remoteControlDoor($doorNo, 'open');
+    }
+
+    /**
+     * Put a door into always-open mode until manually reverted on the device side.
+     */
+    public function keepDoorUnlocked(int $doorNo = 1): array
+    {
+        return $this->remoteControlDoor($doorNo, 'alwaysOpen');
+    }
+
+    /**
+     * Trigger one-time close on a door.
+     */
+    public function closeDoor(int $doorNo = 1): array
+    {
+        return $this->remoteControlDoor($doorNo, 'close');
+    }
+
+    /**
+     * Put a door into always-closed mode.
+     */
+    public function keepDoorClosed(int $doorNo = 1): array
+    {
+        return $this->remoteControlDoor($doorNo, 'alwaysClose');
+    }
+
+    /**
+     * Read current door mode/state from the device.
+     * Returns state: keep_unlock | keep_close | unknown
+     */
+    public function getDoorStatus(int $doorNo = 1): array
+    {
+        $json = $this->get("/ISAPI/AccessControl/RemoteControl/door/{$doorNo}");
+        $state = $this->extractDoorState($json['data'] ?? []);
+
+        if ($json['success'] && $state !== 'unknown') {
+            return ['success' => true, 'data' => ['state' => $state], 'message' => 'OK'];
+        }
+
+        $xml = $this->getXml("/ISAPI/AccessControl/RemoteControl/door/{$doorNo}");
+        $xmlState = $this->extractDoorState($xml['data'] ?? []);
+
+        if ($xml['success'] && $xmlState !== 'unknown') {
+            return ['success' => true, 'data' => ['state' => $xmlState], 'message' => 'OK'];
+        }
+
+        return ['success' => false, 'data' => ['state' => 'unknown'], 'message' => 'Unable to read door state from device.'];
+    }
+
+    /**
+     * Send remote door-control commands.
+     *
+     * Many Hikvision firmwares only accept XML on this endpoint.
+     * We try XML first and keep a JSON fallback for compatibility.
+     */
+    private function remoteControlDoor(int $doorNo, string $cmd): array
+    {
+        $xml = <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <RemoteControlDoor version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">
+              <doorNo>{$doorNo}</doorNo>
+              <cmd>{$cmd}</cmd>
+            </RemoteControlDoor>
+            XML;
+
+        $result = $this->putXml("/ISAPI/AccessControl/RemoteControl/door/{$doorNo}", $xml);
+
+        if ($result['success']) {
+            return $result;
+        }
+
+        return $this->put("/ISAPI/AccessControl/RemoteControl/door/{$doorNo}", [
+            'RemoteControlDoor' => [
+                'doorNo' => $doorNo,
+                'cmd' => $cmd,
+            ],
+        ]);
+    }
+
+    /**
+     * Best-effort parse for door mode from device payloads.
+     */
+    private function extractDoorState(array $payload): string
+    {
+        $target = $payload['RemoteControlDoor'] ?? $payload;
+
+        $cmd = strtolower((string) ($target['cmd'] ?? $target['command'] ?? ''));
+
+        if (in_array($cmd, ['alwaysopen', 'open', 'keepopen'], true)) {
+            return 'keep_unlock';
+        }
+
+        if (in_array($cmd, ['alwaysclose', 'close', 'keepclose'], true)) {
+            return 'keep_close';
+        }
+
+        $doorState = strtolower((string) ($target['doorState'] ?? $target['status'] ?? $target['state'] ?? ''));
+
+        if (in_array($doorState, ['open', 'opened', 'alwaysopen', 'keepopen'], true)) {
+            return 'keep_unlock';
+        }
+
+        if (in_array($doorState, ['close', 'closed', 'alwaysclose', 'keepclose'], true)) {
+            return 'keep_close';
+        }
+
+        return 'unknown';
+    }
+
+    // -------------------------------------------------------------------------
     // Person management
     // -------------------------------------------------------------------------
 

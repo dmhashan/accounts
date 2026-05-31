@@ -512,6 +512,120 @@ class BiometricSyncService
     }
 
     /**
+     * Send a one-time unlock command to the configured biometric device.
+     */
+    public function unlockDoor(Tenant $tenant, int $doorNo = 1): array
+    {
+        return $this->runDoorControl($tenant, $doorNo, 'unlock', 'Door unlocked.', fn (HikvisionService $driver) => $driver->unlockDoor($doorNo));
+    }
+
+    /**
+     * Set the door to always-open mode on the configured biometric device.
+     */
+    public function keepDoorUnlocked(Tenant $tenant, int $doorNo = 1): array
+    {
+        return $this->runDoorControl($tenant, $doorNo, 'keep_unlock', 'Door set to keep-unlocked mode.', fn (HikvisionService $driver) => $driver->keepDoorUnlocked($doorNo));
+    }
+
+    /**
+     * Send a one-time close command to the configured biometric device.
+     */
+    public function closeDoor(Tenant $tenant, int $doorNo = 1): array
+    {
+        return $this->runDoorControl($tenant, $doorNo, 'close', 'Door closed.', fn (HikvisionService $driver) => $driver->closeDoor($doorNo));
+    }
+
+    /**
+     * Set the door to always-closed mode on the configured biometric device.
+     */
+    public function keepDoorClosed(Tenant $tenant, int $doorNo = 1): array
+    {
+        return $this->runDoorControl($tenant, $doorNo, 'keep_close', 'Door set to keep-closed mode.', fn (HikvisionService $driver) => $driver->keepDoorClosed($doorNo));
+    }
+
+    /**
+     * Read current door mode for UI decisions.
+     * Returns state: keep_unlock | keep_close | unknown
+     */
+    public function getDoorStatus(Tenant $tenant, int $doorNo = 1): array
+    {
+        if (!$this->isEnabled($tenant->id)) {
+            return ['success' => false, 'state' => 'unknown', 'message' => 'Biometric integration is disabled.'];
+        }
+
+        $allConfig = $this->config->all($tenant->id);
+        $driver = $this->buildDriver($allConfig);
+
+        if ($driver) {
+            $device = $driver->getDoorStatus($doorNo);
+            $deviceState = $device['data']['state'] ?? 'unknown';
+
+            if ($device['success'] && in_array($deviceState, ['keep_unlock', 'keep_close'], true)) {
+                return ['success' => true, 'state' => $deviceState, 'source' => 'device', 'message' => 'OK'];
+            }
+        }
+
+        $latest = BiometricSyncLog::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('direction', 'up')
+            ->where('status', 'success')
+            ->whereIn('action', ['keep_unlock', 'keep_close'])
+            ->latest('created_at')
+            ->first();
+
+        if ($latest && $latest->action === 'keep_unlock') {
+            return ['success' => true, 'state' => 'keep_unlock', 'source' => 'log', 'message' => 'OK'];
+        }
+
+        if ($latest && $latest->action === 'keep_close') {
+            return ['success' => true, 'state' => 'keep_close', 'source' => 'log', 'message' => 'OK'];
+        }
+
+        return ['success' => true, 'state' => 'unknown', 'source' => 'fallback', 'message' => 'Unknown'];
+    }
+
+    /**
+     * Shared door-control execution path with audit log writing.
+     */
+    private function runDoorControl(Tenant $tenant, int $doorNo, string $action, string $okMessage, callable $command): array
+    {
+        if (!$this->isEnabled($tenant->id)) {
+            return ['success' => false, 'message' => 'Biometric integration is disabled.'];
+        }
+
+        $allConfig = $this->config->all($tenant->id);
+        $driver = $this->buildDriver($allConfig);
+        $maker = $allConfig['biometric.device_maker'] ?? '';
+        $model = $allConfig['biometric.device_model'] ?? '';
+
+        if (!$driver) {
+            return ['success' => false, 'message' => 'No device configured.'];
+        }
+
+        $result = $command($driver);
+
+        $this->writeLog([
+            'tenant_id' => $tenant->id,
+            'member_id' => null,
+            'biometric_member_id' => null,
+            'direction' => 'up',
+            'action' => $action,
+            'status' => $result['success'] ? 'success' : 'failed',
+            'device_maker' => $maker,
+            'device_model' => $model,
+            'payload' => ['door_no' => $doorNo],
+            'response' => $result['data'],
+            'error_message' => $result['success'] ? null : $result['message'],
+        ]);
+
+        if ($result['success']) {
+            $result['message'] = $okMessage;
+        }
+
+        return $result;
+    }
+
+    /**
      * Trigger fingerprint enrolment on the device for a member.
      * Returns ['success' => bool, 'message' => string].
      */

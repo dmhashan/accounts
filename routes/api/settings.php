@@ -21,6 +21,11 @@ Route::middleware(['auth', 'permission:settings.manage'])->group(function () {
     Route::post('/settings/biometric/test-connection', [BiometricApiController::class, 'testConnection']);
     Route::post('/settings/biometric/sync-all', [BiometricApiController::class, 'syncAllMembers']);
     Route::post('/settings/biometric/sync-attendance', [BiometricApiController::class, 'syncAttendance']);
+    Route::post('/settings/biometric/unlock', [BiometricApiController::class, 'unlockDoor']);
+    Route::post('/settings/biometric/keep-unlock', [BiometricApiController::class, 'keepDoorUnlocked']);
+    Route::post('/settings/biometric/close', [BiometricApiController::class, 'closeDoor']);
+    Route::post('/settings/biometric/keep-close', [BiometricApiController::class, 'keepDoorClosed']);
+    Route::get('/settings/biometric/door-status', [BiometricApiController::class, 'doorStatus']);
     Route::get('/settings/biometric/recent-logs', [BiometricApiController::class, 'recentLogs']);
 
     // Biometric real-time webhook management

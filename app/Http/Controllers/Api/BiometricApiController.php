@@ -66,6 +66,93 @@ class BiometricApiController extends Controller
     }
 
     /**
+     * POST /api/settings/biometric/unlock
+     */
+    public function unlockDoor(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $doorNo = max(1, (int) $request->input('door_no', 1));
+        $result = $this->biometric->unlockDoor($tenant, $doorNo);
+
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['message'] ?? ($result['success'] ? 'Door unlocked.' : 'Unlock failed.'),
+        ], $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * POST /api/settings/biometric/keep-unlock
+     */
+    public function keepDoorUnlocked(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $doorNo = max(1, (int) $request->input('door_no', 1));
+        $result = $this->biometric->keepDoorUnlocked($tenant, $doorNo);
+
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['message'] ?? ($result['success'] ? 'Door set to keep-unlocked mode.' : 'Keep-unlock failed.'),
+        ], $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * POST /api/settings/biometric/close
+     */
+    public function closeDoor(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $doorNo = max(1, (int) $request->input('door_no', 1));
+        $result = $this->runDoorAction('closeDoor', $tenant, $doorNo);
+
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['message'] ?? ($result['success'] ? 'Door closed.' : 'Close failed.'),
+        ], $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * POST /api/settings/biometric/keep-close
+     */
+    public function keepDoorClosed(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $doorNo = max(1, (int) $request->input('door_no', 1));
+        $result = $this->runDoorAction('keepDoorClosed', $tenant, $doorNo);
+
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['message'] ?? ($result['success'] ? 'Door set to keep-closed mode.' : 'Keep-close failed.'),
+        ], $result['success'] ? 200 : 422);
+    }
+
+    /**
+     * GET /api/settings/biometric/door-status
+     */
+    public function doorStatus(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $doorNo = max(1, (int) $request->query('door_no', 1));
+        $result = $this->runDoorStatusAction($tenant, $doorNo);
+
+        return response()->json([
+            'success' => $result['success'] ?? true,
+            'state' => $result['state'] ?? 'unknown',
+            'source' => $result['source'] ?? null,
+            'message' => $result['message'] ?? 'OK',
+        ]);
+    }
+
+    /**
      * POST /api/members/{member}/biometric-assign-id
      * Auto-generate and assign a biometric_member_id to a member that doesn't have one.
      */
@@ -361,5 +448,39 @@ class BiometricApiController extends Controller
                 'protocol' => $host['protocolType'] ?? null,
             ],
         ]);
+    }
+
+    /**
+     * Execute a biometric door-control action by method name.
+     *
+     * @return array{success: bool, message?: string}
+     */
+    private function runDoorAction(string $method, Tenant $tenant, int $doorNo): array
+    {
+        if (!method_exists($this->biometric, $method)) {
+            return ['success' => false, 'message' => 'Door action is not supported.'];
+        }
+
+        /** @var array{success: bool, message?: string} $result */
+        $result = $this->biometric->{$method}($tenant, $doorNo);
+
+        return $result;
+    }
+
+    /**
+     * Execute door-status action with safe method resolution.
+     *
+     * @return array{success?: bool, state?: string, source?: string|null, message?: string}
+     */
+    private function runDoorStatusAction(Tenant $tenant, int $doorNo): array
+    {
+        if (!method_exists($this->biometric, 'getDoorStatus')) {
+            return ['success' => false, 'state' => 'unknown', 'message' => 'Door status is not supported.'];
+        }
+
+        /** @var array{success?: bool, state?: string, source?: string|null, message?: string} $result */
+        $result = $this->biometric->{'getDoorStatus'}($tenant, $doorNo);
+
+        return $result;
     }
 }

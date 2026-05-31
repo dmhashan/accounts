@@ -112,6 +112,8 @@
               type="button"
               role="menuitem"
               class="assistive-action group flex flex-col items-center gap-1.5 focus:outline-none"
+              :class="(item.disabled || item.loading) ? 'opacity-70 cursor-not-allowed' : ''"
+              :disabled="item.disabled || item.loading"
               :style="{ '--stagger': `${idx * 45}ms` }"
               :aria-label="item.label"
               @click="handleAction(item)"
@@ -126,7 +128,7 @@
               >
                 <!-- Subtle inner gloss -->
                 <span class="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent" aria-hidden="true" />
-                <component :is="item.icon" class="relative z-10 w-[26px] h-[26px] text-white drop-shadow" />
+                <component :is="item.icon" class="relative z-10 w-[26px] h-[26px] text-white drop-shadow" :class="item.loading ? 'animate-spin' : ''" />
               </span>
               <!-- Label -->
               <span
@@ -176,6 +178,8 @@ const props = defineProps({
     default: null,
   },
 });
+
+const emit = defineEmits(['menu-open']);
 
 // ─── Tile color map ──────────────────────────────────────────────────────────
 
@@ -349,7 +353,9 @@ function onTouchEnd() {
 function onOrbClick() {
   if (movedDuringPress) return;
   resetIdle();
-  menuOpen.value = !menuOpen.value;
+  const next = !menuOpen.value;
+  menuOpen.value = next;
+  if (next) emit('menu-open');
 }
 
 function closeMenu() {
@@ -357,6 +363,7 @@ function closeMenu() {
 }
 
 function handleAction(item) {
+  if (item.disabled || item.loading) return;
   closeMenu();
   item.handler();
 }
