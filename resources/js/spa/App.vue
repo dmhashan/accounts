@@ -50,7 +50,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { Calculator, LoaderCircle, Lock, LockKeyhole, LockKeyholeOpen, LockOpen } from 'lucide-vue-next';
+import { Calculator, LoaderCircle, LockKeyholeOpen, LockOpen, RotateCcw } from 'lucide-vue-next';
 import AppSidebar from './layout/AppSidebar.vue';
 import AppMobileDrawer from './layout/AppMobileDrawer.vue';
 import AppBottomNav from './layout/AppBottomNav.vue';
@@ -108,7 +108,7 @@ async function refreshBiometricConnection() {
 async function triggerBiometricAction(path, options = {}) {
   try {
     const response = await apiRequest(path, { method: 'post' });
-    showAssistiveFeedback('success', response?.message || 'Action completed successfully.');
+    showAssistiveFeedback('success', options.successMessage || response?.message || 'Action completed successfully.');
     if (typeof options.onSuccess === 'function') options.onSuccess();
   } catch (err) {
     biometricConnected.value = false;
@@ -192,20 +192,12 @@ const assistiveActions = computed(() => {
     } else {
       base.push(
         {
-          id: 'biometric-close',
-          label: 'Door Close',
-          icon: Lock,
-          color: 'red',
+          id: 'biometric-reset-mode',
+          label: 'Reset to Usual Access',
+          icon: RotateCcw,
+          color: 'amber',
           handler: () => triggerBiometricAction('/api/settings/biometric/close', {
-            onSuccess: () => { doorKeepUnlocked.value = false; },
-          }),
-        },
-        {
-          id: 'biometric-keep-close',
-          label: 'Door Keep Close',
-          icon: LockKeyhole,
-          color: 'red',
-          handler: () => triggerBiometricAction('/api/settings/biometric/keep-close', {
+            successMessage: 'Door reset to usual mode. Only valid authenticated access is allowed.',
             onSuccess: () => { doorKeepUnlocked.value = false; },
           }),
         },

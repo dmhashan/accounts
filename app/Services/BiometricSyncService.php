@@ -569,7 +569,7 @@ class BiometricSyncService
             ->where('tenant_id', $tenant->id)
             ->where('direction', 'up')
             ->where('status', 'success')
-            ->whereIn('action', ['keep_unlock', 'keep_close'])
+            ->whereIn('action', ['keep_unlock', 'keep_close', 'unlock', 'close'])
             ->latest('created_at')
             ->first();
 
@@ -579,6 +579,10 @@ class BiometricSyncService
 
         if ($latest && $latest->action === 'keep_close') {
             return ['success' => true, 'state' => 'keep_close', 'source' => 'log', 'message' => 'OK'];
+        }
+
+        if ($latest && in_array($latest->action, ['unlock', 'close'], true)) {
+            return ['success' => true, 'state' => 'unknown', 'source' => 'log', 'message' => 'OK'];
         }
 
         return ['success' => true, 'state' => 'unknown', 'source' => 'fallback', 'message' => 'Unknown'];

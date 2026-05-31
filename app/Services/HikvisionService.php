@@ -141,21 +141,21 @@ class HikvisionService
 
         $cmd = strtolower((string) ($target['cmd'] ?? $target['command'] ?? ''));
 
-        if (in_array($cmd, ['alwaysopen', 'open', 'keepopen'], true)) {
+        if (in_array($cmd, ['alwaysopen', 'keepopen'], true)) {
             return 'keep_unlock';
         }
 
-        if (in_array($cmd, ['alwaysclose', 'close', 'keepclose'], true)) {
+        if (in_array($cmd, ['alwaysclose', 'keepclose'], true)) {
             return 'keep_close';
         }
 
         $doorState = strtolower((string) ($target['doorState'] ?? $target['status'] ?? $target['state'] ?? ''));
 
-        if (in_array($doorState, ['open', 'opened', 'alwaysopen', 'keepopen'], true)) {
+        if (in_array($doorState, ['alwaysopen', 'keepopen'], true)) {
             return 'keep_unlock';
         }
 
-        if (in_array($doorState, ['close', 'closed', 'alwaysclose', 'keepclose'], true)) {
+        if (in_array($doorState, ['alwaysclose', 'keepclose'], true)) {
             return 'keep_close';
         }
 
