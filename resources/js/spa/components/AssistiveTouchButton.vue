@@ -21,13 +21,13 @@
     >
       <!-- Glow halo (visible when menu is open) -->
       <span
-        class="absolute inset-[-6px] rounded-full border-2 border-white/20 transition-opacity duration-300"
+        class="absolute inset-[-6px] rounded-full border-2 border-white/20"
         :class="menuOpen ? 'opacity-100' : 'opacity-0'"
         aria-hidden="true"
       />
       <!-- Glass disc -->
       <span
-        class="absolute inset-0 rounded-full bg-neutral-900/70 dark:bg-black/70 backdrop-blur-xl border border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.55)]"
+        class="absolute inset-0 rounded-full bg-neutral-900 dark:bg-black border border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.55)]"
         aria-hidden="true"
       />
       <!-- Concentric inner ring -->
@@ -43,45 +43,24 @@
     </button>
 
     <!-- ── Menu panel ─────────────────────────────────────────── -->
-    <Transition name="at-menu">
+    <div
+      v-if="menuOpen"
+      class="assistive-menu absolute z-10"
+      :class="placement.classes"
+      :style="{ transformOrigin: placement.origin }"
+      role="menu"
+      aria-label="Assistive Touch menu"
+    >
       <div
-        v-if="menuOpen"
-        class="assistive-menu absolute z-10"
-        :class="placement.classes"
-        :style="{ transformOrigin: placement.origin }"
-        role="menu"
-        aria-label="Assistive Touch menu"
+        class="relative overflow-hidden rounded-[24px] bg-neutral-900 dark:bg-black border border-white/10 shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
+        :class="isCompactMenu ? 'min-w-[10.5rem]' : 'min-w-[13.5rem]'"
       >
-        <div
-          class="relative overflow-hidden rounded-[24px] bg-neutral-900/88 dark:bg-black/88 backdrop-blur-2xl border border-white/10 shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
-          :class="isCompactMenu ? 'min-w-[10.5rem]' : 'min-w-[13.5rem]'"
-        >
-          <!-- Header -->
-          <div v-if="!isCompactMenu" class="flex items-center justify-between px-4 pt-4 pb-2.5">
-            <span class="text-white/40 text-[10px] font-bold uppercase tracking-[0.15em]">Quick Access</span>
-            <button
-              type="button"
-              class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-white/10 hover:bg-white/18 active:scale-90 transition-all text-white/50 hover:text-white/80 focus:outline-none"
-              aria-label="Close menu"
-              @click.stop="closeMenu"
-            >
-              <svg
-                viewBox="0 0 10 10"
-                class="w-2.5 h-2.5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              >
-                <path d="M2 2l6 6M8 2l-6 6" />
-              </svg>
-            </button>
-          </div>
-
+        <!-- Header -->
+        <div v-if="!isCompactMenu" class="flex items-center justify-between px-4 pt-4 pb-2.5">
+          <span class="text-white/40 text-[10px] font-bold uppercase tracking-[0.15em]">Quick Access</span>
           <button
-            v-else
             type="button"
-            class="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 hover:bg-white/18 active:scale-90 transition-all text-white/50 hover:text-white/80 focus:outline-none"
+            class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-white/10 hover:bg-white/18 text-white/50 hover:text-white/80 focus:outline-none"
             aria-label="Close menu"
             @click.stop="closeMenu"
           >
@@ -96,63 +75,80 @@
               <path d="M2 2l6 6M8 2l-6 6" />
             </svg>
           </button>
+        </div>
 
-          <!-- Separator -->
-          <div v-if="!isCompactMenu" class="mx-4 mb-3 h-px bg-white/[0.07]" />
-
-          <!-- Actions grid -->
-          <div
-            class="grid px-3 pb-4"
-            :class="isCompactMenu ? 'gap-1 pt-3 pb-5 justify-items-center' : 'gap-2.5 pt-0'"
-            :style="gridStyle"
+        <button
+          v-else
+          type="button"
+          class="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 hover:bg-white/18 text-white/50 hover:text-white/80 focus:outline-none"
+          aria-label="Close menu"
+          @click.stop="closeMenu"
+        >
+          <svg
+            viewBox="0 0 10 10"
+            class="w-2.5 h-2.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
           >
-            <button
-              v-for="(item, idx) in actions"
-              :key="item.id"
-              type="button"
-              role="menuitem"
-              class="assistive-action group flex flex-col items-center gap-1.5 focus:outline-none"
-              :class="(item.disabled || item.loading) ? 'opacity-70 cursor-not-allowed' : ''"
-              :disabled="item.disabled || item.loading"
-              :style="{ '--stagger': `${idx * 45}ms` }"
-              :aria-label="item.label"
-              @click="handleAction(item)"
+            <path d="M2 2l6 6M8 2l-6 6" />
+          </svg>
+        </button>
+
+        <!-- Separator -->
+        <div v-if="!isCompactMenu" class="mx-4 mb-3 h-px bg-white/[0.07]" />
+
+        <!-- Actions grid -->
+        <div
+          class="grid px-3 pb-4"
+          :class="isCompactMenu ? 'gap-1 pt-3 pb-5 justify-items-center' : 'gap-2.5 pt-0'"
+          :style="gridStyle"
+        >
+          <button
+            v-for="(item, idx) in actions"
+            :key="item.id"
+            type="button"
+            role="menuitem"
+            class="assistive-action group flex flex-col items-center gap-1.5 focus:outline-none"
+            :class="(item.disabled || item.loading) ? 'opacity-70 cursor-not-allowed' : ''"
+            :disabled="item.disabled || item.loading"
+            :style="{ '--stagger': `${idx * 45}ms` }"
+            :aria-label="item.label"
+            @click="handleAction(item)"
+          >
+            <!-- Tile -->
+            <span
+              class="relative flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden"
+              :class="[
+                isCompactMenu ? 'h-[68px] w-[68px] rounded-[20px]' : 'h-[62px] w-[62px] rounded-[18px]',
+                getTileGradient(item.color),
+              ]"
             >
-              <!-- Tile -->
-              <span
-                class="relative flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-all duration-150 group-hover:brightness-[1.15] group-hover:scale-105 group-active:scale-90 group-active:brightness-110 overflow-hidden"
-                :class="[
-                  isCompactMenu ? 'h-[68px] w-[68px] rounded-[20px]' : 'h-[62px] w-[62px] rounded-[18px]',
-                  getTileGradient(item.color),
-                ]"
-              >
-                <!-- Subtle inner gloss -->
-                <span class="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent" aria-hidden="true" />
-                <component :is="item.icon" class="relative z-10 w-[26px] h-[26px] text-white drop-shadow" :class="item.loading ? 'animate-spin' : ''" />
-              </span>
-              <!-- Label -->
-              <span
-                class="text-white/75 font-medium leading-tight text-center line-clamp-2"
-                :class="isCompactMenu ? 'text-[11px] w-[72px]' : 'text-[10.5px] w-[62px]'"
-              >
-                {{ item.label }}
-              </span>
-            </button>
-          </div>
+              <!-- Subtle inner gloss -->
+              <span class="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent" aria-hidden="true" />
+              <component :is="item.icon" class="relative z-10 w-[26px] h-[26px] text-white drop-shadow" />
+            </span>
+            <!-- Label -->
+            <span
+              class="text-white/75 font-medium leading-tight text-center line-clamp-2"
+              :class="isCompactMenu ? 'text-[11px] w-[72px]' : 'text-[10.5px] w-[62px]'"
+            >
+              {{ item.label }}
+            </span>
+          </button>
         </div>
       </div>
-    </Transition>
+    </div>
   </div>
 
   <!-- Backdrop -->
-  <Transition name="at-backdrop">
-    <div
-      v-if="menuOpen"
-      class="fixed inset-0 z-40 bg-black/25 backdrop-blur-[3px]"
-      aria-hidden="true"
-      @click="closeMenu"
-    />
-  </Transition>
+  <div
+    v-if="menuOpen"
+    class="fixed inset-0 z-40 bg-black/25"
+    aria-hidden="true"
+    @click="closeMenu"
+  />
 </template>
 
 <script setup>
@@ -399,76 +395,21 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Snap transition after drag release */
+/* Snap after drag release without transition */
 .assistive-touch:not(.is-dragging) {
-  transition: left 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
-              top  0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: none;
 }
 
 /* Orb behavior */
 .assistive-orb {
   opacity: 0.94;
-  transform: scale(1);
-  transition: transform 0.18s ease, opacity 0.2s ease;
-}
-
-.assistive-orb:hover,
-.assistive-orb:focus-visible {
-  opacity: 1;
-  transform: scale(1.05);
-}
-
-.assistive-orb:active {
-  transform: scale(0.95);
 }
 
 .assistive-orb.orb-open {
   opacity: 1;
-  transform: scale(0.94);
 }
 
 .assistive-orb.orb-idle:not(.orb-open) {
   opacity: 0.62;
-}
-
-/* Menu enter/leave */
-.at-menu-enter-active {
-  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
-}
-.at-menu-leave-active {
-  transition: opacity 0.14s ease, transform 0.14s ease, filter 0.14s ease;
-}
-.at-menu-enter-from,
-.at-menu-leave-to {
-  opacity: 0;
-  transform: scale(0.84);
-  filter: blur(2px);
-}
-
-/* Action stagger animation */
-.assistive-action {
-  animation: at-item-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: var(--stagger, 0ms);
-}
-
-@keyframes at-item-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Backdrop fade */
-.at-backdrop-enter-active,
-.at-backdrop-leave-active {
-  transition: opacity 0.15s ease;
-}
-.at-backdrop-enter-from,
-.at-backdrop-leave-to {
-  opacity: 0;
 }
 </style>

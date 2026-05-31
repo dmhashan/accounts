@@ -24,25 +24,16 @@
     <!-- AssistiveTouch -->
     <AssistiveTouchButton :actions="assistiveActions" @menu-open="handleAssistiveMenuOpen" />
 
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0 translate-y-1"
-      enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 -translate-y-1"
+    <div
+      v-if="assistiveFeedback.show"
+      class="fixed top-4 left-1/2 -translate-x-1/2 z-[70] pointer-events-none rounded-xl border px-4 py-2.5 text-sm font-medium shadow-xl"
+      :class="assistiveFeedback.type === 'success'
+        ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900 dark:text-green-100'
+        : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900 dark:text-red-100'
+      "
     >
-      <div
-        v-if="assistiveFeedback.show"
-        class="fixed top-4 left-1/2 -translate-x-1/2 z-[70] pointer-events-none rounded-xl border px-4 py-2.5 text-sm font-medium shadow-xl backdrop-blur"
-        :class="assistiveFeedback.type === 'success'
-          ? 'border-green-200 bg-green-50/95 text-green-800 dark:border-green-800 dark:bg-green-900/85 dark:text-green-100'
-          : 'border-red-200 bg-red-50/95 text-red-800 dark:border-red-800 dark:bg-red-900/85 dark:text-red-100'
-        "
-      >
-        {{ assistiveFeedback.message }}
-      </div>
-    </Transition>
+      {{ assistiveFeedback.message }}
+    </div>
 
     <CalculatorModal v-if="calculatorOpen" @close="calculatorOpen = false" />
   </div>
