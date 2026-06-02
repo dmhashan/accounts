@@ -2,6 +2,9 @@
     <x-slot name="title">Login - {{ app('tenant')->name }}</x-slot>
     @php
         $baseInputClass = 'block h-12 w-full rounded-2xl border border-secondary-300 bg-white px-4 text-sm text-secondary-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-secondary-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10';
+        $tenantLogoUrl = app('tenant')->logo_path
+            ? app(\App\Services\MediaStorageService::class)->url(app('tenant')->logo_path)
+            : asset('images/black-text-logo.png');
     @endphp
     
     <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
@@ -10,7 +13,7 @@
                 <!-- Header -->
                 <div class="text-center mb-8">
                     <div class="mx-auto">
-                        <img src="{{ asset('images/black-text-logo.png') }}" alt="{{ app('tenant')->name }}" class="h-32 mx-auto">
+                        <img src="{{ $tenantLogoUrl }}" alt="{{ app('tenant')->name }} logo" class="h-32 mx-auto object-contain">
                     </div>
                     <h2 class="text-3xl font-bold text-secondary-900">Welcome Back</h2>
                     <p class="mt-2 text-sm text-secondary-600">Sign in to your account</p>
