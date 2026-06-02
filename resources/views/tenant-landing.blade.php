@@ -18,7 +18,12 @@
         $phoneHref = $phone !== '' ? 'tel:' . preg_replace('/[^\d+]/', '', $phone) : null;
         $emailHref = $email !== '' ? 'mailto:' . $email : null;
         $memberPortalUrl = $tenant->profileUrl();
+        $heroBackgroundPath = public_path('images/background.jpg');
         $heroBackground = asset('images/background.jpg');
+
+        if (file_exists($heroBackgroundPath)) {
+            $heroBackground .= '?v=' . filemtime($heroBackgroundPath);
+        }
     @endphp
 
     <div class="min-h-screen bg-stone-950 text-white">
