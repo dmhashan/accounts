@@ -17,6 +17,7 @@
         $email = trim((string) ($tenant->email ?? ''));
         $phoneHref = $phone !== '' ? 'tel:' . preg_replace('/[^\d+]/', '', $phone) : null;
         $emailHref = $email !== '' ? 'mailto:' . $email : null;
+        $memberPortalUrl = $tenant->profileUrl();
         $heroBackground = asset('images/background.jpg');
     @endphp
 
@@ -39,10 +40,10 @@
                 </a>
 
                 <a
-                    href="#connect"
+                    href="{{ $memberPortalUrl }}"
                     class="inline-flex items-center justify-center rounded-full border border-amber-400/70 bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:border-amber-300 hover:bg-amber-300 sm:px-5"
                 >
-                    Contact Us
+                    Member Portal
                 </a>
             </div>
         </header>
@@ -76,10 +77,10 @@
 
                             @if (!$phoneHref)
                                 <a
-                                    href="#connect"
+                                    href="{{ $memberPortalUrl }}"
                                     class="inline-flex min-h-14 items-center justify-center rounded-full bg-amber-400 px-6 text-base font-semibold text-stone-950 transition hover:bg-amber-300"
                                 >
-                                    Contact Us
+                                    Member Portal
                                 </a>
                             @endif
                         </div>
