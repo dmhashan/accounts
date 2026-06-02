@@ -33,7 +33,11 @@ class TenantLandingPageService
 
     private function buildDefaultCustomHtml(Tenant $tenant): string
     {
-        $tenantName = e($tenant->domain);
+        $tenantName = e($tenant->name ?: $tenant->domain);
+        $tenantAddress = e((string) ($tenant->address ?? ''));
+        $tenantPhone = e((string) ($tenant->phone ?? ''));
+        $tenantEmail = e((string) ($tenant->email ?? ''));
+        $contactLine = trim(implode(' | ', array_filter([$tenantPhone, $tenantEmail])));
 
         return <<<HTML
 <!DOCTYPE html>
@@ -97,10 +101,11 @@ class TenantLandingPageService
 <body>
     <div class="card">
         <h1>Welcome to {$tenantName}</h1>
-        <p>This is your custom tenant landing page. Edit this file in <strong>public/tenant-pages</strong> to fully customize it.</p>
+        <p>This is your tenant landing page.</p>
+        <p>{$tenantAddress}</p>
+        <p>{$contactLine}</p>
         <div class="actions">
-            <a class="button button-primary" href="/register">Register</a>
-            <a class="button button-secondary" href="/login">Login</a>
+            <a class="button button-primary" href="/login">Login</a>
         </div>
     </div>
 </body>
