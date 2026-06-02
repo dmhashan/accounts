@@ -15,7 +15,9 @@
       class="assistive-orb relative flex h-[52px] w-[52px] items-center justify-center rounded-full focus:outline-none"
       :class="{ 'orb-open': menuOpen, 'orb-idle': isIdle }"
       @mousedown.prevent="onMouseDown"
-      @touchstart.prevent="onTouchStart"
+      @touchstart="onTouchStart"
+      @touchend.stop.prevent="onTouchEnd"
+      @touchcancel.stop.prevent="onTouchCancel"
       @click="onOrbClick"
       @mouseenter="resetIdle"
     >
@@ -43,24 +45,45 @@
     </button>
 
     <!-- ── Menu panel ─────────────────────────────────────────── -->
-    <div
-      v-if="menuOpen"
-      class="assistive-menu absolute z-10"
-      :class="placement.classes"
-      :style="{ transformOrigin: placement.origin }"
-      role="menu"
-      aria-label="Assistive Touch menu"
-    >
+    <transition name="assistive-panel">
       <div
-        class="relative overflow-hidden rounded-[24px] bg-neutral-900 dark:bg-black border border-white/10 shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
-        :class="isCompactMenu ? 'min-w-[10.5rem]' : 'min-w-[13.5rem]'"
+        v-if="menuOpen"
+        class="assistive-menu absolute z-10"
+        :class="placement.classes"
+        :style="{ transformOrigin: placement.origin }"
+        role="menu"
+        aria-label="Assistive Touch menu"
       >
-        <!-- Header -->
-        <div v-if="!isCompactMenu" class="flex items-center justify-between px-4 pt-4 pb-2.5">
-          <span class="text-white/40 text-[10px] font-bold uppercase tracking-[0.15em]">Quick Access</span>
+        <div
+          class="relative overflow-hidden rounded-[24px] bg-neutral-900 dark:bg-black border border-white/10 shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
+          :class="isCompactMenu ? 'min-w-[10.5rem]' : 'min-w-[13.5rem]'"
+        >
+          <!-- Header -->
+          <div v-if="!isCompactMenu" class="flex items-center justify-between px-4 pt-4 pb-2.5">
+            <span class="text-white/40 text-[10px] font-bold uppercase tracking-[0.15em]">Quick Access</span>
+            <button
+              type="button"
+              class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-white/10 hover:bg-white/18 text-white/50 hover:text-white/80 focus:outline-none"
+              aria-label="Close menu"
+              @click.stop="closeMenu"
+            >
+              <svg
+                viewBox="0 0 10 10"
+                class="w-2.5 h-2.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M2 2l6 6M8 2l-6 6" />
+              </svg>
+            </button>
+          </div>
+
           <button
+            v-else
             type="button"
-            class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-white/10 hover:bg-white/18 text-white/50 hover:text-white/80 focus:outline-none"
+            class="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 hover:bg-white/18 text-white/50 hover:text-white/80 focus:outline-none"
             aria-label="Close menu"
             @click.stop="closeMenu"
           >
@@ -75,80 +98,63 @@
               <path d="M2 2l6 6M8 2l-6 6" />
             </svg>
           </button>
-        </div>
 
-        <button
-          v-else
-          type="button"
-          class="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 hover:bg-white/18 text-white/50 hover:text-white/80 focus:outline-none"
-          aria-label="Close menu"
-          @click.stop="closeMenu"
-        >
-          <svg
-            viewBox="0 0 10 10"
-            class="w-2.5 h-2.5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
+          <!-- Separator -->
+          <div v-if="!isCompactMenu" class="mx-4 mb-3 h-px bg-white/[0.07]" />
+
+          <!-- Actions grid -->
+          <div
+            class="grid px-3 pb-4"
+            :class="isCompactMenu ? 'gap-1 pt-3 pb-5 justify-items-center' : 'gap-2.5 pt-0'"
+            :style="gridStyle"
           >
-            <path d="M2 2l6 6M8 2l-6 6" />
-          </svg>
-        </button>
-
-        <!-- Separator -->
-        <div v-if="!isCompactMenu" class="mx-4 mb-3 h-px bg-white/[0.07]" />
-
-        <!-- Actions grid -->
-        <div
-          class="grid px-3 pb-4"
-          :class="isCompactMenu ? 'gap-1 pt-3 pb-5 justify-items-center' : 'gap-2.5 pt-0'"
-          :style="gridStyle"
-        >
-          <button
-            v-for="(item, idx) in actions"
-            :key="item.id"
-            type="button"
-            role="menuitem"
-            class="assistive-action group flex flex-col items-center gap-1.5 focus:outline-none"
-            :class="(item.disabled || item.loading) ? 'opacity-70 cursor-not-allowed' : ''"
-            :disabled="item.disabled || item.loading"
-            :style="{ '--stagger': `${idx * 45}ms` }"
-            :aria-label="item.label"
-            @click="handleAction(item)"
-          >
-            <!-- Tile -->
-            <span
-              class="relative flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden"
-              :class="[
-                isCompactMenu ? 'h-[68px] w-[68px] rounded-[20px]' : 'h-[62px] w-[62px] rounded-[18px]',
-                getTileGradient(item.color),
-              ]"
+            <button
+              v-for="(item, idx) in actions"
+              :key="item.id"
+              type="button"
+              role="menuitem"
+              class="assistive-action group flex flex-col items-center gap-1.5 focus:outline-none"
+              :class="(item.disabled || item.loading) ? 'opacity-70 cursor-not-allowed' : ''"
+              :disabled="item.disabled || item.loading"
+              :style="{ '--stagger': `${idx * 45}ms` }"
+              :aria-label="item.label"
+              @click="handleAction(item)"
             >
-              <!-- Subtle inner gloss -->
-              <span class="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent" aria-hidden="true" />
-              <component :is="item.icon" class="relative z-10 w-[26px] h-[26px] text-white drop-shadow" />
-            </span>
-            <!-- Label -->
-            <span
-              class="text-white/75 font-medium leading-tight text-center line-clamp-2"
-              :class="isCompactMenu ? 'text-[11px] w-[72px]' : 'text-[10.5px] w-[62px]'"
-            >
-              {{ item.label }}
-            </span>
-          </button>
+              <!-- Tile -->
+              <span
+                class="relative flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden"
+                :class="[
+                  isCompactMenu ? 'h-[68px] w-[68px] rounded-[20px]' : 'h-[62px] w-[62px] rounded-[18px]',
+                  getTileGradient(item.color),
+                ]"
+              >
+                <!-- Subtle inner gloss -->
+                <span class="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent" aria-hidden="true" />
+                <component :is="item.icon" class="relative z-10 w-[26px] h-[26px] text-white drop-shadow" />
+              </span>
+              <!-- Label -->
+              <span
+                class="text-white/75 font-medium leading-tight text-center line-clamp-2"
+                :class="isCompactMenu ? 'text-[11px] w-[72px]' : 'text-[10.5px] w-[62px]'"
+              >
+                {{ item.label }}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </transition>
   </div>
 
   <!-- Backdrop -->
-  <div
-    v-if="menuOpen"
-    class="fixed inset-0 z-40 bg-black/25"
-    aria-hidden="true"
-    @click="closeMenu"
-  />
+  <transition name="assistive-backdrop">
+    <div
+      v-if="menuOpen"
+      class="fixed inset-0 z-40 bg-black/25 backdrop-blur-sm"
+      aria-hidden="true"
+      @click="handleBackdropClick"
+    />
+  </transition>
 </template>
 
 <script setup>
@@ -209,13 +215,14 @@ const pos = ref({ x: 0, y: 0 });
 const dragStart = ref({ px: 0, py: 0, ox: 0, oy: 0 });
 let movedDuringPress = false;
 let idleTimer = null;
+let suppressNextClick = false;
 
 // ─── Computed ────────────────────────────────────────────────────────────────
 
 const floatStyle = computed(() => ({
   left: `${pos.value.x}px`,
   top: `${pos.value.y}px`,
-  touchAction: 'none',
+  touchAction: 'manipulation',
 }));
 
 /** Returns menu placement Tailwind classes + CSS transform-origin for animation */
@@ -317,7 +324,6 @@ function onTouchStart(e) {
   resetIdle();
   dragStart.value = { px: t.clientX, py: t.clientY, ox: pos.value.x, oy: pos.value.y };
   window.addEventListener('touchmove', onTouchMove, { passive: false });
-  window.addEventListener('touchend', onTouchEnd);
 }
 
 function onTouchMove(e) {
@@ -336,17 +342,33 @@ function onTouchMove(e) {
 }
 
 function onTouchEnd() {
+  if (!isDragging.value && !movedDuringPress) {
+    resetIdle();
+    const next = !menuOpen.value;
+    menuOpen.value = next;
+    if (next) emit('menu-open');
+
+    suppressNextClick = true;
+    setTimeout(() => { suppressNextClick = false; }, 350);
+  }
+
   if (isDragging.value) {
     isDragging.value = false;
     snapToEdge();
   }
   window.removeEventListener('touchmove', onTouchMove);
-  window.removeEventListener('touchend', onTouchEnd);
+}
+
+function onTouchCancel() {
+  isDragging.value = false;
+  movedDuringPress = true;
+  window.removeEventListener('touchmove', onTouchMove);
 }
 
 // ─── Menu ────────────────────────────────────────────────────────────────────
 
 function onOrbClick() {
+  if (suppressNextClick) return;
   if (movedDuringPress) return;
   resetIdle();
   const next = !menuOpen.value;
@@ -356,6 +378,11 @@ function onOrbClick() {
 
 function closeMenu() {
   menuOpen.value = false;
+}
+
+function handleBackdropClick() {
+  if (suppressNextClick) return;
+  closeMenu();
 }
 
 function handleAction(item) {
@@ -411,5 +438,112 @@ onUnmounted(() => {
 
 .assistive-orb.orb-idle:not(.orb-open) {
   opacity: 0.62;
+  animation: assistive-orb-pulse 2.4s ease-in-out infinite;
+}
+
+.assistive-orb.orb-open {
+  animation: assistive-orb-open 220ms cubic-bezier(0.2, 0.85, 0.2, 1) both;
+}
+
+.assistive-action {
+  animation: assistive-action-in 320ms cubic-bezier(0.2, 0.85, 0.2, 1) both;
+  animation-delay: var(--stagger);
+}
+
+.assistive-action:nth-child(1) { --stagger: 0ms; }
+.assistive-action:nth-child(2) { --stagger: 45ms; }
+.assistive-action:nth-child(3) { --stagger: 90ms; }
+.assistive-action:nth-child(4) { --stagger: 135ms; }
+.assistive-action:nth-child(5) { --stagger: 180ms; }
+.assistive-action:nth-child(6) { --stagger: 225ms; }
+.assistive-action:nth-child(7) { --stagger: 270ms; }
+.assistive-action:nth-child(8) { --stagger: 315ms; }
+
+.assistive-action > span:first-child,
+.assistive-action > span:last-child {
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.assistive-action:hover > span:first-child,
+.assistive-action:focus-visible > span:first-child {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.assistive-action:hover > span:last-child,
+.assistive-action:focus-visible > span:last-child {
+  opacity: 1;
+}
+
+@keyframes assistive-orb-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes assistive-orb-open {
+  0% {
+    transform: scale(0.92);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes assistive-action-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+    filter: blur(4px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.02);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.assistive-panel-enter-active,
+.assistive-panel-leave-active {
+  transition: opacity 180ms ease, transform 220ms cubic-bezier(0.2, 0.85, 0.2, 1);
+}
+
+.assistive-panel-enter-from,
+.assistive-panel-leave-to {
+  opacity: 0;
+  transform: scale(0.88) translateY(6px);
+}
+
+.assistive-panel-enter-to,
+.assistive-panel-leave-from {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.assistive-backdrop-enter-active,
+.assistive-backdrop-leave-active {
+  transition: opacity 160ms ease;
+}
+
+.assistive-backdrop-enter-from,
+.assistive-backdrop-leave-to {
+  opacity: 0;
+}
+
+.assistive-backdrop-enter-to,
+.assistive-backdrop-leave-from {
+  opacity: 1;
 }
 </style>
