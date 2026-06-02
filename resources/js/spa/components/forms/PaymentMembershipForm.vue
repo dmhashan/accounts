@@ -204,7 +204,7 @@ const memberInfo = ref(null);
 
 const effectiveMemberId = computed(() => props.memberId ? Number(props.memberId) : (form.value.member_id ?? null));
 const selectedPlan = computed(() => props.plans.find(p => p.id === form.value.plan_id) || null);
-const startDate = computed(() => memberInfo.value?.next_start_date || todayStr());
+const startDate = computed(() => form.value.payment_date || todayStr());
 const endDate = computed(() => calcEndDate(startDate.value, selectedPlan.value?.duration_days || 0));
 const nextPaymentDate = computed(() => {
     if (!startDate.value || !selectedPlan.value) return '';
@@ -237,6 +237,8 @@ async function loadMemberInfo(id) {
     try {
         const info = await apiRequest(`/api/payments/member/${id}/payment-info`);
         memberInfo.value = info;
+        // Default payment_date to the max due date; fall back to today
+        form.value.payment_date = info.last_payment?.end_date || todayStr();
         if (info.current_plan) {
             form.value.plan_id = info.current_plan.id;
             form.value.amount = String(info.current_plan.price.toFixed(2));
