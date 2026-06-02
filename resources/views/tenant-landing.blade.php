@@ -111,7 +111,7 @@
             </section>
 
             <section id="connect" class="border-t border-white/10 bg-stone-900">
-                <div class="mx-auto grid w-full max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:px-8 lg:py-16">
+                <div class="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
                     <div class="rounded-[2rem] border border-white/10 bg-stone-950/80 p-6 shadow-2xl shadow-black/20 sm:p-8">
                         <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/85">Visit the facility</p>
                         <h2 class="mt-4 text-3xl font-bold text-white sm:text-4xl">Find us fast. Train without delay.</h2>
@@ -149,16 +149,6 @@
                                     @endif
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-[2rem] border border-white/10 bg-[linear-gradient(160deg,_rgba(251,191,36,0.08),_rgba(28,25,23,0.92))] p-6 shadow-2xl shadow-black/20 sm:p-8">
-                        <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/85">Location</p>
-                        <h3 class="mt-4 text-2xl font-bold text-white sm:text-3xl">Pure address details</h3>
-                        <p class="mt-4 text-base leading-7 text-stone-300">Use the address below exactly as listed to visit the facility.</p>
-                        <div class="mt-8 rounded-2xl border border-white/10 bg-stone-950/60 p-5 sm:p-6">
-                            <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Facility address</p>
-                            <p class="mt-4 whitespace-pre-line text-lg font-medium leading-8 text-white">{{ $address !== '' ? $address : 'Insert street address, city, zip code' }}</p>
                         </div>
                     </div>
                 </div>
