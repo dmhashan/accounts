@@ -17,12 +17,6 @@
         $email = trim((string) ($tenant->email ?? ''));
         $phoneHref = $phone !== '' ? 'tel:' . preg_replace('/[^\d+]/', '', $phone) : null;
         $emailHref = $email !== '' ? 'mailto:' . $email : null;
-        $mapsUrl = $address !== ''
-            ? 'https://www.google.com/maps/search/?api=1&query=' . urlencode($address)
-            : null;
-        $embedMapsUrl = $address !== ''
-            ? 'https://www.google.com/maps?q=' . urlencode($address) . '&output=embed'
-            : null;
         $heroBackground = asset('images/background.jpg');
     @endphp
 
@@ -71,17 +65,6 @@
                         <p class="mt-5 max-w-2xl text-lg text-stone-200 sm:text-xl">Premium Fitness Facility. Built for Results.</p>
 
                         <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                            @if ($mapsUrl)
-                                <a
-                                    href="{{ $mapsUrl }}"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    class="inline-flex min-h-14 items-center justify-center rounded-full bg-amber-400 px-6 text-base font-semibold text-stone-950 transition hover:bg-amber-300"
-                                >
-                                    Get Directions
-                                </a>
-                            @endif
-
                             @if ($phoneHref)
                                 <a
                                     href="{{ $phoneHref }}"
@@ -91,7 +74,7 @@
                                 </a>
                             @endif
 
-                            @if (!$mapsUrl && !$phoneHref)
+                            @if (!$phoneHref)
                                 <a
                                     href="#connect"
                                     class="inline-flex min-h-14 items-center justify-center rounded-full bg-amber-400 px-6 text-base font-semibold text-stone-950 transition hover:bg-amber-300"
@@ -137,16 +120,6 @@
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
                                 <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Address</p>
                                 <p class="mt-3 text-base font-medium text-white">{{ $address !== '' ? $address : 'Insert street address, city, zip code' }}</p>
-                                @if ($mapsUrl)
-                                    <a
-                                        href="{{ $mapsUrl }}"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        class="mt-4 inline-flex min-h-12 items-center justify-center rounded-full border border-amber-400/40 px-5 text-sm font-semibold text-amber-300 transition hover:border-amber-300 hover:text-amber-200"
-                                    >
-                                        Open in Google Maps
-                                    </a>
-                                @endif
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -178,23 +151,14 @@
                         </div>
                     </div>
 
-                    <div class="overflow-hidden rounded-[2rem] border border-white/10 bg-stone-950/80 shadow-2xl shadow-black/20">
-                        @if ($embedMapsUrl)
-                            <iframe
-                                title="{{ $facilityName }} location"
-                                src="{{ $embedMapsUrl }}"
-                                class="h-[320px] w-full border-0 sm:h-[420px]"
-                                loading="lazy"
-                                referrerpolicy="no-referrer-when-downgrade"
-                            ></iframe>
-                        @else
-                            <div class="flex h-[320px] items-center justify-center bg-[linear-gradient(160deg,_rgba(251,191,36,0.08),_rgba(28,25,23,0.92))] px-6 text-center sm:h-[420px]">
-                                <div>
-                                    <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/85">Map</p>
-                                    <p class="mt-4 text-lg text-stone-200">Add a tenant address to display an interactive location map here.</p>
-                                </div>
-                            </div>
-                        @endif
+                    <div class="rounded-[2rem] border border-white/10 bg-[linear-gradient(160deg,_rgba(251,191,36,0.08),_rgba(28,25,23,0.92))] p-6 shadow-2xl shadow-black/20 sm:p-8">
+                        <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/85">Location</p>
+                        <h3 class="mt-4 text-2xl font-bold text-white sm:text-3xl">Pure address details</h3>
+                        <p class="mt-4 text-base leading-7 text-stone-300">Use the address below exactly as listed to visit the facility.</p>
+                        <div class="mt-8 rounded-2xl border border-white/10 bg-stone-950/60 p-5 sm:p-6">
+                            <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Facility address</p>
+                            <p class="mt-4 whitespace-pre-line text-lg font-medium leading-8 text-white">{{ $address !== '' ? $address : 'Insert street address, city, zip code' }}</p>
+                        </div>
                     </div>
                 </div>
             </section>
