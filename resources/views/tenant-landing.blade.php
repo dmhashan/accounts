@@ -10,49 +10,201 @@
                 $logoUrl = null;
             }
         }
+
+        $facilityName = $tenant->name ?: 'Fitness Center';
+        $address = trim((string) ($tenant->address ?? ''));
+        $phone = trim((string) ($tenant->phone ?? ''));
+        $email = trim((string) ($tenant->email ?? ''));
+        $phoneHref = $phone !== '' ? 'tel:' . preg_replace('/[^\d+]/', '', $phone) : null;
+        $emailHref = $email !== '' ? 'mailto:' . $email : null;
+        $mapsUrl = $address !== ''
+            ? 'https://www.google.com/maps/search/?api=1&query=' . urlencode($address)
+            : null;
+        $embedMapsUrl = $address !== ''
+            ? 'https://www.google.com/maps?q=' . urlencode($address) . '&output=embed'
+            : null;
+        $heroBackground = asset('images/background.jpg');
     @endphp
 
-    <div class="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center px-4">
-        <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl p-8 md:p-10 text-center">
-            @if ($logoUrl)
-                <img
-                    src="{{ $logoUrl }}"
-                    alt="{{ $tenant->name }} logo"
-                    class="mx-auto mb-5 h-16 w-16 rounded-xl object-cover ring-1 ring-gray-200"
-                >
-            @endif
+    <div class="min-h-screen bg-stone-950 text-white">
+        <header class="sticky top-0 z-30 border-b border-white/10 bg-stone-950/85 backdrop-blur">
+            <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+                <a href="#top" class="flex min-w-0 items-center gap-3">
+                    @if ($logoUrl)
+                        <img
+                            src="{{ $logoUrl }}"
+                            alt="{{ $facilityName }} logo"
+                            class="h-11 w-11 rounded-xl border border-white/10 object-cover shadow-lg shadow-black/20"
+                        >
+                    @endif
 
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Welcome</h1>
-            <p class="text-xl text-primary-600 font-semibold mb-4">{{ $tenant->name }}</p>
+                    <div class="min-w-0">
+                        <p class="truncate text-sm uppercase tracking-[0.35em] text-amber-300/80">Fitness Center</p>
+                        <p class="truncate text-base font-semibold text-white sm:text-lg">{{ $facilityName }}</p>
+                    </div>
+                </a>
 
-            <div class="mb-8 space-y-2 text-sm text-gray-600">
-                @if (!empty($tenant->address))
-                    <p>{{ $tenant->address }}</p>
-                @endif
-
-                @if (!empty($tenant->phone) || !empty($tenant->email))
-                    <p>
-                        @if (!empty($tenant->phone))
-                            <span>{{ $tenant->phone }}</span>
-                        @endif
-                        @if (!empty($tenant->phone) && !empty($tenant->email))
-                            <span class="mx-2 text-gray-400">|</span>
-                        @endif
-                        @if (!empty($tenant->email))
-                            <span>{{ $tenant->email }}</span>
-                        @endif
-                    </p>
-                @endif
-            </div>
-
-            <div class="flex justify-center">
                 <a
-                    href="{{ route('login.form') }}"
-                    class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors font-medium"
+                    href="#connect"
+                    class="inline-flex items-center justify-center rounded-full border border-amber-400/70 bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:border-amber-300 hover:bg-amber-300 sm:px-5"
                 >
-                    Login
+                    Contact Us
                 </a>
             </div>
-        </div>
+        </header>
+
+        <main>
+            <section
+                id="top"
+                class="relative isolate flex min-h-[calc(100vh-73px)] items-end overflow-hidden"
+            >
+                <div
+                    class="absolute inset-0 bg-cover bg-center"
+                    style="background-image: linear-gradient(135deg, rgba(12, 10, 9, 0.8), rgba(12, 10, 9, 0.45)), url('{{ $heroBackground }}');"
+                ></div>
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_38%),linear-gradient(to_top,_rgba(12,10,9,0.92),_rgba(12,10,9,0.4))]"></div>
+
+                <div class="relative mx-auto grid w-full max-w-7xl gap-10 px-4 py-12 sm:px-6 md:py-16 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,420px)] lg:px-8 lg:py-20">
+                    <div class="max-w-3xl self-center">
+                        <p class="mb-4 text-sm font-medium uppercase tracking-[0.4em] text-amber-300/85">Train with purpose</p>
+                        <h1 class="max-w-3xl text-4xl font-black uppercase tracking-tight text-white sm:text-5xl lg:text-7xl">{{ $facilityName }}</h1>
+                        <p class="mt-5 max-w-2xl text-lg text-stone-200 sm:text-xl">Premium Fitness Facility. Built for Results.</p>
+
+                        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                            @if ($mapsUrl)
+                                <a
+                                    href="{{ $mapsUrl }}"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    class="inline-flex min-h-14 items-center justify-center rounded-full bg-amber-400 px-6 text-base font-semibold text-stone-950 transition hover:bg-amber-300"
+                                >
+                                    Get Directions
+                                </a>
+                            @endif
+
+                            @if ($phoneHref)
+                                <a
+                                    href="{{ $phoneHref }}"
+                                    class="inline-flex min-h-14 items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 text-base font-semibold text-white backdrop-blur transition hover:bg-white/15"
+                                >
+                                    Call Now
+                                </a>
+                            @endif
+
+                            @if (!$mapsUrl && !$phoneHref)
+                                <a
+                                    href="#connect"
+                                    class="inline-flex min-h-14 items-center justify-center rounded-full bg-amber-400 px-6 text-base font-semibold text-stone-950 transition hover:bg-amber-300"
+                                >
+                                    Contact Us
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="self-end rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-xl sm:p-6">
+                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300/85">Quick access</p>
+                        <div class="mt-5 space-y-4">
+                            <div class="rounded-2xl border border-white/10 bg-stone-950/45 p-4">
+                                <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Visit</p>
+                                <p class="mt-2 text-base font-medium text-white">{{ $address !== '' ? $address : 'Contact us for the latest address details.' }}</p>
+                            </div>
+
+                            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                <div class="rounded-2xl border border-white/10 bg-stone-950/45 p-4">
+                                    <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Call</p>
+                                    <p class="mt-2 break-words text-base font-medium text-white">{{ $phone !== '' ? $phone : 'Available on request' }}</p>
+                                </div>
+
+                                <div class="rounded-2xl border border-white/10 bg-stone-950/45 p-4">
+                                    <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Email</p>
+                                    <p class="mt-2 break-words text-base font-medium text-white">{{ $email !== '' ? $email : 'Reach out via phone for quick support' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="connect" class="border-t border-white/10 bg-stone-900">
+                <div class="mx-auto grid w-full max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:px-8 lg:py-16">
+                    <div class="rounded-[2rem] border border-white/10 bg-stone-950/80 p-6 shadow-2xl shadow-black/20 sm:p-8">
+                        <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/85">Visit the facility</p>
+                        <h2 class="mt-4 text-3xl font-bold text-white sm:text-4xl">Find us fast. Train without delay.</h2>
+                        <p class="mt-4 text-base leading-7 text-stone-300">Everything important is here at a glance: your route, contact options, and the quickest way to reach the gym from any device.</p>
+
+                        <div class="mt-8 grid gap-4 sm:grid-cols-2">
+                            <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+                                <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Address</p>
+                                <p class="mt-3 text-base font-medium text-white">{{ $address !== '' ? $address : 'Insert street address, city, zip code' }}</p>
+                                @if ($mapsUrl)
+                                    <a
+                                        href="{{ $mapsUrl }}"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        class="mt-4 inline-flex min-h-12 items-center justify-center rounded-full border border-amber-400/40 px-5 text-sm font-semibold text-amber-300 transition hover:border-amber-300 hover:text-amber-200"
+                                    >
+                                        Open in Google Maps
+                                    </a>
+                                @endif
+                            </div>
+
+                            <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+                                <p class="text-xs uppercase tracking-[0.3em] text-stone-400">Contact</p>
+                                <div class="mt-3 space-y-3 text-base font-medium text-white">
+                                    <p>{{ $phone !== '' ? $phone : 'Insert phone number' }}</p>
+                                    <p class="break-words text-stone-300">{{ $email !== '' ? $email : 'Insert email address' }}</p>
+                                </div>
+                                <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                                    @if ($phoneHref)
+                                        <a
+                                            href="{{ $phoneHref }}"
+                                            class="inline-flex min-h-12 items-center justify-center rounded-full bg-amber-400 px-5 text-sm font-semibold text-stone-950 transition hover:bg-amber-300"
+                                        >
+                                            Tap to Call
+                                        </a>
+                                    @endif
+
+                                    @if ($emailHref)
+                                        <a
+                                            href="{{ $emailHref }}"
+                                            class="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
+                                        >
+                                            Send Email
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-hidden rounded-[2rem] border border-white/10 bg-stone-950/80 shadow-2xl shadow-black/20">
+                        @if ($embedMapsUrl)
+                            <iframe
+                                title="{{ $facilityName }} location"
+                                src="{{ $embedMapsUrl }}"
+                                class="h-[320px] w-full border-0 sm:h-[420px]"
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                        @else
+                            <div class="flex h-[320px] items-center justify-center bg-[linear-gradient(160deg,_rgba(251,191,36,0.08),_rgba(28,25,23,0.92))] px-6 text-center sm:h-[420px]">
+                                <div>
+                                    <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/85">Map</p>
+                                    <p class="mt-4 text-lg text-stone-200">Add a tenant address to display an interactive location map here.</p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="border-t border-white/10 bg-stone-950">
+            <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-stone-400 sm:px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+                <p>&copy; 2026 {{ $facilityName }}. All Rights Reserved.</p>
+                <p>Powered by <a href="https://beforward.lk" target="_blank" rel="noreferrer" class="text-stone-200 transition hover:text-amber-300">beforward.lk</a></p>
+            </div>
+        </footer>
     </div>
 </x-guest-layout>
