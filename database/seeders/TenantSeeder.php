@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Tenant;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class TenantSeeder extends Seeder
 {
@@ -15,12 +15,12 @@ class TenantSeeder extends Seeder
     {
         Tenant::firstOrCreate(
             ['domain' => 'gym'],
-            ['name' => 'CoreX Fitness']
+            ['name' => 'CoreX Fitness', 'tenant_uuid' => (string) Str::uuid()],
         );
 
         Tenant::firstOrCreate(
             ['domain' => 'test'],
-            ['name' => 'Test Tenant']
+            ['name' => 'Test Tenant', 'tenant_uuid' => (string) Str::uuid()],
         );
     }
 }

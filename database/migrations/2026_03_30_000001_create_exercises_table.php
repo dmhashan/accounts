@@ -16,7 +16,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['tenant_id', 'name']);
-            $table->index(['tenant_id', 'muscle_group'], 'exercises_tenant_muscle_idx');
         });
     }
 
