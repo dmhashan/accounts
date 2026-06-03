@@ -690,8 +690,28 @@ class BiometricSyncService
             return ['connection_failed' => false, 'not_assigned' => true, 'not_found' => false, 'message' => 'No biometric ID assigned to this member.'];
         }
 
+        // Some tenants have legacy ID formats (e.g. MEM-2026-0001) while the
+        // device may store only numeric employeeNo (e.g. 0001). Try both.
+        $candidateIds = array_values(array_unique(array_filter([
+            trim((string) $employeeNo),
+            $this->extractEmployeeNo((string) $employeeNo),
+        ])));
+
         // ── Person info ───────────────────────────────────────────────────────
-        $personResult = $driver->getUserInfo($employeeNo);
+        $personResult = ['success' => false, 'message' => 'Member not found on device.', 'data' => []];
+        $resolvedEmployeeNo = $employeeNo;
+
+        foreach ($candidateIds as $candidateId) {
+            $attempt = $driver->getUserInfo($candidateId);
+
+            if ($attempt['success']) {
+                $personResult = $attempt;
+                $resolvedEmployeeNo = $candidateId;
+                break;
+            }
+
+            $personResult = $attempt;
+        }
 
         if (!$personResult['success']) {
             $msg = strtolower($personResult['message'] ?? '');
@@ -730,7 +750,7 @@ class BiometricSyncService
         $cardNumbers = [];
 
         if ($cardCount > 0) {
-            $cardResult = $driver->getCardInfo($employeeNo);
+            $cardResult = $driver->getCardInfo($resolvedEmployeeNo);
 
             if ($cardResult['success']) {
                 $cardSearch = $cardResult['data']['CardInfoSearch'] ?? [];
@@ -749,7 +769,7 @@ class BiometricSyncService
             'not_found' => false,
             'fingerprint_setup_supported' => !$this->modelLacksRemoteFingerprintSetup($allConfig['biometric.device_model'] ?? ''),
             'person' => [
-                'employee_no' => $person['employeeNo'] ?? $employeeNo,
+                'employee_no' => $person['employeeNo'] ?? $resolvedEmployeeNo,
                 'name' => $person['name'] ?? '',
                 'gender' => $person['gender'] ?? null,
                 'user_type' => $person['userType'] ?? null,
