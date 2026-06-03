@@ -224,6 +224,8 @@ class MemberService
 
     public function show(Member $member): array
     {
+        $this->syncMissingProfilePhotoFromBiometric($member);
+
         [$firstName, $lastName] = $this->resolveFirstAndLastName($member);
 
         return [
@@ -260,6 +262,25 @@ class MemberService
             'created_at' => optional($member->created_at)->toDateString(),
             'biometric_last_synced_at' => optional($member->biometric_last_synced_at)->toISOString(),
         ];
+    }
+
+    private function syncMissingProfilePhotoFromBiometric(Member $member): void
+    {
+        if ($member->profile_photo_path || !$member->biometric_member_id) {
+            return;
+        }
+
+        $deviceInfo = $this->biometric->getMemberDeviceInfo($member);
+
+        if (($deviceInfo['connection_failed'] ?? false) || ($deviceInfo['not_assigned'] ?? false) || ($deviceInfo['not_found'] ?? false)) {
+            return;
+        }
+
+        if (!(bool) ($deviceInfo['face']['enrolled'] ?? false)) {
+            return;
+        }
+
+        $this->biometric->uploadFaceAsAvatar($member);
     }
 
     public function update(Member $member, array $validated): void
