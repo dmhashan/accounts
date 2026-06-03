@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransfer;
 use App\Models\Member;
+use App\Models\PaymentPlan;
 use App\Models\Permission;
 use App\Models\Product;
 use App\Models\ProductVariation;
@@ -54,7 +55,7 @@ abstract class ApiRouteTestCase extends TestCase
     protected function createUser(array $permissions = [], array $attributes = [], ?Role $role = null): User
     {
         $sequence = $this->nextSequence();
-        $role ??= $this->createRole('role-'.$sequence, $permissions);
+        $role ??= $this->createRole('role-' . $sequence, $permissions);
 
         if ($permissions !== []) {
             $this->grantPermissions($role, $permissions);
@@ -63,9 +64,9 @@ abstract class ApiRouteTestCase extends TestCase
         return User::create(array_merge([
             'tenant_id' => $this->tenant->id,
             'role_id' => $role->id,
-            'name' => 'User '.$sequence,
-            'email' => 'user'.$sequence.'@example.com',
-            'username' => 'user'.$sequence,
+            'name' => 'User ' . $sequence,
+            'email' => 'user' . $sequence . '@example.com',
+            'username' => 'user' . $sequence,
             'password' => Hash::make('password'),
         ], $attributes));
     }
@@ -76,9 +77,9 @@ abstract class ApiRouteTestCase extends TestCase
             ['slug' => $slug],
             [
                 'name' => Str::title(str_replace(['-', '_'], ' ', $slug)),
-                'description' => $slug.' role',
+                'description' => $slug . ' role',
                 'is_editable' => $isEditable,
-            ]
+            ],
         );
 
         if ($permissions !== []) {
@@ -96,8 +97,8 @@ abstract class ApiRouteTestCase extends TestCase
                 [
                     'name' => Str::title(str_replace('.', ' ', $slug)),
                     'feature' => Str::before($slug, '.') ?: 'general',
-                    'description' => $slug.' permission',
-                ]
+                    'description' => $slug . ' permission',
+                ],
             );
 
             return $permission->id;
@@ -113,35 +114,34 @@ abstract class ApiRouteTestCase extends TestCase
             [
                 'name' => Str::title(str_replace('.', ' ', $slug)),
                 'feature' => $feature ?? (Str::before($slug, '.') ?: 'general'),
-                'description' => $slug.' permission',
-            ]
+                'description' => $slug . ' permission',
+            ],
         );
     }
 
     protected function createMember(?User $user = null, array $attributes = []): Member
     {
         $sequence = $this->nextSequence();
-        $firstName = 'Member'.$sequence;
+        $firstName = 'Member' . $sequence;
         $lastName = 'Tester';
+        $plan = $this->createPaymentPlan();
 
         return Member::create(array_merge([
             'tenant_id' => $this->tenant->id,
             'user_id' => $user?->id,
-            'member_id' => Member::generateMemberId(),
+            'biometric_member_id' => Member::generateBiometricMemberId($this->tenant->id),
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'username' => 'member'.$sequence,
-            'name' => $firstName.' '.$lastName,
+            'username' => 'member' . $sequence,
+            'name' => $firstName . ' ' . $lastName,
             'gender' => 'male',
-            'email' => 'member'.$sequence.'@example.com',
-            'phone_number' => '07000000'.$sequence,
-            'nic' => 'NIC'.$sequence,
+            'email' => 'member' . $sequence . '@example.com',
+            'phone_number' => '07000000' . $sequence,
+            'nic' => 'NIC' . $sequence,
             'date_of_birth' => now()->subYears(24)->toDateString(),
-            'age' => 24,
-            'address' => 'No. '.$sequence.', Test Street',
-            'member_role' => 'standard',
+            'address' => 'No. ' . $sequence . ', Test Street',
             'admission_fee' => 500,
-            'payment_plan' => 'monthly',
+            'payment_plan_id' => $plan->id,
             'price' => 1200,
             'current_balance' => 0,
             'joined_date' => now()->toDateString(),
@@ -151,13 +151,26 @@ abstract class ApiRouteTestCase extends TestCase
         ], $attributes));
     }
 
+    protected function createPaymentPlan(array $attributes = []): PaymentPlan
+    {
+        $sequence = $this->nextSequence();
+
+        return PaymentPlan::create(array_merge([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Plan ' . $sequence,
+            'duration_days' => 30,
+            'price' => 1200,
+            'is_active' => true,
+        ], $attributes));
+    }
+
     protected function createProduct(array $attributes = []): Product
     {
         $sequence = $this->nextSequence();
 
         return Product::create(array_merge([
             'tenant_id' => $this->tenant->id,
-            'name' => 'Product '.$sequence,
+            'name' => 'Product ' . $sequence,
         ], $attributes));
     }
 
@@ -168,7 +181,7 @@ abstract class ApiRouteTestCase extends TestCase
         return ProductVariation::create(array_merge([
             'tenant_id' => $this->tenant->id,
             'product_id' => $product->id,
-            'name' => 'Variation '.$sequence,
+            'name' => 'Variation ' . $sequence,
         ], $attributes));
     }
 
@@ -201,7 +214,7 @@ abstract class ApiRouteTestCase extends TestCase
             'customer_name' => 'Walk In',
             'customer_type' => 'local',
             'payment_method' => 'cash',
-            'reference_number' => 'REF-'.Str::upper(Str::random(6)),
+            'reference_number' => 'REF-' . Str::upper(Str::random(6)),
             'total_amount' => 300,
             'paid_amount' => 300,
             'balance' => 0,
@@ -214,7 +227,7 @@ abstract class ApiRouteTestCase extends TestCase
 
         return CompanyAccount::create(array_merge([
             'tenant_id' => $this->tenant->id,
-            'name' => 'Account '.$sequence,
+            'name' => 'Account ' . $sequence,
             'opening_balance' => 0,
             'description' => 'Test account',
         ], $attributes));
@@ -228,7 +241,7 @@ abstract class ApiRouteTestCase extends TestCase
             'destination_account_id' => $destinationAccount->id,
             'amount' => 100,
             'transfer_date' => now()->toDateString(),
-            'reference_number' => 'TRF-'.Str::upper(Str::random(6)),
+            'reference_number' => 'TRF-' . Str::upper(Str::random(6)),
             'notes' => 'Test transfer',
         ], $attributes));
     }
