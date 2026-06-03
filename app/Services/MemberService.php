@@ -270,17 +270,21 @@ class MemberService
             return;
         }
 
-        $deviceInfo = $this->biometric->getMemberDeviceInfo($member);
+        try {
+            $deviceInfo = $this->biometric->getMemberDeviceInfo($member);
 
-        if (($deviceInfo['connection_failed'] ?? false) || ($deviceInfo['not_assigned'] ?? false) || ($deviceInfo['not_found'] ?? false)) {
-            return;
+            if (($deviceInfo['connection_failed'] ?? false) || ($deviceInfo['not_assigned'] ?? false) || ($deviceInfo['not_found'] ?? false)) {
+                return;
+            }
+
+            if (!(bool) ($deviceInfo['face']['enrolled'] ?? false)) {
+                return;
+            }
+
+            $this->biometric->uploadFaceAsAvatar($member);
+        } catch (\Throwable $e) {
+            report($e);
         }
-
-        if (!(bool) ($deviceInfo['face']['enrolled'] ?? false)) {
-            return;
-        }
-
-        $this->biometric->uploadFaceAsAvatar($member);
     }
 
     public function update(Member $member, array $validated): void
