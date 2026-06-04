@@ -66,11 +66,26 @@ class Member extends Model
      */
     public static function generateBiometricMemberId(int $tenantId): string
     {
-        $max = (int) self::where('tenant_id', $tenantId)
-            ->whereNotNull('biometric_member_id')
-            ->whereRaw("biometric_member_id REGEXP '^[0-9]+$'")
-            ->selectRaw('MAX(CAST(biometric_member_id AS UNSIGNED)) as max_id')
-            ->value('max_id');
+        $driver = \DB::getDriverName();
+        $query = self::where('tenant_id', $tenantId)
+            ->whereNotNull('biometric_member_id');
+
+        if ($driver === 'mysql') {
+            $max = (int) $query
+                ->whereRaw("biometric_member_id REGEXP '^[0-9]+$'")
+                ->selectRaw('MAX(CAST(biometric_member_id AS UNSIGNED)) as max_id')
+                ->value('max_id');
+        } else {
+            // SQLite/Postgres-portable: filter numeric in PHP
+            $ids = $query->pluck('biometric_member_id')->all();
+            $max = 0;
+
+            foreach ($ids as $id) {
+                if (ctype_digit((string) $id)) {
+                    $max = max($max, (int) $id);
+                }
+            }
+        }
 
         return (string) ($max + 1);
     }

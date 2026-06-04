@@ -23,7 +23,8 @@ class PaymentPlanApiController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'duration_days' => 'required|integer|min:1|max:36500',
+            'duration_value' => 'required|integer|min:1|max:1000',
+            'duration_unit' => 'required|string|in:day,week,month,year',
             'price' => 'required|numeric|min:0',
             'is_active' => 'sometimes|boolean',
         ]);
@@ -37,7 +38,8 @@ class PaymentPlanApiController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'duration_days' => 'required|integer|min:1|max:36500',
+            'duration_value' => 'required|integer|min:1|max:1000',
+            'duration_unit' => 'required|string|in:day,week,month,year',
             'price' => 'required|numeric|min:0',
             'is_active' => 'sometimes|boolean',
         ]);

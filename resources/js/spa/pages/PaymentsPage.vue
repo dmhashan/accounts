@@ -176,7 +176,7 @@
                       {{ plan.name }}
                     </p>
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                      {{ formatDuration(plan.duration_days) }}
+                      {{ formatPlanDuration(plan) }}
                     </p>
                     <p class="text-sm font-bold text-primary-600 dark:text-primary-400 mt-1">
                       {{ money(plan.price) }}
@@ -239,7 +239,7 @@
                       {{ plan.name }}
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
-                      {{ formatDuration(plan.duration_days) }}
+                      {{ formatPlanDuration(plan) }}
                     </td>
                     <td class="px-6 py-4">
                       <span
@@ -317,47 +317,27 @@
               </div>
 
               <div class="col-span-1">
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Duration (days)</label>
-                <select
-                  v-model="planDurationSelect"
-                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  @change="onDurationSelect"
-                >
-                  <option value="" disabled>
-                    Select a duration
-                  </option>
-                  <option value="1">
-                    1 day
-                  </option>
-                  <option value="30">
-                    1 month
-                  </option>
-                  <option value="90">
-                    3 months
-                  </option>
-                  <option value="180">
-                    6 months
-                  </option>
-                  <option value="365">
-                    1 year
-                  </option>
-                  <option value="custom">
-                    Custom
-                  </option>
-                </select>
-              </div>
-
-              <div v-if="planDurationSelect === 'custom'" class="col-span-2">
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Custom Duration (days)</label>
-                <input
-                  v-model.number="planForm.duration_days"
-                  type="number"
-                  min="1"
-                  max="36500"
-                  required
-                  placeholder="Enter number of days"
-                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
+                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Duration</label>
+                <div class="flex gap-2">
+                  <input
+                    v-model.number="planForm.duration_value"
+                    type="number"
+                    min="1"
+                    max="1000"
+                    required
+                    placeholder="Value"
+                    class="w-1/2 px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <select
+                    v-model="planForm.duration_unit"
+                    required
+                    class="w-1/2 px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option v-for="opt in PLAN_UNIT_OPTIONS" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                </div>
               </div>
 
               <div class="col-span-2">
@@ -479,6 +459,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppPagination from '../components/AppPagination.vue';
 import PaymentMembershipForm from '../components/forms/PaymentMembershipForm.vue';
 import PaymentOtherForm from '../components/forms/PaymentOtherForm.vue';
+import { formatPlanDuration, PLAN_UNIT_OPTIONS } from '../composables/usePlanDuration.js';
 
 const context = useAppContext();
 const router = useRouter();
@@ -518,17 +499,6 @@ const plansLoading = ref(false);
 const plansError = ref('');
 const plans = ref([]);
 
-const DURATION_PRESETS = { 1: true, 30: true, 90: true, 180: true, 365: true };
-
-function formatDuration(days) {
-    if (days === 1)   return '1 day';
-    if (days === 30)  return '1 month';
-    if (days === 90)  return '3 months';
-    if (days === 180) return '6 months';
-    if (days === 365) return '1 year';
-    return `${days} days`;
-}
-
 async function loadPlans() {
     plansLoading.value = true;
     plansError.value = '';
@@ -546,18 +516,22 @@ async function loadPlans() {
 const planModalOpen = ref(false);
 const planModalError = ref('');
 const planSaving = ref(false);
-const planDurationSelect = ref('');
 
-const planForm = ref({ id: null, name: '', duration_days: null, price: '', is_active: true });
+const planForm = ref({ id: null, name: '', duration_value: 1, duration_unit: 'month', price: '', is_active: true });
 
 function openPlanModal(plan = null) {
     planModalError.value = '';
     if (plan) {
-        planForm.value = { id: plan.id, name: plan.name, duration_days: plan.duration_days, price: String(plan.price), is_active: plan.is_active };
-        planDurationSelect.value = DURATION_PRESETS[plan.duration_days] ? String(plan.duration_days) : 'custom';
+        planForm.value = {
+            id: plan.id,
+            name: plan.name,
+            duration_value: Number(plan.duration_value) || 1,
+            duration_unit: plan.duration_unit || 'month',
+            price: String(plan.price),
+            is_active: plan.is_active,
+        };
     } else {
-        planForm.value = { id: null, name: '', duration_days: null, price: '', is_active: true };
-        planDurationSelect.value = '';
+        planForm.value = { id: null, name: '', duration_value: 1, duration_unit: 'month', price: '', is_active: true };
     }
     planModalOpen.value = true;
 }
@@ -566,25 +540,18 @@ function closePlanModal() {
     planModalOpen.value = false;
 }
 
-function onDurationSelect() {
-    if (planDurationSelect.value !== 'custom') {
-        planForm.value.duration_days = parseInt(planDurationSelect.value, 10);
-    } else {
-        planForm.value.duration_days = null;
-    }
-}
-
 async function savePlan() {
-    if (!planForm.value.name || !planForm.value.duration_days || planForm.value.price === '') return;
+    if (!planForm.value.name || !planForm.value.duration_value || !planForm.value.duration_unit || planForm.value.price === '') return;
 
     planSaving.value = true;
     planModalError.value = '';
     try {
         const payload = {
-            name:          planForm.value.name,
-            duration_days: planForm.value.duration_days,
-            price:         parseFloat(planForm.value.price),
-            is_active:     planForm.value.is_active,
+            name:           planForm.value.name,
+            duration_value: Number(planForm.value.duration_value),
+            duration_unit:  planForm.value.duration_unit,
+            price:          parseFloat(planForm.value.price),
+            is_active:      planForm.value.is_active,
         };
 
         if (planForm.value.id) {

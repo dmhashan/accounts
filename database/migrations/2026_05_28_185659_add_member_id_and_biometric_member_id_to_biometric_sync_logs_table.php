@@ -26,6 +26,18 @@ return new class extends Migration
             });
         }
 
+        // Non-MySQL drivers (e.g. SQLite for tests) don't support information_schema
+        // queries or ENUM/FK manipulation; just ensure the columns exist and stop.
+        if (DB::getDriverName() !== 'mysql') {
+            if (!Schema::hasColumn('biometric_sync_logs', 'biometric_member_id')) {
+                Schema::table('biometric_sync_logs', function (Blueprint $table) {
+                    $table->string('biometric_member_id')->nullable()->after('member_id');
+                });
+            }
+
+            return;
+        }
+
         // 2. If biometric_member_id exists as a numeric/FK column, migrate its
         //    values into member_id, then convert it to a varchar device ID field.
         if (Schema::hasColumn('biometric_sync_logs', 'biometric_member_id')) {
@@ -99,6 +111,16 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            if (Schema::hasColumn('biometric_sync_logs', 'member_id')) {
+                Schema::table('biometric_sync_logs', function (Blueprint $table) {
+                    $table->dropColumn('member_id');
+                });
+            }
+
+            return;
+        }
+
         // Reverse: drop member_id FK and column; restore biometric_member_id as bigint FK
         $memberFk = DB::selectOne(
             "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE

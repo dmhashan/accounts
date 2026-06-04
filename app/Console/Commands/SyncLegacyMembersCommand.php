@@ -662,7 +662,8 @@ class SyncLegacyMembersCommand extends Command
         return PaymentPlan::create([
             'tenant_id' => $tenant->id,
             'name' => $name,
-            'duration_days' => 30,
+            'duration_value' => 1,
+            'duration_unit' => 'month',
             'price' => $price ?? 0,
             'is_active' => true,
         ])->id;

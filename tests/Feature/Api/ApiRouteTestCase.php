@@ -158,7 +158,8 @@ abstract class ApiRouteTestCase extends TestCase
         return PaymentPlan::create(array_merge([
             'tenant_id' => $this->tenant->id,
             'name' => 'Plan ' . $sequence,
-            'duration_days' => 30,
+            'duration_value' => 1,
+            'duration_unit' => 'month',
             'price' => 1200,
             'is_active' => true,
         ], $attributes));

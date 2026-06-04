@@ -179,7 +179,7 @@ class SyncPaymentsCommand extends Command
 
                 // Fall back to plan duration if nextpaymentdate was not available
                 if (!$endDt && $entryPlan) {
-                    $endDt = Carbon::parse($startDt)->addDays($entryPlan->duration_days - 1)->toDateString();
+                    $endDt = $entryPlan->endDateFrom($startDt)->toDateString();
                 }
 
                 $notes = 'Synced from legacy system';
@@ -408,7 +408,7 @@ class SyncPaymentsCommand extends Command
             return null;
         }
 
-        [$label, $canonicalDays] = $this->classifyDuration($days);
+        [$label, $value, $unit] = $this->classifyDuration($days);
 
         $amountStr = fmod($amount, 1.0) === 0.0 ? (string) (int) $amount : (string) $amount;
         $planName = "{$label} - {$amountStr}";
@@ -419,7 +419,7 @@ class SyncPaymentsCommand extends Command
 
         $plan = PaymentPlan::firstOrCreate(
             ['tenant_id' => $tenantId, 'name' => $planName],
-            ['duration_days' => $canonicalDays, 'price' => $amount, 'is_active' => true],
+            ['duration_value' => $value, 'duration_unit' => $unit, 'price' => $amount, 'is_active' => true],
         );
 
         $this->planCache[$planName] = $plan;
@@ -428,19 +428,19 @@ class SyncPaymentsCommand extends Command
     }
 
     /**
-     * Map a raw day count to a human-readable label and canonical duration.
+     * Map a raw day count to a label, value and unit.
      *
-     * @return array{0: string, 1: int}
+     * @return array{0: string, 1: int, 2: string}
      */
     private function classifyDuration(int $days): array
     {
         return match (true) {
-            $days >= 5 && $days <= 10 => ['Weekly',   7],
-            $days >= 25 && $days <= 35 => ['Monthly',  30],
-            $days >= 80 && $days <= 100 => ['3 Months', 90],
-            $days >= 160 && $days <= 200 => ['6 Months', 180],
-            $days >= 330 && $days <= 400 => ['Annual',   365],
-            default => ["{$days} Days", $days],
+            $days >= 5 && $days <= 10 => ['Weekly',   1, 'week'],
+            $days >= 25 && $days <= 35 => ['Monthly',  1, 'month'],
+            $days >= 80 && $days <= 100 => ['3 Months', 3, 'month'],
+            $days >= 160 && $days <= 200 => ['6 Months', 6, 'month'],
+            $days >= 330 && $days <= 400 => ['Annual',   1, 'year'],
+            default => ["{$days} Days", $days, 'day'],
         };
     }
 

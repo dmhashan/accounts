@@ -34,8 +34,8 @@ class PaymentService
 
         $plans = PaymentPlan::where('tenant_id', $tenantId)
             ->where('is_active', true)
-            ->orderBy('duration_days')
-            ->get(['id', 'name', 'duration_days', 'price']);
+            ->orderByRaw(PaymentPlan::durationDaysOrderRaw())
+            ->get(['id', 'name', 'duration_value', 'duration_unit', 'price']);
 
         return [
             'members' => $members->map(function (Member $member) {
@@ -67,7 +67,9 @@ class PaymentService
             'plans' => $plans->map(fn (PaymentPlan $p) => [
                 'id' => $p->id,
                 'name' => $p->name,
-                'duration_days' => $p->duration_days,
+                'duration_value' => (int) $p->duration_value,
+                'duration_unit' => (string) $p->duration_unit,
+                'duration_days' => $p->approximateDays(),
                 'price' => (float) $p->price,
             ])->values(),
         ];
@@ -91,7 +93,9 @@ class PaymentService
                 $currentPlan = [
                     'id' => $plan->id,
                     'name' => $plan->name,
-                    'duration_days' => $plan->duration_days,
+                    'duration_value' => (int) $plan->duration_value,
+                    'duration_unit' => (string) $plan->duration_unit,
+                    'duration_days' => $plan->approximateDays(),
                     'price' => (float) $plan->price,
                 ];
             }
@@ -124,7 +128,9 @@ class PaymentService
                 $currentPlan = [
                     'id' => $p->id,
                     'name' => $p->name,
-                    'duration_days' => $p->duration_days,
+                    'duration_value' => (int) $p->duration_value,
+                    'duration_unit' => (string) $p->duration_unit,
+                    'duration_days' => $p->approximateDays(),
                     'price' => (float) $p->price,
                 ];
             }
@@ -371,7 +377,7 @@ class PaymentService
             $plan = PaymentPlan::find($planId);
 
             if ($plan) {
-                $endDate = \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days - 1)->toDateString();
+                $endDate = $plan->endDateFrom($startDate)->toDateString();
             }
         }
 

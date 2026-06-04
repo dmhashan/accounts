@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement(
             "ALTER TABLE `biometric_sync_logs`
              MODIFY COLUMN `action` ENUM(
@@ -19,6 +23,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Remove rows with new action values before reverting
         DB::statement("DELETE FROM `biometric_sync_logs` WHERE `action` IN ('webhook_configure','webhook_event')");
 

@@ -17,9 +17,16 @@ return new class extends Migration
         DB::table('members')->update(['payment_plan_id' => null]);
 
         // Step 2: Truncate payment_plans (disable FK checks for MySQL)
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        $isMysql = DB::getDriverName() === 'mysql';
+
+        if ($isMysql) {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        }
         DB::table('payment_plans')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        if ($isMysql) {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
 
         // Step 3: Build one PaymentPlan row per unique (tenant_id, lowercase plan name)
         //         Use the first seen price for that plan; default to 0 when missing.

@@ -10,7 +10,7 @@ class PaymentPlanService
     {
         $plans = PaymentPlan::where('tenant_id', $tenantId)
             ->withCount('members')
-            ->orderBy('duration_days')
+            ->orderByRaw(PaymentPlan::durationDaysOrderRaw())
             ->orderBy('name')
             ->get();
 
@@ -24,7 +24,8 @@ class PaymentPlanService
         return PaymentPlan::create([
             'tenant_id' => $tenantId,
             'name' => trim($validated['name']),
-            'duration_days' => (int) $validated['duration_days'],
+            'duration_value' => (int) $validated['duration_value'],
+            'duration_unit' => $validated['duration_unit'],
             'price' => $validated['price'],
             'is_active' => $validated['is_active'] ?? true,
         ]);
@@ -36,7 +37,8 @@ class PaymentPlanService
 
         $plan->update([
             'name' => trim($validated['name']),
-            'duration_days' => (int) $validated['duration_days'],
+            'duration_value' => (int) $validated['duration_value'],
+            'duration_unit' => $validated['duration_unit'],
             'price' => $validated['price'],
             'is_active' => $validated['is_active'] ?? $plan->is_active,
         ]);
@@ -68,7 +70,9 @@ class PaymentPlanService
         return [
             'id' => $plan->id,
             'name' => $plan->name,
-            'duration_days' => $plan->duration_days,
+            'duration_value' => (int) $plan->duration_value,
+            'duration_unit' => (string) $plan->duration_unit,
+            'duration_days' => $plan->approximateDays(),
             'price' => (float) $plan->price,
             'is_active' => (bool) $plan->is_active,
             'member_count' => (int) ($plan->members_count ?? 0),

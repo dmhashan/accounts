@@ -90,7 +90,7 @@
         <div>
           <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Duration</label>
           <div class="px-3 py-2 h-[38px] flex items-center rounded-lg border border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800 text-sm text-secondary-700 dark:text-secondary-300">
-            {{ selectedPlan ? formatDuration(selectedPlan.duration_days) : '—' }}
+            {{ selectedPlan ? formatPlanDuration(selectedPlan) : '—' }}
           </div>
         </div>
       </div>
@@ -163,6 +163,7 @@ import { useMemberFormatters } from '../../composables/useMemberFormatters';
 import AppCompanyAccountSelect from './AppCompanyAccountSelect.vue';
 import AppSearchableDropdown from './AppSearchableDropdown.vue';
 import AppFormDateInput from './AppFormDateInput.vue';
+import { formatPlanDuration, calcPlanEndDate, calcNextStartDate } from '../../composables/usePlanDuration.js';
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -181,22 +182,6 @@ function todayStr() {
     return new Date().toISOString().slice(0, 10);
 }
 
-function formatDuration(days) {
-    if (days === 1)   return '1 day';
-    if (days === 30)  return '1 month';
-    if (days === 90)  return '3 months';
-    if (days === 180) return '6 months';
-    if (days === 365) return '1 year';
-    return `${days} days`;
-}
-
-function calcEndDate(startDate, durationDays) {
-    if (!startDate || !durationDays) return '';
-    const d = new Date(startDate + 'T00:00:00');
-    d.setDate(d.getDate() + Number(durationDays) - 1);
-    return d.toISOString().slice(0, 10);
-}
-
 const form = ref({ member_id: null, plan_id: null, amount: '', payment_date: todayStr(), notes: '' });
 const accountValue = ref(null);
 const memberInfoLoading = ref(false);
@@ -205,13 +190,8 @@ const memberInfo = ref(null);
 const effectiveMemberId = computed(() => props.memberId ? Number(props.memberId) : (form.value.member_id ?? null));
 const selectedPlan = computed(() => props.plans.find(p => p.id === form.value.plan_id) || null);
 const startDate = computed(() => form.value.payment_date || todayStr());
-const endDate = computed(() => calcEndDate(startDate.value, selectedPlan.value?.duration_days || 0));
-const nextPaymentDate = computed(() => {
-    if (!startDate.value || !selectedPlan.value) return '';
-    const d = new Date(startDate.value + 'T00:00:00');
-    d.setDate(d.getDate() + selectedPlan.value.duration_days);
-    return d.toISOString().slice(0, 10);
-});
+const endDate = computed(() => calcPlanEndDate(startDate.value, selectedPlan.value));
+const nextPaymentDate = computed(() => calcNextStartDate(startDate.value, selectedPlan.value));
 
 watch(() => form.value.plan_id, () => {
     if (selectedPlan.value) {

@@ -52,7 +52,7 @@
                 No plan
               </option>
               <option v-for="plan in plans" :key="plan.id" :value="plan.id">
-                {{ plan.name }} — {{ formatDuration(plan.duration_days) }} ({{ money(plan.price) }})
+                {{ plan.name }} — {{ formatPlanDuration(plan) }} ({{ money(plan.price) }})
               </option>
             </select>
           </AppFormField>
@@ -121,6 +121,7 @@ import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
+import { formatPlanDuration, calcPlanEndDate } from '../composables/usePlanDuration.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -160,28 +161,12 @@ function money(value) {
     return Number(value || 0).toFixed(2);
 }
 
-function formatDuration(days) {
-    if (days === 1)   return '1 day';
-    if (days === 30)  return '1 month';
-    if (days === 90)  return '3 months';
-    if (days === 180) return '6 months';
-    if (days === 365) return '1 year';
-    return `${days} days`;
-}
-
-function calcEndDate(startDate, durationDays) {
-    if (!startDate || !durationDays) return '';
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + durationDays - 1);
-    return d.toISOString().slice(0, 10);
-}
-
 function onPlanSelect() {
     const plan = plans.value.find(p => p.id === form.value.payment_plan_id);
     if (plan) {
         if (!form.value.amount) form.value.amount = String(plan.price);
         if (!form.value.start_date) form.value.start_date = form.value.payment_date || new Date().toISOString().slice(0, 10);
-        form.value.end_date = calcEndDate(form.value.start_date, plan.duration_days);
+        form.value.end_date = calcPlanEndDate(form.value.start_date, plan);
     }
 }
 
@@ -195,7 +180,7 @@ function onPaymentDateChange() {
 function onStartDateChange() {
     const plan = plans.value.find(p => p.id === form.value.payment_plan_id);
     if (plan) {
-        form.value.end_date = calcEndDate(form.value.start_date, plan.duration_days);
+        form.value.end_date = calcPlanEndDate(form.value.start_date, plan);
     }
 }
 

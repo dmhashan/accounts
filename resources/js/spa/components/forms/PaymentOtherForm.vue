@@ -49,7 +49,7 @@
             No plan
           </option>
           <option v-for="p in plans" :key="p.id" :value="p.id">
-            {{ p.name }} — {{ formatDuration(p.duration_days) }} ({{ money(p.price) }})
+            {{ p.name }} — {{ formatPlanDuration(p) }} ({{ money(p.price) }})
           </option>
         </select>
       </div>
@@ -142,6 +142,7 @@ import { X } from 'lucide-vue-next';
 import AppCompanyAccountSelect from './AppCompanyAccountSelect.vue';
 import AppSearchableDropdown from './AppSearchableDropdown.vue';
 import AppFormDateInput from './AppFormDateInput.vue';
+import { formatPlanDuration, calcPlanEndDate } from '../../composables/usePlanDuration.js';
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -158,24 +159,8 @@ function todayStr() {
     return new Date().toISOString().slice(0, 10);
 }
 
-function formatDuration(days) {
-    if (days === 1)   return '1 day';
-    if (days === 30)  return '1 month';
-    if (days === 90)  return '3 months';
-    if (days === 180) return '6 months';
-    if (days === 365) return '1 year';
-    return `${days} days`;
-}
-
 function money(value) {
     return Number(value || 0).toFixed(2);
-}
-
-function calcEndDate(startDate, durationDays) {
-    if (!startDate || !durationDays) return '';
-    const d = new Date(startDate + 'T00:00:00');
-    d.setDate(d.getDate() + Number(durationDays) - 1);
-    return d.toISOString().slice(0, 10);
 }
 
 const form = ref({ member_id: null, plan_id: null, amount: '', payment_date: todayStr(), start_date: '', end_date: '', reference_number: '', notes: '' });
@@ -196,13 +181,13 @@ function onPlanSelect() {
     if (plan) {
         if (!form.value.amount) form.value.amount = String(plan.price);
         if (!form.value.start_date) form.value.start_date = form.value.payment_date || todayStr();
-        form.value.end_date = calcEndDate(form.value.start_date, plan.duration_days);
+        form.value.end_date = calcPlanEndDate(form.value.start_date, plan);
     }
 }
 
 function onStartDateChange() {
     const plan = selectedPlan.value;
-    if (plan) form.value.end_date = calcEndDate(form.value.start_date, plan.duration_days);
+    if (plan) form.value.end_date = calcPlanEndDate(form.value.start_date, plan);
 }
 
 function submit() {
