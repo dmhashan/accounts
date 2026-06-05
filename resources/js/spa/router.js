@@ -123,6 +123,7 @@ const routes = [
     { path: '/reports/customers', component: ReportsPage, meta: { title: 'Customer Reports' } },
     { path: '/reports/products', component: ReportsPage, meta: { title: 'Product Reports' } },
     { path: '/settings', component: SettingsPage, meta: { title: 'Settings' } },
+    { path: '/settings/users', component: SettingsPage, meta: { title: 'Users' } },
     { path: '/settings/general', component: GeneralSettingsPage, meta: { title: 'General Settings' } },
     { path: '/settings/roles', component: SettingsPage, meta: { title: 'Roles Settings' } },
     { path: '/settings/legacy-tools', component: LegacyToolsPage, meta: { title: 'Manual Commands' } },

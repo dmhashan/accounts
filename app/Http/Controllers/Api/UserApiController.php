@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Rules\UniqueTenantEmail;
@@ -14,9 +13,7 @@ use Illuminate\Validation\Rule;
 
 class UserApiController extends Controller
 {
-    public function __construct(private readonly UserService $userService)
-    {
-    }
+    public function __construct(private readonly UserService $userService) {}
 
     public function meta(): JsonResponse
     {
@@ -53,12 +50,7 @@ class UserApiController extends Controller
 
         return response()->json([
             'message' => 'User created successfully.',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-            ],
+            'data' => $this->userService->show($user),
         ], 201);
     }
 

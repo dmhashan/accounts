@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 class UsersApiTest extends ApiRouteTestCase
 {
-    public function test_users_meta_route_returns_roles_payload(): void
+    public function testUsersMetaRouteReturnsRolesPayload(): void
     {
         $this->createRole('member');
         $this->createRole('coach');
@@ -17,7 +17,7 @@ class UsersApiTest extends ApiRouteTestCase
             ->assertJsonStructure(['roles']);
     }
 
-    public function test_users_index_route_returns_paginated_users(): void
+    public function testUsersIndexRouteReturnsPaginatedUsers(): void
     {
         $this->actingAsUser(['users.view']);
         $targetUser = $this->createUser();
@@ -30,20 +30,24 @@ class UsersApiTest extends ApiRouteTestCase
             ->assertJsonFragment(['id' => $targetUser->id]);
     }
 
-    public function test_users_show_route_returns_single_user(): void
+    public function testUsersShowRouteReturnsSingleUser(): void
     {
         $this->actingAsUser(['users.view']);
         $targetUser = $this->createUser();
+        $targetMember = $this->createMember($targetUser);
 
-        $response = $this->getJson('/api/users/'.$targetUser->id);
+        $response = $this->getJson('/api/users/' . $targetUser->id);
 
         $response
             ->assertOk()
             ->assertJsonPath('data.id', $targetUser->id)
-            ->assertJsonPath('data.email', $targetUser->email);
+            ->assertJsonPath('data.email', $targetUser->email)
+            ->assertJsonPath('data.role.id', $targetUser->role_id)
+            ->assertJsonPath('data.member.id', $targetMember->id)
+            ->assertJsonPath('data.member.member_id', $targetMember->biometric_member_id);
     }
 
-    public function test_users_store_route_creates_user(): void
+    public function testUsersStoreRouteCreatesUser(): void
     {
         $this->actingAsUser(['users.view', 'users.create']);
         $role = $this->createRole('trainer');
@@ -67,7 +71,7 @@ class UsersApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_users_update_route_updates_user(): void
+    public function testUsersUpdateRouteUpdatesUser(): void
     {
         $this->actingAsUser(['users.view', 'users.edit']);
         $targetUser = $this->createUser([], [
@@ -76,7 +80,7 @@ class UsersApiTest extends ApiRouteTestCase
         ]);
         $newRole = $this->createRole('updated-role');
 
-        $response = $this->putJson('/api/users/'.$targetUser->id, [
+        $response = $this->putJson('/api/users/' . $targetUser->id, [
             'name' => 'After Update',
             'email' => 'after-update@example.com',
             'role_id' => $newRole->id,
@@ -96,14 +100,14 @@ class UsersApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_users_destroy_route_deletes_user(): void
+    public function testUsersDestroyRouteDeletesUser(): void
     {
         $this->actingAsUser(['users.view', 'users.delete']);
         $targetUser = $this->createUser([], [
             'email' => 'delete-me@example.com',
         ]);
 
-        $response = $this->deleteJson('/api/users/'.$targetUser->id);
+        $response = $this->deleteJson('/api/users/' . $targetUser->id);
 
         $response
             ->assertOk()

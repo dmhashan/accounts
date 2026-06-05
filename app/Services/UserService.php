@@ -29,7 +29,10 @@ class UserService
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->with('role:id,name,slug')
+            ->with([
+                'role:id,name,slug',
+                'member:id,user_id,biometric_member_id,name,email,phone_number,joined_date,is_active,is_verified',
+            ])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
@@ -42,6 +45,16 @@ class UserService
                     'id' => $user->role->id,
                     'name' => $user->role->name,
                     'slug' => $user->role->slug,
+                ] : null,
+                'member' => $user->member ? [
+                    'id' => $user->member->id,
+                    'member_id' => $user->member->biometric_member_id,
+                    'name' => $user->member->name,
+                    'email' => $user->member->email,
+                    'phone_number' => $user->member->phone_number,
+                    'joined_date' => $user->member->joined_date?->toDateString(),
+                    'is_active' => $user->member->is_active,
+                    'is_verified' => $user->member->is_verified,
                 ] : null,
                 'canDelete' => $currentUser->id !== $user->id,
             ]),
@@ -76,11 +89,31 @@ class UserService
 
     public function show(User $user): array
     {
+        $user->loadMissing([
+            'role:id,name,slug',
+            'member:id,user_id,biometric_member_id,name,email,phone_number,joined_date,is_active,is_verified',
+        ]);
+
         return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'role_id' => $user->role_id,
+            'role' => $user->role instanceof Role ? [
+                'id' => $user->role->id,
+                'name' => $user->role->name,
+                'slug' => $user->role->slug,
+            ] : null,
+            'member' => $user->member ? [
+                'id' => $user->member->id,
+                'member_id' => $user->member->biometric_member_id,
+                'name' => $user->member->name,
+                'email' => $user->member->email,
+                'phone_number' => $user->member->phone_number,
+                'joined_date' => $user->member->joined_date?->toDateString(),
+                'is_active' => $user->member->is_active,
+                'is_verified' => $user->member->is_verified,
+            ] : null,
         ];
     }
 

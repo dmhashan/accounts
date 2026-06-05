@@ -43,8 +43,8 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+          <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/60 dark:bg-secondary-900/30 p-4">
             <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
               Role
             </p>
@@ -56,6 +56,55 @@
             >
               {{ user.role?.name || 'No Role' }}
             </span>
+          </div>
+
+          <div v-if="user.member" class="rounded-xl border border-secondary-200 dark:border-secondary-700 bg-secondary-50/60 dark:bg-secondary-900/30 p-4 space-y-3">
+            <div>
+              <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+                Linked Member
+              </p>
+              <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                {{ user.member.name }}
+              </p>
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                {{ user.member.member_id }}
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+                  Email
+                </p>
+                <p class="text-secondary-900 dark:text-white">
+                  {{ user.member.email || 'N/A' }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+                  Phone
+                </p>
+                <p class="text-secondary-900 dark:text-white">
+                  {{ user.member.phone_number || 'N/A' }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+                  Joined
+                </p>
+                <p class="text-secondary-900 dark:text-white">
+                  {{ user.member.joined_date || 'N/A' }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+                  Status
+                </p>
+                <p class="text-secondary-900 dark:text-white">
+                  {{ user.member.is_active ? 'Active' : 'Inactive' }} | {{ user.member.is_verified ? 'Verified' : 'Unverified' }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

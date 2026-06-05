@@ -111,7 +111,7 @@ export function useNavigation() {
         if (context.permissions?.settings || context.permissions?.users || context.permissions?.roles) {
             const settingsChildren = [];
             if (context.permissions?.settings) settingsChildren.push({ label: 'General', path: '/settings/general' });
-            if (context.permissions?.users) settingsChildren.push({ label: 'Users', path: '/settings' });
+            if (context.permissions?.users) settingsChildren.push({ label: 'Users', path: '/settings/users' });
             if (context.permissions?.roles) settingsChildren.push({ label: 'Roles', path: '/settings/roles' });
             if (context.permissions?.settings) settingsChildren.push({ label: 'Configuration', path: '/settings/configuration' });
             if (context.permissions?.settings) settingsChildren.push({ label: 'Biometric', path: '/settings/biometric' });
