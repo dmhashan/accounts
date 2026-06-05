@@ -102,6 +102,7 @@ export function useNavigation() {
             label: 'Reports', shortLabel: 'Reports', path: '/reports', icon: ICONS.reports,
             children: [
                 { label: 'Statistics', path: '/reports' },
+                { label: 'Daily Summary', path: '/reports/daily-summary' },
                 { label: 'Customers', path: '/reports/customers' },
                 { label: 'Products', path: '/reports/products' },
             ],

@@ -3,10 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\DailySummaryService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ReportApiController extends Controller
 {
+    public function __construct(
+        private readonly DailySummaryService $dailySummary,
+    ) {}
+
     public function overview(): JsonResponse
     {
         return response()->json([
@@ -18,5 +24,16 @@ class ReportApiController extends Controller
                 ['title' => 'Audit Logs', 'description' => 'Review system activity and changes'],
             ],
         ]);
+    }
+
+    public function dailySummary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
+        return response()->json(
+            $this->dailySummary->build(app('tenant')->id, $validated['date'] ?? null),
+        );
     }
 }

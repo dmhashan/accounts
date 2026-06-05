@@ -22,6 +22,7 @@ const SalesPage = () => import('./pages/SalesPage.vue');
 const SalesFormPage = () => import('./pages/SalesFormPage.vue');
 const StatsPage = () => import('./pages/StatsPage.vue');
 const ReportsPage = () => import('./pages/ReportsPage.vue');
+const DailySummaryPage = () => import('./pages/DailySummaryPage.vue');
 const SettingsPage = () => import('./pages/SettingsPage.vue');
 const GeneralSettingsPage = () => import('./pages/GeneralSettingsPage.vue');
 const LegacyToolsPage = () => import('./pages/LegacyToolsPage.vue');
@@ -116,6 +117,7 @@ const routes = [
     { path: '/sales/:id/edit', component: SalesFormPage, meta: { title: 'Edit Sale' } },
     { path: '/stats', component: StatsPage, meta: { title: 'Sales Stats' } },
     { path: '/reports', component: ReportsPage, meta: { title: 'Reports' } },
+    { path: '/reports/daily-summary', component: DailySummaryPage, meta: { title: 'Daily Summary' } },
     { path: '/reports/customers', component: ReportsPage, meta: { title: 'Customer Reports' } },
     { path: '/reports/products', component: ReportsPage, meta: { title: 'Product Reports' } },
     { path: '/settings', component: SettingsPage, meta: { title: 'Settings' } },

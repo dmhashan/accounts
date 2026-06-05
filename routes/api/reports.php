@@ -4,3 +4,4 @@ use App\Http\Controllers\Api\ReportApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/reports/overview', [ReportApiController::class, 'overview'])->middleware(['auth', 'permission:reports.view']);
+Route::get('/reports/daily-summary', [ReportApiController::class, 'dailySummary'])->middleware(['auth', 'permission:reports.view']);
