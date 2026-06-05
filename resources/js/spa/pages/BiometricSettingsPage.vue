@@ -21,8 +21,33 @@
           {{ saveError }}
         </div>
 
+        <!-- Tab navigation -->
+        <div class="mb-4 app-surface rounded-2xl p-2 md:p-3">
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs md:text-sm font-medium border transition-colors whitespace-nowrap"
+              :class="activeTab === tab.id
+                ? 'border-primary-500 bg-primary-600 text-white'
+                : canOpenTab(tab.id)
+                  ? 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700'
+                  : 'border-secondary-200 dark:border-secondary-700 bg-secondary-100 dark:bg-secondary-900 text-secondary-400 dark:text-secondary-500 cursor-not-allowed'"
+              :disabled="!canOpenTab(tab.id)"
+              @click="setActiveTab(tab.id)"
+            >
+              <component :is="tab.icon" class="w-4 h-4" :stroke-width="2" />
+              {{ tab.label }}
+            </button>
+          </div>
+          <p v-if="form['biometric.enabled'] !== '1'" class="mt-2 px-1 text-xs text-secondary-500 dark:text-secondary-400">
+            Enable Biometric Integration in Device Setup to unlock the other tabs.
+          </p>
+        </div>
+
         <!-- ── Card 1: Device Setup ── -->
-        <div class="app-surface rounded-2xl overflow-hidden mb-4">
+        <div v-show="activeTab === 'device'" class="app-surface rounded-2xl overflow-hidden mb-4">
           <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
             <Cpu class="w-5 h-5 text-primary-500 flex-shrink-0" :stroke-width="2" />
             <div>
@@ -191,7 +216,7 @@
           leave-from-class="opacity-100 translate-y-0"
           leave-to-class="opacity-0 -translate-y-1"
         >
-          <div v-if="form['biometric.enabled'] === '1'" class="app-surface rounded-2xl overflow-hidden mb-4">
+          <div v-if="form['biometric.enabled'] === '1' && activeTab === 'sync'" class="app-surface rounded-2xl overflow-hidden mb-4">
             <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
               <RefreshCw class="w-5 h-5 text-indigo-500 flex-shrink-0" :stroke-width="2" />
               <div>
@@ -310,7 +335,7 @@
           leave-from-class="opacity-100 translate-y-0"
           leave-to-class="opacity-0 -translate-y-1"
         >
-          <div v-if="form['biometric.enabled'] === '1'" class="app-surface rounded-2xl overflow-hidden mb-4">
+          <div v-if="form['biometric.enabled'] === '1' && activeTab === 'push'" class="app-surface rounded-2xl overflow-hidden mb-4">
             <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
               <Zap class="w-5 h-5 text-yellow-500 flex-shrink-0" :stroke-width="2" />
               <div>
@@ -475,7 +500,7 @@
         </Transition>
 
         <!-- ── Card 4: Recent Sync Logs ── -->
-        <div v-if="form['biometric.enabled'] === '1'" class="app-surface rounded-2xl overflow-hidden mb-4">
+        <div v-if="form['biometric.enabled'] === '1' && activeTab === 'logs'" class="app-surface rounded-2xl overflow-hidden mb-4">
           <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
             <Activity class="w-5 h-5 text-secondary-400 flex-shrink-0" :stroke-width="2" />
             <h2 class="text-base font-semibold" style="color: var(--text-strong)">
@@ -598,7 +623,7 @@
         </div>
 
         <!-- ── Card 5: Recent Authentication Events ── -->
-        <div v-if="form['biometric.enabled'] === '1'" class="app-surface rounded-2xl overflow-hidden mb-4">
+        <div v-if="form['biometric.enabled'] === '1' && activeTab === 'events'" class="app-surface rounded-2xl overflow-hidden mb-4">
           <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
             <ScanFace class="w-5 h-5 text-primary-500 flex-shrink-0" :stroke-width="2" />
             <div>
@@ -612,25 +637,78 @@
             <span v-if="eventsAttemptedCount > 0" class="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
               {{ eventsAttemptedCount }} attempted
             </span>
-            <div class="ml-auto flex items-center gap-3">
-              <button
-                type="button"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
-                :disabled="syncingEvents"
-                @click="syncAccessEvents"
-              >
-                <RefreshCw class="w-3.5 h-3.5" :class="syncingEvents ? 'animate-spin' : ''" :stroke-width="2" />
-                {{ syncingEvents ? 'Queuing…' : 'Sync from Device' }}
-              </button>
-              <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="() => loadAccessEvents(1)">
-                Refresh
-              </button>
-            </div>
           </div>
 
           <p v-if="syncEventsResult" class="px-4 md:px-6 pt-3 text-xs font-medium text-primary-600 dark:text-primary-400">
             {{ syncEventsResult }}
           </p>
+
+          <div class="px-4 md:px-6 pt-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50/40 dark:bg-secondary-800/20">
+              <AppFormField label="Sync From (cursor)">
+                <AppFormInput
+                  v-model="form['biometric.access_events_sync_from']"
+                  type="datetime-local"
+                  placeholder="2026-06-05T15:00"
+                />
+              </AppFormField>
+              <div class="self-end pb-1">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
+                  :disabled="syncingEvents"
+                  @click="syncAccessEvents"
+                >
+                  <RefreshCw class="w-3.5 h-3.5" :class="syncingEvents ? 'animate-spin' : ''" :stroke-width="2" />
+                  {{ syncingEvents ? 'Queuing…' : 'Sync from Device' }}
+                </button>
+              </div>
+              <div class="text-xs text-secondary-500 dark:text-secondary-400 self-end pb-1 md:col-span-3">
+                Next import uses this cursor as the start. On a successful sync, it is automatically moved forward.
+              </div>
+            </div>
+          </div>
+
+          <div class="px-4 md:px-6 pt-3">
+            <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50/40 dark:bg-secondary-800/20 space-y-3">
+              <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide">
+                Event Date-Time Filter
+              </p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <AppFormField label="From">
+                  <AppFormInput
+                    v-model="eventsRangeFrom"
+                    type="datetime-local"
+                  />
+                </AppFormField>
+                <AppFormField label="To">
+                  <AppFormInput
+                    v-model="eventsRangeTo"
+                    type="datetime-local"
+                  />
+                </AppFormField>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
+                  @click="setEventsRangeToToday"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors"
+                  @click="loadAccessEvents(1)"
+                >
+                  Apply Range
+                </button>
+                <span v-if="eventsRangeError" class="text-xs font-medium text-red-600 dark:text-red-400">
+                  {{ eventsRangeError }}
+                </span>
+              </div>
+            </div>
+          </div>
 
           <!-- Result filter -->
           <div class="px-4 md:px-6 pt-4 flex flex-wrap items-center gap-2">
@@ -644,7 +722,7 @@
                 : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700'"
               @click="setEventsFilter(opt.value)"
             >
-              {{ opt.label }}
+              {{ opt.label }} ({{ eventFilterCount(opt.value) }})
             </button>
           </div>
 
@@ -737,7 +815,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
     Activity,
     ArrowDown,
@@ -802,6 +880,15 @@ const webhookUrlPreview = computed(() => {
     return `http://${host}:${port}/api/biometric/events/{tenantDomain}?token=${token}`;
 });
 
+const activeTab = ref('device');
+const tabs = [
+  { id: 'device', label: 'Device Setup', icon: Cpu },
+  { id: 'sync', label: 'Sync Settings', icon: RefreshCw },
+  { id: 'push', label: 'Real-Time Push', icon: Zap },
+  { id: 'events', label: 'Auth Events', icon: ScanFace },
+  { id: 'logs', label: 'Sync Logs', icon: Activity },
+];
+
 const logsLoading    = ref(false);
 const recentLogs     = ref([]);
 const logsFailedCount = ref(0);
@@ -812,6 +899,10 @@ const eventsLoading        = ref(false);
 const accessEvents         = ref([]);
 const eventsAttemptedCount = ref(0);
 const eventsFilter         = ref('');
+const eventsRangeFrom      = ref('');
+const eventsRangeTo        = ref('');
+const eventsRangeError     = ref('');
+const eventsCounts         = ref({ all: 0, success: 0, failed: 0 });
 const syncingEvents        = ref(false);
 const syncEventsResult     = ref('');
 const eventsMeta           = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
@@ -848,6 +939,7 @@ const form = ref({
     'biometric.webhook_enabled':     '0',
     'biometric.webhook_server_host': '',
     'biometric.webhook_server_port': '80',
+    'biometric.access_events_sync_from': '',
 });
 
 // ── Computed ───────────────────────────────────────────────────────────────
@@ -855,6 +947,8 @@ const availableModels = computed(() => {
     const maker = form.value['biometric.device_maker'];
     return DEVICE_REGISTRY[maker]?.models ?? [];
 });
+
+const isBiometricEnabled = computed(() => form.value['biometric.enabled'] === '1');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function toggle(key) {
@@ -864,6 +958,21 @@ function toggle(key) {
 function onMakerChange() {
     form.value['biometric.device_model'] = '';
 }
+
+function canOpenTab(tabId) {
+  return tabId === 'device' || isBiometricEnabled.value;
+}
+
+function setActiveTab(tabId) {
+  if (!canOpenTab(tabId)) return;
+  activeTab.value = tabId;
+}
+
+watch(() => form.value['biometric.enabled'], (enabled) => {
+  if (enabled !== '1' && activeTab.value !== 'device') {
+    activeTab.value = 'device';
+  }
+});
 
 // ── API calls ──────────────────────────────────────────────────────────────
 async function load() {
@@ -1014,14 +1123,51 @@ function setEventsFilter(value) {
     loadAccessEvents(1);
 }
 
+function eventFilterCount(value) {
+  if (value === 'success') return eventsCounts.value.success ?? 0;
+  if (value === 'failed') return eventsCounts.value.failed ?? 0;
+  return eventsCounts.value.all ?? 0;
+}
+
+function toLocalDateTimeInput(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function setEventsRangeToToday() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 0, 0);
+  eventsRangeFrom.value = toLocalDateTimeInput(start);
+  eventsRangeTo.value = toLocalDateTimeInput(end);
+  eventsRangeError.value = '';
+}
+
 async function loadAccessEvents(page = 1) {
+  if (eventsRangeFrom.value && eventsRangeTo.value && eventsRangeFrom.value > eventsRangeTo.value) {
+    eventsRangeError.value = 'From date/time must be before To date/time.';
+    return;
+  }
+
+  eventsRangeError.value = '';
     eventsLoading.value = true;
     try {
         const params = new URLSearchParams({ page: String(page), per_page: '20' });
         if (eventsFilter.value) params.set('result', eventsFilter.value);
+    if (eventsRangeFrom.value) params.set('from', eventsRangeFrom.value);
+    if (eventsRangeTo.value) params.set('to', eventsRangeTo.value);
         const res = await apiRequest(`/api/settings/biometric/access-events?${params.toString()}`);
         accessEvents.value         = res.data || [];
         eventsAttemptedCount.value = res.attempted_count ?? 0;
+        if (res.counts) {
+          eventsCounts.value = {
+            all: res.counts.all ?? 0,
+            success: res.counts.success ?? 0,
+            failed: res.counts.failed ?? 0,
+          };
+        } else {
+          eventsCounts.value = { all: 0, success: 0, failed: 0 };
+        }
         if (res.meta) eventsMeta.value = res.meta;
     } catch {
         // non-critical, fail silently
@@ -1034,16 +1180,25 @@ async function syncAccessEvents() {
     syncingEvents.value = true;
     syncEventsResult.value = '';
     try {
-        const res = await apiRequest('/api/settings/biometric/access-events/sync', { method: 'POST' });
+    const syncFrom = form.value['biometric.access_events_sync_from'] || null;
+    const res = await apiRequest('/api/settings/biometric/access-events/sync', {
+      method: 'POST',
+      data: { sync_from: syncFrom },
+    });
         syncEventsResult.value = res.message || 'Import queued.';
         // Give the queued job a moment, then refresh the list.
-        setTimeout(() => loadAccessEvents(1), 4000);
+    setTimeout(() => {
+      loadAccessEvents(1);
+      load();
+    }, 4000);
     } catch (err) {
         syncEventsResult.value = err?.response?.data?.message || 'Failed to queue import.';
     } finally {
         syncingEvents.value = false;
     }
 }
+
+setEventsRangeToToday();
 
 onMounted(load);
 </script>

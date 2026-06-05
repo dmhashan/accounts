@@ -68,6 +68,7 @@ class ConfigurationApiController extends Controller
             'biometric.webhook_enabled' => ['sometimes', 'in:0,1'],
             'biometric.webhook_server_host' => ['sometimes', 'nullable', 'string', 'max:255'],
             'biometric.webhook_server_port' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
+            'biometric.access_events_sync_from' => ['sometimes', 'nullable', 'date'],
         ]);
 
         $tenant = app('tenant');

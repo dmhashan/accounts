@@ -508,7 +508,7 @@ class BiometricSyncService
      *
      * @return array{imported: int, skipped: int, errors: int, message: string}
      */
-    public function importDeviceEvents(Tenant $tenant): array
+    public function importDeviceEvents(Tenant $tenant, ?string $syncFrom = null, ?string $syncTo = null): array
     {
         $tenantId = $tenant->id;
         $imported = 0;
@@ -529,13 +529,28 @@ class BiometricSyncService
 
             $maker = $allConfig['biometric.device_maker'] ?? '';
             $model = $allConfig['biometric.device_model'] ?? '';
-            // Wide window so we capture everything the device still holds.
-            $startTime = now()->subYear()->format('Y-m-d\TH:i:s');
-            $endTime = now()->format('Y-m-d\TH:i:s');
+
+            // Sync window defaults to [configured cursor, now]. If no cursor exists,
+            // use a wide 1-year fallback to bootstrap initial imports.
+            $configuredFrom = (string) ($allConfig['biometric.access_events_sync_from'] ?? '');
+            $syncFromIso = $syncFrom ?: ($configuredFrom !== '' ? $configuredFrom : now()->subYear()->toIso8601String());
+            $syncToIso = $syncTo ?: now()->toIso8601String();
+
+            $syncFromAt = Carbon::parse($syncFromIso);
+            $syncToAt = Carbon::parse($syncToIso);
+
+            if ($syncFromAt->gt($syncToAt)) {
+                return ['imported' => 0, 'skipped' => 0, 'errors' => 1, 'message' => 'Invalid sync window: sync_from is after sync_to.'];
+            }
+
+            // HikVision requires a timezone offset on AcsEvent search times.
+            $startTime = $syncFromAt->format('Y-m-d\TH:i:sP');
+            $endTime = $syncToAt->format('Y-m-d\TH:i:sP');
 
             $offset = 0;
             $maxResults = 50;
             $hasMore = true;
+            $lastProcessedAuthAt = null;
 
             while ($hasMore) {
                 $result = $driver->getAccessEvents($startTime, $endTime, $offset, $maxResults);
@@ -558,6 +573,20 @@ class BiometricSyncService
                             'name' => $info['name'] ?? null,
                             'picture_url' => $info['pictureURL'] ?? null,
                         ];
+
+                        // Track cursor by the last processed authentication event
+                        // so partial imports can resume safely from progress.
+                        if ($this->classifyAuthEvent((int) $event['minor']) !== null && !empty($event['time'])) {
+                            try {
+                                $eventAt = Carbon::parse((string) $event['time']);
+
+                                if (!$lastProcessedAuthAt || $eventAt->gt($lastProcessedAuthAt)) {
+                                    $lastProcessedAuthAt = $eventAt;
+                                }
+                            } catch (\Throwable) {
+                                // Ignore invalid event timestamps for cursor tracking.
+                            }
+                        }
 
                         $member = $this->resolveMemberByEmployeeNo($tenant, $event['employeeNoString']);
 
@@ -586,6 +615,20 @@ class BiometricSyncService
                 'response' => ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors],
                 'error_message' => $errors > 0 ? "{$errors} event(s) failed to import." : null,
             ]);
+
+            $cursorToPersist = $lastProcessedAuthAt;
+
+            if (!$cursorToPersist && $errors === 0) {
+                // No auth events were processed but the full window completed;
+                // advancing to sync_to avoids re-scanning the same empty window.
+                $cursorToPersist = $syncToAt;
+            }
+
+            if ($cursorToPersist) {
+                $this->config->updateBatch($tenantId, [
+                    'biometric.access_events_sync_from' => $cursorToPersist->format('Y-m-d\TH:i'),
+                ]);
+            }
         } catch (\Throwable $e) {
             Log::error('BiometricSyncService::importDeviceEvents error', ['tenant_id' => $tenantId, 'error' => $e->getMessage()]);
             $errors++;

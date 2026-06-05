@@ -11,6 +11,7 @@ use App\Models\Tenant;
 use App\Services\BiometricSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\Response;
 
 class BiometricApiController extends Controller
@@ -370,10 +371,31 @@ class BiometricApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
+        $validated = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
         $perPage = max(1, min(100, (int) $request->query('per_page', 20)));
         $resultFilter = (string) $request->query('result', '');
 
-        $query = BiometricAccessEvent::where('tenant_id', $tenant->id)
+        $from = isset($validated['from']) && $validated['from'] !== ''
+            ? Carbon::parse($validated['from'])
+            : null;
+        $to = isset($validated['to']) && $validated['to'] !== ''
+            ? Carbon::parse($validated['to'])
+            : null;
+
+        $baseQuery = BiometricAccessEvent::where('tenant_id', $tenant->id);
+
+        if ($from) {
+            $baseQuery->where('event_time', '>=', $from);
+        }
+
+        if ($to) {
+            $baseQuery->where('event_time', '<=', $to);
+        }
+
+        $query = (clone $baseQuery)
             ->with('member:id,name,biometric_member_id')
             ->orderByDesc('event_time')
             ->orderByDesc('id');
@@ -382,8 +404,14 @@ class BiometricApiController extends Controller
             $query->where('result', $resultFilter);
         }
 
-        $attemptedCount = BiometricAccessEvent::where('tenant_id', $tenant->id)
+        $totalCount = (clone $baseQuery)->count();
+
+        $attemptedCount = (clone $baseQuery)
             ->where('result', 'failed')
+            ->count();
+
+        $successCount = (clone $baseQuery)
+            ->where('result', 'success')
             ->count();
 
         $paginated = $query->paginate($perPage);
@@ -405,6 +433,16 @@ class BiometricApiController extends Controller
         return response()->json([
             'data' => $data,
             'attempted_count' => $attemptedCount,
+            'counts' => [
+                'all' => $totalCount,
+                'success' => $successCount,
+                'failed' => $attemptedCount,
+            ],
+            'filters' => [
+                'from' => $from?->toIso8601String(),
+                'to' => $to?->toIso8601String(),
+                'result' => $resultFilter,
+            ],
             'meta' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page' => $paginated->lastPage(),
@@ -420,19 +458,35 @@ class BiometricApiController extends Controller
      * Queue a job that imports all access events currently held on the device
      * into the Recent Authentication Events log.
      */
-    public function syncAccessEvents(): JsonResponse
+    public function syncAccessEvents(Request $request): JsonResponse
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
+
+        $validated = $request->validate([
+            'sync_from' => ['nullable', 'date'],
+            'sync_to' => ['nullable', 'date', 'after_or_equal:sync_from'],
+        ]);
 
         if (!$this->biometric->isEnabled($tenant->id)) {
             return response()->json(['message' => 'Biometric integration is disabled.'], 422);
         }
 
-        ImportBiometricAccessEventsJob::dispatch($tenant->id);
+        $syncFrom = isset($validated['sync_from']) && $validated['sync_from'] !== ''
+            ? Carbon::parse($validated['sync_from'])->toIso8601String()
+            : null;
+        $syncTo = isset($validated['sync_to']) && $validated['sync_to'] !== ''
+            ? Carbon::parse($validated['sync_to'])->toIso8601String()
+            : now()->toIso8601String();
+
+        ImportBiometricAccessEventsJob::dispatch($tenant->id, $syncFrom, $syncTo);
 
         return response()->json([
             'message' => 'Importing events from the device. They will appear here shortly.',
+            'meta' => [
+                'sync_from' => $syncFrom,
+                'sync_to' => $syncTo,
+            ],
         ]);
     }
 

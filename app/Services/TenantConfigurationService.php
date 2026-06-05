@@ -45,6 +45,7 @@ class TenantConfigurationService
         'biometric.webhook_server_host' => ['Webhook Server Host',           ''],
         'biometric.webhook_server_port' => ['Webhook Server Port',           '80'],
         'biometric.webhook_token' => ['Webhook Token',                  ''],
+        'biometric.access_events_sync_from' => ['Access Events Sync From',       ''],
     ];
 
     /**

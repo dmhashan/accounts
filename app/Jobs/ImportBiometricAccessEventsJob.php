@@ -27,7 +27,11 @@ class ImportBiometricAccessEventsJob implements ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(private readonly int $tenantId) {}
+    public function __construct(
+        private readonly int $tenantId,
+        private readonly ?string $syncFrom = null,
+        private readonly ?string $syncTo = null,
+    ) {}
 
     public function handle(BiometricSyncService $biometric): void
     {
@@ -42,7 +46,7 @@ class ImportBiometricAccessEventsJob implements ShouldQueue
         // Bind the tenant so MediaStorageService can namespace stored snapshots.
         app()->instance('tenant', $tenant);
 
-        $result = $biometric->importDeviceEvents($tenant);
+        $result = $biometric->importDeviceEvents($tenant, $this->syncFrom, $this->syncTo);
 
         Log::info('ImportBiometricAccessEventsJob: complete', array_merge(['tenant_id' => $this->tenantId], $result));
     }

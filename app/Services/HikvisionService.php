@@ -205,8 +205,8 @@ class HikvisionService
     /**
      * Query access-control events held on the device within a time window.
      *
-     * @param  string  $startTime  ISO 8601 e.g. 2026-05-01T00:00:00
-     * @param  string  $endTime  ISO 8601
+     * @param  string  $startTime  ISO 8601 with timezone, e.g. 2026-05-01T00:00:00+05:30
+     * @param  string  $endTime  ISO 8601 with timezone
      * @param  int  $offset  Pagination offset (0-based)
      * @param  int  $maxResults  Page size (max 100)
      */
@@ -217,7 +217,8 @@ class HikvisionService
                 'searchID' => 'biometric-import-' . now()->timestamp,
                 'searchResultPosition' => $offset,
                 'maxResults' => $maxResults,
-                'major' => 5,  // Access control events only
+                'major' => 5,  // 5 = event; minor 0 = all event sub-types
+                'minor' => 0,
                 'startTime' => $startTime,
                 'endTime' => $endTime,
             ],
