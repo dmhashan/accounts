@@ -446,34 +446,85 @@ class BiometricSyncService
         $method = $classification['method'];
         $result = $classification['result'];
 
-        $eventTime = !empty($event['time']) ? Carbon::parse($event['time']) : now();
-        $employeeNo = $event['employeeNoString'] ?? null;
+        $eventTime = !empty($event['time']) ? Carbon::parse((string) $event['time']) : now();
+        $employeeNo = $this->normaliseEmployeeNo($event['employeeNoString'] ?? null);
+        $raw = $event;
+        unset($raw['picture_bytes'], $raw['picture_content_type']);
 
         // De-duplicate: the same scan may arrive via both the real-time webhook
         // and a later manual device import. Match on tenant + person + type + time.
         if (!empty($event['time'])) {
-            $existing = BiometricAccessEvent::where('tenant_id', $tenant->id)
+            $existingQuery = BiometricAccessEvent::where('tenant_id', $tenant->id)
                 ->where('minor_code', $minor)
                 ->where('event_time', $eventTime);
 
             $employeeNo
-                ? $existing->where('employee_no', $employeeNo)
-                : $existing->whereNull('employee_no');
+                ? $existingQuery->where('employee_no', $employeeNo)
+                : $existingQuery->whereNull('employee_no');
 
-            if ($existing->exists()) {
+            $existing = $existingQuery->first();
+
+            if ($existing) {
+                // Backfill missing identifiers on existing events so earlier rows
+                // created without member resolution can be corrected later.
+                $shouldSave = false;
+
+                if (!$existing->member_id && $member) {
+                    $existing->member_id = $member->id;
+                    $shouldSave = true;
+                }
+
+                if (!$existing->biometric_member_id) {
+                    $existing->biometric_member_id = $member?->biometric_member_id ?: $employeeNo;
+                    $shouldSave = $existing->biometric_member_id !== null || $shouldSave;
+                }
+
+                if (!$existing->employee_no && $employeeNo) {
+                    $existing->employee_no = $employeeNo;
+                    $shouldSave = true;
+                }
+
+                if (!$existing->person_name) {
+                    $resolvedName = $event['name'] ?? $member?->name;
+
+                    if ($resolvedName) {
+                        $existing->person_name = $resolvedName;
+                        $shouldSave = true;
+                    }
+                }
+
+                if ($existing->raw === null && !empty($raw)) {
+                    $existing->raw = $raw;
+                    $shouldSave = true;
+                }
+
+                if (!$existing->picture_path) {
+                    $existingPicturePath = $this->storeEventPicture($tenant, $event);
+
+                    if ($existingPicturePath) {
+                        $existing->picture_path = $existingPicturePath;
+                        $shouldSave = true;
+                    }
+                }
+
+                if ($shouldSave) {
+                    $existing->save();
+                }
+
+                if ($result === 'success' && $member) {
+                    $this->markMemberAttendance($tenant, $member, $eventTime);
+                }
+
                 return false;
             }
         }
 
         $picturePath = $this->storeEventPicture($tenant, $event);
 
-        $raw = $event;
-        unset($raw['picture_bytes'], $raw['picture_content_type']);
-
         BiometricAccessEvent::create([
             'tenant_id' => $tenant->id,
             'member_id' => $member?->id,
-            'biometric_member_id' => $member?->biometric_member_id,
+            'biometric_member_id' => $member?->biometric_member_id ?: $employeeNo,
             'employee_no' => $employeeNo,
             'person_name' => $event['name'] ?? $member?->name,
             'auth_method' => $method,
@@ -485,19 +536,41 @@ class BiometricSyncService
         ]);
 
         if ($result === 'success' && $member) {
-            MemberAttendance::firstOrCreate(
-                [
-                    'tenant_id' => $tenant->id,
-                    'member_id' => $member->id,
-                    'attended_date' => $eventTime->toDateString(),
-                ],
-                [
-                    'username' => $member->username ?? $member->biometric_member_id,
-                ],
-            );
+            $this->markMemberAttendance($tenant, $member, $eventTime);
         }
 
         return true;
+    }
+
+    /**
+     * Mark a member as attended on the event date while preventing duplicate rows.
+     */
+    private function markMemberAttendance(Tenant $tenant, Member $member, Carbon $eventTime): void
+    {
+        $attendedDate = $eventTime->toDateString();
+
+        $attendance = MemberAttendance::where('tenant_id', $tenant->id)
+            ->where('member_id', $member->id)
+            ->whereDate('attended_date', $attendedDate)
+            ->first();
+
+        if ($attendance) {
+            if (!$attendance->username) {
+                $attendance->username = $member->username ?? $member->biometric_member_id;
+                $attendance->save();
+            }
+
+            return;
+        }
+
+        MemberAttendance::create([
+            'tenant_id' => $tenant->id,
+            'member_id' => $member->id,
+            'legacy_uuid' => null,
+            'legacy_member_id' => null,
+            'username' => $member->username ?? $member->biometric_member_id,
+            'attended_date' => $attendedDate,
+        ]);
     }
 
     /**
@@ -710,13 +783,59 @@ class BiometricSyncService
      */
     private function resolveMemberByEmployeeNo(Tenant $tenant, ?string $employeeNo): ?Member
     {
+        $employeeNo = $this->normaliseEmployeeNo($employeeNo);
+
         if (!$employeeNo) {
             return null;
         }
 
-        return Member::where('tenant_id', $tenant->id)
-            ->where('biometric_member_id', 'like', '%-' . str_pad($employeeNo, 4, '0', STR_PAD_LEFT))
-            ->first();
+        $candidates = [$employeeNo];
+
+        if (ctype_digit($employeeNo)) {
+            $unpadded = ltrim($employeeNo, '0');
+            $unpadded = $unpadded === '' ? '0' : $unpadded;
+            $padded4 = str_pad($unpadded, 4, '0', STR_PAD_LEFT);
+
+            $candidates[] = $unpadded;
+            $candidates[] = $padded4;
+        }
+
+        $candidates = array_values(array_unique(array_filter($candidates, static fn ($v) => $v !== '')));
+
+        $query = Member::where('tenant_id', $tenant->id)
+            ->whereNotNull('biometric_member_id')
+            ->where(function ($q) use ($candidates, $employeeNo) {
+                $q->whereIn('biometric_member_id', $candidates);
+
+                if (ctype_digit($employeeNo)) {
+                    $unpadded = ltrim($employeeNo, '0');
+                    $unpadded = $unpadded === '' ? '0' : $unpadded;
+                    $q->orWhere('biometric_member_id', 'like', '%-' . str_pad($unpadded, 4, '0', STR_PAD_LEFT));
+                }
+            });
+
+        $matches = $query->get();
+
+        if ($matches->isEmpty()) {
+            return null;
+        }
+
+        foreach ($candidates as $candidate) {
+            $exact = $matches->firstWhere('biometric_member_id', $candidate);
+
+            if ($exact) {
+                return $exact;
+            }
+        }
+
+        return $matches->first();
+    }
+
+    private function normaliseEmployeeNo(?string $employeeNo): ?string
+    {
+        $employeeNo = trim((string) $employeeNo);
+
+        return $employeeNo === '' ? null : $employeeNo;
     }
 
     // -------------------------------------------------------------------------
