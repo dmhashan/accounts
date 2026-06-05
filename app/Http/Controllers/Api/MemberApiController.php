@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\BiometricAccessEvent;
 use App\Models\Member;
 use App\Models\MemberAttendance;
 use App\Models\Tenant;
@@ -243,6 +242,9 @@ class MemberApiController extends Controller
         $this->memberService->ensureTenantMember($member, $tenant->id);
 
         $year = $request->integer('year', now()->year);
+        $fromDate = sprintf('%04d-01-01', $year);
+        $toDate = sprintf('%04d-12-31', $year);
+        $includePictureUrls = $request->boolean('include_picture_urls', false);
 
         $records = MemberAttendance::where('tenant_id', $tenant->id)
             ->where(function ($q) use ($member) {
@@ -255,30 +257,18 @@ class MemberApiController extends Controller
                         }
                     });
             })
-            ->whereYear('attended_date', $year)
+            ->whereBetween('attended_date', [$fromDate, $toDate])
             ->orderBy('attended_date')
-            ->get(['id', 'attended_date']);
+            ->with([
+                'biometricAccessEvent' => function ($q) use ($tenant) {
+                    $q->where('tenant_id', $tenant->id)
+                        ->select(['id', 'tenant_id', 'event_time', 'picture_path']);
+                },
+            ])
+            ->get(['id', 'attended_date', 'biometric_access_event_id']);
 
-        $eventsByDate = BiometricAccessEvent::where('tenant_id', $tenant->id)
-            ->where('result', 'success')
-            ->whereYear('event_time', $year)
-            ->where(function ($q) use ($member) {
-                $q->where('member_id', $member->id);
-
-                if ($member->biometric_member_id) {
-                    $q->orWhere('biometric_member_id', $member->biometric_member_id);
-                }
-            })
-            ->orderBy('event_time')
-            ->get(['id', 'event_time', 'picture_path'])
-            ->groupBy(function (BiometricAccessEvent $event) {
-                return optional($event->event_time)->toDateString();
-            })
-            ->map(fn ($events) => $events->first());
-
-        $records = $records->map(function (MemberAttendance $attendance) use ($eventsByDate) {
-            $date = optional($attendance->attended_date)->toDateString();
-            $event = $date ? $eventsByDate->get($date) : null;
+        $records = $records->map(function (MemberAttendance $attendance) use ($includePictureUrls) {
+            $event = $attendance->biometricAccessEvent;
 
             return [
                 'id' => $attendance->id,
@@ -287,7 +277,9 @@ class MemberApiController extends Controller
                 'biometric_access_event_link' => $event?->id ? '/#/settings/biometric?event_id=' . $event->id : null,
                 'biometric_access_event_time' => optional($event?->event_time)?->toIso8601String(),
                 'biometric_access_event_has_picture' => (bool) ($event?->picture_path),
-                'biometric_access_event_picture_url' => $event?->picture_path ? $this->media->url($event->picture_path) : null,
+                'biometric_access_event_picture_url' => $includePictureUrls && $event?->picture_path
+                    ? $this->media->url($event->picture_path)
+                    : null,
             ];
         })->values();
 

@@ -512,7 +512,7 @@ class BiometricSyncService
                 }
 
                 if ($result === 'success' && $member) {
-                    $this->markMemberAttendance($tenant, $member, $eventTime);
+                    $this->markMemberAttendance($tenant, $member, $eventTime, $existing->id);
                 }
 
                 return false;
@@ -521,7 +521,7 @@ class BiometricSyncService
 
         $picturePath = $this->storeEventPicture($tenant, $event);
 
-        BiometricAccessEvent::create([
+        $createdEvent = BiometricAccessEvent::create([
             'tenant_id' => $tenant->id,
             'member_id' => $member?->id,
             'biometric_member_id' => $member?->biometric_member_id ?: $employeeNo,
@@ -536,7 +536,7 @@ class BiometricSyncService
         ]);
 
         if ($result === 'success' && $member) {
-            $this->markMemberAttendance($tenant, $member, $eventTime);
+            $this->markMemberAttendance($tenant, $member, $eventTime, $createdEvent->id);
         }
 
         return true;
@@ -545,18 +545,29 @@ class BiometricSyncService
     /**
      * Mark a member as attended on the event date while preventing duplicate rows.
      */
-    private function markMemberAttendance(Tenant $tenant, Member $member, Carbon $eventTime): void
+    private function markMemberAttendance(Tenant $tenant, Member $member, Carbon $eventTime, ?int $biometricAccessEventId = null): void
     {
         $attendedDate = $eventTime->toDateString();
 
         $attendance = MemberAttendance::where('tenant_id', $tenant->id)
             ->where('member_id', $member->id)
-            ->whereDate('attended_date', $attendedDate)
+            ->where('attended_date', $attendedDate)
             ->first();
 
         if ($attendance) {
+            $shouldSave = false;
+
             if (!$attendance->username) {
                 $attendance->username = $member->username ?? $member->biometric_member_id;
+                $shouldSave = true;
+            }
+
+            if (!$attendance->biometric_access_event_id && $biometricAccessEventId) {
+                $attendance->biometric_access_event_id = $biometricAccessEventId;
+                $shouldSave = true;
+            }
+
+            if ($shouldSave) {
                 $attendance->save();
             }
 
@@ -566,6 +577,7 @@ class BiometricSyncService
         MemberAttendance::create([
             'tenant_id' => $tenant->id,
             'member_id' => $member->id,
+            'biometric_access_event_id' => $biometricAccessEventId,
             'legacy_uuid' => null,
             'legacy_member_id' => null,
             'username' => $member->username ?? $member->biometric_member_id,
