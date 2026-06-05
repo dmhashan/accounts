@@ -377,17 +377,14 @@ class BiometricSyncService
      */
     public function handleIncomingEvent(Tenant $tenant, array $event): void
     {
-        $employeeNo = $event['employeeNoString'] ?? null;
-        $member = $this->resolveMemberByEmployeeNo($tenant, $employeeNo);
-
-        // Core: record the authentication event + picture and mark attendance.
-        $this->recordAccessEvent($tenant, $event, $member);
+        $ingestion = $this->ingestAccessEvent($tenant, $event);
+        $member = $ingestion['member'];
 
         // Best-effort raw debug trail on the sync-log table (never blocks the event).
         try {
             $allConfig = $this->config->all($tenant->id);
 
-            $logEvent = $event;
+            $logEvent = $ingestion['event'];
             unset($logEvent['picture_bytes'], $logEvent['picture_content_type']);
 
             $this->writeLog([
@@ -406,6 +403,56 @@ class BiometricSyncService
         } catch (\Throwable $e) {
             Log::warning('Biometric webhook sync-log write failed', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Ingest a single access event from any source (webhook or device pull).
+     *
+     * @return array{inserted: bool, is_auth: bool, event_at: ?Carbon, member: ?Member, event: array}
+     */
+    private function ingestAccessEvent(Tenant $tenant, array $event): array
+    {
+        $event = $this->normaliseAccessEvent($event);
+        $minor = (int) ($event['minor'] ?? 0);
+        $isAuth = $this->classifyAuthEvent($minor) !== null;
+
+        $eventAt = null;
+
+        if (!empty($event['time'])) {
+            try {
+                $eventAt = Carbon::parse((string) $event['time']);
+            } catch (\Throwable) {
+                $eventAt = null;
+            }
+        }
+
+        $member = $this->resolveMemberByEmployeeNo($tenant, $event['employeeNoString'] ?? null);
+        $inserted = $this->recordAccessEvent($tenant, $event, $member);
+
+        return [
+            'inserted' => $inserted,
+            'is_auth' => $isAuth,
+            'event_at' => $eventAt,
+            'member' => $member,
+            'event' => $event,
+        ];
+    }
+
+    /**
+     * Keep a canonical shape for access-event payloads across ingestion paths.
+     */
+    private function normaliseAccessEvent(array $event): array
+    {
+        return [
+            'employeeNoString' => $event['employeeNoString'] ?? null,
+            'time' => $event['time'] ?? null,
+            'minor' => (int) ($event['minor'] ?? 0),
+            'attendanceStatus' => $event['attendanceStatus'] ?? null,
+            'name' => $event['name'] ?? null,
+            'picture_url' => $event['picture_url'] ?? null,
+            'picture_bytes' => $event['picture_bytes'] ?? null,
+            'picture_content_type' => $event['picture_content_type'] ?? null,
+        ];
     }
 
     /**
@@ -668,24 +715,17 @@ class BiometricSyncService
                             'name' => $info['name'] ?? null,
                             'picture_url' => $info['pictureURL'] ?? null,
                         ];
+                        $ingestion = $this->ingestAccessEvent($tenant, $event);
 
                         // Track cursor by the last processed authentication event
                         // so partial imports can resume safely from progress.
-                        if ($this->classifyAuthEvent((int) $event['minor']) !== null && !empty($event['time'])) {
-                            try {
-                                $eventAt = Carbon::parse((string) $event['time']);
-
-                                if (!$lastProcessedAuthAt || $eventAt->gt($lastProcessedAuthAt)) {
-                                    $lastProcessedAuthAt = $eventAt;
-                                }
-                            } catch (\Throwable) {
-                                // Ignore invalid event timestamps for cursor tracking.
+                        if ($ingestion['is_auth'] && $ingestion['event_at']) {
+                            if (!$lastProcessedAuthAt || $ingestion['event_at']->gt($lastProcessedAuthAt)) {
+                                $lastProcessedAuthAt = $ingestion['event_at'];
                             }
                         }
 
-                        $member = $this->resolveMemberByEmployeeNo($tenant, $event['employeeNoString']);
-
-                        $this->recordAccessEvent($tenant, $event, $member) ? $imported++ : $skipped++;
+                        $ingestion['inserted'] ? $imported++ : $skipped++;
                     } catch (\Throwable $e) {
                         Log::warning('Biometric device event import error', ['event' => $info ?? null, 'error' => $e->getMessage()]);
                         $errors++;
