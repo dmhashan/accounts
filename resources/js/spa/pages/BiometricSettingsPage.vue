@@ -740,7 +740,9 @@
                 class="flex items-center gap-3 rounded-xl border p-3"
                 :class="event.result === 'success'
                   ? 'border-green-200 dark:border-green-900/40 bg-green-50/40 dark:bg-green-900/10'
-                  : 'border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/10'"
+                  : event.fail_reason === 'payment_expired'
+                    ? 'border-red-200 dark:border-red-900/40 bg-red-50/40 dark:bg-red-900/10'
+                    : 'border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/10'"
               >
                 <div class="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center">
                   <button
@@ -772,9 +774,11 @@
                     class="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
                     :class="event.result === 'success'
                       ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'"
+                      : event.fail_reason === 'payment_expired'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'"
                   >
-                    {{ event.result === 'success' ? 'Attendance marked' : 'Attempted' }}
+                    {{ event.result === 'success' ? 'Attendance marked' : event.fail_reason === 'payment_expired' ? 'Payment Expired' : 'Attempted' }}
                   </span>
                 </div>
               </li>

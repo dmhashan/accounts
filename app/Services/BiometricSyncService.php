@@ -520,6 +520,7 @@ class BiometricSyncService
         }
 
         $picturePath = $this->storeEventPicture($tenant, $event);
+        $failReason = $result === 'failed' ? $this->resolveFailReason($tenant, $member, $eventTime) : null;
 
         $createdEvent = BiometricAccessEvent::create([
             'tenant_id' => $tenant->id,
@@ -529,6 +530,7 @@ class BiometricSyncService
             'person_name' => $event['name'] ?? $member?->name,
             'auth_method' => $method,
             'result' => $result,
+            'fail_reason' => $failReason,
             'minor_code' => $minor,
             'picture_path' => $picturePath,
             'event_time' => $eventTime,
@@ -725,6 +727,34 @@ class BiometricSyncService
             'errors' => $errors,
             'message' => "Imported {$imported} event(s), skipped {$skipped}, {$errors} error(s).",
         ];
+    }
+
+    /**
+     * Determine a system-level fail reason for a failed authentication event.
+     *
+     * Returns 'payment_expired' when access control is enabled for the tenant and
+     * the member (if resolved) has no valid active payment, otherwise null.
+     */
+    private function resolveFailReason(Tenant $tenant, ?Member $member, Carbon $eventTime): ?string
+    {
+        if (!$this->isAccessControlEnabled($tenant->id)) {
+            return null;
+        }
+
+        // If member is unknown, we cannot determine payment status.
+        if (!$member) {
+            return null;
+        }
+
+        $graceDays = $this->getGracePeriodDays($tenant->id);
+        $validUntil = $this->getMemberValidUntil($member, $graceDays);
+
+        // No payment record on file or payment has lapsed → payment expired.
+        if (!$validUntil || $validUntil->lt($eventTime)) {
+            return 'payment_expired';
+        }
+
+        return null;
     }
 
     /**

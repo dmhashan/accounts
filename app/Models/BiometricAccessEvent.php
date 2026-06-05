@@ -17,6 +17,7 @@ class BiometricAccessEvent extends Model
         'person_name',
         'auth_method',
         'result',
+        'fail_reason',
         'minor_code',
         'picture_path',
         'event_time',

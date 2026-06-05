@@ -425,6 +425,7 @@ class BiometricApiController extends Controller
             'employee_no' => $event->employee_no,
             'auth_method' => $event->auth_method,
             'result' => $event->result,
+            'fail_reason' => $event->fail_reason,
             'minor_code' => $event->minor_code,
             'picture_url' => $this->biometric->accessEventPictureUrl($event->picture_path),
             'event_time' => optional($event->event_time)->toISOString(),
