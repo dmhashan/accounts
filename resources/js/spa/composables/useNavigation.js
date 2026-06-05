@@ -101,8 +101,8 @@ export function useNavigation() {
         if (context.permissions?.reports) items.push({
             label: 'Reports', shortLabel: 'Reports', path: '/reports', icon: ICONS.reports,
             children: [
-                { label: 'Statistics', path: '/reports' },
                 { label: 'Daily Summary', path: '/reports/daily-summary' },
+                { label: 'Statistics', path: '/reports' },
                 { label: 'Customers', path: '/reports/customers' },
                 { label: 'Products', path: '/reports/products' },
             ],
