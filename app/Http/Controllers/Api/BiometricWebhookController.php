@@ -40,6 +40,11 @@ class BiometricWebhookController extends Controller
             return response('', 404);
         }
 
+        // The webhook route has no IdentifyTenant middleware, so bind the tenant
+        // into the container now — MediaStorageService relies on app('tenant')
+        // when storing the captured authentication snapshot.
+        app()->instance('tenant', $tenant);
+
         // 2. Validate webhook token (constant-time comparison to prevent timing attacks)
         $allConfig = $this->config->all($tenant->id);
         $storedToken = $allConfig['biometric.webhook_token'] ?? '';
@@ -116,6 +121,8 @@ class BiometricWebhookController extends Controller
                 eventTime: $ace['eventTime'] ?? ($alert['dateTime'] ?? null),
                 minor: (int) ($ace['minorEventType'] ?? 0),
                 attendanceStatus: $ace['attendanceStatus'] ?? null,
+                name: $ace['name'] ?? null,
+                pictureUrl: $ace['pictureURL'] ?? ($alert['pictureURL'] ?? null),
             );
         }
 
@@ -124,11 +131,14 @@ class BiometricWebhookController extends Controller
             // Laravel parses text fields automatically; device may send XML as 'event_log'
             $xmlString = $request->input('event_log') ?? $this->extractXmlFromBody($body);
 
-            if ($xmlString) {
-                return $this->parseXml($xmlString);
+            if (!$xmlString) {
+                return null;
             }
 
-            return null;
+            $event = $this->parseXml($xmlString);
+
+            // The device attaches the captured face snapshot as a binary part.
+            return $event ? $this->attachPicture($event, $request) : null;
         }
 
         // ── Raw XML (application/xml, text/xml, or unrecognised content-type) ──
@@ -171,10 +181,50 @@ class BiometricWebhookController extends Controller
                 eventTime: (string) ($ace->eventTime ?? (string) ($node->dateTime ?? '')),
                 minor: (int) (string) ($ace->minorEventType ?? 0),
                 attendanceStatus: (string) ($ace->attendanceStatus ?? ''),
+                name: (string) ($ace->name ?? '') ?: null,
+                pictureUrl: (string) ($ace->pictureURL ?? (string) ($node->pictureURL ?? '')) ?: null,
             );
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Attach the captured snapshot (sent as a binary multipart part) to the event.
+     *
+     * HikVision pushes the face-capture image alongside the XML event part. We
+     * read the first image part and pass its raw bytes downstream for storage.
+     */
+    private function attachPicture(array $event, Request $request): array
+    {
+        foreach ($request->allFiles() as $file) {
+            $files = is_array($file) ? $file : [$file];
+
+            foreach ($files as $uploaded) {
+                if (!$uploaded || !$uploaded->isValid()) {
+                    continue;
+                }
+
+                $mime = (string) $uploaded->getMimeType();
+                $isImage = str_starts_with($mime, 'image/')
+                    || in_array(strtolower($uploaded->getClientOriginalExtension()), ['jpg', 'jpeg', 'png'], true);
+
+                if (!$isImage) {
+                    continue;
+                }
+
+                $bytes = @file_get_contents($uploaded->getRealPath());
+
+                if ($bytes !== false && $bytes !== '') {
+                    $event['picture_bytes'] = $bytes;
+                    $event['picture_content_type'] = $mime ?: 'image/jpeg';
+
+                    return $event;
+                }
+            }
+        }
+
+        return $event;
     }
 
     /**
@@ -185,8 +235,12 @@ class BiometricWebhookController extends Controller
         ?string $eventTime,
         int $minor,
         ?string $attendanceStatus,
+        ?string $name = null,
+        ?string $pictureUrl = null,
     ): ?array {
-        if (!$employeeNo || !$eventTime) {
+        // Authentication events always carry a time. employeeNo may be absent for
+        // failed/stranger attempts, so only the time is strictly required.
+        if (!$eventTime) {
             return null;
         }
 
@@ -195,6 +249,8 @@ class BiometricWebhookController extends Controller
             'time' => $eventTime,
             'minor' => $minor,
             'attendanceStatus' => $attendanceStatus,
+            'name' => $name,
+            'picture_url' => $pictureUrl,
         ];
     }
 

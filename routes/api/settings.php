@@ -27,6 +27,7 @@ Route::middleware(['auth', 'permission:settings.manage'])->group(function () {
     Route::post('/settings/biometric/keep-close', [BiometricApiController::class, 'keepDoorClosed']);
     Route::get('/settings/biometric/door-status', [BiometricApiController::class, 'doorStatus']);
     Route::get('/settings/biometric/recent-logs', [BiometricApiController::class, 'recentLogs']);
+    Route::get('/settings/biometric/access-events', [BiometricApiController::class, 'accessEvents']);
 
     // Biometric real-time webhook management
     Route::post('/settings/biometric/webhook/generate-token', [BiometricApiController::class, 'generateWebhookToken']);

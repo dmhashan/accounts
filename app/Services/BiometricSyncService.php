@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BiometricAccessEvent;
 use App\Models\BiometricSyncLog;
 use App\Models\Member;
 use App\Models\MemberAttendance;
@@ -36,6 +37,30 @@ class BiometricSyncService
      */
     private const FINGERPRINT_SETUP_UNSUPPORTED_MODELS = [
         'DS-K1T320', // Value Series — all variants
+    ];
+
+    /**
+     * Access-control minor event codes that represent a SUCCESSFUL authentication,
+     * mapped to the credential method used. A successful event marks attendance.
+     * (Device/firmware dependent — extend as needed.)
+     */
+    private const SUCCESS_AUTH_MINORS = [
+        75 => 'face',
+        38 => 'card',
+        113 => 'fingerprint',
+    ];
+
+    /**
+     * Access-control minor event codes that represent a FAILED authentication
+     * attempt, mapped to the credential method used. A failed event is logged as
+     * "attempted" (no attendance). (Device/firmware dependent — extend as needed.)
+     */
+    private const FAILED_AUTH_MINORS = [
+        76 => 'face',         // face authentication failed
+        77 => 'face',         // face anti-spoofing / liveness failed
+        39 => 'card',         // card authentication failed / no access right
+        114 => 'fingerprint', // fingerprint authentication failed
+        22 => 'password',     // password authentication failed
     ];
 
     public function __construct(
@@ -444,37 +469,189 @@ class BiometricSyncService
 
     /**
      * Process a single real-time access event received via the webhook endpoint.
-     * Logs the event and delegates to persistAttendanceEvent.
+     *
+     * Records the authentication event (success or failed) together with the
+     * snapshot the device captured at that moment, then marks attendance when the
+     * authentication succeeded.
      */
     public function handleIncomingEvent(Tenant $tenant, array $event): void
     {
         $employeeNo = $event['employeeNoString'] ?? null;
+        $member = $this->resolveMemberByEmployeeNo($tenant, $employeeNo);
+
+        // Core: record the authentication event + picture and mark attendance.
+        $this->recordAccessEvent($tenant, $event, $member);
+
+        // Best-effort raw debug trail on the sync-log table (never blocks the event).
+        try {
+            $allConfig = $this->config->all($tenant->id);
+
+            $logEvent = $event;
+            unset($logEvent['picture_bytes'], $logEvent['picture_content_type']);
+
+            $this->writeLog([
+                'tenant_id' => $tenant->id,
+                'member_id' => $member?->id,
+                'biometric_member_id' => $member?->biometric_member_id,
+                'direction' => 'down',
+                'action' => 'webhook_event',
+                'status' => 'success',
+                'device_maker' => $allConfig['biometric.device_maker'] ?? '',
+                'device_model' => $allConfig['biometric.device_model'] ?? '',
+                'payload' => null,
+                'response' => $logEvent,
+                'error_message' => null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Biometric webhook sync-log write failed', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Resolve a viewable URL for a stored access-event snapshot.
+     */
+    public function accessEventPictureUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        try {
+            return $this->media->url($path);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Persist a real-time authentication event with its captured picture.
+     *
+     * - Successful authentications are stored with result `success` and also mark
+     *   the member as present for the day (MemberAttendance).
+     * - Failed authentications are stored with result `failed` (i.e. "attempted").
+     * - Non-authentication device events (door, tamper, heartbeat) are ignored.
+     */
+    private function recordAccessEvent(Tenant $tenant, array $event, ?Member $member): void
+    {
         $minor = (int) ($event['minor'] ?? 0);
+        $classification = $this->classifyAuthEvent($minor);
 
-        // Log every accepted access event
-        $member = $employeeNo
-            ? Member::where('tenant_id', $tenant->id)
-                ->where('biometric_member_id', 'like', '%-' . str_pad($employeeNo, 4, '0', STR_PAD_LEFT))
-                ->first()
-            : null;
+        if (!$classification) {
+            return;
+        }
 
-        $allConfig = $this->config->all($tenant->id);
+        $method = $classification['method'];
+        $result = $classification['result'];
 
-        $this->writeLog([
+        $eventTime = !empty($event['time']) ? Carbon::parse($event['time']) : now();
+        $picturePath = $this->storeEventPicture($tenant, $event);
+
+        $raw = $event;
+        unset($raw['picture_bytes'], $raw['picture_content_type']);
+
+        BiometricAccessEvent::create([
             'tenant_id' => $tenant->id,
             'member_id' => $member?->id,
             'biometric_member_id' => $member?->biometric_member_id,
-            'direction' => 'down',
-            'action' => 'webhook_event',
-            'status' => 'success',
-            'device_maker' => $allConfig['biometric.device_maker'] ?? '',
-            'device_model' => $allConfig['biometric.device_model'] ?? '',
-            'payload' => null,
-            'response' => $event,
-            'error_message' => null,
+            'employee_no' => $event['employeeNoString'] ?? null,
+            'person_name' => $event['name'] ?? $member?->name,
+            'auth_method' => $method,
+            'result' => $result,
+            'minor_code' => $minor,
+            'picture_path' => $picturePath,
+            'event_time' => $eventTime,
+            'raw' => $raw,
         ]);
 
-        $this->persistAttendanceEvent($tenant, $event);
+        if ($result === 'success' && $member) {
+            MemberAttendance::firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'member_id' => $member->id,
+                    'attended_date' => $eventTime->toDateString(),
+                ],
+                [
+                    'username' => $member->username ?? $member->biometric_member_id,
+                ],
+            );
+        }
+    }
+
+    /**
+     * Classify an access-control minor event code into a credential method and a
+     * success/failed result. Returns null for events that are not authentication
+     * attempts (door control, tamper, heartbeat, etc.).
+     *
+     * @return array{method: string, result: string}|null
+     */
+    private function classifyAuthEvent(int $minor): ?array
+    {
+        if (isset(self::SUCCESS_AUTH_MINORS[$minor])) {
+            return ['method' => self::SUCCESS_AUTH_MINORS[$minor], 'result' => 'success'];
+        }
+
+        if (isset(self::FAILED_AUTH_MINORS[$minor])) {
+            return ['method' => self::FAILED_AUTH_MINORS[$minor], 'result' => 'failed'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Store the snapshot captured by the device at authentication time.
+     *
+     * Uses the inline image pushed in the multipart body when available, and
+     * otherwise falls back to fetching the device's pictureURL with digest auth.
+     * Returns the stored media path or null when no picture is available.
+     */
+    private function storeEventPicture(Tenant $tenant, array $event): ?string
+    {
+        try {
+            $bytes = $event['picture_bytes'] ?? null;
+            $contentType = $event['picture_content_type'] ?? 'image/jpeg';
+
+            if (!$bytes && !empty($event['picture_url'])) {
+                $driver = $this->buildDriver($this->config->all($tenant->id));
+
+                if ($driver) {
+                    $img = $driver->proxyImage($event['picture_url']);
+
+                    if ($img['success'] && $img['body'] !== '') {
+                        $bytes = $img['body'];
+                        $contentType = $img['content_type'] ?: 'image/jpeg';
+                    }
+                }
+            }
+
+            if (!$bytes) {
+                return null;
+            }
+
+            $ext = str_contains((string) $contentType, 'png') ? 'png' : 'jpg';
+            $filename = 'biometric-events/' . now()->format('Y/m/d')
+                . '/evt_' . now()->timestamp . '_' . Str::random(8) . '.' . $ext;
+
+            return $this->media->storeContent($bytes, $filename);
+        } catch (\Throwable $e) {
+            Log::warning('Biometric event picture store failed', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Resolve a member from the device's employeeNo (the 4-digit suffix of the
+     * biometric_member_id). Returns null when the number is empty or unmatched.
+     */
+    private function resolveMemberByEmployeeNo(Tenant $tenant, ?string $employeeNo): ?Member
+    {
+        if (!$employeeNo) {
+            return null;
+        }
+
+        return Member::where('tenant_id', $tenant->id)
+            ->where('biometric_member_id', 'like', '%-' . str_pad($employeeNo, 4, '0', STR_PAD_LEFT))
+            ->first();
     }
 
     // -------------------------------------------------------------------------

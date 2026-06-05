@@ -643,6 +643,114 @@
           </template>
         </div>
 
+        <!-- ── Card 5: Recent Authentication Events ── -->
+        <div v-if="form['biometric.enabled'] === '1'" class="app-surface rounded-2xl overflow-hidden mb-4">
+          <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
+            <ScanFace class="w-5 h-5 text-primary-500 flex-shrink-0" :stroke-width="2" />
+            <div>
+              <h2 class="text-base font-semibold" style="color: var(--text-strong)">
+                Recent Authentication Events
+              </h2>
+              <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                Real-time face/card/fingerprint scans with the picture captured at that moment
+              </p>
+            </div>
+            <span v-if="eventsAttemptedCount > 0" class="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+              {{ eventsAttemptedCount }} attempted
+            </span>
+            <button type="button" class="ml-auto text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="() => loadAccessEvents(1)">
+              Refresh
+            </button>
+          </div>
+
+          <!-- Result filter -->
+          <div class="px-4 md:px-6 pt-4 flex flex-wrap items-center gap-2">
+            <button
+              v-for="opt in eventFilterOptions"
+              :key="opt.value"
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors"
+              :class="eventsFilter === opt.value
+                ? 'border-primary-500 bg-primary-600 text-white'
+                : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700'"
+              @click="setEventsFilter(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+
+          <div v-if="eventsLoading" class="px-4 md:px-6 py-6 text-center text-sm text-secondary-400">
+            Loading events…
+          </div>
+          <div v-else-if="accessEvents.length === 0" class="px-4 md:px-6 py-6 text-center text-sm text-secondary-400">
+            No authentication events yet.
+          </div>
+          <template v-else>
+            <ul class="px-4 md:px-6 py-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <li
+                v-for="event in accessEvents"
+                :key="event.id"
+                class="flex items-center gap-3 rounded-xl border p-3"
+                :class="event.result === 'success'
+                  ? 'border-green-200 dark:border-green-900/40 bg-green-50/40 dark:bg-green-900/10'
+                  : 'border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/10'"
+              >
+                <div class="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center">
+                  <img
+                    v-if="event.picture_url"
+                    :src="event.picture_url"
+                    alt="Captured snapshot"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <ScanFace v-else class="w-6 h-6 text-secondary-300 dark:text-secondary-600" :stroke-width="1.5" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-medium truncate" style="color: var(--text-strong)">
+                    {{ event.member?.name || event.person_name || 'Unknown person' }}
+                  </p>
+                  <p class="text-xs text-secondary-500 dark:text-secondary-400 truncate">
+                    {{ formatAuthMethod(event.auth_method) }} · {{ formatDateTime(event.event_time) }}
+                  </p>
+                  <span
+                    class="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    :class="event.result === 'success'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                      : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'"
+                  >
+                    {{ event.result === 'success' ? 'Attendance marked' : 'Attempted' }}
+                  </span>
+                </div>
+              </li>
+            </ul>
+
+            <!-- Pagination -->
+            <div v-if="eventsMeta.last_page > 1" class="px-4 md:px-6 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-3">
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Page {{ eventsMeta.current_page }} of {{ eventsMeta.last_page }} &middot; {{ eventsMeta.total }} events
+              </p>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-40 transition-colors"
+                  :disabled="eventsMeta.current_page <= 1"
+                  @click="loadAccessEvents(eventsMeta.current_page - 1)"
+                >
+                  <ChevronLeft class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-40 transition-colors"
+                  :disabled="eventsMeta.current_page >= eventsMeta.last_page"
+                  @click="loadAccessEvents(eventsMeta.current_page + 1)"
+                >
+                  <ChevronRight class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+
         <!-- Save button -->
         <div class="flex justify-end">
           <button
@@ -672,6 +780,7 @@ import {
     MonitorCheck,
     Power,
     RefreshCw,
+    ScanFace,
     ShieldCheck,
     Upload,
     Users,
@@ -733,6 +842,18 @@ const recentLogs     = ref([]);
 const logsFailedCount = ref(0);
 const logsMeta       = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
 
+// Real-time authentication events (success/attempted) with captured pictures
+const eventsLoading        = ref(false);
+const accessEvents         = ref([]);
+const eventsAttemptedCount = ref(0);
+const eventsFilter         = ref('');
+const eventsMeta           = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
+const eventFilterOptions   = [
+    { value: '', label: 'All' },
+    { value: 'success', label: 'Attendance' },
+    { value: 'failed', label: 'Attempted' },
+];
+
 const paginationPages = computed(() => {
     const current = logsMeta.value.current_page;
     const last    = logsMeta.value.last_page;
@@ -793,6 +914,7 @@ async function load() {
             webhookToken.value = data['biometric.webhook_token'];
         }
         if (form.value['biometric.enabled'] === '1') loadRecentLogs();
+        if (form.value['biometric.enabled'] === '1') loadAccessEvents();
     } catch {
         loadError.value = 'Failed to load configuration.';
     } finally {
@@ -927,6 +1049,32 @@ async function loadRecentLogs(page = 1) {    logsLoading.value = true;
         // non-critical, fail silently
     } finally {
         logsLoading.value = false;
+    }
+}
+
+function formatAuthMethod(method) {
+    const map = { face: 'Face', card: 'Card', fingerprint: 'Fingerprint', password: 'Password' };
+    return map[method] || 'Authentication';
+}
+
+function setEventsFilter(value) {
+    eventsFilter.value = value;
+    loadAccessEvents(1);
+}
+
+async function loadAccessEvents(page = 1) {
+    eventsLoading.value = true;
+    try {
+        const params = new URLSearchParams({ page: String(page), per_page: '20' });
+        if (eventsFilter.value) params.set('result', eventsFilter.value);
+        const res = await apiRequest(`/api/settings/biometric/access-events?${params.toString()}`);
+        accessEvents.value         = res.data || [];
+        eventsAttemptedCount.value = res.attempted_count ?? 0;
+        if (res.meta) eventsMeta.value = res.meta;
+    } catch {
+        // non-critical, fail silently
+    } finally {
+        eventsLoading.value = false;
     }
 }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BiometricAccessEvent;
 use App\Models\BiometricSyncLog;
 use App\Models\Member;
 use App\Models\Tenant;
@@ -365,6 +366,60 @@ class BiometricApiController extends Controller
         return response()->json([
             'data' => $data,
             'failed_count' => $failedCount,
+            'meta' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/settings/biometric/access-events
+     *
+     * Real-time authentication events captured by the device: each successful or
+     * failed (attempted) authentication, with the picture taken at that moment.
+     */
+    public function accessEvents(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+        $perPage = max(1, min(100, (int) $request->query('per_page', 20)));
+        $resultFilter = (string) $request->query('result', '');
+
+        $query = BiometricAccessEvent::where('tenant_id', $tenant->id)
+            ->with('member:id,name,biometric_member_id')
+            ->orderByDesc('event_time')
+            ->orderByDesc('id');
+
+        if (in_array($resultFilter, ['success', 'failed'], true)) {
+            $query->where('result', $resultFilter);
+        }
+
+        $attemptedCount = BiometricAccessEvent::where('tenant_id', $tenant->id)
+            ->where('result', 'failed')
+            ->count();
+
+        $paginated = $query->paginate($perPage);
+
+        $data = collect($paginated->items())->map(fn ($event) => [
+            'id' => $event->id,
+            'member' => $event->member
+                ? ['id' => $event->member->id, 'name' => $event->member->name, 'biometric_member_id' => $event->member->biometric_member_id]
+                : null,
+            'person_name' => $event->person_name,
+            'employee_no' => $event->employee_no,
+            'auth_method' => $event->auth_method,
+            'result' => $event->result,
+            'minor_code' => $event->minor_code,
+            'picture_url' => $this->biometric->accessEventPictureUrl($event->picture_path),
+            'event_time' => optional($event->event_time)->toISOString(),
+        ]);
+
+        return response()->json([
+            'data' => $data,
+            'attempted_count' => $attemptedCount,
             'meta' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page' => $paginated->lastPage(),
