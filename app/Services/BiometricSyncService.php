@@ -56,6 +56,7 @@ class BiometricSyncService
      * "attempted" (no attendance). (Device/firmware dependent — extend as needed.)
      */
     private const FAILED_AUTH_MINORS = [
+        8 => 'unknown',      // permission expired (Hikvision reports as major=5/minor=8)
         76 => 'face',         // face authentication failed
         77 => 'face',         // face anti-spoofing / liveness failed
         39 => 'card',         // card authentication failed / no access right
@@ -744,6 +745,10 @@ class BiometricSyncService
      */
     private function resolveFailReason(Tenant $tenant, ?Member $member, array $event, Carbon $eventTime): ?string
     {
+        if ((int) ($event['minor'] ?? 0) === 8) {
+            return 'payment_expired';
+        }
+
         $attendanceStatus = strtolower(trim((string) ($event['attendanceStatus'] ?? '')));
 
         if ($attendanceStatus !== '' && str_contains($attendanceStatus, 'permission') && str_contains($attendanceStatus, 'expired')) {
