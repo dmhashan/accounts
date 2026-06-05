@@ -450,6 +450,8 @@ class BiometricSyncService
         $employeeNo = $this->normaliseEmployeeNo($event['employeeNoString'] ?? null);
         $raw = $event;
         unset($raw['picture_bytes'], $raw['picture_content_type']);
+        $failReason = $result === 'failed' ? $this->resolveFailReason($tenant, $member, $event, $eventTime) : null;
+        $shouldMarkAttendance = $member && ($result === 'success' || $failReason === 'payment_expired');
 
         // De-duplicate: the same scan may arrive via both the real-time webhook
         // and a later manual device import. Match on tenant + person + type + time.
@@ -498,6 +500,11 @@ class BiometricSyncService
                     $shouldSave = true;
                 }
 
+                if ($existing->result === 'failed' && !$existing->fail_reason && $failReason === 'payment_expired') {
+                    $existing->fail_reason = 'payment_expired';
+                    $shouldSave = true;
+                }
+
                 if (!$existing->picture_path) {
                     $existingPicturePath = $this->storeEventPicture($tenant, $event);
 
@@ -511,7 +518,7 @@ class BiometricSyncService
                     $existing->save();
                 }
 
-                if ($result === 'success' && $member) {
+                if ($shouldMarkAttendance) {
                     $this->markMemberAttendance($tenant, $member, $eventTime, $existing->id);
                 }
 
@@ -520,7 +527,6 @@ class BiometricSyncService
         }
 
         $picturePath = $this->storeEventPicture($tenant, $event);
-        $failReason = $result === 'failed' ? $this->resolveFailReason($tenant, $member, $eventTime) : null;
 
         $createdEvent = BiometricAccessEvent::create([
             'tenant_id' => $tenant->id,
@@ -537,7 +543,7 @@ class BiometricSyncService
             'raw' => $raw,
         ]);
 
-        if ($result === 'success' && $member) {
+        if ($shouldMarkAttendance) {
             $this->markMemberAttendance($tenant, $member, $eventTime, $createdEvent->id);
         }
 
@@ -657,6 +663,7 @@ class BiometricSyncService
                             'employeeNoString' => $info['employeeNoString'] ?? null,
                             'time' => $info['time'] ?? null,
                             'minor' => (int) ($info['minor'] ?? 0),
+                            'attendanceStatus' => $info['attendanceStatus'] ?? null,
                             'name' => $info['name'] ?? null,
                             'picture_url' => $info['pictureURL'] ?? null,
                         ];
@@ -735,8 +742,14 @@ class BiometricSyncService
      * Returns 'payment_expired' when access control is enabled for the tenant and
      * the member (if resolved) has no valid active payment, otherwise null.
      */
-    private function resolveFailReason(Tenant $tenant, ?Member $member, Carbon $eventTime): ?string
+    private function resolveFailReason(Tenant $tenant, ?Member $member, array $event, Carbon $eventTime): ?string
     {
+        $attendanceStatus = strtolower(trim((string) ($event['attendanceStatus'] ?? '')));
+
+        if ($attendanceStatus !== '' && str_contains($attendanceStatus, 'permission') && str_contains($attendanceStatus, 'expired')) {
+            return 'payment_expired';
+        }
+
         if (!$this->isAccessControlEnabled($tenant->id)) {
             return null;
         }
