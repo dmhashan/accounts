@@ -253,52 +253,6 @@
                 </div>
               </div>
 
-              <!-- Down-sync: Device → Attendance -->
-              <div class="px-4 md:px-6 py-4 space-y-3">
-                <div class="flex items-center justify-between gap-4">
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                      <Download class="w-4 h-4 text-emerald-600 dark:text-emerald-400" :stroke-width="2" />
-                    </div>
-                    <div>
-                      <p class="text-sm font-medium" style="color: var(--text-strong)">
-                        Sync Attendance from Device
-                      </p>
-                      <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                        Pull access events from device every 30 minutes as attendance records
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    :aria-checked="form['biometric.sync_attendance'] === '1'"
-                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
-                    :class="form['biometric.sync_attendance'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
-                    @click="toggle('biometric.sync_attendance')"
-                  >
-                    <span
-                      class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
-                      :class="form['biometric.sync_attendance'] === '1' ? 'translate-x-6' : 'translate-x-1'"
-                    />
-                  </button>
-                </div>
-                <div v-if="form['biometric.sync_attendance'] === '1'" class="ml-0 md:ml-12">
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 transition-colors"
-                    :disabled="attendanceSyncing"
-                    @click="syncAttendance"
-                  >
-                    <Download class="w-4 h-4" :stroke-width="2" />
-                    {{ attendanceSyncing ? 'Pulling…' : 'Pull Attendance Now' }}
-                  </button>
-                  <p v-if="attendanceSyncResult" class="mt-1.5 text-xs text-secondary-500 dark:text-secondary-400">
-                    {{ attendanceSyncResult }}
-                  </p>
-                </div>
-              </div>
-
               <!-- Access control by payment -->
               <div class="px-4 md:px-6 py-4 space-y-3">
                 <div class="flex items-center justify-between gap-4">
@@ -658,10 +612,25 @@
             <span v-if="eventsAttemptedCount > 0" class="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
               {{ eventsAttemptedCount }} attempted
             </span>
-            <button type="button" class="ml-auto text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="() => loadAccessEvents(1)">
-              Refresh
-            </button>
+            <div class="ml-auto flex items-center gap-3">
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-1.5 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
+                :disabled="syncingEvents"
+                @click="syncAccessEvents"
+              >
+                <RefreshCw class="w-3.5 h-3.5" :class="syncingEvents ? 'animate-spin' : ''" :stroke-width="2" />
+                {{ syncingEvents ? 'Queuing…' : 'Sync from Device' }}
+              </button>
+              <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="() => loadAccessEvents(1)">
+                Refresh
+              </button>
+            </div>
           </div>
+
+          <p v-if="syncEventsResult" class="px-4 md:px-6 pt-3 text-xs font-medium text-primary-600 dark:text-primary-400">
+            {{ syncEventsResult }}
+          </p>
 
           <!-- Result filter -->
           <div class="px-4 md:px-6 pt-4 flex flex-wrap items-center gap-2">
@@ -776,7 +745,6 @@ import {
     ChevronLeft,
     ChevronRight,
     Cpu,
-    Download,
     MonitorCheck,
     Power,
     RefreshCw,
@@ -817,9 +785,6 @@ const testError  = ref('');
 const syncing    = ref(false);
 const syncResult = ref('');
 
-const attendanceSyncing    = ref(false);
-const attendanceSyncResult = ref('');
-
 // Real-time webhook
 const webhookToken           = ref('');
 const generatingToken        = ref(false);
@@ -847,6 +812,8 @@ const eventsLoading        = ref(false);
 const accessEvents         = ref([]);
 const eventsAttemptedCount = ref(0);
 const eventsFilter         = ref('');
+const syncingEvents        = ref(false);
+const syncEventsResult     = ref('');
 const eventsMeta           = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
 const eventFilterOptions   = [
     { value: '', label: 'All' },
@@ -876,7 +843,6 @@ const form = ref({
     'biometric.device_username':     'admin',
     'biometric.device_password':     '',
     'biometric.sync_members':        '0',
-    'biometric.sync_attendance':     '0',
     'biometric.access_control':      '0',
     'biometric.grace_period_days':   '0',
     'biometric.webhook_enabled':     '0',
@@ -967,20 +933,6 @@ async function syncAllMembers() {
         syncResult.value = err?.response?.data?.message || 'Sync failed.';
     } finally {
         syncing.value = false;
-    }
-}
-
-async function syncAttendance() {
-    attendanceSyncing.value    = true;
-    attendanceSyncResult.value = '';
-    try {
-        const res = await apiRequest('/api/settings/biometric/sync-attendance', { method: 'POST' });
-        attendanceSyncResult.value = res.message || 'Done.';
-        loadRecentLogs();
-    } catch (err) {
-        attendanceSyncResult.value = err?.response?.data?.message || 'Failed to pull attendance.';
-    } finally {
-        attendanceSyncing.value = false;
     }
 }
 
@@ -1075,6 +1027,21 @@ async function loadAccessEvents(page = 1) {
         // non-critical, fail silently
     } finally {
         eventsLoading.value = false;
+    }
+}
+
+async function syncAccessEvents() {
+    syncingEvents.value = true;
+    syncEventsResult.value = '';
+    try {
+        const res = await apiRequest('/api/settings/biometric/access-events/sync', { method: 'POST' });
+        syncEventsResult.value = res.message || 'Import queued.';
+        // Give the queued job a moment, then refresh the list.
+        setTimeout(() => loadAccessEvents(1), 4000);
+    } catch (err) {
+        syncEventsResult.value = err?.response?.data?.message || 'Failed to queue import.';
+    } finally {
+        syncingEvents.value = false;
     }
 }
 

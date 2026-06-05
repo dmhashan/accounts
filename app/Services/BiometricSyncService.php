@@ -82,11 +82,6 @@ class BiometricSyncService
         return $this->isEnabled($tenantId) && $this->cfg($tenantId, 'biometric.sync_members') === '1';
     }
 
-    public function isAttendanceSyncEnabled(int $tenantId): bool
-    {
-        return $this->isEnabled($tenantId) && $this->cfg($tenantId, 'biometric.sync_attendance') === '1';
-    }
-
     public function isAccessControlEnabled(int $tenantId): bool
     {
         return $this->isEnabled($tenantId) && $this->cfg($tenantId, 'biometric.access_control') === '1';
@@ -298,101 +293,6 @@ class BiometricSyncService
     }
 
     // -------------------------------------------------------------------------
-    // Down-sync: device → attendance records
-    // -------------------------------------------------------------------------
-
-    /**
-     * Pull attendance events from the device for the last 24 h and persist them.
-     */
-    public function pullAttendance(Tenant $tenant): array
-    {
-        $tenantId = $tenant->id;
-        $created = 0;
-        $errors = 0;
-
-        try {
-            if (!$this->isAttendanceSyncEnabled($tenantId)) {
-                return ['created' => 0, 'errors' => 0, 'message' => 'Attendance sync is disabled.'];
-            }
-
-            $allConfig = $this->config->all($tenantId);
-            $driver = $this->buildDriver($allConfig);
-
-            if (!$driver) {
-                return ['created' => 0, 'errors' => 0, 'message' => 'No device configured.'];
-            }
-
-            $maker = $allConfig['biometric.device_maker'] ?? '';
-            $model = $allConfig['biometric.device_model'] ?? '';
-            $startTime = now()->subHours(25)->format('Y-m-d\TH:i:s');
-            $endTime = now()->format('Y-m-d\TH:i:s');
-
-            $offset = 0;
-            $maxResults = 50;
-            $hasMore = true;
-
-            while ($hasMore) {
-                $result = $driver->getAttendanceEvents($startTime, $endTime, $offset, $maxResults);
-
-                if (!$result['success']) {
-                    $this->writeLog([
-                        'tenant_id' => $tenantId,
-                        'member_id' => null,
-                        'biometric_member_id' => null,
-                        'direction' => 'down',
-                        'action' => 'attendance',
-                        'status' => 'failed',
-                        'device_maker' => $maker,
-                        'device_model' => $model,
-                        'payload' => ['startTime' => $startTime, 'endTime' => $endTime],
-                        'response' => $result['data'],
-                        'error_message' => $result['message'],
-                    ]);
-                    $errors++;
-                    break;
-                }
-
-                $acsEvent = $result['data']['AcsEvent'] ?? [];
-                $infoList = $acsEvent['InfoList'] ?? [];
-                $morePages = ($acsEvent['responseStatusStrg'] ?? 'OK') === 'MORE';
-
-                foreach ($infoList as $event) {
-                    try {
-                        $this->persistAttendanceEvent($tenant, $event);
-                        $created++;
-                    } catch (\Throwable $e) {
-                        Log::warning('Biometric attendance event persist error', ['event' => $event, 'error' => $e->getMessage()]);
-                        $errors++;
-                    }
-                }
-
-                $numMatches = $acsEvent['numOfMatches'] ?? count($infoList);
-                $offset += $numMatches;
-                $hasMore = $morePages && $numMatches > 0;
-            }
-
-            $this->writeLog([
-                'tenant_id' => $tenantId,
-                'member_id' => null,
-                'biometric_member_id' => null,
-                'direction' => 'down',
-                'action' => 'attendance',
-                'status' => $errors === 0 ? 'success' : 'failed',
-                'device_maker' => $maker,
-                'device_model' => $model,
-                'payload' => ['startTime' => $startTime, 'endTime' => $endTime],
-                'response' => ['created' => $created, 'errors' => $errors],
-                'error_message' => $errors > 0 ? "{$errors} event(s) failed to persist." : null,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('BiometricSyncService::pullAttendance error', ['tenant_id' => $tenantId, 'error' => $e->getMessage()]);
-            $errors++;
-        }
-
-        return ['created' => $created, 'errors' => $errors, 'message' => "Created {$created} attendance records, {$errors} errors."];
-    }
-
-    // -------------------------------------------------------------------------
     // Real-time webhook: configure device + handle incoming events
     // -------------------------------------------------------------------------
 
@@ -530,20 +430,41 @@ class BiometricSyncService
      *   the member as present for the day (MemberAttendance).
      * - Failed authentications are stored with result `failed` (i.e. "attempted").
      * - Non-authentication device events (door, tamper, heartbeat) are ignored.
+     *
+     * Returns true when a new event row was created, false when the event was
+     * ignored (non-auth) or already recorded (duplicate).
      */
-    private function recordAccessEvent(Tenant $tenant, array $event, ?Member $member): void
+    private function recordAccessEvent(Tenant $tenant, array $event, ?Member $member): bool
     {
         $minor = (int) ($event['minor'] ?? 0);
         $classification = $this->classifyAuthEvent($minor);
 
         if (!$classification) {
-            return;
+            return false;
         }
 
         $method = $classification['method'];
         $result = $classification['result'];
 
         $eventTime = !empty($event['time']) ? Carbon::parse($event['time']) : now();
+        $employeeNo = $event['employeeNoString'] ?? null;
+
+        // De-duplicate: the same scan may arrive via both the real-time webhook
+        // and a later manual device import. Match on tenant + person + type + time.
+        if (!empty($event['time'])) {
+            $existing = BiometricAccessEvent::where('tenant_id', $tenant->id)
+                ->where('minor_code', $minor)
+                ->where('event_time', $eventTime);
+
+            $employeeNo
+                ? $existing->where('employee_no', $employeeNo)
+                : $existing->whereNull('employee_no');
+
+            if ($existing->exists()) {
+                return false;
+            }
+        }
+
         $picturePath = $this->storeEventPicture($tenant, $event);
 
         $raw = $event;
@@ -553,7 +474,7 @@ class BiometricSyncService
             'tenant_id' => $tenant->id,
             'member_id' => $member?->id,
             'biometric_member_id' => $member?->biometric_member_id,
-            'employee_no' => $event['employeeNoString'] ?? null,
+            'employee_no' => $employeeNo,
             'person_name' => $event['name'] ?? $member?->name,
             'auth_method' => $method,
             'result' => $result,
@@ -575,6 +496,107 @@ class BiometricSyncService
                 ],
             );
         }
+
+        return true;
+    }
+
+    /**
+     * Import the full access-event history currently held on the device and store
+     * each authentication (success/failed) as a BiometricAccessEvent with its
+     * captured snapshot. Successful events also mark attendance. Already-recorded
+     * events are skipped. Intended to run inside a queued job.
+     *
+     * @return array{imported: int, skipped: int, errors: int, message: string}
+     */
+    public function importDeviceEvents(Tenant $tenant): array
+    {
+        $tenantId = $tenant->id;
+        $imported = 0;
+        $skipped = 0;
+        $errors = 0;
+
+        try {
+            if (!$this->isEnabled($tenantId)) {
+                return ['imported' => 0, 'skipped' => 0, 'errors' => 0, 'message' => 'Biometric integration is disabled.'];
+            }
+
+            $allConfig = $this->config->all($tenantId);
+            $driver = $this->buildDriver($allConfig);
+
+            if (!$driver) {
+                return ['imported' => 0, 'skipped' => 0, 'errors' => 0, 'message' => 'No device configured.'];
+            }
+
+            $maker = $allConfig['biometric.device_maker'] ?? '';
+            $model = $allConfig['biometric.device_model'] ?? '';
+            // Wide window so we capture everything the device still holds.
+            $startTime = now()->subYear()->format('Y-m-d\TH:i:s');
+            $endTime = now()->format('Y-m-d\TH:i:s');
+
+            $offset = 0;
+            $maxResults = 50;
+            $hasMore = true;
+
+            while ($hasMore) {
+                $result = $driver->getAccessEvents($startTime, $endTime, $offset, $maxResults);
+
+                if (!$result['success']) {
+                    $errors++;
+                    break;
+                }
+
+                $acsEvent = $result['data']['AcsEvent'] ?? [];
+                $infoList = $acsEvent['InfoList'] ?? [];
+                $morePages = ($acsEvent['responseStatusStrg'] ?? 'OK') === 'MORE';
+
+                foreach ($infoList as $info) {
+                    try {
+                        $event = [
+                            'employeeNoString' => $info['employeeNoString'] ?? null,
+                            'time' => $info['time'] ?? null,
+                            'minor' => (int) ($info['minor'] ?? 0),
+                            'name' => $info['name'] ?? null,
+                            'picture_url' => $info['pictureURL'] ?? null,
+                        ];
+
+                        $member = $this->resolveMemberByEmployeeNo($tenant, $event['employeeNoString']);
+
+                        $this->recordAccessEvent($tenant, $event, $member) ? $imported++ : $skipped++;
+                    } catch (\Throwable $e) {
+                        Log::warning('Biometric device event import error', ['event' => $info ?? null, 'error' => $e->getMessage()]);
+                        $errors++;
+                    }
+                }
+
+                $numMatches = $acsEvent['numOfMatches'] ?? count($infoList);
+                $offset += $numMatches;
+                $hasMore = $morePages && $numMatches > 0;
+            }
+
+            $this->writeLogSafely([
+                'tenant_id' => $tenantId,
+                'member_id' => null,
+                'biometric_member_id' => null,
+                'direction' => 'down',
+                'action' => 'attendance',
+                'status' => $errors === 0 ? 'success' : 'failed',
+                'device_maker' => $maker,
+                'device_model' => $model,
+                'payload' => ['startTime' => $startTime, 'endTime' => $endTime],
+                'response' => ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors],
+                'error_message' => $errors > 0 ? "{$errors} event(s) failed to import." : null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('BiometricSyncService::importDeviceEvents error', ['tenant_id' => $tenantId, 'error' => $e->getMessage()]);
+            $errors++;
+        }
+
+        return [
+            'imported' => $imported,
+            'skipped' => $skipped,
+            'errors' => $errors,
+            'message' => "Imported {$imported} event(s), skipped {$skipped}, {$errors} error(s).",
+        ];
     }
 
     /**
@@ -1071,48 +1093,6 @@ class BiometricSyncService
     }
 
     /**
-     * Persist a single attendance event from the device as a MemberAttendance record.
-     * Ignores duplicates (same member + same date).
-     */
-    private function persistAttendanceEvent(Tenant $tenant, array $event): void
-    {
-        $employeeNo = $event['employeeNoString'] ?? null;
-        $eventTime = $event['time'] ?? null;
-
-        if (!$employeeNo || !$eventTime) {
-            return;
-        }
-
-        // Only record successful access events (minor 75 = face OK, 38 = card OK, 113 = fingerprint OK)
-        $minor = (int) ($event['minor'] ?? 0);
-
-        if (!in_array($minor, [75, 38, 113], true)) {
-            return;
-        }
-
-        $member = Member::where('tenant_id', $tenant->id)
-            ->where('biometric_member_id', 'like', '%-' . str_pad($employeeNo, 4, '0', STR_PAD_LEFT))
-            ->first();
-
-        if (!$member) {
-            return;
-        }
-
-        $attendedDate = Carbon::parse($eventTime)->toDateString();
-
-        MemberAttendance::firstOrCreate(
-            [
-                'tenant_id' => $tenant->id,
-                'member_id' => $member->id,
-                'attended_date' => $attendedDate,
-            ],
-            [
-                'username' => $member->username ?? $member->biometric_member_id,
-            ],
-        );
-    }
-
-    /**
      * Extract the 4-digit numeric suffix from a MEM-YYYY-XXXX member ID.
      * This is used as the HikVision device's employeeNo (must be numeric).
      */
@@ -1176,5 +1156,18 @@ class BiometricSyncService
     private function writeLog(array $data): void
     {
         BiometricSyncLog::create(array_merge($data, ['synced_at' => now()]));
+    }
+
+    /**
+     * Write a sync log without ever throwing. The action-enum extensions are
+     * MySQL-only migrations, so a sync-log write must never block core logic.
+     */
+    private function writeLogSafely(array $data): void
+    {
+        try {
+            $this->writeLog($data);
+        } catch (\Throwable $e) {
+            Log::warning('Biometric sync-log write failed', ['error' => $e->getMessage()]);
+        }
     }
 }

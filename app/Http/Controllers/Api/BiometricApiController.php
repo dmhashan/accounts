@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportBiometricAccessEventsJob;
 use App\Models\BiometricAccessEvent;
 use App\Models\BiometricSyncLog;
 use App\Models\Member;
@@ -47,22 +48,6 @@ class BiometricApiController extends Controller
         return response()->json([
             'message' => $result['message'],
             'data' => ['synced' => $result['synced'], 'failed' => $result['failed']],
-        ]);
-    }
-
-    /**
-     * POST /api/settings/biometric/sync-attendance
-     */
-    public function syncAttendance(): JsonResponse
-    {
-        /** @var Tenant $tenant */
-        $tenant = app('tenant');
-
-        $result = $this->biometric->pullAttendance($tenant);
-
-        return response()->json([
-            'message' => $result['message'],
-            'data' => ['created' => $result['created'], 'errors' => $result['errors']],
         ]);
     }
 
@@ -426,6 +411,28 @@ class BiometricApiController extends Controller
                 'per_page' => $paginated->perPage(),
                 'total' => $paginated->total(),
             ],
+        ]);
+    }
+
+    /**
+     * POST /api/settings/biometric/access-events/sync
+     *
+     * Queue a job that imports all access events currently held on the device
+     * into the Recent Authentication Events log.
+     */
+    public function syncAccessEvents(): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        if (!$this->biometric->isEnabled($tenant->id)) {
+            return response()->json(['message' => 'Biometric integration is disabled.'], 422);
+        }
+
+        ImportBiometricAccessEventsJob::dispatch($tenant->id);
+
+        return response()->json([
+            'message' => 'Importing events from the device. They will appear here shortly.',
         ]);
     }
 

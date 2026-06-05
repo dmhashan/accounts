@@ -199,22 +199,22 @@ class HikvisionService
     }
 
     // -------------------------------------------------------------------------
-    // Attendance / access events
+    // Access events (history)
     // -------------------------------------------------------------------------
 
     /**
-     * Query access control events (attendance) from the device.
+     * Query access-control events held on the device within a time window.
      *
      * @param  string  $startTime  ISO 8601 e.g. 2026-05-01T00:00:00
      * @param  string  $endTime  ISO 8601
      * @param  int  $offset  Pagination offset (0-based)
      * @param  int  $maxResults  Page size (max 100)
      */
-    public function getAttendanceEvents(string $startTime, string $endTime, int $offset = 0, int $maxResults = 50): array
+    public function getAccessEvents(string $startTime, string $endTime, int $offset = 0, int $maxResults = 50): array
     {
         return $this->post('/ISAPI/AccessControl/AcsEvent', [
             'AcsEventCond' => [
-                'searchID' => 'biometric-sync-' . now()->timestamp,
+                'searchID' => 'biometric-import-' . now()->timestamp,
                 'searchResultPosition' => $offset,
                 'maxResults' => $maxResults,
                 'major' => 5,  // Access control events only

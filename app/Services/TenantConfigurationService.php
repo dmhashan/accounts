@@ -39,7 +39,6 @@ class TenantConfigurationService
         'biometric.device_username' => ['Device Username',              'admin'],
         'biometric.device_password' => ['Device Password',              ''],
         'biometric.sync_members' => ['Sync Members to Device',       '0'],
-        'biometric.sync_attendance' => ['Sync Attendance from Device',  '0'],
         'biometric.access_control' => ['Enforce Access by Payment',    '0'],
         'biometric.grace_period_days' => ['Access Grace Period (days)',   '0'],
         'biometric.webhook_enabled' => ['Real-Time Event Push',          '0'],

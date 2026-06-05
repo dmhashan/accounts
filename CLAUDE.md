@@ -333,10 +333,11 @@ Per-tenant biometric access control system. Supports HikVision devices via ISAPI
 ### Architecture Overview
 
 ```
-BiometricSettingsPage.vue  →  BiometricApiController  →  BiometricSyncService  →  HikvisionService
-MemberBiometricTab.vue     →  BiometricApiController  →  BiometricSyncService  →  HikvisionService
-MemberService (hooks)      →  BiometricSyncService    →  HikvisionService      →  Device ISAPI
-Scheduler (every 30 min)   →  BiometricSyncService::pullAttendance()
+BiometricSettingsPage.vue   →  BiometricApiController  →  BiometricSyncService  →  HikvisionService
+MemberBiometricTab.vue      →  BiometricApiController  →  BiometricSyncService  →  HikvisionService
+MemberService (hooks)       →  BiometricSyncService    →  HikvisionService      →  Device ISAPI
+Device (real-time push)     →  BiometricWebhookController →  BiometricSyncService::handleIncomingEvent()
+ImportBiometricAccessEventsJob (queued) → BiometricSyncService::importDeviceEvents()
 ```
 
 ### Database
@@ -382,7 +383,6 @@ Stored in `tenant_configurations` via `TenantConfigurationService`. All keys sta
 | `biometric.device_username` | `admin` | Device admin username |
 | `biometric.device_password` | `''` | Device admin password |
 | `biometric.sync_members` | `0` | Auto push members to device on create/update/delete |
-| `biometric.sync_attendance` | `0` | Pull attendance from device every 30 min |
 | `biometric.access_control` | `0` | Restrict device access by payment validity |
 | `biometric.grace_period_days` | `0` | Extra days past payment end date to allow access |
 
@@ -393,20 +393,20 @@ These keys are read/written via the standard `GET/PUT /api/settings/configuratio
 **`app/Services/HikvisionService.php`** — raw ISAPI client:
 - Constructor: `(string $ip, int $port, string $username, string $password)`
 - Uses `Http::withDigestAuth($user, $pass)->withoutVerifying()->timeout(15)`
-- Methods: `testConnection()`, `addPerson(array $payload)`, `updatePerson(array $payload)`, `deletePerson(string $employeeNo)`, `getAttendanceEvents(string $startTime, string $endTime, int $offset, int $maxResults)`
+- Methods: `testConnection()`, `addPerson(array $payload)`, `updatePerson(array $payload)`, `deletePerson(string $employeeNo)`, `getAccessEvents(string $startTime, string $endTime, int $offset, int $maxResults)` — paginated history import
 - All methods return `['success' => bool, 'data' => array, 'message' => string]` — never throw
 - Success detection: `statusCode === 1` in ISAPI response body (not HTTP status alone)
 - ISAPI base: `http://{ip}:{port}`; key endpoints:
   - `POST /ISAPI/AccessControl/UserInfo/Record?format=json` — add person
   - `PUT /ISAPI/AccessControl/UserInfo/Modify?format=json` — update person
   - `PUT /ISAPI/AccessControl/UserInfo/Delete?format=json` — delete person
-  - `POST /ISAPI/AccessControl/AcsEvent?format=json` — fetch attendance events
+  - `POST /ISAPI/AccessControl/AcsEvent` — fetch access-control events (`AcsEventCond`, major=5)
   - `GET /ISAPI/System/deviceInfo?format=json` — connection test
 
 **`app/Services/BiometricSyncService.php`** — orchestration layer:
 - Constructor injects `TenantConfigurationService $config`
 - `buildDriver(int $tenantId): ?HikvisionService` — reads config, instantiates `HikvisionService`; returns `null` if not configured
-- `isEnabled()`, `isMemberSyncEnabled()`, `isAttendanceSyncEnabled()`, `isAccessControlEnabled()`, `getGracePeriodDays()` — helpers reading `biometric.*` config
+- `isEnabled()`, `isMemberSyncEnabled()`, `isAccessControlEnabled()`, `getGracePeriodDays()` — helpers reading `biometric.*` config
 - `syncMember(Member $member, string $action)`: action = `create|update|delete|manual_sync`
   - Calls `addPerson()` on create; on `deviceUserAlreadyExist` subStatusCode falls back to `updatePerson()`
   - Calls `updatePerson()` on update; `deletePerson()` on delete
@@ -414,11 +414,12 @@ These keys are read/written via the standard `GET/PUT /api/settings/configuratio
   - Updates `biometric_last_synced_at` with `$member->timestamps = false`
   - Logs every attempt to `biometric_sync_logs`
 - `syncAllMembers(Tenant $tenant)`: loops all non-temp active members, calls `syncMember(..., 'manual_sync')`, returns `['synced' => int, 'failed' => int, 'message' => string]`
-- `pullAttendance(Tenant $tenant)`: paginated ISAPI fetch (`maxResults=100`); only persists minor codes 75 (face), 38 (card), 113 (fingerprint); uses `MemberAttendance::firstOrCreate()` to avoid duplicates; logs batch result
 - `testConnection(Tenant $tenant)`: calls `HikvisionService::testConnection()`, logs result, returns `['success' => bool, 'message' => string]`
-- `handleIncomingEvent(Tenant $tenant, array $event)`: real-time webhook entry point — records a `BiometricAccessEvent` (with the captured picture) via `recordAccessEvent()`, then writes a best-effort `webhook_event` sync log
-- `recordAccessEvent(Tenant, array $event, ?Member $member)`: classifies the minor code via `classifyAuthEvent()`; stores the snapshot via `storeEventPicture()`; creates a `BiometricAccessEvent` (`success`/`failed`); on `success` also `firstOrCreate`s a `MemberAttendance` for the day. Non-authentication device events are ignored.
+- `handleIncomingEvent(Tenant $tenant, array $event)`: real-time webhook entry point — records a `BiometricAccessEvent` (with the captured picture) via `recordAccessEvent()` first, then writes a best-effort `webhook_event` sync log (wrapped in try/catch — the `webhook_event` action enum value only exists in the MySQL-only enum-extension migration, so it must never block core logic under SQLite)
+- `importDeviceEvents(Tenant $tenant): array`: queued manual import — paginates `HikvisionService::getAccessEvents()` over a 1-year window (`maxResults=50`), maps each `AcsEvent.InfoList` item to an event array, resolves the member, and calls `recordAccessEvent()` counting `imported`/`skipped`/`errors`; writes a best-effort `attendance` sync log; returns `['imported','skipped','errors','message']`. Dispatched by `ImportBiometricAccessEventsJob`.
+- `recordAccessEvent(Tenant, array $event, ?Member $member): bool`: classifies the minor code via `classifyAuthEvent()`; returns `false` for non-auth events or duplicates (dedup on `tenant_id`+`minor_code`+`event_time`+`employee_no` when `event_time` present); stores the snapshot via `storeEventPicture()`; creates a `BiometricAccessEvent` (`success`/`failed`); on `success` with a resolved member also `firstOrCreate`s a `MemberAttendance` for the day; returns `true` when a new event row was created.
 - `classifyAuthEvent(int $minor)`: maps minor codes to `['method', 'result']` using `SUCCESS_AUTH_MINORS` (75 face, 38 card, 113 fingerprint) and `FAILED_AUTH_MINORS` (76/77 face, 39 card, 114 fingerprint, 22 password) — edit these constants to tune per firmware
+- `writeLogSafely(array $data)`: wraps `writeLog()` in try/catch (Log::warning on failure) so sync-log writes never block core logic
 - `buildPersonPayload(Member $member, int $tenantId)`: constructs HikVision person DTO; when `access_control` is ON, calls `getMemberValidUntil()` to set `Valid.enable` and `Valid.endTime`
 - `getMemberValidUntil(Member $member, int $graceDays)`: queries `PaymentMembership` joined via `payment.member_id`, takes `max(end_date)`, adds grace days; returns Carbon or null
 
@@ -432,9 +433,9 @@ Settings routes (guard: `auth` + `permission:settings.manage`):
 |---|---|---|
 | `POST` | `/api/settings/biometric/test-connection` | `testConnection()` |
 | `POST` | `/api/settings/biometric/sync-all` | `syncAllMembers()` |
-| `POST` | `/api/settings/biometric/sync-attendance` | `syncAttendance()` |
 | `GET` | `/api/settings/biometric/recent-logs` | `recentLogs()` — last 20 logs with member info |
 | `GET` | `/api/settings/biometric/access-events` | `accessEvents()` — real-time auth events (success/attempted) with captured pictures; optional `result` filter |
+| `POST` | `/api/settings/biometric/access-events/sync` | `syncAccessEvents()` — dispatches `ImportBiometricAccessEventsJob` to import all device-held events (queued) |
 
 Member routes (guard: `auth` + `permission:users.edit`):
 
@@ -452,20 +453,21 @@ Member routes (guard: `auth` + `permission:users.edit`):
 - `destroy()`: **before** delete → `$this->biometric->syncMember($member, 'delete')`
 - `show()`: includes `'biometric_last_synced_at'` in the returned array
 
-### Scheduled Command
+### Queue Job
 
-**`app/Console/Commands/SyncBiometricAttendance.php`**
-- Signature: `biometric:sync-attendance {--tenant= : Specific tenant domain}`
-- Loops all (or one) tenants; calls `BiometricSyncService::pullAttendance($tenant)` when `isAttendanceSyncEnabled()` is true
-- Scheduled in `routes/console.php`: `Schedule::command('biometric:sync-attendance')->everyThirtyMinutes()`
+**`app/Jobs/ImportBiometricAccessEventsJob.php`**
+- Implements `ShouldQueue` (`$tries = 1`, `$timeout = 600`); constructor `(private readonly int $tenantId)`
+- `handle(BiometricSyncService $biometric)`: resolves the `Tenant`, binds it via `app()->instance('tenant', $tenant)` (REQUIRED so `MediaStorageService` can namespace stored snapshots), then calls `$biometric->importDeviceEvents($tenant)`
+- Dispatched by `BiometricApiController::syncAccessEvents()` (the "Sync from Device" button in Card 5)
+- Replaces the old 30-minute attendance-polling scheduler (removed); real-time push + on-demand import now cover device events
 
 ### Frontend
 
 **`resources/js/spa/pages/BiometricSettingsPage.vue`** — settings page at `/#/settings/biometric`:
 - Card 1 — **Device Setup**: master enable toggle + conditional config form (device maker select, model select, IP, port, username, password). "Test Connection" saves config first, then calls `POST /api/settings/biometric/test-connection`.
-- Card 2 — **Sync Settings** (shown only when `biometric.enabled = 1`): up-sync toggle + "Sync All Members" button; down-sync toggle + "Pull Attendance Now" button; access control toggle + grace period input.
+- Card 2 — **Sync Settings** (shown only when `biometric.enabled = 1`): member up-sync toggle + "Sync All Members" button; access control toggle + grace period input.
 - Card 3 — **Recent Sync Events**: table of last 20 log entries from `GET /api/settings/biometric/recent-logs`.
-- Card 5 — **Recent Authentication Events**: real-time face/card/fingerprint scans from `GET /api/settings/biometric/access-events`, each showing the captured snapshot, the person, the credential method, and a `success` (attendance marked) / `failed` (attempted) badge; filterable by result.
+- Card 5 — **Recent Authentication Events**: real-time face/card/fingerprint scans from `GET /api/settings/biometric/access-events`, each showing the captured snapshot, the person, the credential method, and a `success` (attendance marked) / `failed` (attempted) badge; filterable by result. A "Sync from Device" button posts to `POST /api/settings/biometric/access-events/sync` to queue a full device-event import, then refreshes the list.
 - `DEVICE_REGISTRY` constant defines supported makers/models — add new devices here: `{ hikvision: { label: 'HikVision', models: [{ value: 'DS-K1T320MFWX-B', label: '...' }] } }`
 
 **`resources/js/spa/components/member/MemberBiometricTab.vue`** — biometric tab on member detail view:
@@ -485,8 +487,8 @@ Member routes (guard: `auth` + `permission:users.edit`):
 
 ### Adding a New Device Maker
 
-1. Create `app/Services/{Maker}Service.php` implementing the same interface as `HikvisionService` (methods: `testConnection`, `addPerson`, `updatePerson`, `deletePerson`, `getAttendanceEvents`)
+1. Create `app/Services/{Maker}Service.php` implementing the same interface as `HikvisionService` (methods: `testConnection`, `addPerson`, `updatePerson`, `deletePerson`, `getAccessEvents`)
 2. Add to `BiometricSyncService::DRIVERS`: `'newmaker' => NewMakerService::class`
 3. Update `BiometricSyncService::buildDriver()` to instantiate the new service
 4. Add models to `DEVICE_REGISTRY` in `BiometricSettingsPage.vue`
-5. Map attendance event minor codes in `BiometricSyncService::persistAttendanceEvent()` (polling) and in `SUCCESS_AUTH_MINORS` / `FAILED_AUTH_MINORS` used by `classifyAuthEvent()` (real-time push)
+5. Map authentication event minor codes in `SUCCESS_AUTH_MINORS` / `FAILED_AUTH_MINORS` used by `classifyAuthEvent()` (covers both real-time push and queued import)

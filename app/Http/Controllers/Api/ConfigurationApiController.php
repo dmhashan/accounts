@@ -63,7 +63,6 @@ class ConfigurationApiController extends Controller
             'biometric.device_username' => ['sometimes', 'nullable', 'string', 'max:100'],
             'biometric.device_password' => ['sometimes', 'nullable', 'string', 'max:255'],
             'biometric.sync_members' => ['sometimes', 'in:0,1'],
-            'biometric.sync_attendance' => ['sometimes', 'in:0,1'],
             'biometric.access_control' => ['sometimes', 'in:0,1'],
             'biometric.grace_period_days' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
             'biometric.webhook_enabled' => ['sometimes', 'in:0,1'],
