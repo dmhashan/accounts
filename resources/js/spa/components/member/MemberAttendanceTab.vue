@@ -74,7 +74,7 @@
             <div
               v-for="(cell, ci) in month.cells"
               :key="ci"
-              class="group/cell relative flex items-center justify-center rounded-sm"
+              class="group/cell relative z-0 flex items-center justify-center rounded-sm hover:z-1000"
               style="aspect-ratio:1"
               :class="cell?.isValidPeriod ? 'bg-teal-50 dark:bg-teal-900/25' : ''"
             >
@@ -97,7 +97,7 @@
 
                 <div
                   v-if="cell.biometricAccessEventId"
-                  class="absolute left-1/2 top-full z-40 mt-1 hidden w-56 -translate-x-1/2 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-2 text-[11px] text-secondary-700 dark:text-secondary-200 shadow-lg group-hover/cell:block"
+                  class="absolute left-1/2 top-full z-[120] mt-1 hidden w-56 -translate-x-1/2 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-2 text-[11px] text-secondary-700 dark:text-secondary-200 shadow-xl group-hover/cell:block"
                 >
                   <p class="font-semibold text-secondary-900 dark:text-white">
                     Biometric record #{{ cell.biometricAccessEventId }}
@@ -105,16 +105,16 @@
                   <p v-if="cell.biometricTimeText" class="mt-0.5">
                     Actual time: {{ cell.biometricTimeText }}
                   </p>
+                  <img
+                    v-if="cell.biometricPictureUrl"
+                    :src="cell.biometricPictureUrl"
+                    alt="Biometric event photo"
+                    class="mt-1.5 h-24 w-full rounded-md object-cover border border-secondary-200 dark:border-secondary-700"
+                    loading="lazy"
+                  />
                   <p class="mt-0.5">
                     {{ cell.biometricHasPicture ? 'Picture available' : 'No picture' }}
                   </p>
-                  <a
-                    v-if="cell.biometricAccessEventLink"
-                    :href="cell.biometricAccessEventLink"
-                    class="mt-1 inline-block text-primary-600 dark:text-primary-400 hover:underline"
-                  >
-                    Open biometric record
-                  </a>
                 </div>
               </template>
             </div>
@@ -189,7 +189,7 @@ const attendanceCalendar = computed(() => {
           const biometricEventId = attendanceInfo?.biometric_access_event_id || null;
           const biometricTimeRaw = attendanceInfo?.biometric_access_event_time || null;
           const biometricHasPicture = Boolean(attendanceInfo?.biometric_access_event_has_picture);
-            const biometricAccessEventLink = attendanceInfo?.biometric_access_event_link || null;
+          const biometricPictureUrl = attendanceInfo?.biometric_access_event_picture_url || null;
           let biometricTimeText = null;
 
           if (biometricTimeRaw) {
@@ -225,7 +225,7 @@ const attendanceCalendar = computed(() => {
                 biometricAccessEventId: biometricEventId,
                 biometricTimeText,
                 biometricHasPicture,
-                biometricAccessEventLink,
+                biometricPictureUrl,
               });
         }
         return {
@@ -241,7 +241,7 @@ async function loadAttendance() {
     attendanceLoading.value = true;
     try {
         const promises = [
-            apiRequest(`/api/members/${props.memberId}/attendance?year=${attendanceYear.value}`),
+          apiRequest(`/api/members/${props.memberId}/attendance?year=${attendanceYear.value}&include_picture_urls=1`),
         ];
         if (calendarPayments.value.length === 0) {
             promises.push(apiRequest(`/api/members/${props.memberId}/payments?per_page=500`));
