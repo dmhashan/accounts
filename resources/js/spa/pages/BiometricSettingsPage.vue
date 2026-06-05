@@ -743,13 +743,22 @@
                   : 'border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/10'"
               >
                 <div class="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center">
-                  <img
+                  <button
                     v-if="event.picture_url"
-                    :src="event.picture_url"
-                    alt="Captured snapshot"
-                    class="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                    type="button"
+                    class="group relative w-full h-full"
+                    @click="openImageViewer(event)"
+                  >
+                    <img
+                      :src="event.picture_url"
+                      alt="Captured snapshot"
+                      class="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <span class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <ZoomIn class="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" :stroke-width="2" />
+                    </span>
+                  </button>
                   <ScanFace v-else class="w-6 h-6 text-secondary-300 dark:text-secondary-600" :stroke-width="1.5" />
                 </div>
                 <div class="min-w-0 flex-1">
@@ -798,6 +807,30 @@
           </template>
         </div>
 
+        <!-- Image viewer modal -->
+        <div
+          v-if="imageViewerOpen && imageViewerSrc"
+          class="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm px-4 py-6 sm:px-8 sm:py-10"
+          @click="closeImageViewer"
+        >
+          <div class="relative mx-auto flex h-full w-full max-w-5xl items-center justify-center" @click.stop>
+            <button
+              type="button"
+              class="absolute right-0 top-0 -mt-2 inline-flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-secondary-700 hover:bg-white transition-colors"
+              @click="closeImageViewer"
+            >
+              <X class="w-3.5 h-3.5" :stroke-width="2" />
+              Close
+            </button>
+
+            <img
+              :src="imageViewerSrc"
+              :alt="imageViewerAlt"
+              class="max-h-full max-w-full rounded-xl border border-white/20 shadow-2xl object-contain"
+            />
+          </div>
+        </div>
+
         <!-- Save button -->
         <div class="flex justify-end">
           <button
@@ -831,6 +864,8 @@ import {
     Upload,
     Users,
     Wifi,
+  X,
+  ZoomIn,
     Zap,
 } from 'lucide-vue-next';
 import AppFormField from '../components/forms/AppFormField.vue';
@@ -903,6 +938,9 @@ const eventsRangeFrom      = ref('');
 const eventsRangeTo        = ref('');
 const eventsRangeError     = ref('');
 const eventsCounts         = ref({ all: 0, success: 0, failed: 0 });
+const imageViewerOpen      = ref(false);
+const imageViewerSrc       = ref('');
+const imageViewerAlt       = ref('Authentication snapshot');
 const syncingEvents        = ref(false);
 const syncEventsResult     = ref('');
 const eventsMeta           = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
@@ -1129,6 +1167,17 @@ function eventFilterCount(value) {
   return eventsCounts.value.all ?? 0;
 }
 
+function openImageViewer(event) {
+  if (!event?.picture_url) return;
+  imageViewerSrc.value = event.picture_url;
+  imageViewerAlt.value = `${event.member?.name || event.person_name || 'Unknown person'} authentication snapshot`;
+  imageViewerOpen.value = true;
+}
+
+function closeImageViewer() {
+  imageViewerOpen.value = false;
+}
+
 function toLocalDateTimeInput(date) {
   const pad = (n) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -1197,6 +1246,11 @@ async function syncAccessEvents() {
         syncingEvents.value = false;
     }
 }
+
+watch(imageViewerOpen, (open) => {
+  if (typeof document === 'undefined') return;
+  document.body.style.overflow = open ? 'hidden' : '';
+});
 
 setEventsRangeToToday();
 
