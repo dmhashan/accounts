@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BiometricAccessEvent;
 use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -12,12 +13,19 @@ use Illuminate\Support\Carbon;
 class DashboardOverviewService
 {
     private const LOW_STOCK_THRESHOLD = 5;
+
     private const SALES_RANGE_TYPES = ['date', 'week', 'month', 'year'];
 
-    public function build(User $user, Tenant $tenant): array
+    private const AUTH_WIDGET_LIMIT = 20;
+
+    public function __construct(private readonly BiometricSyncService $biometric) {}
+
+    public function build(User $user, Tenant $tenant, ?string $authDate = null, ?string $stockDate = null): array
     {
         $tenantId = $tenant->id;
         $today = now()->toDateString();
+        $resolvedAuthDate = $authDate ?: $today;
+        $resolvedStockDate = $stockDate ?: $today;
 
         return [
             'tenant' => [
@@ -30,8 +38,122 @@ class DashboardOverviewService
                 'id' => $user->id,
                 'email' => $user->email,
             ],
-            'stock_summary' => $this->buildStockSummary($user, $tenantId, $today),
+            'stock_summary' => $this->buildStockSummary($user, $tenantId, $resolvedStockDate),
             'daily_sales_summary' => $this->buildDailySalesSummary($user, $tenantId, $today),
+            'today_auth_summary' => $this->buildTodayAuthSummary($user, $tenantId, $resolvedAuthDate),
+        ];
+    }
+
+    private function buildTodayAuthSummary(User $user, int $tenantId, string $today): array
+    {
+        $canViewTodayAuth = $user->hasPermission('dashboard.view');
+
+        $summary = [
+            'can_view' => $canViewTodayAuth,
+            'date' => $today,
+            'selected_date' => $today,
+            'counts' => [
+                'total' => 0,
+                'success' => 0,
+                'payment_expired' => 0,
+                'other_failed' => 0,
+            ],
+            'lists' => [
+                'success_attempts' => [],
+                'payment_expired' => [],
+                'other_failed' => [],
+            ],
+        ];
+
+        if (!$canViewTodayAuth) {
+            return $summary;
+        }
+
+        $baseQuery = BiometricAccessEvent::query()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('event_time', $today);
+
+        $summary['counts']['total'] = (int) (clone $baseQuery)->count();
+        $summary['counts']['success'] = (int) (clone $baseQuery)
+            ->where('result', 'success')
+            ->count();
+        $summary['counts']['payment_expired'] = (int) (clone $baseQuery)
+            ->where('result', 'failed')
+            ->where('fail_reason', 'payment_expired')
+            ->count();
+        $summary['counts']['other_failed'] = (int) (clone $baseQuery)
+            ->where('result', 'failed')
+            ->where(function ($query) {
+                $query->whereNull('fail_reason')
+                    ->orWhere('fail_reason', '!=', 'payment_expired');
+            })
+            ->count();
+
+        $successRows = (clone $baseQuery)
+            ->where('result', 'success')
+            ->with('member:id,name,biometric_member_id')
+            ->orderByDesc('event_time')
+            ->orderByDesc('id')
+            ->limit(self::AUTH_WIDGET_LIMIT)
+            ->get();
+
+        $paymentExpiredRows = (clone $baseQuery)
+            ->where('result', 'failed')
+            ->where('fail_reason', 'payment_expired')
+            ->with('member:id,name,biometric_member_id')
+            ->orderByDesc('event_time')
+            ->orderByDesc('id')
+            ->limit(self::AUTH_WIDGET_LIMIT)
+            ->get();
+
+        $otherFailedRows = (clone $baseQuery)
+            ->where('result', 'failed')
+            ->where(function ($query) {
+                $query->whereNull('fail_reason')
+                    ->orWhere('fail_reason', '!=', 'payment_expired');
+            })
+            ->with('member:id,name,biometric_member_id')
+            ->orderByDesc('event_time')
+            ->orderByDesc('id')
+            ->limit(self::AUTH_WIDGET_LIMIT)
+            ->get();
+
+        $summary['lists']['success_attempts'] = $successRows
+            ->map(fn (BiometricAccessEvent $event) => $this->mapAuthEventForWidget($event))
+            ->values()
+            ->all();
+
+        $summary['lists']['payment_expired'] = $paymentExpiredRows
+            ->map(fn (BiometricAccessEvent $event) => $this->mapAuthEventForWidget($event))
+            ->values()
+            ->all();
+
+        $summary['lists']['other_failed'] = $otherFailedRows
+            ->map(fn (BiometricAccessEvent $event) => $this->mapAuthEventForWidget($event))
+            ->values()
+            ->all();
+
+        return $summary;
+    }
+
+    private function mapAuthEventForWidget(BiometricAccessEvent $event): array
+    {
+        return [
+            'id' => (int) $event->id,
+            'member' => $event->member
+                ? [
+                    'id' => (int) $event->member->id,
+                    'name' => (string) $event->member->name,
+                    'biometric_member_id' => (string) ($event->member->biometric_member_id ?? ''),
+                ]
+                : null,
+            'person_name' => (string) ($event->person_name ?? ''),
+            'employee_no' => (string) ($event->employee_no ?? ''),
+            'auth_method' => (string) ($event->auth_method ?? ''),
+            'result' => (string) ($event->result ?? ''),
+            'fail_reason' => (string) ($event->fail_reason ?? ''),
+            'picture_url' => $this->biometric->accessEventPictureUrl($event->picture_path),
+            'event_time' => $event->event_time?->toIso8601String(),
         ];
     }
 
@@ -63,7 +185,7 @@ class DashboardOverviewService
 
         return array_merge(
             $stats,
-            $this->buildSalesStatsData($tenant->id, $startAt, $endAt)
+            $this->buildSalesStatsData($tenant->id, $startAt, $endAt),
         );
     }
 
@@ -73,6 +195,7 @@ class DashboardOverviewService
 
         $stockSummary = [
             'can_view' => $canViewStockSummary,
+            'selected_date' => $today,
             'available_units' => 0,
             'tracked_variations' => 0,
             'low_stock_variations' => 0,
@@ -203,6 +326,7 @@ class DashboardOverviewService
             ])
             ->map(function (Sale $sale) {
                 $customerName = trim((string) ($sale->customer_name ?? ''));
+
                 if ($customerName === '') {
                     $customerName = 'Walk-in';
                 }
@@ -232,12 +356,12 @@ class DashboardOverviewService
         return Sale::query()
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startAt, $endAt])
-            ->selectRaw($customerNameExpression.' as customer_name')
+            ->selectRaw($customerNameExpression . ' as customer_name')
             ->selectRaw('COUNT(*) as transactions')
             ->selectRaw('COALESCE(SUM(total_amount), 0) as total_amount')
             ->groupByRaw($customerNameExpression)
             ->orderByRaw('COALESCE(SUM(total_amount), 0) DESC')
-            ->orderByRaw($customerNameExpression.' ASC')
+            ->orderByRaw($customerNameExpression . ' ASC')
             ->get()
             ->map(function ($item) {
                 return [
@@ -347,7 +471,7 @@ class DashboardOverviewService
             sprintf('%04d-W%02d', $isoYear, $isoWeek),
             $startAt,
             $endAt,
-            $startAt->format('d M Y').' - '.$endAt->format('d M Y'),
+            $startAt->format('d M Y') . ' - ' . $endAt->format('d M Y'),
         ];
     }
 

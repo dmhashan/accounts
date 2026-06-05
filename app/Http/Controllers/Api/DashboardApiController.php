@@ -11,19 +11,27 @@ use Illuminate\Http\Request;
 
 class DashboardApiController extends Controller
 {
-    public function __construct(private readonly DashboardOverviewService $dashboardOverviewService)
-    {
-    }
+    public function __construct(private readonly DashboardOverviewService $dashboardOverviewService) {}
 
     public function overview(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'auth_date' => ['nullable', 'date_format:Y-m-d'],
+            'stock_date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
         /** @var User $user */
         $user = $request->user();
 
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        return response()->json($this->dashboardOverviewService->build($user, $tenant));
+        return response()->json($this->dashboardOverviewService->build(
+            $user,
+            $tenant,
+            $validated['auth_date'] ?? null,
+            $validated['stock_date'] ?? null,
+        ));
     }
 
     public function stats(Request $request): JsonResponse
