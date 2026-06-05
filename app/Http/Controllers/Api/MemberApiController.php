@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BiometricAccessEvent;
 use App\Models\Member;
 use App\Models\MemberAttendance;
 use App\Models\Tenant;
+use App\Services\MediaStorageService;
 use App\Services\MemberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +16,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MemberApiController extends Controller
 {
-    public function __construct(private readonly MemberService $memberService) {}
+    public function __construct(
+        private readonly MemberService $memberService,
+        private readonly MediaStorageService $media,
+    ) {}
 
     public function meta(): JsonResponse
     {
@@ -253,6 +258,38 @@ class MemberApiController extends Controller
             ->whereYear('attended_date', $year)
             ->orderBy('attended_date')
             ->get(['id', 'attended_date']);
+
+        $eventsByDate = BiometricAccessEvent::where('tenant_id', $tenant->id)
+            ->where('result', 'success')
+            ->whereYear('event_time', $year)
+            ->where(function ($q) use ($member) {
+                $q->where('member_id', $member->id);
+
+                if ($member->biometric_member_id) {
+                    $q->orWhere('biometric_member_id', $member->biometric_member_id);
+                }
+            })
+            ->orderBy('event_time')
+            ->get(['id', 'event_time', 'picture_path'])
+            ->groupBy(function (BiometricAccessEvent $event) {
+                return optional($event->event_time)->toDateString();
+            })
+            ->map(fn ($events) => $events->first());
+
+        $records = $records->map(function (MemberAttendance $attendance) use ($eventsByDate) {
+            $date = optional($attendance->attended_date)->toDateString();
+            $event = $date ? $eventsByDate->get($date) : null;
+
+            return [
+                'id' => $attendance->id,
+                'attended_date' => optional($attendance->attended_date)->toDateString(),
+                'biometric_access_event_id' => $event?->id,
+                'biometric_access_event_link' => $event?->id ? '/#/settings/biometric?event_id=' . $event->id : null,
+                'biometric_access_event_time' => optional($event?->event_time)?->toIso8601String(),
+                'biometric_access_event_has_picture' => (bool) ($event?->picture_path),
+                'biometric_access_event_picture_url' => $event?->picture_path ? $this->media->url($event->picture_path) : null,
+            ];
+        })->values();
 
         return response()->json([
             'data' => $records,

@@ -57,7 +57,7 @@
         <div
           v-for="month in attendanceCalendar"
           :key="month.index"
-          class="rounded-xl border border-secondary-100 dark:border-secondary-800 overflow-hidden"
+          class="rounded-xl border border-secondary-100 dark:border-secondary-800 overflow-visible"
         >
           <div class="px-2 py-1.5 bg-secondary-50 dark:bg-secondary-800/60 border-b border-secondary-100 dark:border-secondary-800 flex items-center justify-between">
             <span class="text-[11px] font-semibold text-secondary-600 dark:text-secondary-300">{{ month.label }}</span>
@@ -74,7 +74,7 @@
             <div
               v-for="(cell, ci) in month.cells"
               :key="ci"
-              class="flex items-center justify-center rounded-sm"
+              class="group/cell relative flex items-center justify-center rounded-sm"
               style="aspect-ratio:1"
               :class="cell?.isValidPeriod ? 'bg-teal-50 dark:bg-teal-900/25' : ''"
             >
@@ -94,6 +94,28 @@
                           : 'text-secondary-600 dark:text-secondary-400'"
                   :title="cell.title"
                 >{{ cell.day }}</span>
+
+                <div
+                  v-if="cell.biometricAccessEventId"
+                  class="absolute left-1/2 top-full z-40 mt-1 hidden w-56 -translate-x-1/2 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-2 text-[11px] text-secondary-700 dark:text-secondary-200 shadow-lg group-hover/cell:block"
+                >
+                  <p class="font-semibold text-secondary-900 dark:text-white">
+                    Biometric record #{{ cell.biometricAccessEventId }}
+                  </p>
+                  <p v-if="cell.biometricTimeText" class="mt-0.5">
+                    Actual time: {{ cell.biometricTimeText }}
+                  </p>
+                  <p class="mt-0.5">
+                    {{ cell.biometricHasPicture ? 'Picture available' : 'No picture' }}
+                  </p>
+                  <a
+                    v-if="cell.biometricAccessEventLink"
+                    :href="cell.biometricAccessEventLink"
+                    class="mt-1 inline-block text-primary-600 dark:text-primary-400 hover:underline"
+                  >
+                    Open biometric record
+                  </a>
+                </div>
               </template>
             </div>
           </div>
@@ -127,9 +149,10 @@ const attendanceTotal = ref(0);
 const calendarPayments = ref([]);
 
 const attendanceCalendar = computed(() => {
-    const attendedSet = new Set(
-        attendanceRecords.value.map(r => String(r.attended_date).slice(0, 10))
-    );
+  const attendanceByDate = new Map(
+    attendanceRecords.value.map(r => [String(r.attended_date).slice(0, 10), r])
+  );
+  const attendedSet = new Set(attendanceByDate.keys());
     const todayStr = (() => {
         const n = new Date();
         return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
@@ -157,18 +180,53 @@ const attendanceCalendar = computed(() => {
         let count = 0;
         for (let d = 1; d <= daysInMonth; d++) {
             const ds = `${attendanceYear.value}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const attendanceInfo = attendanceByDate.get(ds) || null;
             const attended = attendedSet.has(ds);
             if (attended) count++;
             const isJoined = ds === joinedDateStr;
             const isPaymentDate = paymentDateSet.has(ds);
             const isValidPeriod = validRanges.some(r => ds >= r.start && ds <= r.end);
+          const biometricEventId = attendanceInfo?.biometric_access_event_id || null;
+          const biometricTimeRaw = attendanceInfo?.biometric_access_event_time || null;
+          const biometricHasPicture = Boolean(attendanceInfo?.biometric_access_event_has_picture);
+            const biometricAccessEventLink = attendanceInfo?.biometric_access_event_link || null;
+          let biometricTimeText = null;
+
+          if (biometricTimeRaw) {
+            const parsed = new Date(biometricTimeRaw);
+
+            if (!Number.isNaN(parsed.getTime())) {
+              biometricTimeText = parsed.toLocaleTimeString(undefined, {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              });
+            }
+          }
+
             const titleParts = [
                 attended && 'Attended',
                 isJoined && 'Joined',
                 isPaymentDate && 'Payment',
                 isValidPeriod && 'Valid period',
+            biometricEventId && `Biometric record #${biometricEventId}`,
+            biometricTimeText && `Actual time: ${biometricTimeText}`,
+            biometricEventId && (biometricHasPicture ? 'Picture available' : 'No picture'),
             ].filter(Boolean);
-            cells.push({ day: d, dateStr: ds, attended, today: ds === todayStr, isJoined, isPaymentDate, isValidPeriod, title: titleParts.join(' · ') });
+              cells.push({
+                day: d,
+                dateStr: ds,
+                attended,
+                today: ds === todayStr,
+                isJoined,
+                isPaymentDate,
+                isValidPeriod,
+                title: titleParts.join(' · '),
+                biometricAccessEventId: biometricEventId,
+                biometricTimeText,
+                biometricHasPicture,
+                biometricAccessEventLink,
+              });
         }
         return {
             index: m,
