@@ -47,8 +47,8 @@ class BiometricWebhookController extends Controller
             'path' => $request->path(),
             'ip' => $request->ip(),
             'content_type' => $request->header('Content-Type'),
-            'query' => $request->query(),
-            'payload' => $request->all(),
+            'query' => $this->maskSensitiveData($request->query()),
+            'payload' => $this->maskSensitiveData($request->all()),
             // Keep this bounded in case the device posts a large multipart body.
             'raw_body_preview' => mb_substr($request->getContent(), 0, 4000),
         ]);
@@ -282,5 +282,42 @@ class BiometricWebhookController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Recursively mask sensitive keys before writing request data to logs.
+     */
+    private function maskSensitiveData(mixed $value): mixed
+    {
+        if (!is_array($value)) {
+            return $value;
+        }
+
+        $masked = [];
+
+        foreach ($value as $key => $item) {
+            $keyString = strtolower((string) $key);
+            $isSensitive = in_array($keyString, [
+                'token',
+                'webhook_token',
+                'password',
+                'pass',
+                'secret',
+                'api_key',
+                'apikey',
+                'authorization',
+            ], true);
+
+            if ($isSensitive) {
+                $masked[$key] = '[masked]';
+                continue;
+            }
+
+            $masked[$key] = is_array($item)
+                ? $this->maskSensitiveData($item)
+                : $item;
+        }
+
+        return $masked;
     }
 }
