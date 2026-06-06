@@ -36,6 +36,23 @@ class BiometricWebhookController extends Controller
         // 1. Resolve tenant by domain
         $tenant = Tenant::where('domain', $tenantDomain)->first();
 
+        Log::debug('BiometricWebhook: incoming request', [
+            'route_tenant_domain' => $tenantDomain,
+            'tenant' => $tenant ? [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'domain' => $tenant->domain,
+            ] : null,
+            'method' => $request->method(),
+            'path' => $request->path(),
+            'ip' => $request->ip(),
+            'content_type' => $request->header('Content-Type'),
+            'query' => $request->query(),
+            'payload' => $request->all(),
+            // Keep this bounded in case the device posts a large multipart body.
+            'raw_body_preview' => mb_substr($request->getContent(), 0, 4000),
+        ]);
+
         if (!$tenant) {
             return response('', 404);
         }
