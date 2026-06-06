@@ -12,6 +12,7 @@ use App\Services\BiometricSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class BiometricApiController extends Controller
@@ -511,6 +512,11 @@ class BiometricApiController extends Controller
         app(\App\Services\TenantConfigurationService::class)
             ->updateBatch($tenant->id, ['biometric.webhook_token' => $token]);
 
+        Log::info('Biometric real-time push: token generated', [
+            'tenant_id' => $tenant->id,
+            'tenant_domain' => $tenant->domain,
+        ]);
+
         return response()->json([
             'message' => 'New webhook token generated.',
             'token' => $token,
@@ -528,7 +534,18 @@ class BiometricApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
+        Log::debug('Biometric real-time push: configure requested', [
+            'tenant_id' => $tenant->id,
+            'tenant_domain' => $tenant->domain,
+        ]);
+
         $result = $this->biometric->configureWebhook($tenant);
+
+        Log::debug('Biometric real-time push: configure completed', [
+            'tenant_id' => $tenant->id,
+            'success' => $result['success'] ?? false,
+            'message' => $result['message'] ?? null,
+        ]);
 
         return response()->json([
             'success' => $result['success'],
@@ -547,6 +564,11 @@ class BiometricApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
+
+        Log::debug('Biometric real-time push: status requested', [
+            'tenant_id' => $tenant->id,
+            'tenant_domain' => $tenant->domain,
+        ]);
 
         $result = $this->biometric->getWebhookConfig($tenant);
 

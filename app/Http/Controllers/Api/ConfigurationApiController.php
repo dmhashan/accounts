@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Services\TenantConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Enum;
 
 class ConfigurationApiController extends Controller
@@ -73,7 +74,27 @@ class ConfigurationApiController extends Controller
 
         $tenant = app('tenant');
 
+        $biometricWebhookKeys = array_intersect_key($request->all(), array_flip([
+            'biometric.webhook_enabled',
+            'biometric.webhook_server_host',
+            'biometric.webhook_server_port',
+        ]));
+
+        if ($biometricWebhookKeys !== []) {
+            Log::debug('Biometric real-time push: settings update requested', [
+                'tenant_id' => $tenant->id,
+                'settings' => $biometricWebhookKeys,
+            ]);
+        }
+
         $data = $this->service->updateBatch($tenant->id, $request->all());
+
+        if ($biometricWebhookKeys !== []) {
+            Log::debug('Biometric real-time push: settings update saved', [
+                'tenant_id' => $tenant->id,
+                'settings' => array_intersect_key($data, $biometricWebhookKeys),
+            ]);
+        }
 
         return response()->json([
             'message' => 'Configuration saved successfully.',

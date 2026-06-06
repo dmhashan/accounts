@@ -1047,8 +1047,10 @@ async function save() {
         await apiRequest('/api/settings/configuration', { method: 'PUT', data: form.value });
         successMessage.value = 'Configuration saved successfully.';
         setTimeout(() => { successMessage.value = ''; }, 3000);
+        return true;
     } catch (err) {
         saveError.value = err?.response?.data?.message || 'Failed to save configuration.';
+        return false;
     } finally {
         submitting.value = false;
     }
@@ -1107,7 +1109,12 @@ async function configureWebhook() {
     webhookConfigOk.value = false;
 
     // Save server host/port and webhook_enabled first
-    await save();
+    const saved = await save();
+    if (!saved) {
+        webhookConfigResult.value = saveError.value || 'Configuration failed because settings were not saved.';
+        configuringWebhook.value = false;
+        return;
+    }
 
     try {
         const res = await apiRequest('/api/settings/biometric/webhook/configure', { method: 'POST' });

@@ -36,7 +36,7 @@ class BiometricWebhookController extends Controller
         // 1. Resolve tenant by domain
         $tenant = Tenant::where('domain', $tenantDomain)->first();
 
-        Log::debug('BiometricWebhook: incoming request', [
+        Log::debug('Biometric real-time push: incoming request', [
             'route_tenant_domain' => $tenantDomain,
             'tenant' => $tenant ? [
                 'id' => $tenant->id,
@@ -54,6 +54,11 @@ class BiometricWebhookController extends Controller
         ]);
 
         if (!$tenant) {
+            Log::warning('Biometric real-time push: tenant not found', [
+                'route_tenant_domain' => $tenantDomain,
+                'ip' => $request->ip(),
+            ]);
+
             return response('', 404);
         }
 
@@ -67,10 +72,22 @@ class BiometricWebhookController extends Controller
         $storedToken = $allConfig['biometric.webhook_token'] ?? '';
         $incoming = (string) $request->query('token', '');
 
+        Log::debug('Biometric real-time push: tenant config loaded', [
+            'tenant_id' => $tenant->id,
+            'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
+            'has_stored_token' => $storedToken !== '',
+            'has_incoming_token' => $incoming !== '',
+            'server_host' => $allConfig['biometric.webhook_server_host'] ?? '',
+            'server_port' => $allConfig['biometric.webhook_server_port'] ?? '',
+        ]);
+
         if ($storedToken === '' || !hash_equals($storedToken, $incoming)) {
-            Log::warning('BiometricWebhook: invalid token', [
+            Log::warning('Biometric real-time push: invalid token', [
                 'tenant' => $tenantDomain,
+                'tenant_id' => $tenant->id,
                 'ip' => $request->ip(),
+                'has_stored_token' => $storedToken !== '',
+                'has_incoming_token' => $incoming !== '',
             ]);
 
             return response('', 401);
@@ -78,6 +95,11 @@ class BiometricWebhookController extends Controller
 
         // 3. Only process when webhook is enabled
         if (($allConfig['biometric.webhook_enabled'] ?? '0') !== '1') {
+            Log::info('Biometric real-time push: request ignored because feature is disabled', [
+                'tenant_id' => $tenant->id,
+                'tenant' => $tenantDomain,
+            ]);
+
             return response('', 200);
         }
 
@@ -86,16 +108,34 @@ class BiometricWebhookController extends Controller
 
         if (!$event) {
             // Not an access event we handle — acknowledge and discard
+            Log::debug('Biometric real-time push: payload ignored after parsing', [
+                'tenant_id' => $tenant->id,
+                'content_type' => $request->header('Content-Type'),
+                'body_preview' => mb_substr($request->getContent(), 0, 1000),
+            ]);
+
             return response('', 200);
         }
+
+        Log::debug('Biometric real-time push: parsed event', [
+            'tenant_id' => $tenant->id,
+            'event' => $this->summariseEvent($event),
+        ]);
 
         // 5. Persist attendance + write sync log
         try {
             $this->biometric->handleIncomingEvent($tenant, $event);
+
+            Log::debug('Biometric real-time push: event handed to sync service', [
+                'tenant_id' => $tenant->id,
+                'employee_no' => $event['employeeNoString'] ?? null,
+                'minor' => $event['minor'] ?? null,
+                'time' => $event['time'] ?? null,
+            ]);
         } catch (\Throwable $e) {
-            Log::error('BiometricWebhook: persist error', [
+            Log::error('Biometric real-time push: persist error', [
                 'tenant' => $tenantDomain,
-                'event' => $event,
+                'event' => $this->summariseEvent($event),
                 'error' => $e->getMessage(),
             ]);
         }
@@ -124,12 +164,16 @@ class BiometricWebhookController extends Controller
             $alert = $data['EventNotificationAlert'] ?? null;
 
             if (!$alert) {
+                Log::debug('Biometric real-time push: JSON payload missing EventNotificationAlert');
+
                 return null;
             }
 
             $ace = $alert['AccessControllerEvent'] ?? null;
 
             if (!$ace) {
+                Log::debug('Biometric real-time push: JSON payload missing AccessControllerEvent');
+
                 return null;
             }
 
@@ -149,6 +193,12 @@ class BiometricWebhookController extends Controller
             $xmlString = $request->input('event_log') ?? $this->extractXmlFromBody($body);
 
             if (!$xmlString) {
+                Log::debug('Biometric real-time push: multipart payload has no XML event part', [
+                    'input_keys' => array_keys($request->all()),
+                    'file_keys' => array_keys($request->allFiles()),
+                    'body_preview' => mb_substr($body, 0, 1000),
+                ]);
+
                 return null;
             }
 
@@ -174,9 +224,18 @@ class BiometricWebhookController extends Controller
         try {
             libxml_use_internal_errors(true);
             $node = simplexml_load_string($xml);
+            $errors = libxml_get_errors();
             libxml_clear_errors();
 
             if (!$node) {
+                Log::debug('Biometric real-time push: XML parse failed', [
+                    'errors' => array_map(
+                        fn ($error) => trim($error->message),
+                        array_slice($errors, 0, 3),
+                    ),
+                    'xml_preview' => mb_substr($xml, 0, 1000),
+                ]);
+
                 return null;
             }
 
@@ -184,12 +243,18 @@ class BiometricWebhookController extends Controller
             $eventType = (string) ($node->eventType ?? '');
 
             if ($eventType !== 'AccessControllerEvent') {
+                Log::debug('Biometric real-time push: XML event type ignored', [
+                    'event_type' => $eventType,
+                ]);
+
                 return null;
             }
 
             $ace = $node->AccessControllerEvent ?? null;
 
             if (!$ace) {
+                Log::debug('Biometric real-time push: XML payload missing AccessControllerEvent node');
+
                 return null;
             }
 
@@ -201,7 +266,11 @@ class BiometricWebhookController extends Controller
                 name: (string) ($ace->name ?? '') ?: null,
                 pictureUrl: (string) ($ace->pictureURL ?? (string) ($node->pictureURL ?? '')) ?: null,
             );
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::debug('Biometric real-time push: XML parse exception', [
+                'error' => $e->getMessage(),
+            ]);
+
             return null;
         }
     }
@@ -236,6 +305,11 @@ class BiometricWebhookController extends Controller
                     $event['picture_bytes'] = $bytes;
                     $event['picture_content_type'] = $mime ?: 'image/jpeg';
 
+                    Log::debug('Biometric real-time push: attached multipart image', [
+                        'mime' => $event['picture_content_type'],
+                        'bytes' => strlen($bytes),
+                    ]);
+
                     return $event;
                 }
             }
@@ -258,6 +332,11 @@ class BiometricWebhookController extends Controller
         // Authentication events always carry a time. employeeNo may be absent for
         // failed/stranger attempts, so only the time is strictly required.
         if (!$eventTime) {
+            Log::debug('Biometric real-time push: normalised event missing event time', [
+                'employee_no' => $employeeNo,
+                'minor' => $minor,
+            ]);
+
             return null;
         }
 
@@ -319,5 +398,22 @@ class BiometricWebhookController extends Controller
         }
 
         return $masked;
+    }
+
+    /**
+     * Keep event logs useful without dumping binary image data.
+     */
+    private function summariseEvent(array $event): array
+    {
+        $summary = $event;
+
+        if (isset($summary['picture_bytes'])) {
+            $summary['picture_bytes_length'] = is_string($summary['picture_bytes'])
+                ? strlen($summary['picture_bytes'])
+                : null;
+            unset($summary['picture_bytes']);
+        }
+
+        return $summary;
     }
 }

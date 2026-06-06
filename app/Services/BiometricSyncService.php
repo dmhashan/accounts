@@ -308,6 +308,11 @@ class BiometricSyncService
         $tenantId = $tenant->id;
 
         if (!$this->isEnabled($tenantId)) {
+            Log::info('Biometric real-time push: configure blocked because biometric integration is disabled', [
+                'tenant_id' => $tenantId,
+                'tenant_domain' => $tenant->domain,
+            ]);
+
             return ['success' => false, 'message' => 'Biometric integration is disabled.'];
         }
 
@@ -315,6 +320,13 @@ class BiometricSyncService
         $driver = $this->buildDriver($allConfig);
 
         if (!$driver) {
+            Log::warning('Biometric real-time push: configure blocked because no device driver is available', [
+                'tenant_id' => $tenantId,
+                'device_maker' => $allConfig['biometric.device_maker'] ?? '',
+                'device_model' => $allConfig['biometric.device_model'] ?? '',
+                'device_ip_set' => ($allConfig['biometric.device_ip'] ?? '') !== '',
+            ]);
+
             return ['success' => false, 'message' => 'No device configured.'];
         }
 
@@ -323,17 +335,51 @@ class BiometricSyncService
         $token = $allConfig['biometric.webhook_token'] ?? '';
 
         if (!$serverHost) {
+            Log::warning('Biometric real-time push: configure blocked because server host is missing', [
+                'tenant_id' => $tenantId,
+                'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
+                'server_port' => $serverPort,
+                'has_token' => $token !== '',
+            ]);
+
             return ['success' => false, 'message' => 'Webhook server host is not set. Enter the IP or hostname of this server reachable from the device.'];
         }
 
         if (!$token) {
+            Log::warning('Biometric real-time push: configure blocked because token is missing', [
+                'tenant_id' => $tenantId,
+                'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
+                'server_host' => $serverHost,
+                'server_port' => $serverPort,
+            ]);
+
             return ['success' => false, 'message' => 'No webhook token. Generate one first.'];
         }
 
         $path = '/api/biometric/events/' . $tenant->domain . '?token=' . $token;
         $maker = $allConfig['biometric.device_maker'] ?? '';
         $model = $allConfig['biometric.device_model'] ?? '';
+
+        Log::debug('Biometric real-time push: sending device notification config', [
+            'tenant_id' => $tenantId,
+            'tenant_domain' => $tenant->domain,
+            'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
+            'device_maker' => $maker,
+            'device_model' => $model,
+            'server_host' => $serverHost,
+            'server_port' => $serverPort,
+            'path_without_token' => '/api/biometric/events/' . $tenant->domain,
+            'has_token' => $token !== '',
+        ]);
+
         $result = $driver->configureHttpNotification($serverHost, $serverPort, $path);
+
+        Log::debug('Biometric real-time push: device configure response', [
+            'tenant_id' => $tenantId,
+            'success' => $result['success'] ?? false,
+            'message' => $result['message'] ?? null,
+            'data' => $this->maskWebhookToken($result['data'] ?? []),
+        ]);
 
         $this->writeLog([
             'tenant_id' => $tenantId,
@@ -344,8 +390,8 @@ class BiometricSyncService
             'status' => $result['success'] ? 'success' : 'failed',
             'device_maker' => $maker,
             'device_model' => $model,
-            'payload' => ['server_host' => $serverHost, 'server_port' => $serverPort, 'path' => $path],
-            'response' => $result['data'],
+            'payload' => ['server_host' => $serverHost, 'server_port' => $serverPort, 'path' => $this->maskWebhookToken($path)],
+            'response' => $this->maskWebhookToken($result['data']),
             'error_message' => $result['success'] ? null : $result['message'],
         ]);
 
@@ -362,10 +408,25 @@ class BiometricSyncService
         $driver = $this->buildDriver($allConfig);
 
         if (!$driver) {
+            Log::warning('Biometric real-time push: status blocked because no device driver is available', [
+                'tenant_id' => $tenant->id,
+                'device_maker' => $allConfig['biometric.device_maker'] ?? '',
+                'device_model' => $allConfig['biometric.device_model'] ?? '',
+            ]);
+
             return ['success' => false, 'message' => 'No device configured.', 'data' => []];
         }
 
-        return $driver->getHttpNotificationConfig();
+        $result = $driver->getHttpNotificationConfig();
+
+        Log::debug('Biometric real-time push: device status response', [
+            'tenant_id' => $tenant->id,
+            'success' => $result['success'] ?? false,
+            'message' => $result['message'] ?? null,
+            'data' => $this->maskWebhookToken($result['data'] ?? []),
+        ]);
+
+        return $result;
     }
 
     /**
@@ -377,8 +438,26 @@ class BiometricSyncService
      */
     public function handleIncomingEvent(Tenant $tenant, array $event): void
     {
+        Log::debug('Biometric real-time push: event ingest started', [
+            'tenant_id' => $tenant->id,
+            'employee_no' => $event['employeeNoString'] ?? null,
+            'minor' => $event['minor'] ?? null,
+            'time' => $event['time'] ?? null,
+            'has_picture_bytes' => !empty($event['picture_bytes']),
+            'picture_url' => $event['picture_url'] ?? null,
+        ]);
+
         $ingestion = $this->ingestAccessEvent($tenant, $event);
         $member = $ingestion['member'];
+
+        Log::debug('Biometric real-time push: event ingest finished', [
+            'tenant_id' => $tenant->id,
+            'inserted' => $ingestion['inserted'],
+            'is_auth' => $ingestion['is_auth'],
+            'event_at' => $ingestion['event_at']?->toIso8601String(),
+            'member_id' => $member?->id,
+            'biometric_member_id' => $member?->biometric_member_id,
+        ]);
 
         // Best-effort raw debug trail on the sync-log table (never blocks the event).
         try {
@@ -401,7 +480,7 @@ class BiometricSyncService
                 'error_message' => null,
             ]);
         } catch (\Throwable $e) {
-            Log::warning('Biometric webhook sync-log write failed', ['error' => $e->getMessage()]);
+            Log::warning('Biometric real-time push: sync-log write failed', ['error' => $e->getMessage()]);
         }
     }
 
@@ -488,6 +567,13 @@ class BiometricSyncService
         $classification = $this->classifyAuthEvent($minor);
 
         if (!$classification) {
+            Log::debug('Biometric real-time push: access event ignored because minor code is not an auth event', [
+                'tenant_id' => $tenant->id,
+                'minor' => $minor,
+                'employee_no' => $event['employeeNoString'] ?? null,
+                'time' => $event['time'] ?? null,
+            ]);
+
             return false;
         }
 
@@ -515,6 +601,15 @@ class BiometricSyncService
             $existing = $existingQuery->first();
 
             if ($existing) {
+                Log::debug('Biometric real-time push: duplicate access event found', [
+                    'tenant_id' => $tenant->id,
+                    'existing_event_id' => $existing->id,
+                    'employee_no' => $employeeNo,
+                    'minor' => $minor,
+                    'event_time' => $eventTime->toDateTimeString(),
+                    'member_id' => $member?->id,
+                ]);
+
                 // Backfill missing identifiers on existing events so earlier rows
                 // created without member resolution can be corrected later.
                 $shouldSave = false;
@@ -594,6 +689,18 @@ class BiometricSyncService
         if ($shouldMarkAttendance) {
             $this->markMemberAttendance($tenant, $member, $eventTime, $createdEvent->id);
         }
+
+        Log::debug('Biometric real-time push: access event created', [
+            'tenant_id' => $tenant->id,
+            'event_id' => $createdEvent->id,
+            'member_id' => $member?->id,
+            'employee_no' => $employeeNo,
+            'minor' => $minor,
+            'result' => $result,
+            'fail_reason' => $failReason,
+            'attendance_marked' => $shouldMarkAttendance,
+            'picture_stored' => $picturePath !== null,
+        ]);
 
         return true;
     }
@@ -1431,5 +1538,21 @@ class BiometricSyncService
         } catch (\Throwable $e) {
             Log::warning('Biometric sync-log write failed', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Mask webhook token query values in strings or nested arrays before logging.
+     */
+    private function maskWebhookToken(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map(fn ($item) => $this->maskWebhookToken($item), $value);
+        }
+
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        return preg_replace('/([?&]token=)[^&]*/', '$1[masked]', $value);
     }
 }
