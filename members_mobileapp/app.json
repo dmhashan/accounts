@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Member Portal",
+    "slug": "members-mobileapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.accounts.memberportal"
+    },
+    "android": {
+      "package": "com.accounts.memberportal",
+      "adaptiveIcon": {
+        "backgroundColor": "#111827"
+      }
+    },
+    "extra": {
+      "apiBaseUrl": "beforward.lk"
+    }
+  }
+}
