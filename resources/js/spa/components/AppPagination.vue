@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="show"
-    class="flex w-full items-center justify-end gap-2 flex-nowrap overflow-x-auto"
+    class="flex w-full items-center justify-start gap-2 overflow-x-auto sm:justify-end"
   >
     <div class="shrink-0 flex items-center justify-end gap-2 flex-nowrap max-w-full">
       <button

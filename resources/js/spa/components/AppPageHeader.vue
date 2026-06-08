@@ -1,7 +1,7 @@
 <template>
   <div class="app-page-header-compact">
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3 min-w-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex min-w-0 items-center gap-3">
         <!-- Back button -->
         <button
           v-if="showBack"
@@ -22,7 +22,7 @@
       </div>
 
       <!-- CTAs slot -->
-      <div v-if="$slots['cta-slot']" class="flex items-center gap-2 shrink-0">
+      <div v-if="$slots['cta-slot']" class="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
         <slot name="cta-slot" />
       </div>
     </div>

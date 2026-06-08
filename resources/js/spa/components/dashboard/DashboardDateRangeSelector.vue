@@ -15,7 +15,7 @@
 
     <div
       v-if="open"
-      class="app-surface absolute right-0 top-full z-40 mt-2 w-full min-w-0 rounded-lg border border-secondary-200 p-3 shadow-xl dark:border-secondary-700 sm:w-[22rem]"
+      class="app-surface absolute right-0 top-full z-40 mt-2 w-[min(calc(100vw-1.5rem),22rem)] min-w-0 rounded-lg border border-secondary-200 p-3 shadow-xl dark:border-secondary-700"
     >
       <div class="grid grid-cols-2 gap-1.5">
         <button

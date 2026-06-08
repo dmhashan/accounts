@@ -14,14 +14,14 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+    <div class="grid grid-cols-1 gap-1.5 min-[380px]:grid-cols-3 sm:gap-2">
       <button
         type="button"
-        class="min-w-0 rounded-lg border px-2 py-2.5 text-center transition-colors sm:px-3 sm:text-left"
+        class="min-w-0 rounded-lg border px-2 py-2.5 text-left transition-colors min-[380px]:text-center sm:px-3 sm:text-left"
         :class="authActiveTab === 'success_attempts' ? 'border-green-300 bg-green-50/70 dark:border-green-900/50 dark:bg-green-900/20' : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900/40 hover:bg-secondary-50 dark:hover:bg-secondary-800/70'"
         @click="authActiveTab = 'success_attempts'"
       >
-        <p class="min-h-7 text-[10px] font-medium leading-tight sm:min-h-0 sm:text-xs" style="color: var(--text-muted)">
+        <p class="text-[10px] font-medium leading-tight sm:text-xs" style="color: var(--text-muted)">
           Success
         </p>
         <p class="mt-1 text-base font-bold text-green-700 dark:text-green-400 leading-none">
@@ -31,11 +31,11 @@
 
       <button
         type="button"
-        class="min-w-0 rounded-lg border px-2 py-2.5 text-center transition-colors sm:px-3 sm:text-left"
+        class="min-w-0 rounded-lg border px-2 py-2.5 text-left transition-colors min-[380px]:text-center sm:px-3 sm:text-left"
         :class="authActiveTab === 'payment_expired' ? 'border-red-300 bg-red-50/70 dark:border-red-900/50 dark:bg-red-900/20' : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900/40 hover:bg-secondary-50 dark:hover:bg-secondary-800/70'"
         @click="authActiveTab = 'payment_expired'"
       >
-        <p class="min-h-7 text-[10px] font-medium leading-tight sm:min-h-0 sm:text-xs" style="color: var(--text-muted)">
+        <p class="text-[10px] font-medium leading-tight sm:text-xs" style="color: var(--text-muted)">
           Payment Expired
         </p>
         <p class="mt-1 text-base font-bold text-red-700 dark:text-red-400 leading-none">
@@ -45,11 +45,11 @@
 
       <button
         type="button"
-        class="min-w-0 rounded-lg border px-2 py-2.5 text-center transition-colors sm:px-3 sm:text-left"
+        class="min-w-0 rounded-lg border px-2 py-2.5 text-left transition-colors min-[380px]:text-center sm:px-3 sm:text-left"
         :class="authActiveTab === 'other_failed' ? 'border-amber-300 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-900/20' : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900/40 hover:bg-secondary-50 dark:hover:bg-secondary-800/70'"
         @click="authActiveTab = 'other_failed'"
       >
-        <p class="min-h-7 text-[10px] font-medium leading-tight sm:min-h-0 sm:text-xs" style="color: var(--text-muted)">
+        <p class="text-[10px] font-medium leading-tight sm:text-xs" style="color: var(--text-muted)">
           Other Fails
         </p>
         <p class="mt-1 text-base font-bold text-amber-700 dark:text-amber-400 leading-none">

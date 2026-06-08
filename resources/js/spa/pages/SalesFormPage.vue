@@ -1,8 +1,8 @@
 <template>
-  <section class="flex h-full min-h-0 flex-col overflow-y-auto pb-24">
+  <section class="flex h-full min-h-0 flex-col overflow-y-auto">
     <AppPageHeader show-back>
       <template #extra-slot>
-        <div class="flex items-center flex-nowrap gap-2 pb-1">
+        <div class="flex flex-wrap items-center gap-2 pb-1">
           <div class="inline-flex shrink-0 rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
             <button
               type="button"
@@ -26,7 +26,7 @@
             </button>
           </div>
 
-          <div class="shrink-0 w-[240px] md:w-auto md:flex-1 md:min-w-0 md:max-w-md">
+          <div class="min-w-[12rem] flex-1 md:max-w-md">
             <AppSearchableDropdown
               v-model="form.customer_member_id"
               :options="[...members]"
@@ -47,8 +47,8 @@
     </div>
 
     <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
-      <div class="grid md:min-h-[calc(100vh-280px)] min-h-[calc(100vh-360px)] flex-1 grid-cols-12 gap-2 md:gap-4">
-        <div class="col-span-5 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+      <div class="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:min-h-[calc(100vh-280px)] lg:grid-cols-12 lg:gap-4">
+        <div class="flex h-[30dvh] min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 dark:border-secondary-700 dark:bg-secondary-900 md:h-[32dvh] md:min-h-[14rem] md:p-4 lg:col-span-6 lg:h-auto lg:min-h-[14rem]">
           <div class="mb-3 flex items-center justify-between gap-3">
             <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
               Products
@@ -93,7 +93,7 @@
           </div>
         </div>
 
-        <div class="col-span-7 md:col-span-6 flex min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 md:p-4 dark:border-secondary-700 dark:bg-secondary-900">
+        <div class="flex max-h-[34dvh] min-h-[9rem] flex-col rounded-t-xl border border-secondary-200 bg-white p-3 dark:border-secondary-700 dark:bg-secondary-900 md:min-h-[12rem] md:p-4 lg:col-span-6 lg:max-h-none lg:min-h-[14rem] lg:rounded-xl">
           <h3 class="text-base font-semibold text-secondary-900 dark:text-white mb-3">
             Cart
           </h3>
@@ -145,7 +145,7 @@
         </div>
       </div>
 
-      <div class="sticky top-300 z-10 mt-8 flex items-center justify-between gap-3 rounded-xl border border-secondary-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-secondary-700 dark:bg-secondary-900/95">
+      <div class="z-10 mt-0 flex flex-col gap-3 rounded-b-xl border border-t-0 border-secondary-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-secondary-700 dark:bg-secondary-900/95 sm:flex-row sm:items-center sm:justify-between lg:sticky lg:bottom-0 lg:mt-8 lg:rounded-xl lg:border-t">
         <div>
           <p class="text-xs text-secondary-500 dark:text-secondary-400">
             Grand Total
@@ -162,7 +162,7 @@
         >
           {{ submitting ? 'Updating...' : 'Update Sale' }}
         </button>
-        <div v-else-if="canCreateSale" class="flex items-center gap-2">
+        <div v-else-if="canCreateSale" class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
           <button
             type="button"
             class="px-5 py-3 text-base font-semibold border border-secondary-300 dark:border-secondary-600 text-secondary-800 dark:text-secondary-100 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 disabled:opacity-50"
