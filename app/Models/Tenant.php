@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\MemberPortalUrlService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -32,11 +33,6 @@ class Tenant extends Model
      */
     public function profileUrl(): string
     {
-        if (config('app.multitenancy_enabled', true)) {
-            $scheme = parse_url(config('app.url'), PHP_URL_SCHEME) ?? 'https';
-            return "{$scheme}://{$this->domain}." . config('app.domain') . '/profile';
-        }
-
-        return rtrim(config('app.url'), '/') . '/profile';
+        return app(MemberPortalUrlService::class)->urlForTenant($this);
     }
 }

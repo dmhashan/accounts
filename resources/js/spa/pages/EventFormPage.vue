@@ -32,7 +32,7 @@
                 <span class="text-xs text-secondary-400 font-normal ml-1">— auto-generated from name</span>
               </label>
               <div class="flex items-center gap-2">
-                <span class="text-xs text-secondary-400 shrink-0">/profile/event/</span>
+                <span class="text-xs text-secondary-400 shrink-0">{{ eventUrlPrefix }}</span>
                 <input
                   v-model="form.slug"
                   type="text"
@@ -192,10 +192,12 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
 
 const route      = useRoute();
 const router     = useRouter();
+const context    = useAppContext();
 const isEdit     = computed(() => Boolean(route.params.id));
 const submitting = ref(false);
 const loadingEvent = ref(false);
@@ -216,10 +218,13 @@ const form = ref({
 });
 
 const registrationLink = computed(() => {
-    if (!form.value.slug) return '';
-    const base = window.location.origin;
-    return `${base}/profile/event/${form.value.slug}`;
+    if (!form.value.slug || !memberPortalUrl.value) return '';
+    return `${memberPortalUrl.value}/event/${form.value.slug}`;
 });
+
+const memberPortalUrl = computed(() => (context.tenant?.member_portal_url || '').replace(/\/$/, ''));
+
+const eventUrlPrefix = computed(() => memberPortalUrl.value ? `${memberPortalUrl.value}/event/` : '');
 
 function slugify(text) {
     return text.toLowerCase().trim()

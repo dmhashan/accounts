@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Api;
 
+use App\Services\TenantConfigurationService;
+
 class ContextApiTest extends ApiRouteTestCase
 {
-    public function test_app_context_route_returns_user_tenant_and_permissions(): void
+    public function testAppContextRouteReturnsUserTenantAndPermissions(): void
     {
         $user = $this->actingAsUser([
             'dashboard.view',
@@ -32,5 +34,20 @@ class ContextApiTest extends ApiRouteTestCase
             ->assertJsonPath('permissions.salesEdit', true)
             ->assertJsonPath('permissions.salesDelete', true)
             ->assertJsonPath('permissions.stats', true);
+    }
+
+    public function testAppContextUsesConfiguredMemberPortalUrl(): void
+    {
+        $this->actingAsUser();
+
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'general.member_notifications' => json_encode([
+                'member_login_url' => 'https://members.test/profile',
+            ]),
+        ]);
+
+        $this->getJson('/api/app/context')
+            ->assertOk()
+            ->assertJsonPath('tenant.member_portal_url', 'https://members.test/profile');
     }
 }

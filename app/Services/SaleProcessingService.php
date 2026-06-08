@@ -17,6 +17,7 @@ class SaleProcessingService
 {
     public function __construct(
         private readonly AuditService $auditService,
+        private readonly MemberPortalUrlService $memberPortalUrl,
     ) {}
 
     public function create(int $tenantId, array $validated): Sale
@@ -473,8 +474,7 @@ class SaleProcessingService
 
         $ref = $sale->reference_number ? ' (Ref: ' . $sale->reference_number . ')' : '';
         $amount = number_format((float) $sale->total_amount, 2);
-        $tenant = app('tenant');
-        $profileUrl = $tenant->profileUrl();
+        $profileUrl = $this->memberPortalUrl->urlForTenant(app('tenant'));
 
         $title = "Payment Received – LKR {$amount}";
         $body = "Payment received for Sale #{$sale->id}: LKR {$amount}{$ref}. Thank you! View your account: {$profileUrl}";
@@ -503,8 +503,7 @@ class SaleProcessingService
             ->sum('balance');
         $totalDue = number_format(abs((float) $totalOutstanding), 2);
 
-        $tenant = app('tenant');
-        $profileUrl = $tenant->profileUrl();
+        $profileUrl = $this->memberPortalUrl->urlForTenant(app('tenant'));
 
         $title = "Outstanding Balance – LKR {$due}";
         $body = "Outstanding for Sale #{$sale->id}: LKR {$due}{$ref}. Total outstanding: LKR {$totalDue}. Please settle soon. View your account: {$profileUrl}";

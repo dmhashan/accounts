@@ -41,8 +41,8 @@
             <h1 class="text-xl font-bold text-secondary-900 dark:text-white">
               {{ event.name }}
             </h1>
-            <p class="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-mono">
-              /profile/event/{{ event.slug }}
+            <p class="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-mono break-all">
+              {{ registrationLink }}
             </p>
           </div>
           <span
@@ -148,11 +148,13 @@
 import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 import AppPageHeader from '../components/AppPageHeader.vue';
 
 const route  = useRoute();
 const router = useRouter();
+const context = useAppContext();
 const loading      = ref(false);
 const errorMessage = ref('');
 const event        = ref({});
@@ -162,9 +164,11 @@ const deleteConfirming = ref(false);
 
 
 const registrationLink = computed(() => {
-    if (!event.value.slug) return '';
-    return `${window.location.origin}/profile/event/${event.value.slug}`;
+    if (!event.value.slug || !memberPortalUrl.value) return '';
+    return `${memberPortalUrl.value}/event/${event.value.slug}`;
 });
+
+const memberPortalUrl = computed(() => (context.tenant?.member_portal_url || '').replace(/\/$/, ''));
 
 async function deleteEvent() {
     if (!confirm('Delete this event? All registrations will also be deleted.')) return;

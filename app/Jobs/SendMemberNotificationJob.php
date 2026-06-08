@@ -8,6 +8,7 @@ use App\Models\MemberNotification;
 use App\Services\SmsService;
 use App\Services\TenantConfigurationService;
 use App\Services\TenantMailService;
+use App\Support\TenantEmailBranding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -76,7 +77,14 @@ class SendMemberNotificationJob implements ShouldQueue
         try {
             $tenantMail->mailerForTenant($this->tenantId)
                 ->to($member->email)
-                ->send(new MemberNotificationMail($this->title, $this->body));
+                ->send(new MemberNotificationMail(
+                    $this->title,
+                    $this->body,
+                    TenantEmailBranding::forTenantId($this->tenantId),
+                    $this->memberName($member),
+                    TenantEmailBranding::memberAvatarUrl($member),
+                    TenantEmailBranding::initials($this->memberName($member)),
+                ));
         } catch (\Throwable $e) {
             Log::error('SendMemberNotificationJob: Email send failed.', [
                 'member_id' => $member->id,
@@ -94,5 +102,11 @@ class SendMemberNotificationJob implements ShouldQueue
             'title' => $this->title,
             'body' => $this->body,
         ]);
+    }
+
+    private function memberName(Member $member): string
+    {
+        return trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''))
+            ?: ($member->name ?? 'Member');
     }
 }

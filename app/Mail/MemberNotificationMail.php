@@ -14,6 +14,10 @@ class MemberNotificationMail extends Mailable
     public function __construct(
         public readonly string $notificationTitle,
         public readonly string $notificationBody,
+        public readonly array $tenantBranding = [],
+        public readonly ?string $recipientName = null,
+        public readonly ?string $recipientAvatarUrl = null,
+        public readonly ?string $recipientInitials = null,
     ) {}
 
     public function envelope(): Envelope

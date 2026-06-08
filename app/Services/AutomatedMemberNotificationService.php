@@ -17,6 +17,7 @@ class AutomatedMemberNotificationService
 
     public function __construct(
         private readonly TenantConfigurationService $tenantConfig,
+        private readonly MemberPortalUrlService $memberPortalUrl,
     ) {}
 
     public function sendWelcome(Member $member): void
@@ -143,7 +144,7 @@ class AutomatedMemberNotificationService
             'Hi ' . $this->memberName($member) . ', welcome to ' . $this->tenantName($tenant),
         ];
 
-        $loginUrl = trim((string) ($config['member_login_url'] ?? ''));
+        $loginUrl = $this->memberPortalUrl->urlForTenant($tenant);
 
         if ($loginUrl !== '') {
             $lines[] = '';

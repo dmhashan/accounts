@@ -4,10 +4,12 @@ namespace App\Jobs;
 
 use App\Mail\MemberNotificationMail;
 use App\Models\BulkNotification;
+use App\Models\Member;
 use App\Models\MemberNotification;
 use App\Services\SmsService;
 use App\Services\TenantConfigurationService;
 use App\Services\TenantMailService;
+use App\Support\TenantEmailBranding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -58,6 +60,7 @@ class SendBulkNotificationJob implements ShouldQueue
         // Email and in-app per member
         $inAppInserts = [];
         $now = now();
+        $tenantBranding = TenantEmailBranding::forTenantId($notification->tenant_id);
 
         foreach ($notification->recipients as $recipient) {
             $member = $recipient->member;
@@ -70,7 +73,14 @@ class SendBulkNotificationJob implements ShouldQueue
                 try {
                     $tenantMail->mailerForTenant($notification->tenant_id)
                         ->to($member->email)
-                        ->send(new MemberNotificationMail($notification->name, $notification->message));
+                        ->send(new MemberNotificationMail(
+                            $notification->name,
+                            $notification->message,
+                            $tenantBranding,
+                            $this->memberName($member),
+                            TenantEmailBranding::memberAvatarUrl($member),
+                            TenantEmailBranding::initials($this->memberName($member)),
+                        ));
                 } catch (\Throwable $e) {
                     Log::error('SendBulkNotificationJob: Email send failed.', [
                         'member_id' => $member->id,
@@ -112,5 +122,11 @@ class SendBulkNotificationJob implements ShouldQueue
 
         BulkNotification::where('id', $this->bulkNotificationId)
             ->update(['status' => 'failed']);
+    }
+
+    private function memberName(Member $member): string
+    {
+        return trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''))
+            ?: ($member->name ?? 'Member');
     }
 }

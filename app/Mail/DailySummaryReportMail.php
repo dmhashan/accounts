@@ -19,6 +19,7 @@ class DailySummaryReportMail extends Mailable
         public readonly int $changeCount,
         private readonly string $pdfContent,
         private readonly string $pdfFilename,
+        public readonly array $tenantBranding = [],
     ) {}
 
     public function envelope(): Envelope

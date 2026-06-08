@@ -17,6 +17,9 @@ class FormSubmissionMail extends Mailable
         public readonly string $memberName,
         private readonly string $pdfContent,
         private readonly string $pdfFilename,
+        public readonly array $tenantBranding = [],
+        public readonly ?string $recipientAvatarUrl = null,
+        public readonly ?string $recipientInitials = null,
     ) {}
 
     public function envelope(): Envelope

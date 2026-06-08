@@ -10,6 +10,7 @@ class AppContextService
     public function __construct(
         private readonly MediaStorageService $media,
         private readonly TenantConfigurationService $config,
+        private readonly MemberPortalUrlService $memberPortalUrl,
     ) {}
 
     public function build(User $user, Tenant $tenant): array
@@ -34,6 +35,7 @@ class AppContextService
                 'email' => $tenant->email,
                 'phone' => $tenant->phone,
                 'logo_url' => $tenant->logo_path ? $this->media->url($tenant->logo_path) : null,
+                'member_portal_url' => $this->memberPortalUrl->urlForTenant($tenant),
             ],
             'permissions' => [
                 'dashboard' => $user->hasPermission('dashboard.view'),

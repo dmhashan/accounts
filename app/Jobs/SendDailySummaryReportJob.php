@@ -7,6 +7,7 @@ use App\Models\DailySummaryReport;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantMailService;
+use App\Support\TenantEmailBranding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -69,6 +70,7 @@ class SendDailySummaryReportJob implements ShouldQueue
 
             $tenant = Tenant::find($this->tenantId);
             $tenantName = $tenant?->name ?? 'Your Organisation';
+            $tenantBranding = TenantEmailBranding::forTenant($tenant);
             $dateLabel = $report->report_date->format('d M Y');
             $changeCount = is_array($report->changes) ? count($report->changes) : 0;
             $pdfFilename = basename($report->pdf_path);
@@ -84,6 +86,7 @@ class SendDailySummaryReportJob implements ShouldQueue
                         $changeCount,
                         $pdfContent,
                         $pdfFilename,
+                        $tenantBranding,
                     ),
                 );
             }

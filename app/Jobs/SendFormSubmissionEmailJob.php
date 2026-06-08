@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\FormSubmissionMail;
 use App\Models\FormSubmission;
+use App\Support\TenantEmailBranding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,7 +27,7 @@ class SendFormSubmissionEmailJob implements ShouldQueue
     public function handle(\App\Services\TenantMailService $tenantMail): void
     {
         $submission = FormSubmission::where('tenant_id', $this->tenantId)
-            ->with(['template:id,title', 'member:id,first_name,last_name,name,email,biometric_member_id'])
+            ->with(['template:id,title', 'member:id,first_name,last_name,name,email,biometric_member_id,profile_photo_path'])
             ->find($this->submissionId);
 
         if (!$submission || !$submission->pdf_path) {
@@ -63,7 +64,15 @@ class SendFormSubmissionEmailJob implements ShouldQueue
 
             $tenantMail->mailerForTenant($this->tenantId)
                 ->to($member->email, $memberName)
-                ->send(new FormSubmissionMail($formTitle, $memberName, $pdfContent, $pdfFilename));
+                ->send(new FormSubmissionMail(
+                    $formTitle,
+                    $memberName,
+                    $pdfContent,
+                    $pdfFilename,
+                    TenantEmailBranding::forTenantId($this->tenantId),
+                    TenantEmailBranding::memberAvatarUrl($member),
+                    TenantEmailBranding::initials($memberName),
+                ));
         } catch (\Throwable $e) {
             Log::error('SendFormSubmissionEmailJob: Email send failed.', [
                 'submission_id' => $this->submissionId,

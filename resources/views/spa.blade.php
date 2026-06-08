@@ -25,6 +25,7 @@
 <body class="font-sans antialiased bg-background-light dark:bg-background-dark">
     @php
         $user = auth()->user();
+        $memberPortalUrl = app(\App\Services\MemberPortalUrlService::class)->urlForTenant(app('tenant'));
 
         $context = [
             'user' => [
@@ -34,6 +35,7 @@
             'tenant' => [
                 'name' => app('tenant')->name,
                 'domain' => app('tenant')->domain,
+                'member_portal_url' => $memberPortalUrl,
             ],
             'permissions' => [
                 'dashboard' => $user->hasPermission('dashboard.view'),
@@ -63,7 +65,7 @@
                 'inventoryStock' => route('inventory.stock.index'),
                 'sales' => route('sales.index'),
                 'salesCreate' => route('sales.create'),
-                'profile' => route('member.portal'),
+                'profile' => $memberPortalUrl,
                 'workout' => route('workout-schedule.index'),
                 'diet' => route('diet-plan.index'),
                 'payments' => route('payments.index'),

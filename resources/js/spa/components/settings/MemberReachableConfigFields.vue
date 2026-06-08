@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-5">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <AppFormField label="Member Login URL" for-id="member-reachable-login-url" optional>
+      <AppFormField label="Member Portal URL" for-id="member-reachable-login-url" optional>
         <AppFormInput
           id="member-reachable-login-url"
           v-model="localConfig.member_login_url"
           type="url"
-          placeholder="https://members.example.com/login"
+          placeholder="https://members.example.com/profile"
           maxlength="500"
           @input="emitChange"
         />

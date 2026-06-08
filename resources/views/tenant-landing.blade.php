@@ -17,7 +17,7 @@
         $email = trim((string) ($tenant->email ?? ''));
         $phoneHref = $phone !== '' ? 'tel:' . preg_replace('/[^\d+]/', '', $phone) : null;
         $emailHref = $email !== '' ? 'mailto:' . $email : null;
-        $memberPortalUrl = $tenant->profileUrl();
+        $memberPortalUrl = app(\App\Services\MemberPortalUrlService::class)->urlForTenant($tenant);
         $heroBackgroundPath = public_path('images/background.jpg');
         $heroBackground = asset('images/background.jpg');
 
