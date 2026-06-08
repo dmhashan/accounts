@@ -1,10 +1,10 @@
 <template>
   <aside class="hidden lg:flex lg:w-[19rem] lg:flex-col lg:pl-4 lg:py-4 xl:pl-5">
-    <div class="app-surface flex h-[calc(100vh-2rem)] flex-col rounded-3xl overflow-hidden">
+    <div class="app-surface app-sidebar-panel flex h-[calc(100vh-2rem)] flex-col rounded-3xl overflow-hidden">
       <!-- Brand header -->
       <div class="px-5 py-5 border-b border-secondary-200/70 dark:border-secondary-700/70 shrink-0">
         <div class="flex items-center gap-3">
-          <div v-if="context.tenant?.logo_url" class="w-10 h-10 rounded-xl overflow-hidden bg-secondary-100 dark:bg-secondary-800 shrink-0 border border-secondary-200/70 dark:border-secondary-700/70">
+          <div v-if="context.tenant?.logo_url" class="app-logo-tile w-10 h-10 rounded-xl overflow-hidden shrink-0">
             <img :src="context.tenant.logo_url" :alt="context.tenant.name" class="w-full h-full object-contain" />
           </div>
           <div class="min-w-0">
@@ -117,32 +117,20 @@ import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { Sun, Moon, LogOut, ChevronDown } from 'lucide-vue-next';
 import { useNavigation } from '../composables/useNavigation';
+import { useTheme } from '../composables/useTheme';
 import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 
 const route = useRoute();
 const { context, menuItems } = useNavigation();
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-const isDark = ref(document.documentElement.classList.contains('dark'));
+const { isDark, toggleTheme } = useTheme();
 const profileOpen = ref(false);
 
 const initials = computed(() => {
     const name = context.user?.name || '';
     return name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?';
 });
-
-function toggleTheme() {
-    const root = document.documentElement;
-    if (root.classList.contains('dark')) {
-        root.classList.remove('dark');
-        localStorage.theme = 'light';
-        isDark.value = false;
-    } else {
-        root.classList.add('dark');
-        localStorage.theme = 'dark';
-        isDark.value = true;
-    }
-}
 
 function isChildActive(child) {
     return route.path === child.path;

@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-secondary-900 rounded-2xl shadow-xl w-full max-w-md my-8">
+  <div class="app-overlay-panel rounded-2xl w-full max-w-md my-8">
     <div class="flex items-start justify-between p-5 border-b border-secondary-200 dark:border-secondary-700">
       <div>
         <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
@@ -77,7 +77,7 @@
           <select
             v-model="form.plan_id"
             required
-            class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option :value="null" disabled>
               Select plan
@@ -103,7 +103,7 @@
           min="0.01"
           step="0.01"
           required
-          class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 
@@ -122,7 +122,7 @@
         <AppFormDateInput
           v-model="form.payment_date"
           required
-          input-class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          input-class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 
@@ -140,7 +140,7 @@
           rows="3"
           maxlength="1000"
           placeholder="Add a note about this payment..."
-          class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+          class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
         />
       </div>
 

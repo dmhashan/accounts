@@ -12,13 +12,13 @@
     </Transition>
 
     <aside
-      class="fixed inset-y-0 left-0 z-50 w-80 max-w-[92vw] app-surface border-r-0 transform transition-transform duration-300 lg:hidden flex flex-col"
+      class="app-surface app-sidebar-panel fixed inset-y-0 left-0 z-50 w-80 max-w-[92vw] border-r-0 transform transition-transform duration-300 lg:hidden flex flex-col"
       :class="open ? 'translate-x-0' : '-translate-x-full'"
     >
       <!-- Header -->
       <div class="h-16 px-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3 min-w-0">
-          <div v-if="context.tenant?.logo_url" class="w-8 h-8 rounded-lg overflow-hidden bg-secondary-100 dark:bg-secondary-800 shrink-0 border border-secondary-200/70 dark:border-secondary-700/70">
+          <div v-if="context.tenant?.logo_url" class="app-logo-tile w-8 h-8 rounded-lg overflow-hidden shrink-0">
             <img :src="context.tenant.logo_url" :alt="context.tenant.name" class="w-full h-full object-contain" />
           </div>
           <div class="min-w-0">
@@ -141,6 +141,7 @@ import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { X, Sun, Moon, LogOut, ChevronDown } from 'lucide-vue-next';
 import { useNavigation } from '../composables/useNavigation';
+import { useTheme } from '../composables/useTheme';
 import MemberAvatar from '../../components/ui/MemberAvatar.vue';
 
 defineProps({
@@ -155,26 +156,13 @@ defineEmits(['close']);
 const route = useRoute();
 const { context, menuItems } = useNavigation();
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-const isDark = ref(document.documentElement.classList.contains('dark'));
+const { isDark, toggleTheme } = useTheme();
 const profileOpen = ref(false);
 
 const initials = computed(() => {
     const name = context.user?.name || '';
     return name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?';
 });
-
-function toggleTheme() {
-    const root = document.documentElement;
-    if (root.classList.contains('dark')) {
-        root.classList.remove('dark');
-        localStorage.theme = 'light';
-        isDark.value = false;
-    } else {
-        root.classList.add('dark');
-        localStorage.theme = 'dark';
-        isDark.value = true;
-    }
-}
 
 function isChildActive(child) {
     return route.path === child.path;

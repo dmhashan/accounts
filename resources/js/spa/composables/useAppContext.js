@@ -4,6 +4,7 @@ export function useAppContext() {
     return inject('appContext', {
         user: { name: 'User', email: '' },
         tenant: { name: 'Tenant', domain: '', member_portal_url: '' },
+        settings: { colorTheme: 'crimson', colorMode: 'system' },
         permissions: {},
         legacyUrls: {},
     });

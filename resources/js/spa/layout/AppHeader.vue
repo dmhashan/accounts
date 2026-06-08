@@ -7,7 +7,7 @@
         </button>
 
         <div class="flex items-center gap-2.5 min-w-0">
-          <div v-if="context.tenant?.logo_url" class="w-7 h-7 rounded-lg overflow-hidden bg-secondary-100 dark:bg-secondary-800 shrink-0 border border-secondary-200/50 dark:border-secondary-700/50">
+          <div v-if="context.tenant?.logo_url" class="app-logo-tile w-7 h-7 rounded-lg overflow-hidden shrink-0">
             <img :src="context.tenant.logo_url" :alt="context.tenant.name" class="w-full h-full object-contain" />
           </div>
           <div class="min-w-0">
@@ -42,15 +42,16 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { Menu, Sun, Moon } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import { useAppContext } from '../composables/useAppContext';
+import { useTheme } from '../composables/useTheme';
 
 defineEmits(['open-menu']);
 const route = useRoute();
 const context = useAppContext();
-const isDark = ref(document.documentElement.classList.contains('dark'));
+const { isDark, toggleTheme } = useTheme();
 
 const pageTitle = computed(() => {
     if (typeof route.meta?.title === 'string' && route.meta.title.trim() !== '') {
@@ -60,16 +61,4 @@ const pageTitle = computed(() => {
     return route.path.replace('/', '').replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) || 'Dashboard';
 });
 
-function toggleTheme() {
-    const root = document.documentElement;
-    if (root.classList.contains('dark')) {
-        root.classList.remove('dark');
-        localStorage.theme = 'light';
-        isDark.value = false;
-    } else {
-        root.classList.add('dark');
-        localStorage.theme = 'dark';
-        isDark.value = true;
-    }
-}
 </script>

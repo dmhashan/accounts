@@ -4,7 +4,7 @@
       <button
         ref="triggerRef"
         type="button"
-        class="w-full px-3 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg bg-white dark:bg-secondary-800 text-left flex items-center gap-1"
+        class="app-form-control w-full px-3 py-2 text-sm border rounded-lg text-left flex items-center gap-1"
         :disabled="disabled"
         @click="toggleDropdown"
       >
@@ -23,7 +23,7 @@
       <div
         v-if="dropdownOpen"
         ref="panelRef"
-        class="fixed z-[9999] bg-white dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg shadow-lg overflow-hidden"
+        class="app-overlay-panel fixed z-[9999] rounded-lg overflow-hidden"
         :style="dropdownStyle"
       >
         <div v-if="searchable" class="p-2 border-b border-secondary-200 dark:border-secondary-700">

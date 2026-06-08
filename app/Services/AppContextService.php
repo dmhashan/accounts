@@ -21,6 +21,8 @@ class AppContextService
             'settings' => [
                 'dateFormat' => $cfg['general.date_format'] ?? 'D MMM YYYY',
                 'timeFormat' => $cfg['general.time_format'] ?? 'HH:mm',
+                'colorTheme' => $cfg['general.color_theme'] ?? 'crimson',
+                'colorMode' => $cfg['general.color_mode'] ?? 'system',
             ],
             'user' => [
                 'id' => $user->id,

@@ -22,7 +22,7 @@
             Logo
           </h3>
 
-          <div class="w-32 h-32 rounded-xl overflow-hidden bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center shrink-0 border border-secondary-200 dark:border-secondary-700">
+          <div class="app-logo-tile w-32 h-32 rounded-xl overflow-hidden flex items-center justify-center shrink-0">
             <img
               v-if="logoUrl"
               :src="logoUrl"
@@ -128,6 +128,105 @@
         </div>
       </div>
 
+      <!-- Appearance -->
+      <div class="app-surface rounded-2xl p-4 md:p-6 mt-6">
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div>
+            <h3 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide">
+              Appearance
+            </h3>
+            <p class="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
+              Set the brand palette and default display mode for everyone in this tenant.
+            </p>
+          </div>
+          <span class="mt-2 inline-flex w-fit items-center rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 sm:mt-0">
+            Live preview
+          </span>
+        </div>
+
+        <div v-if="formatsLoading" class="py-6 text-center text-sm text-secondary-500 dark:text-secondary-400">
+          Loading...
+        </div>
+
+        <template v-else>
+          <fieldset class="mt-6">
+            <legend class="text-xs font-semibold text-secondary-700 dark:text-secondary-300">
+              Color palette
+            </legend>
+            <div class="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+              <button
+                v-for="theme in colorThemes"
+                :key="theme.value"
+                type="button"
+                class="group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                :class="appearance.colorTheme === theme.value
+                  ? 'border-primary-500 bg-primary-50/70 ring-2 ring-primary-500/25 dark:bg-primary-900/20'
+                  : 'border-secondary-200 bg-white/60 hover:border-secondary-300 dark:border-secondary-700 dark:bg-secondary-900/40 dark:hover:border-secondary-600'"
+                :aria-pressed="appearance.colorTheme === theme.value"
+                @click="previewColorTheme(theme.value)"
+              >
+                <span class="mb-3 flex h-8 overflow-hidden rounded-lg shadow-sm">
+                  <span
+                    v-for="color in theme.colors"
+                    :key="color"
+                    class="flex-1"
+                    :style="{ backgroundColor: color }"
+                  />
+                </span>
+                <span class="flex items-center justify-between gap-2">
+                  <span>
+                    <span class="block text-sm font-semibold text-secondary-900 dark:text-white">{{ theme.label }}</span>
+                    <span class="mt-0.5 block text-[11px] leading-tight text-secondary-500 dark:text-secondary-400">{{ theme.description }}</span>
+                  </span>
+                  <Check v-if="appearance.colorTheme === theme.value" class="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+                </span>
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset class="mt-6">
+            <legend class="text-xs font-semibold text-secondary-700 dark:text-secondary-300">
+              Default display mode
+            </legend>
+            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <button
+                v-for="mode in colorModes"
+                :key="mode.value"
+                type="button"
+                class="flex items-center gap-3 rounded-xl border p-3 text-left transition-colors"
+                :class="appearance.colorMode === mode.value
+                  ? 'border-primary-500 bg-primary-50/70 ring-2 ring-primary-500/25 dark:bg-primary-900/20'
+                  : 'border-secondary-200 bg-white/60 hover:border-secondary-300 dark:border-secondary-700 dark:bg-secondary-900/40 dark:hover:border-secondary-600'"
+                :aria-pressed="appearance.colorMode === mode.value"
+                @click="previewColorMode(mode.value)"
+              >
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary-100 text-secondary-600 dark:bg-secondary-800 dark:text-secondary-300">
+                  <Monitor v-if="mode.value === 'system'" class="h-5 w-5" />
+                  <Sun v-else-if="mode.value === 'light'" class="h-5 w-5" />
+                  <Moon v-else class="h-5 w-5" />
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-semibold text-secondary-900 dark:text-white">{{ mode.label }}</span>
+                  <span class="mt-0.5 block text-xs text-secondary-500 dark:text-secondary-400">{{ mode.description }}</span>
+                </span>
+                <Check v-if="appearance.colorMode === mode.value" class="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+              </button>
+            </div>
+          </fieldset>
+
+          <div class="mt-5 flex items-center justify-end">
+            <button
+              type="button"
+              class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              :disabled="appearanceSaving"
+              @click="saveAppearance"
+            >
+              {{ appearanceSaving ? 'Saving...' : 'Save Appearance' }}
+            </button>
+          </div>
+        </template>
+      </div>
+
       <!-- Date & Time Format -->  
       <div class="app-surface rounded-2xl p-4 md:p-6 mt-6">
         <h3 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide mb-4">
@@ -143,7 +242,7 @@
             <AppFormField label="Date Format" required>
               <select
                 v-model="formats.dateFormat"
-                class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option v-for="opt in dateFormatOptions" :key="opt.value" :value="opt.value">
                   {{ opt.label }} ({{ opt.example }})
@@ -154,7 +253,7 @@
             <AppFormField label="Time Format" required>
               <select
                 v-model="formats.timeFormat"
-                class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option v-for="opt in timeFormatOptions" :key="opt.value" :value="opt.value">
                   {{ opt.label }} ({{ opt.example }})
@@ -225,7 +324,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { ImageIcon, Upload, Trash2 } from 'lucide-vue-next';
+import { Check, ImageIcon, Monitor, Moon, Sun, Upload, Trash2 } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -233,6 +332,7 @@ import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 import AvatarCropModal from '../components/AvatarCropModal.vue';
 import MemberReachableConfigFields from '../components/settings/MemberReachableConfigFields.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { COLOR_MODES, COLOR_THEMES, setColorTheme, setDefaultMode, setUserMode } from '../composables/useTheme';
 
 const loading = ref(true);
 const loadError = ref('');
@@ -254,6 +354,10 @@ const form = ref({
 const formatsLoading = ref(false);
 const formatsSaving = ref(false);
 const formats = ref({ dateFormat: 'D MMM YYYY', timeFormat: 'HH:mm' });
+const appearanceSaving = ref(false);
+const appearance = ref({ colorTheme: 'crimson', colorMode: 'system' });
+const colorThemes = COLOR_THEMES;
+const colorModes = COLOR_MODES;
 const dateFormatOptions = ref([]);
 const timeFormatOptions = ref([]);
 const memberNotificationsSaving = ref(false);
@@ -315,11 +419,50 @@ async function loadFormats() {
             dateFormat: cfg['general.date_format'] || 'D MMM YYYY',
             timeFormat: cfg['general.time_format'] || 'HH:mm',
         };
+        appearance.value = {
+            colorTheme: cfg['general.color_theme'] || 'crimson',
+            colorMode: cfg['general.color_mode'] || 'system',
+        };
         memberReachableConfig.value = parseMemberReachableConfig(cfg['general.member_notifications']);
         dateFormatOptions.value = optRes.date_formats || [];
         timeFormatOptions.value = optRes.time_formats || [];
     } catch { /* ignore */ } finally {
         formatsLoading.value = false;
+    }
+}
+
+function previewColorTheme(theme) {
+    appearance.value.colorTheme = theme;
+    setColorTheme(theme);
+}
+
+function previewColorMode(mode) {
+    appearance.value.colorMode = mode;
+    setDefaultMode(mode);
+    setUserMode(mode);
+}
+
+async function saveAppearance() {
+    appearanceSaving.value = true;
+    saveError.value = '';
+    successMessage.value = '';
+    try {
+        await apiRequest('/api/settings/configuration', {
+            method: 'put',
+            data: {
+                'general.color_theme': appearance.value.colorTheme,
+                'general.color_mode': appearance.value.colorMode,
+            },
+        });
+        setColorTheme(appearance.value.colorTheme);
+        setDefaultMode(appearance.value.colorMode);
+        setUserMode(appearance.value.colorMode);
+        successMessage.value = 'Appearance saved for this tenant.';
+        setTimeout(() => { successMessage.value = ''; }, 3000);
+    } catch (error) {
+        saveError.value = error?.response?.data?.message || 'Failed to save appearance.';
+    } finally {
+        appearanceSaving.value = false;
     }
 }
 

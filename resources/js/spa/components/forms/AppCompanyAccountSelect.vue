@@ -5,12 +5,11 @@
       ref="triggerRef"
       type="button"
       :disabled="disabled"
-      class="group h-12 w-full rounded-2xl border border-secondary-300 bg-white px-4 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all
+      class="app-form-control group h-12 w-full rounded-2xl border px-4 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all
                    flex items-center gap-3
                    hover:border-secondary-400 hover:shadow-[0_2px_6px_rgba(15,23,42,0.08)]
                    focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10
-                   disabled:cursor-not-allowed disabled:opacity-60
-                   dark:border-secondary-700 dark:bg-secondary-900 dark:hover:border-secondary-600"
+                   disabled:cursor-not-allowed disabled:opacity-60 dark:hover:border-secondary-600"
       :class="open ? 'border-primary-500 ring-4 ring-primary-500/10 shadow-[0_2px_6px_rgba(15,23,42,0.08)]' : ''"
       @click="toggle"
     >
@@ -78,7 +77,7 @@
         <div
           v-if="open"
           ref="panelRef"
-          class="fixed z-[9999] flex flex-col overflow-hidden rounded-2xl border border-secondary-200/80 bg-white shadow-2xl ring-1 ring-secondary-900/5 dark:border-secondary-700/80 dark:bg-secondary-900 dark:ring-white/5"
+          class="app-overlay-panel fixed z-[9999] flex flex-col overflow-hidden rounded-2xl ring-1 ring-secondary-900/5 dark:ring-white/5"
           :style="panelStyle"
         >
           <!-- Member Wallet section -->

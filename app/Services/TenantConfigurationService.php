@@ -29,6 +29,8 @@ class TenantConfigurationService
         // General display preferences
         'general.date_format' => ['Date Format', DateFormat::DayMonYear->value],
         'general.time_format' => ['Time Format', TimeFormat::H24->value],
+        'general.color_theme' => ['Color Theme', 'crimson'],
+        'general.color_mode' => ['Default Color Mode', 'system'],
         'general.member_notifications' => ['Member Notification Rules', '{}'],
 
         // Biometric device integration

@@ -1,7 +1,7 @@
 <template>
   <textarea
     :value="modelValue ?? ''"
-    class="w-full rounded-2xl border border-secondary-300 bg-white px-4 py-3 text-sm text-secondary-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-secondary-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-secondary-700 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
+    class="app-form-control w-full rounded-2xl border px-4 py-3 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 disabled:cursor-not-allowed disabled:opacity-60"
     @input="handleInput"
   />
 </template>

@@ -11,12 +11,20 @@
             : asset('images/product-icon.svg');
     @endphp
     <link rel="icon" href="{{ $__faviconUrl }}">
+    @php
+        $__tenantThemeConfig = app(\App\Services\TenantConfigurationService::class)->all(app('tenant')->id);
+    @endphp
     <script>
         (function () {
+            var tenantDomain = @json(app('tenant')->domain);
+            var tenantTheme = @json($__tenantThemeConfig['general.color_theme'] ?? 'crimson');
+            var tenantMode = @json($__tenantThemeConfig['general.color_mode'] ?? 'system');
             var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            var savedTheme = localStorage.theme;
-            var shouldUseDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+            var savedTheme = localStorage.getItem('theme:' + tenantDomain);
+            var effectiveMode = savedTheme || tenantMode;
+            var shouldUseDark = effectiveMode === 'dark' || (effectiveMode === 'system' && prefersDark);
 
+            document.documentElement.dataset.theme = tenantTheme;
             document.documentElement.classList.toggle('dark', shouldUseDark);
         })();
     </script>

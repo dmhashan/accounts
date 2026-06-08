@@ -50,4 +50,19 @@ class ContextApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonPath('tenant.member_portal_url', 'https://members.test/profile');
     }
+
+    public function testAppContextIncludesTenantAppearanceSettings(): void
+    {
+        $this->actingAsUser();
+
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'general.color_theme' => 'ocean',
+            'general.color_mode' => 'dark',
+        ]);
+
+        $this->getJson('/api/app/context')
+            ->assertOk()
+            ->assertJsonPath('settings.colorTheme', 'ocean')
+            ->assertJsonPath('settings.colorMode', 'dark');
+    }
 }

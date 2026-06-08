@@ -1,4 +1,4 @@
-<header class="h-16 bg-white dark:bg-secondary-900 border-b border-secondary-200 dark:border-secondary-700 flex items-center justify-between px-4 md:px-6 gap-3">
+<header class="app-surface h-16 border-x-0 border-t-0 rounded-none flex items-center justify-between px-4 md:px-6 gap-3">
     <div class="flex items-center gap-3 min-w-0">
         <button onclick="toggleSidebar()" class="p-2 text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors" title="Toggle menu">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

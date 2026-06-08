@@ -38,9 +38,11 @@ class ConfigurationApiController extends Controller
     {
         $request->validate([
             // General display preferences
-            'general.date_format' => ['sometimes', new Enum(DateFormat::class)],
-            'general.time_format' => ['sometimes', new Enum(TimeFormat::class)],
-            'general.member_notifications' => ['sometimes', 'nullable', 'json'],
+            'general\.date_format' => ['sometimes', new Enum(DateFormat::class)],
+            'general\.time_format' => ['sometimes', new Enum(TimeFormat::class)],
+            'general\.color_theme' => ['sometimes', 'in:crimson,ocean,forest,violet,sunset,slate'],
+            'general\.color_mode' => ['sometimes', 'in:system,light,dark'],
+            'general\.member_notifications' => ['sometimes', 'nullable', 'json'],
 
             'notifications.inapp.enabled' => ['sometimes', 'in:0,1'],
             'notifications.email.enabled' => ['sometimes', 'in:0,1'],

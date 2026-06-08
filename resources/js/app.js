@@ -10,8 +10,13 @@ function parseJson(value, fallback = {}) {
     }
 }
 
-// Dark mode functionality
-if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+// Tenant-aware dark mode functionality
+const tenantThemeKey = `theme:${document.documentElement.dataset.tenantDomain || ''}`;
+const tenantDefaultMode = document.documentElement.dataset.colorMode || 'system';
+const savedTheme = localStorage.getItem(tenantThemeKey);
+const effectiveMode = savedTheme || tenantDefaultMode;
+
+if (effectiveMode === 'dark' || (effectiveMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     document.documentElement.classList.add('dark');
 } else {
     document.documentElement.classList.remove('dark');
@@ -20,10 +25,10 @@ if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.match
 window.toggleTheme = function() {
     if (document.documentElement.classList.contains('dark')) {
         document.documentElement.classList.remove('dark');
-        localStorage.theme = 'light';
+        localStorage.setItem(tenantThemeKey, 'light');
     } else {
         document.documentElement.classList.add('dark');
-        localStorage.theme = 'dark';
+        localStorage.setItem(tenantThemeKey, 'dark');
     }
 }
 
