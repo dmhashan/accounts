@@ -16,8 +16,8 @@ class DashboardApiController extends Controller
     public function overview(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'auth_date' => ['nullable', 'date_format:Y-m-d'],
-            'stock_date' => ['nullable', 'date_format:Y-m-d'],
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
         ]);
 
         /** @var User $user */
@@ -29,8 +29,8 @@ class DashboardApiController extends Controller
         return response()->json($this->dashboardOverviewService->build(
             $user,
             $tenant,
-            $validated['auth_date'] ?? null,
-            $validated['stock_date'] ?? null,
+            $validated['start_date'] ?? null,
+            $validated['end_date'] ?? null,
         ));
     }
 

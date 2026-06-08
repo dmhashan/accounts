@@ -3,7 +3,7 @@
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p class="text-xs font-semibold uppercase tracking-[0.08em]" style="color: var(--text-muted)">
-          Today Auth Details
+          Auth Details
         </p>
         <p class="mt-1 text-xs sm:text-sm" style="color: var(--text-muted)">
           Success attempts, payment-expired access attempts, and other failed attempts.
@@ -12,32 +12,6 @@
       <p class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap" style="color: var(--text-strong); background: var(--surface-muted)">
         Total: {{ formatNumber(summary.counts?.total) }}
       </p>
-    </div>
-
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <label class="text-xs font-medium" style="color: var(--text-muted)">
-        Date
-      </label>
-      <div class="flex flex-wrap items-center gap-1.5">
-        <button
-          v-for="shortcut in dateShortcuts"
-          :key="shortcut.id"
-          type="button"
-          class="rounded-md border px-2 py-1 text-[11px] font-medium transition-colors"
-          :class="selectedDate === shortcut.value
-            ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-            : 'border-secondary-200 bg-white text-secondary-600 hover:bg-secondary-50 dark:border-secondary-700 dark:bg-secondary-800 dark:text-secondary-300 dark:hover:bg-secondary-700'"
-          @click="onShortcutDateChange(shortcut.value)"
-        >
-          {{ shortcut.label }}
-        </button>
-      </div>
-      <input
-        type="date"
-        :value="selectedDate"
-        class="rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2.5 py-1.5 text-xs sm:text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-        @change="onDateChange"
-      />
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -101,7 +75,7 @@
         v-else-if="activeAuthList.length === 0"
         :icon="ScanFace"
         title="No events in this tab"
-        description="No authentication records matched the selected tab for today."
+        description="No authentication records matched the selected tab and date range."
       />
 
       <ul v-else class="m-0 p-0 h-[340px] overflow-auto divide-y divide-secondary-200 dark:divide-secondary-700">
@@ -203,13 +177,7 @@ const props = defineProps({
       },
     }),
   },
-  selectedDate: {
-    type: String,
-    default: '',
-  },
 });
-
-const emit = defineEmits(['date-change']);
 
 const { formatDateTime } = useDateTimeFormat();
 
@@ -269,37 +237,6 @@ function openImageViewer(event) {
 function closeImageViewer() {
   imageViewerOpen.value = false;
   imageViewerSrc.value = '';
-}
-
-function onDateChange(event) {
-  emit('date-change', event?.target?.value || '');
-}
-
-function toInputDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
-const dateShortcuts = computed(() => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const weekStart = new Date(today);
-  weekStart.setDate(weekStart.getDate() - 6);
-
-  return [
-    { id: 'today', label: 'Today', value: toInputDate(today) },
-    { id: 'yesterday', label: 'Yesterday', value: toInputDate(yesterday) },
-    { id: 'last7start', label: 'Last 7D Start', value: toInputDate(weekStart) },
-  ];
-});
-
-function onShortcutDateChange(date) {
-  emit('date-change', date);
 }
 
 function handleWindowKeydown(event) {

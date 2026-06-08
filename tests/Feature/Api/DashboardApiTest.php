@@ -2,15 +2,17 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\CompanyAccountTransaction;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\Carbon;
 
 class DashboardApiTest extends ApiRouteTestCase
 {
-    public function test_dashboard_overview_route_returns_gross_sales_summary_payload(): void
+    public function testDashboardOverviewRouteReturnsIncomeExpenseSummaryPayload(): void
     {
         $this->actingAsUser([
+            'accounts.manage',
             'inventory.manage',
             'sales.process',
         ]);
@@ -30,6 +32,18 @@ class DashboardApiTest extends ApiRouteTestCase
             'updated_at' => now()->startOfDay()->addHours(10),
         ])->saveQuietly();
 
+        $account = $this->createCompanyAccount();
+        CompanyAccountTransaction::create([
+            'tenant_id' => $this->tenant->id,
+            'company_account_id' => $account->id,
+            'model_name' => 'sale',
+            'reference_id' => $todaySale->id,
+            'type' => 'sale',
+            'amount' => 250,
+            'transaction_date' => now()->toDateString(),
+            'reference_number' => 'SALE-TODAY',
+        ]);
+
         $yesterdaySale = $this->createSale([
             'customer_name' => 'Yesterday Customer',
             'total_amount' => 999,
@@ -47,11 +61,56 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonPath('tenant.id', $this->tenant->id)
             ->assertJsonPath('stock_summary.can_view', true)
-            ->assertJsonPath('daily_sales_summary.can_view', true)
-            ->assertJsonPath('daily_sales_summary.gross_amount', 250);
+            ->assertJsonPath('income_expense_summary.can_view', true)
+            ->assertJsonPath('income_expense_summary.income', 250)
+            ->assertJsonPath('income_expense_summary.expense', 0)
+            ->assertJsonPath('income_expense_summary.net_movement', 250)
+            ->assertJsonPath('income_expense_summary.recent_transactions.0.source_path', '/sales/' . $todaySale->id);
     }
 
-    public function test_dashboard_stats_route_supports_selectable_date_week_month_year_ranges(): void
+    public function testDashboardOverviewRouteSupportsASharedDateRange(): void
+    {
+        $this->actingAsUser([
+            'accounts.manage',
+            'inventory.manage',
+            'sales.process',
+        ]);
+
+        $account = $this->createCompanyAccount();
+        CompanyAccountTransaction::create([
+            'tenant_id' => $this->tenant->id,
+            'company_account_id' => $account->id,
+            'model_name' => 'payment',
+            'type' => 'payment',
+            'amount' => 400,
+            'transaction_date' => now()->subDays(3)->toDateString(),
+        ]);
+        CompanyAccountTransaction::create([
+            'tenant_id' => $this->tenant->id,
+            'company_account_id' => $account->id,
+            'model_name' => 'expense',
+            'type' => 'expense',
+            'amount' => -125,
+            'transaction_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $response = $this->getJson(sprintf(
+            '/api/dashboard/overview?start_date=%s&end_date=%s',
+            now()->subDays(3)->toDateString(),
+            now()->subDay()->toDateString(),
+        ));
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('income_expense_summary.income', 400)
+            ->assertJsonPath('income_expense_summary.expense', 125)
+            ->assertJsonPath('income_expense_summary.net_movement', 275)
+            ->assertJsonPath('income_expense_summary.start_date', now()->subDays(3)->toDateString())
+            ->assertJsonPath('income_expense_summary.end_date', now()->subDay()->toDateString())
+            ->assertJsonPath('stock_summary.selected_date', now()->subDay()->toDateString());
+    }
+
+    public function testDashboardStatsRouteSupportsSelectableDateWeekMonthYearRanges(): void
     {
         $this->actingAsUser([
             'sales.process',
@@ -70,7 +129,7 @@ class DashboardApiTest extends ApiRouteTestCase
         $monthSale = $this->createSaleWithItem($monthAnchor, 'Month Customer', 330, 3, 110, $product->id, $variation->id);
         $yearSale = $this->createSaleWithItem($yearAnchor, 'Year Customer', 440, 4, 110, $product->id, $variation->id);
 
-        $dateResponse = $this->getJson('/api/dashboard/stats?range_type=date&range_value='.$dateAnchor->toDateString());
+        $dateResponse = $this->getJson('/api/dashboard/stats?range_type=date&range_value=' . $dateAnchor->toDateString());
 
         $dateResponse
             ->assertOk()
@@ -84,7 +143,7 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('product_wise_sales.0.quantity_sold', 1);
 
         $weekValue = sprintf('%04d-W%02d', (int) $weekAnchor->isoWeekYear, (int) $weekAnchor->isoWeek);
-        $weekResponse = $this->getJson('/api/dashboard/stats?range_type=week&range_value='.rawurlencode($weekValue));
+        $weekResponse = $this->getJson('/api/dashboard/stats?range_type=week&range_value=' . rawurlencode($weekValue));
 
         $weekResponse
             ->assertOk()
@@ -97,7 +156,7 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('product_wise_sales.0.quantity_sold', 2);
 
         $monthValue = $monthAnchor->format('Y-m');
-        $monthResponse = $this->getJson('/api/dashboard/stats?range_type=month&range_value='.rawurlencode($monthValue));
+        $monthResponse = $this->getJson('/api/dashboard/stats?range_type=month&range_value=' . rawurlencode($monthValue));
 
         $monthResponse
             ->assertOk()
@@ -110,7 +169,7 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('product_wise_sales.0.quantity_sold', 3);
 
         $yearValue = $yearAnchor->format('Y');
-        $yearResponse = $this->getJson('/api/dashboard/stats?range_type=year&range_value='.$yearValue);
+        $yearResponse = $this->getJson('/api/dashboard/stats?range_type=year&range_value=' . $yearValue);
 
         $yearResponse
             ->assertOk()

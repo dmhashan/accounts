@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BiometricAccessEvent;
+use App\Models\CompanyAccountTransaction;
 use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -18,14 +19,29 @@ class DashboardOverviewService
 
     private const AUTH_WIDGET_LIMIT = 20;
 
+    private const CASH_FLOW_WIDGET_LIMIT = 5;
+
+    private const TRANSACTION_SOURCE_LABELS = [
+        'sale' => 'Sale',
+        'payment' => 'Member Payment',
+        'wallet_topup' => 'Wallet Top-up',
+        'event_registration' => 'Event Registration',
+        'expense' => 'Expense',
+    ];
+
     public function __construct(private readonly BiometricSyncService $biometric) {}
 
-    public function build(User $user, Tenant $tenant, ?string $authDate = null, ?string $stockDate = null): array
+    public function build(User $user, Tenant $tenant, ?string $startDate = null, ?string $endDate = null): array
     {
         $tenantId = $tenant->id;
         $today = now()->toDateString();
-        $resolvedAuthDate = $authDate ?: $today;
-        $resolvedStockDate = $stockDate ?: $today;
+        $resolvedStartDate = $startDate ?: $today;
+        $resolvedEndDate = $endDate ?: $resolvedStartDate;
+        $startAt = Carbon::parse($resolvedStartDate)->startOfDay();
+        $endAt = Carbon::parse($resolvedEndDate)->endOfDay();
+        $rangeLabel = $resolvedStartDate === $resolvedEndDate
+            ? $startAt->format('d M Y')
+            : $startAt->format('d M Y') . ' - ' . $endAt->format('d M Y');
 
         return [
             'tenant' => [
@@ -38,20 +54,21 @@ class DashboardOverviewService
                 'id' => $user->id,
                 'email' => $user->email,
             ],
-            'stock_summary' => $this->buildStockSummary($user, $tenantId, $resolvedStockDate),
-            'daily_sales_summary' => $this->buildDailySalesSummary($user, $tenantId, $today),
-            'today_auth_summary' => $this->buildTodayAuthSummary($user, $tenantId, $resolvedAuthDate),
+            'stock_summary' => $this->buildStockSummary($user, $tenantId, $resolvedEndDate),
+            'income_expense_summary' => $this->buildIncomeExpenseSummary($user, $tenantId, $startAt, $endAt, $rangeLabel),
+            'today_auth_summary' => $this->buildTodayAuthSummary($user, $tenantId, $startAt, $endAt, $rangeLabel),
         ];
     }
 
-    private function buildTodayAuthSummary(User $user, int $tenantId, string $today): array
+    private function buildTodayAuthSummary(User $user, int $tenantId, Carbon $startAt, Carbon $endAt, string $rangeLabel): array
     {
         $canViewTodayAuth = $user->hasPermission('dashboard.view');
 
         $summary = [
             'can_view' => $canViewTodayAuth,
-            'date' => $today,
-            'selected_date' => $today,
+            'start_date' => $startAt->toDateString(),
+            'end_date' => $endAt->toDateString(),
+            'range_label' => $rangeLabel,
             'counts' => [
                 'total' => 0,
                 'success' => 0,
@@ -71,7 +88,7 @@ class DashboardOverviewService
 
         $baseQuery = BiometricAccessEvent::query()
             ->where('tenant_id', $tenantId)
-            ->whereDate('event_time', $today);
+            ->whereBetween('event_time', [$startAt, $endAt]);
 
         $summary['counts']['total'] = (int) (clone $baseQuery)->count();
         $summary['counts']['success'] = (int) (clone $baseQuery)
@@ -249,25 +266,87 @@ class DashboardOverviewService
         return $stockSummary;
     }
 
-    private function buildDailySalesSummary(User $user, int $tenantId, string $today): array
-    {
-        $canViewSalesSummary = $user->hasPermission('sales.process');
+    private function buildIncomeExpenseSummary(
+        User $user,
+        int $tenantId,
+        Carbon $startAt,
+        Carbon $endAt,
+        string $rangeLabel,
+    ): array {
+        $canViewAccounts = $user->hasPermission('accounts.manage');
 
-        $dailySalesSummary = [
-            'can_view' => $canViewSalesSummary,
-            'date' => $today,
-            'gross_amount' => 0,
+        $summary = [
+            'can_view' => $canViewAccounts,
+            'start_date' => $startAt->toDateString(),
+            'end_date' => $endAt->toDateString(),
+            'range_label' => $rangeLabel,
+            'income' => 0,
+            'expense' => 0,
+            'net_movement' => 0,
+            'income_count' => 0,
+            'expense_count' => 0,
+            'recent_transactions' => [],
         ];
 
-        if (!$canViewSalesSummary) {
-            return $dailySalesSummary;
+        if (!$canViewAccounts) {
+            return $summary;
         }
 
-        [, , $startAt, $endAt] = $this->resolveSalesRange('date', $today);
-        $totals = $this->buildSalesSummaryTotals($tenantId, $startAt, $endAt);
-        $dailySalesSummary['gross_amount'] = $totals['gross_amount'];
+        $baseQuery = CompanyAccountTransaction::query()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('transaction_date', '>=', $startAt->toDateString())
+            ->whereDate('transaction_date', '<=', $endAt->toDateString());
 
-        return $dailySalesSummary;
+        $incomeQuery = (clone $baseQuery)->where('amount', '>', 0);
+        $expenseQuery = (clone $baseQuery)->where('amount', '<', 0);
+
+        $summary['income'] = round((float) (clone $incomeQuery)->sum('amount'), 2);
+        $summary['expense'] = round(abs((float) (clone $expenseQuery)->sum('amount')), 2);
+        $summary['net_movement'] = round($summary['income'] - $summary['expense'], 2);
+        $summary['income_count'] = (int) (clone $incomeQuery)->count();
+        $summary['expense_count'] = (int) (clone $expenseQuery)->count();
+        $summary['recent_transactions'] = (clone $baseQuery)
+            ->with('account:id,name')
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id')
+            ->limit(self::CASH_FLOW_WIDGET_LIMIT)
+            ->get()
+            ->map(fn (CompanyAccountTransaction $transaction) => [
+                'id' => (int) $transaction->id,
+                'amount' => (float) $transaction->amount,
+                'transaction_date' => $transaction->transaction_date?->toDateString(),
+                'account_name' => (string) ($transaction->account?->name ?? 'Account'),
+                'source_label' => $this->transactionSourceLabel($transaction),
+                'source_path' => $this->transactionSourcePath($transaction),
+            ])
+            ->values()
+            ->all();
+
+        return $summary;
+    }
+
+    private function transactionSourceLabel(CompanyAccountTransaction $transaction): string
+    {
+        $source = self::TRANSACTION_SOURCE_LABELS[$transaction->model_name]
+            ?? ucwords(str_replace('_', ' ', (string) ($transaction->model_name ?: $transaction->type ?: 'Transaction')));
+        $reference = trim((string) ($transaction->reference_number ?? ''));
+
+        return $reference !== '' ? $source . ' · ' . $reference : $source;
+    }
+
+    private function transactionSourcePath(CompanyAccountTransaction $transaction): ?string
+    {
+        if (!$transaction->reference_id) {
+            return null;
+        }
+
+        return match ($transaction->model_name) {
+            'sale' => '/sales/' . $transaction->reference_id,
+            'expense' => '/expenses/' . $transaction->reference_id,
+            'payment' => '/payments/' . $transaction->reference_id,
+            'wallet_topup' => '/wallet-topups/' . $transaction->reference_id,
+            default => null,
+        };
     }
 
     private function buildSalesStatsData(int $tenantId, Carbon $startAt, Carbon $endAt): array

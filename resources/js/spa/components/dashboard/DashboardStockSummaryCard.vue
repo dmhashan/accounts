@@ -14,32 +14,6 @@
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <label class="text-xs font-medium" style="color: var(--text-muted)">
-        Date
-      </label>
-      <div class="flex flex-wrap items-center gap-1.5">
-        <button
-          v-for="shortcut in dateShortcuts"
-          :key="shortcut.id"
-          type="button"
-          class="rounded-md border px-2 py-1 text-[11px] font-medium transition-colors"
-          :class="selectedDate === shortcut.value
-            ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-            : 'border-secondary-200 bg-white text-secondary-600 hover:bg-secondary-50 dark:border-secondary-700 dark:bg-secondary-800 dark:text-secondary-300 dark:hover:bg-secondary-700'"
-          @click="onShortcutDateChange(shortcut.value)"
-        >
-          {{ shortcut.label }}
-        </button>
-      </div>
-      <input
-        type="date"
-        :value="selectedDate"
-        class="rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2.5 py-1.5 text-xs sm:text-sm text-secondary-700 dark:text-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-        @change="onDateChange"
-      />
-    </div>
-
     <div v-if="!loading" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 shrink-0">
       <div class="rounded-xl p-3 text-center" style="background: var(--surface-muted); border: 1px solid color-mix(in srgb, var(--surface-border) 88%, transparent)">
         <p class="text-[11px] font-medium uppercase tracking-[0.06em]" style="color: var(--text-muted)">
@@ -118,7 +92,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { Package } from 'lucide-vue-next';
 import AppBadge from '../AppBadge.vue';
 import AppEmptyState from '../AppEmptyState.vue';
@@ -138,13 +111,7 @@ defineProps({
       variation_availability: [],
     }),
   },
-  selectedDate: {
-    type: String,
-    default: '',
-  },
 });
-
-const emit = defineEmits(['date-change']);
 
 const numberFormatter = new Intl.NumberFormat();
 
@@ -152,34 +119,4 @@ function formatNumber(value) {
   return numberFormatter.format(Number(value || 0));
 }
 
-function onDateChange(event) {
-  emit('date-change', event?.target?.value || '');
-}
-
-function toInputDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
-const dateShortcuts = computed(() => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const weekStart = new Date(today);
-  weekStart.setDate(weekStart.getDate() - 6);
-
-  return [
-    { id: 'today', label: 'Today', value: toInputDate(today) },
-    { id: 'yesterday', label: 'Yesterday', value: toInputDate(yesterday) },
-    { id: 'last7start', label: 'Last 7D Start', value: toInputDate(weekStart) },
-  ];
-});
-
-function onShortcutDateChange(date) {
-  emit('date-change', date);
-}
 </script>
