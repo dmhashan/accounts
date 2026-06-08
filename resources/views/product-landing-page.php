@@ -1,1135 +1,597 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= csrf_token() ?>">
-    <title>beForward.lk — All-in-One Gym Management System</title>
+    <title>Gym Management Software Sri Lanka | beForward.lk</title>
+    <meta name="description" content="Move your gym forward with beForward.lk, Sri Lanka's modern gym management software for members, payments, attendance, workouts, bookings, reports and branded websites.">
+    <meta name="keywords" content="gym management software Sri Lanka, fitness center software, gym membership system, gym payment tracking, member portal, gym website">
+    <meta name="author" content="beForward.lk">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="theme-color" content="#050505">
+    <link rel="canonical" href="<?= url('/') ?>">
+    <link rel="icon" href="<?= asset('images/icon.svg') ?>" type="image/svg+xml">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="beForward.lk">
+    <meta property="og:title" content="Gym Management Software Sri Lanka | beForward.lk">
+    <meta property="og:description" content="One beautifully connected platform to operate, engage and grow your gym.">
+    <meta property="og:url" content="<?= url('/') ?>">
+    <meta property="og:image" content="<?= asset('images/backoffice_application.png') ?>">
+    <meta property="og:locale" content="en_LK">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Move Your Gym Forward | beForward.lk">
+    <meta name="twitter:description" content="A smarter operating system for modern fitness businesses.">
+    <meta name="twitter:image" content="<?= asset('images/backoffice_application.png') ?>">
 
     <?= app(\Illuminate\Foundation\Vite::class)(['resources/css/app.css', 'resources/js/app.js']) ?>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
     <style>
         :root {
-            --lp-bg:          #0d0f14;
-            --lp-surface:     #13161d;
-            --lp-surface-2:   #1a1e27;
-            --lp-surface-3:   #21262f;
-            --lp-border:      rgba(255,255,255,0.07);
-            --lp-border-bright: rgba(255,255,255,0.12);
-            --lp-text:        #f0f2f8;
-            --lp-muted:       #6b7280;
-            --lp-muted-2:     #9ca3af;
-            --lp-accent:      #e8150a;
-            --lp-accent-2:    #ff3d34;
-            --lp-accent-hover:#c41008;
-            --lp-accent-glow: rgba(232,21,10,0.28);
-            --lp-blue:        #3b82f6;
-            --lp-green:       #10b981;
+            --black: #050505;
+            --black-2: #0a0a0b;
+            --panel: #111113;
+            --white: #f5f5f7;
+            --muted: #a1a1a6;
+            --line: rgba(255,255,255,.12);
+            --orange: #ff4d18;
+            --gold: #ff9d24;
+            --cyan: #18d5e7;
+            --blue: #2997ff;
+            --ease: cubic-bezier(.16,1,.3,1);
         }
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+        *, *::before, *::after { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-
         body {
-            background: var(--lp-bg);
-            color: var(--lp-text);
-            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
-
-        /* ── Noise texture overlay ────────────────────────── */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-            opacity: 0.018;
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        /* ── Utility ─────────────────────────────────────── */
-        .lp-surface   { background-color: var(--lp-surface); }
-        .lp-surface-2 { background-color: var(--lp-surface-2); }
-        .lp-text      { color: var(--lp-text); }
-        .lp-muted     { color: var(--lp-muted); }
-        .lp-muted-2   { color: var(--lp-muted-2); }
-        .lp-accent    { color: var(--lp-accent); }
-        .lp-accent-bg { background-color: var(--lp-accent); }
-
-        .gradient-text {
-            background: linear-gradient(135deg, var(--lp-accent-2) 0%, #ff6b5b 50%, var(--lp-accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* ── Hero ────────────────────────────────────────── */
-        .hero-section {
-            position: relative;
-            overflow: hidden;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-        }
-
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 80% 60% at 70% 40%, rgba(232,21,10,0.13) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 40% at 10% 80%, rgba(59,130,246,0.06) 0%, transparent 55%),
-                radial-gradient(ellipse 60% 50% at 50% -10%, rgba(232,21,10,0.07) 0%, transparent 60%);
-            pointer-events: none;
-        }
-
-        .hero-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 3.5rem;
-            align-items: center;
-            width: 100%;
-            max-width: 1320px;
-            margin: 0 auto;
-            padding: 5rem 1.5rem 4rem;
-        }
-        @media (min-width: 1024px) {
-            .hero-grid {
-                grid-template-columns: 1.05fr 0.95fr;
-                padding: 5rem 4rem;
-                gap: 5rem;
-            }
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: rgba(232,21,10,0.10);
-            border: 1px solid rgba(232,21,10,0.30);
-            color: var(--lp-accent-2);
-            border-radius: 9999px;
-            padding: 0.35rem 1rem;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 1.5rem;
-            backdrop-filter: blur(8px);
-        }
-
-        .hero-badge .badge-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--lp-accent-2);
-            animation: pulse-dot 2s infinite;
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.7); }
-        }
-
-        .hero-title {
-            font-size: clamp(2.4rem, 5.5vw, 4.25rem);
-            font-weight: 900;
-            line-height: 1.05;
-            letter-spacing: -0.03em;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-sub {
-            font-size: 1.05rem;
-            color: var(--lp-muted-2);
-            line-height: 1.75;
-            max-width: 490px;
-            margin-bottom: 2.25rem;
-        }
-
-        /* ── Buttons ─────────────────────────────────────── */
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: linear-gradient(135deg, var(--lp-accent-2) 0%, var(--lp-accent) 100%);
-            color: #fff;
-            font-weight: 700;
-            font-size: 0.9rem;
-            padding: 0.85rem 2rem;
-            border-radius: 0.75rem;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            transition: opacity 0.2s, box-shadow 0.2s, transform 0.18s;
-            box-shadow: 0 4px 20px var(--lp-accent-glow);
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%);
-            border-radius: inherit;
-        }
-        .btn-primary:hover {
-            opacity: 0.92;
-            box-shadow: 0 8px 32px var(--lp-accent-glow);
-            transform: translateY(-2px);
-        }
-
-        .btn-ghost {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(255,255,255,0.05);
-            color: var(--lp-text);
-            font-weight: 600;
-            font-size: 0.9rem;
-            padding: 0.85rem 1.75rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--lp-border-bright);
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.2s, border-color 0.2s, transform 0.18s;
-            backdrop-filter: blur(8px);
-        }
-        .btn-ghost:hover {
-            background: rgba(255,255,255,0.09);
-            border-color: rgba(255,255,255,0.22);
-            transform: translateY(-1px);
-        }
-
-        /* ── Trust badges ────────────────────────────────── */
-        .trust-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-top: 2.5rem;
-        }
-        .trust-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            font-size: 0.78rem;
-            color: var(--lp-muted-2);
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--lp-border);
-            border-radius: 0.5rem;
-            padding: 0.35rem 0.75rem;
-        }
-        .trust-badge svg { color: var(--lp-accent-2); flex-shrink: 0; }
-
-        /* ── Hero visual panel ───────────────────────────── */
-        .hero-visual {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .hero-visual::before {
-            content: '';
-            position: absolute;
-            inset: -20px;
-            background: radial-gradient(ellipse at center, rgba(232,21,10,0.08) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .screen-card {
-            position: relative;
-            z-index: 1;
-            background: var(--lp-surface-2);
-            border: 1px solid var(--lp-border-bright);
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06) inset;
-            transition: transform 0.3s ease;
-        }
-        .screen-card:hover { transform: translateY(-3px); }
-
-        /* ── Stats bar ───────────────────────────────────── */
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1px;
-            background: var(--lp-border);
-        }
-        @media (min-width: 640px) {
-            .stats-bar { grid-template-columns: repeat(4, 1fr); }
-        }
-        .stat-cell {
-            background: var(--lp-surface);
-            padding: 2.25rem 1.5rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .stat-cell::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--lp-accent), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .stat-cell:hover::before { opacity: 1; }
-        .stat-number {
-            font-size: 2.25rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            background: linear-gradient(135deg, #ff6b5b 0%, var(--lp-accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            display: block;
-            line-height: 1;
-        }
-        .stat-label {
-            font-size: 0.7rem;
-            color: var(--lp-muted);
-            margin-top: 0.5rem;
-            display: block;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: 600;
-        }
-
-        /* ── Section ─────────────────────────────────────── */
-        .section { padding: 6rem 1.5rem; }
-        @media (min-width: 1024px) { .section { padding: 7rem 4rem; } }
-
-        .section-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            background: rgba(232,21,10,0.08);
-            border: 1px solid rgba(232,21,10,0.25);
-            color: var(--lp-accent-2);
-            border-radius: 9999px;
-            padding: 0.3rem 0.9rem;
-            font-size: 0.68rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
-
-        .section-title {
-            font-size: clamp(1.75rem, 3.5vw, 2.75rem);
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            margin-bottom: 1rem;
-        }
-
-        /* ── Module cards ────────────────────────────────── */
-        .modules-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-        }
-        @media (min-width: 768px) { .modules-grid { grid-template-columns: repeat(3, 1fr); } }
-
-        .module-card {
-            background: var(--lp-surface);
-            border: 1px solid var(--lp-border);
-            border-radius: 1.25rem;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
-            position: relative;
-        }
-        .module-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-        }
-        .module-card:hover {
-            border-color: rgba(232,21,10,0.4);
-            transform: translateY(-6px);
-            box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,21,10,0.12), 0 0 60px rgba(232,21,10,0.06);
-        }
-
-        .module-screenshot {
-            width: 100%;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-            object-position: top;
-            border-bottom: 1px solid var(--lp-border);
-            display: block;
-            background: var(--lp-surface-2);
-        }
-
-        .module-body { padding: 1.75rem; flex: 1; display: flex; flex-direction: column; }
-
-        .module-icon {
-            width: 2.75rem;
-            height: 2.75rem;
-            border-radius: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-            flex-shrink: 0;
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .module-title {
-            font-size: 1.1rem;
-            font-weight: 800;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.01em;
-        }
-
-        .module-desc {
-            font-size: 0.84rem;
-            color: var(--lp-muted-2);
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
-            flex: 1;
-        }
-
-        .feature-pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.35rem;
-            margin-top: auto;
-        }
-
-        .pill {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--lp-border);
-            border-radius: 9999px;
-            padding: 0.22rem 0.65rem;
-            font-size: 0.68rem;
-            color: var(--lp-muted);
-            white-space: nowrap;
-            font-weight: 500;
-            transition: background 0.2s, border-color 0.2s, color 0.2s;
-        }
-        .module-card:hover .pill {
-            border-color: rgba(232,21,10,0.2);
-        }
-
-        /* ── Feature detail rows ─────────────────────────── */
-        .feature-row {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 3.5rem;
-            align-items: center;
-        }
-        @media (min-width: 1024px) {
-            .feature-row { grid-template-columns: 1fr 1fr; gap: 6rem; }
-            .feature-row.reverse { direction: rtl; }
-            .feature-row.reverse > * { direction: ltr; }
-        }
-
-        .feature-screenshot {
-            border-radius: 1rem;
-            border: 1px solid var(--lp-border-bright);
-            width: 100%;
-            box-shadow: 0 32px 80px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset;
-            display: block;
-        }
-
-        .feature-list {
-            list-style: none;
-            margin: 1.75rem 0 0;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .feature-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            font-size: 0.875rem;
-            color: var(--lp-muted-2);
-            line-height: 1.6;
-            padding: 0.75rem;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--lp-border);
-            border-radius: 0.6rem;
-            transition: background 0.2s, border-color 0.2s;
-        }
-        .feature-list li:hover {
-            background: rgba(232,21,10,0.04);
-            border-color: rgba(232,21,10,0.2);
-        }
-        .feature-check {
-            width: 1.4rem;
-            height: 1.4rem;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(232,21,10,0.25) 0%, rgba(232,21,10,0.1) 100%);
-            border: 1px solid rgba(232,21,10,0.3);
-            color: var(--lp-accent-2);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.6rem;
-            flex-shrink: 0;
-            margin-top: 0.1rem;
-        }
-
-        /* ── Screenshot browser mockup ───────────────────── */
-        .browser-bar {
-            background: var(--lp-surface-3);
-            border-bottom: 1px solid var(--lp-border);
-            padding: 0.55rem 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-        }
-        .browser-dot { width: 9px; height: 9px; border-radius: 50%; }
-        .browser-url {
-            flex: 1;
-            background: rgba(0,0,0,0.3);
-            border-radius: 4px;
-            height: 18px;
-            margin-left: 10px;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-        }
-        .browser-url span {
-            font-size: 0.58rem;
-            color: var(--lp-muted);
-            font-family: 'SF Mono', 'Fira Code', monospace;
-        }
-
-        /* ── Divider ─────────────────────────────────────── */
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--lp-border-bright) 30%, var(--lp-border-bright) 70%, transparent);
             margin: 0;
+            background: var(--black);
+            color: var(--white);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.45;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
+        body.menu-open { overflow: hidden; }
+        a { color: inherit; text-decoration: none; }
+        img { display:block; max-width:100%; }
+        button { font:inherit; }
+        ::selection { background:var(--cyan); color:#001317; }
 
-        /* ── Glow blob ───────────────────────────────────── */
-        .glow-blob {
-            position: absolute;
+        .cursor-glow {
+            position: fixed;
+            z-index: 0;
+            left: 0; top: 0;
+            width: 420px; height: 420px;
+            margin: -210px 0 0 -210px;
             border-radius: 50%;
-            filter: blur(90px);
-            pointer-events: none;
+            background: radial-gradient(circle, rgba(24,213,231,.09), rgba(255,77,24,.035) 38%, transparent 70%);
+            pointer-events:none;
+            opacity:0;
+            transition:opacity .4s;
         }
+        body:hover .cursor-glow { opacity:1; }
+        .noise {
+            position:fixed; inset:0; z-index:20; pointer-events:none; opacity:.035;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+        }
+        .container { width:min(1200px, calc(100% - 40px)); margin-inline:auto; position:relative; z-index:1; }
+        .wide { width:min(1440px, calc(100% - 32px)); margin-inline:auto; position:relative; z-index:1; }
+        .gradient-text {
+            background:linear-gradient(105deg, var(--orange), var(--gold) 42%, var(--cyan) 82%);
+            -webkit-background-clip:text; background-clip:text; color:transparent;
+        }
+        .eyebrow {
+            color:var(--cyan); font-weight:700; font-size:.78rem; letter-spacing:.13em;
+            text-transform:uppercase; display:flex; align-items:center; gap:9px;
+        }
+        .eyebrow::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--cyan); box-shadow:0 0 18px var(--cyan); }
+        .display {
+            margin:0; font-size:clamp(3.4rem, 9vw, 8rem); line-height:.9; letter-spacing:-.075em; font-weight:700;
+        }
+        .section-title {
+            margin:0; font-size:clamp(2.5rem, 6vw, 5.8rem); line-height:.96; letter-spacing:-.065em; font-weight:700;
+        }
+        .lead { color:var(--muted); font-size:clamp(1.05rem, 1.5vw, 1.35rem); line-height:1.55; }
+        .btn {
+            min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:9px;
+            padding:0 22px; border:1px solid transparent; border-radius:999px; cursor:pointer;
+            font-size:.9rem; font-weight:700; transition:transform .5s var(--ease), background .3s, border-color .3s;
+            position:relative; overflow:hidden;
+        }
+        .btn span, .btn svg { position:relative; z-index:1; }
+        .btn::before { content:""; position:absolute; inset:0; background:linear-gradient(110deg,var(--orange),var(--gold),var(--cyan)); transition:transform .5s var(--ease); }
+        .btn-primary { color:#fff; box-shadow:0 12px 45px rgba(255,77,24,.2); }
+        .btn-primary:hover::before { transform:scale(1.12); }
+        .btn-secondary { border-color:var(--line); background:rgba(255,255,255,.05); backdrop-filter:blur(12px); }
+        .btn-secondary::before { display:none; }
+        .btn-secondary:hover { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.25); }
 
-        /* ── CTA section ─────────────────────────────────── */
-        .cta-section {
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-            padding: 6rem 1.5rem;
+        .nav {
+            position:fixed; z-index:15; top:0; left:0; width:100%;
+            background:rgba(5,5,5,.66); border-bottom:1px solid transparent;
+            backdrop-filter:saturate(160%) blur(22px); transition:border .3s, background .3s;
         }
-        .cta-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 70% 60% at 50% 50%, rgba(232,21,10,0.12) 0%, transparent 65%),
-                radial-gradient(ellipse 100% 80% at 50% 100%, rgba(232,21,10,0.06) 0%, transparent 60%);
-            pointer-events: none;
-        }
-        .cta-section::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(232,21,10,0.4), transparent);
-        }
+        .nav.scrolled { border-color:var(--line); background:rgba(5,5,5,.84); }
+        .nav-inner { height:64px; display:flex; align-items:center; justify-content:space-between; }
+        .brand { display:flex; align-items:center; gap:9px; }
+        .brand img { width:50px; height:auto; transition:filter .35s,transform .35s var(--ease); }
+        .brand:hover img { filter:drop-shadow(0 0 18px rgba(24,213,231,.22)); transform:translateY(-1px) rotate(-3deg); }
+        .brand-word { color:#f5f5f7; font-size:1.05rem; font-weight:750; letter-spacing:-.055em; }
+        .brand-word b { color:var(--cyan); font-weight:750; }
+        .desktop-links { display:flex; align-items:center; gap:28px; color:#d2d2d7; font-size:.78rem; font-weight:600; }
+        .desktop-links a { transition:color .2s; }
+        .desktop-links a:hover { color:#fff; }
+        .nav-cta { color:var(--black); background:var(--white); padding:8px 15px; border-radius:999px; font-weight:750; }
+        .menu-button { display:none; width:40px; height:40px; border:0; border-radius:50%; background:rgba(255,255,255,.08); color:#fff; cursor:pointer; place-items:center; }
+        .mobile-menu { display:none; }
 
-        /* ── Contact card ────────────────────────────────── */
-        .contact-card {
-            background: var(--lp-surface);
-            border: 1px solid var(--lp-border-bright);
-            border-radius: 1.5rem;
-            padding: 2.5rem;
-            max-width: 480px;
-            margin: 2.5rem auto 0;
-            position: relative;
-            z-index: 1;
-            text-align: left;
-            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+        .hero {
+            position:relative; min-height:112vh; padding:150px 0 0; overflow:hidden;
+            background:radial-gradient(circle at 50% 30%, #19191c 0%, var(--black) 52%);
         }
-        .contact-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
-            pointer-events: none;
+        .hero-copy { text-align:center; max-width:1050px; margin:auto; position:relative; z-index:3; }
+        .hero-brand-seal {
+            width:132px; height:auto; margin:0 auto 24px;
+            box-shadow:0 20px 55px rgba(0,0,0,.45),0 0 45px rgba(24,213,231,.12);
+            animation:seal-breathe 5s ease-in-out infinite;
         }
-        .contact-row {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.85rem 0;
-            border-bottom: 1px solid var(--lp-border);
+        @keyframes seal-breathe { 50% { transform:translateY(-5px) scale(1.025); filter:drop-shadow(0 0 14px rgba(24,213,231,.2)); } }
+        .hero-kicker { color:var(--orange); font-size:clamp(1rem,2vw,1.45rem); font-weight:700; margin:0 0 20px; }
+        .hero .display { max-width:1000px; margin:auto; }
+        .hero .lead { max-width:720px; margin:28px auto 0; }
+        .hero-actions { display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin-top:32px; }
+        .hero-stage { height:min(57vw, 680px); min-height:420px; position:relative; margin-top:40px; perspective:1600px; }
+        .hero-orbit {
+            position:absolute; left:50%; top:52%; width:min(80vw,950px); aspect-ratio:1;
+            transform:translate(-50%,-50%); border-radius:50%; border:1px solid rgba(255,255,255,.07);
+            box-shadow:0 0 120px rgba(24,213,231,.08), inset 0 0 120px rgba(255,77,24,.05);
         }
-        .contact-row:last-child { border-bottom: none; padding-bottom: 0; }
-        .contact-row:first-child { padding-top: 0; }
-        .contact-icon {
-            width: 2.25rem;
-            height: 2.25rem;
-            border-radius: 0.6rem;
-            background: rgba(232,21,10,0.1);
-            border: 1px solid rgba(232,21,10,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: var(--lp-accent-2);
+        .hero-orbit::before,.hero-orbit::after { content:""; position:absolute; inset:12%; border:1px solid rgba(255,255,255,.05); border-radius:50%; }
+        .hero-orbit::after { inset:28%; }
+        .hero-screen {
+            position:absolute; width:min(78vw,1080px); left:50%; top:7%; transform:translateX(-50%) rotateX(7deg);
+            border-radius:24px; overflow:hidden; border:1px solid rgba(255,255,255,.18);
+            box-shadow:0 70px 130px rgba(0,0,0,.75), 0 0 90px rgba(24,213,231,.1);
+            transform-style:preserve-3d; transition:transform .2s linear;
         }
-        .contact-label { font-size: 0.7rem; color: var(--lp-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-        .contact-value { font-size: 0.9rem; color: var(--lp-text); font-weight: 600; margin-top: 0.15rem; }
+        .screen-top { height:34px; background:#17171a; display:flex; gap:6px; align-items:center; padding:0 13px; }
+        .screen-top i { width:7px;height:7px;border-radius:50%;background:#3a3a3f; }
+        .hero-screen img { width:100%; }
+        .float-pill {
+            position:absolute; z-index:3; padding:13px 17px; border:1px solid rgba(255,255,255,.14);
+            border-radius:999px; background:rgba(15,15,17,.65); backdrop-filter:blur(16px);
+            box-shadow:0 20px 50px rgba(0,0,0,.4); color:#e8e8ed; font-size:.78rem; font-weight:700;
+            animation:float 5s ease-in-out infinite;
+        }
+        .float-pill.one { left:7%; top:25%; }
+        .float-pill.two { right:6%; top:48%; animation-delay:-1.7s; }
+        .float-pill.three { left:15%; bottom:12%; animation-delay:-3.2s; }
+        @keyframes float { 50% { transform:translateY(-13px); } }
 
-        /* ── Footer ──────────────────────────────────────── */
-        footer {
-            background: var(--lp-surface);
-            border-top: 1px solid var(--lp-border);
-            padding: 2.5rem 1.5rem;
-            text-align: center;
-        }
+        .intro { padding:150px 0; background:var(--white); color:#1d1d1f; }
+        .intro-grid { display:grid; grid-template-columns:.72fr 1.28fr; gap:8vw; align-items:start; }
+        .intro .eyebrow { color:#c94118; position:sticky; top:110px; }
+        .intro .eyebrow::before { background:#c94118; box-shadow:none; }
+        .intro h2 { margin:0; font-size:clamp(2.6rem,5.4vw,5.6rem); line-height:1.02; letter-spacing:-.06em; }
+        .intro h2 span { color:#86868b; }
 
-        /* ── Animated grid lines ─────────────────────────── */
-        .grid-lines {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
-            background-size: 60px 60px;
-            pointer-events: none;
-            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
-        }
+        .story { position:relative; background:#09090a; }
+        .story-head { padding:140px 0 80px; text-align:center; }
+        .story-head .eyebrow { justify-content:center; }
+        .story-head .section-title { max-width:900px; margin:20px auto 0; }
+        .story-layout { display:grid; grid-template-columns:.72fr 1.28fr; gap:7vw; align-items:start; }
+        .story-copy { padding-bottom:25vh; }
+        .story-step { min-height:76vh; display:flex; flex-direction:column; justify-content:center; opacity:.25; transition:opacity .6s var(--ease); }
+        .story-step.active { opacity:1; }
+        .step-num { color:var(--cyan); font-size:.75rem; letter-spacing:.15em; font-weight:800; }
+        .story-step h3 { font-size:clamp(2.3rem,4.2vw,4.4rem); line-height:.98; letter-spacing:-.06em; margin:16px 0; }
+        .story-step p { color:var(--muted); font-size:1.08rem; max-width:480px; }
+        .story-tags { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+        .story-tags span { padding:7px 11px; border-radius:999px; border:1px solid var(--line); color:#bdbdc2; font-size:.72rem; }
+        .story-visual { position:sticky; top:12vh; height:76vh; display:grid; place-items:center; }
+        .visual-glow { position:absolute; width:70%; aspect-ratio:1; border-radius:50%; background:linear-gradient(140deg,rgba(255,77,24,.3),rgba(24,213,231,.22)); filter:blur(90px); opacity:.35; }
+        .device { position:absolute; opacity:0; transform:scale(.92) translateY(30px); transition:opacity .8s var(--ease),transform .8s var(--ease); }
+        .device.active { opacity:1; transform:none; }
+        .device-browser { width:100%; border:1px solid var(--line); border-radius:24px; overflow:hidden; background:#17171a; box-shadow:0 50px 100px rgba(0,0,0,.55); }
+        .device-browser img { width:100%; }
+        .device-phone { height:min(68vh,700px); aspect-ratio:.54; border-radius:42px; padding:8px; background:#1d1d1f; border:1px solid rgba(255,255,255,.22); box-shadow:0 50px 100px rgba(0,0,0,.6); overflow:hidden; }
+        .device-phone img { height:100%; width:100%; object-fit:cover; object-position:top; border-radius:34px; }
 
-        /* ── Scroll reveal ───────────────────────────────── */
-        .reveal {
-            opacity: 0;
-            transform: translateY(28px);
-            transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: none;
-        }
-        .reveal-delay-1 { transition-delay: 0.12s; }
-        .reveal-delay-2 { transition-delay: 0.24s; }
-        .reveal-delay-3 { transition-delay: 0.36s; }
+        .metrics { padding:150px 0; background:#000; }
+        .metrics-title { max-width:770px; margin-bottom:70px; }
+        .metrics-title .section-title { margin-top:18px; }
+        .metric-grid { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line); }
+        .metric { padding:42px 20px 42px 0; border-bottom:1px solid var(--line); }
+        .metric-number { font-size:clamp(3rem,5vw,5.6rem); letter-spacing:-.07em; line-height:1; font-weight:700; }
+        .metric-number span { color:var(--cyan); }
+        .metric p { color:var(--muted); font-size:.83rem; max-width:160px; margin:15px 0 0; }
 
-        /* ── Accent line ─────────────────────────────────── */
-        .accent-line {
-            display: inline-block;
-            width: 2.5rem;
-            height: 3px;
-            background: linear-gradient(90deg, var(--lp-accent-2), var(--lp-accent));
-            border-radius: 9999px;
-            margin-bottom: 1rem;
-        }
+        .experience { padding:150px 0; background:#f5f5f7; color:#1d1d1f; overflow:hidden; }
+        .experience-head { text-align:center; max-width:920px; margin:0 auto 70px; }
+        .experience-head .eyebrow { justify-content:center; color:#c94118; }
+        .experience-head .eyebrow::before { background:#c94118; box-shadow:none; }
+        .experience-head .section-title { margin-top:20px; }
+        .bento { display:grid; grid-template-columns:1.15fr .85fr; gap:18px; }
+        .bento-card { position:relative; border-radius:32px; background:#fff; overflow:hidden; min-height:520px; box-shadow:0 25px 70px rgba(0,0,0,.06); }
+        .bento-card.dark { background:#111113; color:#fff; }
+        .bento-copy { padding:40px; position:relative; z-index:2; }
+        .bento-copy small { color:#bf3d18; font-weight:800; }
+        .dark .bento-copy small { color:var(--cyan); }
+        .bento-copy h3 { font-size:clamp(2rem,3vw,3.2rem); letter-spacing:-.055em; line-height:1; margin:12px 0; }
+        .bento-copy p { color:#6e6e73; max-width:470px; }
+        .dark .bento-copy p { color:var(--muted); }
+        .bento-image { position:absolute; left:7%; right:7%; bottom:-8%; border-radius:20px 20px 0 0; box-shadow:0 20px 60px rgba(0,0,0,.2); transition:transform .8s var(--ease); }
+        .bento-card:hover .bento-image { transform:translateY(-15px) scale(1.015); }
+        .bento-phone { position:absolute; height:58%; bottom:-4%; right:12%; border-radius:24px 24px 0 0; box-shadow:0 20px 60px rgba(0,0,0,.3); transition:transform .8s var(--ease); }
+        .bento-card:hover .bento-phone { transform:translateY(-15px) rotate(-2deg); }
+        .bento-wide { grid-column:1/-1; min-height:570px; }
+        .bento-wide .bento-copy { max-width:600px; }
+        .bento-wide .bento-image { left:28%; right:-5%; bottom:-25%; }
 
-        /* ── Module number badge ─────────────────────────── */
-        .module-num {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            font-size: 0.65rem;
-            font-weight: 800;
-            color: rgba(255,255,255,0.1);
-            letter-spacing: 0.05em;
-            font-variant-numeric: tabular-nums;
+        .proof { min-height:105vh; display:grid; place-items:center; position:relative; overflow:hidden; background:#050505; }
+        .proof-bg { position:absolute; inset:0; opacity:.25; }
+        .proof-bg img { width:100%; height:100%; object-fit:cover; filter:blur(3px) saturate(.4); transform:scale(1.06); }
+        .proof-bg::after { content:"";position:absolute;inset:0;background:radial-gradient(circle at center,rgba(5,5,5,.2),#050505 70%); }
+        .proof-copy { position:relative; text-align:center; max-width:950px; padding:100px 20px; }
+        .proof-mark { width:11px; height:11px; border-radius:50%; background:#30d158; box-shadow:0 0 28px #30d158; margin:0 auto 26px; }
+        .proof .section-title { margin-bottom:24px; }
+        .proof .lead { max-width:650px; margin:auto; }
+        .proof-chips { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:30px; }
+        .proof-chips span { border:1px solid var(--line); border-radius:999px; padding:8px 13px; color:#d2d2d7; font-size:.78rem; backdrop-filter:blur(10px); }
+
+        .faq { padding:140px 0; background:#f5f5f7; color:#1d1d1f; }
+        .faq-grid { display:grid; grid-template-columns:.75fr 1.25fr; gap:9vw; }
+        .faq .section-title { position:sticky; top:110px; }
+        .faq-list { border-top:1px solid #d2d2d7; }
+        .faq details { border-bottom:1px solid #d2d2d7; }
+        .faq summary { cursor:pointer; list-style:none; font-size:1.08rem; font-weight:700; padding:24px 46px 24px 0; position:relative; }
+        .faq summary::-webkit-details-marker { display:none; }
+        .faq summary::after { content:"+"; position:absolute; right:4px; font-size:1.4rem; font-weight:400; transition:transform .3s; }
+        .faq details[open] summary::after { transform:rotate(45deg); }
+        .faq details p { color:#6e6e73; margin:0; padding:0 50px 25px 0; }
+
+        .closing { min-height:92vh; display:grid; place-items:center; position:relative; overflow:hidden; text-align:center; }
+        .closing::before { content:""; position:absolute; width:min(1100px,100vw); aspect-ratio:1; border-radius:50%; background:conic-gradient(from 190deg,var(--orange),transparent 28%,var(--cyan),transparent 63%,var(--orange)); filter:blur(100px); opacity:.17; animation:spin 18s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .closing-copy { position:relative; max-width:960px; padding:100px 20px; }
+        .closing-copy .lead { max-width:630px; margin:25px auto 30px; }
+        .contact-links { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; margin-top:24px; color:#a1a1a6; font-size:.8rem; }
+        .contact-links a:hover { color:#fff; }
+        footer { padding:28px 0; border-top:1px solid var(--line); color:#86868b; font-size:.72rem; }
+        .footer-inner { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+        .footer-brand { display:flex; align-items:center; gap:9px; }
+        footer img { width:50px; height:auto; opacity:.9; transition:opacity .3s; }
+        footer img:hover { opacity:1; }
+
+        [data-reveal] { opacity:0; transform:translateY(35px); transition:opacity .9s var(--ease),transform .9s var(--ease); }
+        [data-reveal].visible { opacity:1; transform:none; }
+
+        @media (max-width:900px) {
+            .desktop-links { display:none; }
+            .menu-button { display:grid; }
+            .mobile-menu { display:block; position:fixed; z-index:14; inset:0; background:rgba(5,5,5,.97); padding:110px 24px 40px; transform:translateY(-100%); transition:transform .7s var(--ease); }
+            .mobile-menu.open { transform:none; }
+            .mobile-menu a { display:block; padding:16px 0; border-bottom:1px solid var(--line); font-size:2rem; letter-spacing:-.04em; }
+            .hero { min-height:auto; padding-top:130px; }
+            .hero-stage { height:60vw; min-height:330px; }
+            .hero-screen { width:94vw; }
+            .float-pill { display:none; }
+            .intro-grid,.story-layout,.faq-grid { grid-template-columns:1fr; }
+            .intro .eyebrow,.faq .section-title { position:static; }
+            .intro-grid { gap:28px; }
+            .story-copy { padding-bottom:0; }
+            .story-step { min-height:auto; padding:70px 0 30px; opacity:1; }
+            .story-visual { position:relative; top:auto; height:62vw; min-height:400px; order:-1; }
+            .story-layout { display:flex; flex-direction:column; }
+            .metric-grid { grid-template-columns:repeat(2,1fr); }
+            .bento { grid-template-columns:1fr; }
+            .bento-wide { grid-column:auto; }
+            .bento-wide .bento-image { left:8%; right:-20%; bottom:-4%; }
+        }
+        @media (max-width:600px) {
+            .container { width:min(100% - 28px,1200px); }
+            .brand img { width:44px; height:auto; }
+            .nav-inner { height:58px; }
+            .display { font-size:clamp(3.2rem,17vw,5.2rem); }
+            .section-title { font-size:clamp(2.6rem,13vw,4rem); }
+            .hero { padding-top:115px; }
+            .hero-brand-seal { width:108px; height:auto; margin-bottom:20px; }
+            .hero-stage { min-height:285px; }
+            .hero-screen { border-radius:13px; top:10%; }
+            .screen-top { height:22px; }
+            .hero-orbit { width:110vw; }
+            .intro,.metrics,.experience,.faq { padding:100px 0; }
+            .story-head { padding:100px 0 40px; }
+            .story-visual { min-height:330px; }
+            .device-browser { border-radius:14px; }
+            .device-phone { height:310px; border-radius:27px; }
+            .device-phone img { border-radius:21px; }
+            .metric-grid { grid-template-columns:1fr; }
+            .metric { display:flex; align-items:end; justify-content:space-between; gap:20px; }
+            .metric p { text-align:right; }
+            .bento-card,.bento-wide { min-height:500px; border-radius:24px; }
+            .bento-copy { padding:28px; }
+            .footer-inner { flex-direction:column; text-align:center; }
+        }
+        @media (prefers-reduced-motion:reduce) {
+            *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+            [data-reveal] { opacity:1; transform:none; }
+            .cursor-glow { display:none; }
         }
     </style>
 </head>
-
 <body>
+    <div class="cursor-glow" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
 
-    <!-- ═══════════════════════════════════════════════════
-         HERO
-    ══════════════════════════════════════════════════════ -->
-    <section class="hero-section">
-        <div class="grid-lines"></div>
-        <div class="glow-blob" style="width:600px;height:600px;top:-150px;right:-150px;background:rgba(232,21,10,0.2);"></div>
-        <div class="glow-blob" style="width:400px;height:400px;bottom:-100px;left:-100px;background:rgba(59,130,246,0.08);"></div>
+    <header class="nav">
+        <div class="container nav-inner">
+            <a class="brand" href="#top" aria-label="beForward.lk home">
+                <img src="<?= asset('images/logo.svg') ?>" alt="beForward.lk">
+                <span class="brand-word">beForward<b>.lk</b></span>
+            </a>
+            <nav class="desktop-links" aria-label="Main navigation">
+                <a href="#platform">Platform</a>
+                <a href="#experience">Experience</a>
+                <a href="#customer">Customer</a>
+                <a href="#faq">FAQ</a>
+                <a class="nav-cta" href="#contact">Book a demo</a>
+            </nav>
+            <button class="menu-button" type="button" aria-label="Open menu" aria-expanded="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h16M4 16h16"/></svg>
+            </button>
+        </div>
+    </header>
+    <nav class="mobile-menu" aria-label="Mobile navigation">
+        <a href="#platform">Platform</a><a href="#experience">Experience</a><a href="#customer">Customer</a><a href="#faq">FAQ</a><a href="#contact">Book a demo</a>
+    </nav>
 
-        <div class="hero-grid">
-            <!-- Left copy -->
-            <div>
-                <!-- Large logo -->
-                <div style="margin-bottom:2.25rem;">
-                    <img src="<?= asset('images/product-logo.svg') ?>" alt="beForward.lk" style="height:56px;width:auto;filter:drop-shadow(0 0 24px rgba(232,21,10,0.35));">
+    <main id="top">
+        <section class="hero">
+            <div class="container hero-copy">
+                <p class="hero-kicker" data-reveal>Introducing beForward.lk</p>
+                <h1 class="display" data-reveal>One platform.<br><span class="gradient-text">Every rep counts.</span></h1>
+                <p class="lead" data-reveal>A beautifully connected gym management system built to simplify operations, strengthen member experiences and move your fitness business forward.</p>
+                <div class="hero-actions" data-reveal>
+                    <a class="btn btn-primary magnetic" href="#contact"><span>Book your demo</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+                    <a class="btn btn-secondary magnetic" href="#platform"><span>Explore the platform</span></a>
                 </div>
-                <div class="hero-badge">
-                    <span class="badge-dot"></span> All-in-One Platform
+            </div>
+            <div class="wide hero-stage">
+                <div class="hero-orbit"></div>
+                <div class="hero-screen tilt" data-reveal>
+                    <div class="screen-top"><i></i><i></i><i></i></div>
+                    <img src="<?= asset('images/backoffice_application.png') ?>" alt="beForward.lk gym management dashboard">
                 </div>
-                <h1 class="hero-title">
-                    The Complete<br>
-                    <span class="gradient-text">Gym Management</span><br>
-                    System
-                </h1>
-                <p class="hero-sub">
-                    Empower your gym with a powerful backoffice, a beautiful member portal, and a fully customizable public website — all in one platform built for modern fitness businesses.
-                </p>
-                <div style="display:flex;flex-wrap:wrap;gap:0.85rem;align-items:center;">
-                    <a href="#contact" class="btn-primary">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        Contact us
-                    </a>
-                    <a href="#modules" class="btn-ghost">
-                        Explore Features
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </a>
+                <div class="float-pill one">Live business insights</div>
+                <div class="float-pill two">Members connected</div>
+                <div class="float-pill three">Payments simplified</div>
+            </div>
+        </section>
+
+        <section class="intro">
+            <div class="container intro-grid">
+                <div class="eyebrow" data-reveal>Made for modern gyms</div>
+                <h2 data-reveal>Less time managing software. <span>More time building a fitness community.</span></h2>
+            </div>
+        </section>
+
+        <section class="story" id="platform">
+            <div class="container story-head">
+                <div class="eyebrow" data-reveal>Three experiences. One platform.</div>
+                <h2 class="section-title" data-reveal>Designed around everyone who moves your gym forward.</h2>
+            </div>
+            <div class="container story-layout">
+                <div class="story-copy">
+                    <article class="story-step active" data-step="0">
+                        <span class="step-num">01 / OPERATE</span>
+                        <h3>Your entire gym.<br><span class="gradient-text">In clear view.</span></h3>
+                        <p>Manage memberships, payments, attendance, staff, inventory, sales, workouts and reports through one calm command centre.</p>
+                        <div class="story-tags"><span>Members</span><span>Revenue</span><span>Reports</span><span>Access control</span></div>
+                    </article>
+                    <article class="story-step" data-step="1">
+                        <span class="step-num">02 / ENGAGE</span>
+                        <h3>A member experience <span class="gradient-text">they will use.</span></h3>
+                        <p>Give every member a polished mobile portal for membership status, payments, workouts, events, notifications and progress.</p>
+                        <div class="story-tags"><span>Mobile first</span><span>Self service</span><span>Workouts</span></div>
+                    </article>
+                    <article class="story-step" data-step="2">
+                        <span class="step-num">03 / GROW</span>
+                        <h3>Your strongest first impression. <span class="gradient-text">Online.</span></h3>
+                        <p>Launch a branded, responsive website that showcases programs, trainers, schedules and offers while turning visitors into leads.</p>
+                        <div class="story-tags"><span>Your brand</span><span>Lead capture</span><span>Responsive</span></div>
+                    </article>
                 </div>
-                <!-- Trust badges -->
-                <div class="trust-badges">
-                    <div class="trust-badge">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        Backoffice System
+                <div class="story-visual">
+                    <div class="visual-glow"></div>
+                    <div class="device device-browser active" data-device="0">
+                        <div class="screen-top"><i></i><i></i><i></i></div>
+                        <img src="<?= asset('images/backoffice_application.png') ?>" alt="Gym backoffice command centre">
                     </div>
-                    <div class="trust-badge">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        Member Portal
+                    <div class="device device-phone" data-device="1">
+                        <img src="<?= asset('images/members_portal.jpg') ?>" alt="Gym member mobile portal">
                     </div>
-                    <div class="trust-badge">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        Website Builder
+                    <div class="device device-browser" data-device="2">
+                        <div class="screen-top"><i></i><i></i><i></i></div>
+                        <img src="<?= asset('images/customized_webpage.png') ?>" alt="Branded gym website">
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Right visual -->
-            <div class="hero-visual">
-                <!-- Main screen -->
-                <div class="screen-card">
-                    <div class="browser-bar">
-                        <div class="browser-dot" style="background:#ff5f57;"></div>
-                        <div class="browser-dot" style="background:#febc2e;"></div>
-                        <div class="browser-dot" style="background:#28c840;"></div>
-                        <div class="browser-url">
-                            <span>app.beforward.lk/dashboard</span>
-                        </div>
-                    </div>
-                    <img src="<?= asset('images/backoffice_application.png') ?>" alt="Backoffice Dashboard" style="width:100%;display:block;max-height:230px;object-fit:cover;object-position:top;">
+        <section class="metrics">
+            <div class="container">
+                <div class="metrics-title">
+                    <div class="eyebrow" data-reveal>Built for the complete journey</div>
+                    <h2 class="section-title" data-reveal>Small details. <span class="gradient-text">Big momentum.</span></h2>
                 </div>
-                <!-- Two sub-screens -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-                    <div class="screen-card">
-                        <div class="browser-bar" style="padding:0.4rem 0.65rem;">
-                            <div class="browser-dot" style="background:#ff5f57;width:7px;height:7px;"></div>
-                            <div class="browser-dot" style="background:#febc2e;width:7px;height:7px;"></div>
-                            <div class="browser-dot" style="background:#28c840;width:7px;height:7px;"></div>
-                        </div>
-                        <img src="<?= asset('images/members_portal.jpg') ?>" alt="Member Portal" style="width:100%;display:block;height:110px;object-fit:cover;object-position:top;">
-                    </div>
-                    <div class="screen-card">
-                        <div class="browser-bar" style="padding:0.4rem 0.65rem;">
-                            <div class="browser-dot" style="background:#ff5f57;width:7px;height:7px;"></div>
-                            <div class="browser-dot" style="background:#febc2e;width:7px;height:7px;"></div>
-                            <div class="browser-dot" style="background:#28c840;width:7px;height:7px;"></div>
-                        </div>
-                        <img src="<?= asset('images/customized_webpage.png') ?>" alt="Website Builder" style="width:100%;display:block;height:110px;object-fit:cover;object-position:top;">
-                    </div>
+                <div class="metric-grid">
+                    <div class="metric" data-reveal><div class="metric-number" data-count="360">0<span>°</span></div><p>A complete view of gym operations.</p></div>
+                    <div class="metric" data-reveal><div class="metric-number" data-count="3">0<span>×</span></div><p>Connected product experiences.</p></div>
+                    <div class="metric" data-reveal><div class="metric-number" data-count="24">0<span>/7</span></div><p>Member access from any device.</p></div>
+                    <div class="metric" data-reveal><div class="metric-number" data-count="1">0<span></span></div><p>Source of truth for your business.</p></div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ═══════════════════════════════════════════════════
-         STATS
-    ══════════════════════════════════════════════════════ -->
-    <div class="stats-bar">
-        <div class="stat-cell reveal">
-            <span class="stat-number">3</span>
-            <span class="stat-label">Integrated Modules</span>
-        </div>
-        <div class="stat-cell reveal reveal-delay-1">
-            <span class="stat-number">360°</span>
-            <span class="stat-label">Gym Coverage</span>
-        </div>
-        <div class="stat-cell reveal reveal-delay-2">
-            <span class="stat-number">Real‑time</span>
-            <span class="stat-label">Data &amp; Reports</span>
-        </div>
-        <div class="stat-cell reveal reveal-delay-3">
-            <span class="stat-number">Mobile</span>
-            <span class="stat-label">First Design</span>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════
-         MODULE OVERVIEW CARDS
-    ══════════════════════════════════════════════════════ -->
-    <section class="section" id="modules" style="max-width:1320px;margin:0 auto;">
-        <div style="text-align:center;margin-bottom:3.5rem;" class="reveal">
-            <div class="section-tag">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-                Platform Modules
+        <section class="experience" id="experience">
+            <div class="container experience-head">
+                <div class="eyebrow" data-reveal>Intelligence in every interaction</div>
+                <h2 class="section-title" data-reveal>Powerful enough for owners. Simple enough for everyone.</h2>
             </div>
-            <h2 class="section-title">Everything Your Gym <span class="gradient-text">Needs</span></h2>
-            <p style="max-width:540px;margin:0 auto;font-size:0.9rem;line-height:1.75;color:var(--lp-muted-2);">
-                Three purpose-built modules that work seamlessly together — from managing operations behind the scenes to delivering a great experience for your members.
-            </p>
-        </div>
+            <div class="wide bento">
+                <article class="bento-card" data-reveal>
+                    <div class="bento-copy"><small>OPERATIONS</small><h3>Know what needs attention.</h3><p>See member activity, revenue, dues and daily performance without digging through disconnected tools.</p></div>
+                    <img class="bento-image" src="<?= asset('images/backoffice_application.png') ?>" alt="Gym operations dashboard">
+                </article>
+                <article class="bento-card dark" data-reveal>
+                    <div class="bento-copy"><small>MEMBERS</small><h3>Put progress in their hands.</h3><p>A personal portal designed around the way members move.</p></div>
+                    <img class="bento-phone" src="<?= asset('images/members_portal.jpg') ?>" alt="Mobile member experience">
+                </article>
+                <article class="bento-card bento-wide dark" data-reveal>
+                    <div class="bento-copy"><small>GROWTH</small><h3>A website that works as hard as your gym.</h3><p>Create a memorable digital front door for your fitness brand, connected to the same platform that runs your business.</p></div>
+                    <img class="bento-image" src="<?= asset('images/customized_webpage.png') ?>" alt="Custom gym website">
+                </article>
+            </div>
+        </section>
 
-        <div class="modules-grid">
-            <!-- Backoffice -->
-            <div class="module-card reveal" style="position:relative;">
-                <span class="module-num">01</span>
-                <img src="<?= asset('images/backoffice_application.png') ?>" alt="Backoffice System" class="module-screenshot">
-                <div class="module-body">
-                    <div class="module-icon" style="background:rgba(232,21,10,0.1);color:var(--lp-accent-2);">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-                    </div>
-                    <div class="module-title">Backoffice System</div>
-                    <p class="module-desc">
-                        The operational command centre for gym owners and staff. Manage members, finances, inventory, events, workout programs, and detailed reporting — all from a unified dashboard with role-based access control.
-                    </p>
-                    <div class="feature-pills">
-                        <span class="pill">Member Management</span>
-                        <span class="pill">Payments &amp; Billing</span>
-                        <span class="pill">Inventory &amp; Sales</span>
-                        <span class="pill">Events</span>
-                        <span class="pill">Workout Programs</span>
-                        <span class="pill">Roles &amp; Permissions</span>
-                        <span class="pill">Audit Logs</span>
-                        <span class="pill">Reports</span>
-                    </div>
+        <section class="proof" id="customer">
+            <div class="proof-bg"><img src="<?= asset('images/backoffice_application.png') ?>" alt=""></div>
+            <div class="proof-copy">
+                <div class="proof-mark" data-reveal></div>
+                <p class="eyebrow" style="justify-content:center" data-reveal>Live in the real world</p>
+                <h2 class="section-title" data-reveal>Already moving <span class="gradient-text">CoreX Fitness</span> forward.</h2>
+                <p class="lead" data-reveal>beForward.lk is not a concept. It is powering a real fitness business in Tangalle and evolving around the needs of modern gym teams.</p>
+                <div class="proof-chips" data-reveal><span>CoreX Fitness</span><span>Tangalle, Sri Lanka</span><span>Live platform</span></div>
+            </div>
+        </section>
+
+        <section class="faq" id="faq">
+            <div class="container faq-grid">
+                <h2 class="section-title" data-reveal>Questions,<br><span class="gradient-text">answered.</span></h2>
+                <div class="faq-list" data-reveal>
+                    <details><summary>What is beForward.lk?</summary><p>beForward.lk is an all-in-one gym management platform for memberships, payments, attendance, workouts, bookings, reports, member portals and branded gym websites.</p></details>
+                    <details><summary>Is it suitable for gyms in Sri Lanka?</summary><p>Yes. It is designed around the everyday needs of Sri Lankan fitness businesses, their teams and their members.</p></details>
+                    <details><summary>Can members use it from their phones?</summary><p>Yes. The mobile-friendly member portal provides access to membership status, payments, workouts, events and gym updates.</p></details>
+                    <details><summary>Can my gym have its own website?</summary><p>Yes. beForward.lk can power a responsive branded website that presents your programs, trainers, schedules and offers.</p></details>
+                    <details><summary>How do I get started?</summary><p>Book a personalised demonstration and we will walk through how the platform can support your current operation and growth plans.</p></details>
                 </div>
             </div>
+        </section>
 
-            <!-- Member Portal -->
-            <div class="module-card reveal reveal-delay-1" style="position:relative;">
-                <span class="module-num">02</span>
-                <img src="<?= asset('images/members_portal.jpg') ?>" alt="Member Portal" class="module-screenshot">
-                <div class="module-body">
-                    <div class="module-icon" style="background:rgba(59,130,246,0.1);color:#60a5fa;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </div>
-                    <div class="module-title">Member Portal</div>
-                    <p class="module-desc">
-                        A dedicated self-service portal for members. View membership status, track workout progress, register for events, monitor payment history, and access personalised fitness programs anytime, anywhere.
-                    </p>
-                    <div class="feature-pills">
-                        <span class="pill">Membership Status</span>
-                        <span class="pill">Workout Tracking</span>
-                        <span class="pill">Event Registration</span>
-                        <span class="pill">Payment History</span>
-                        <span class="pill">Progress Reports</span>
-                        <span class="pill">Notifications</span>
-                    </div>
-                </div>
+        <section class="closing" id="contact">
+            <div class="closing-copy">
+                <p class="eyebrow" style="justify-content:center" data-reveal>Your next move</p>
+                <h2 class="display" data-reveal>Move your gym<br><span class="gradient-text">forward.</span></h2>
+                <p class="lead" data-reveal>See how one connected platform can give your team clarity, your members a better experience and your business room to grow.</p>
+                <a class="btn btn-primary magnetic" href="mailto:dmhashan@gmail.com" data-reveal><span>Book a personalised demo</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+                <div class="contact-links" data-reveal><a href="tel:+94779600845">+94 77 9600 845</a><span>•</span><a href="mailto:dmhashan@gmail.com">dmhashan@gmail.com</a><span>•</span><span>beforward.lk</span></div>
             </div>
+        </section>
+    </main>
 
-            <!-- Website Management -->
-            <div class="module-card reveal reveal-delay-2" style="position:relative;">
-                <span class="module-num">03</span>
-                <img src="<?= asset('images/customized_webpage.png') ?>" alt="Website Management" class="module-screenshot">
-                <div class="module-body">
-                    <div class="module-icon" style="background:rgba(16,185,129,0.1);color:#34d399;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                    </div>
-                    <div class="module-title">Website Management</div>
-                    <p class="module-desc">
-                        Give your gym a professional public presence without needing a developer. Customize your landing page, showcase your brand, display class schedules, pricing, and let potential members find you online with ease.
-                    </p>
-                    <div class="feature-pills">
-                        <span class="pill">Custom Branding</span>
-                        <span class="pill">Page Builder</span>
-                        <span class="pill">Class Schedule</span>
-                        <span class="pill">Pricing Display</span>
-                        <span class="pill">SEO Ready</span>
-                        <span class="pill">Mobile Responsive</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══════════════════════════════════════════════════
-         BACKOFFICE DEEP DIVE
-    ══════════════════════════════════════════════════════ -->
-    <section class="section" style="background:var(--lp-surface);position:relative;overflow:hidden;">
-        <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 100% 50%, rgba(232,21,10,0.05) 0%, transparent 60%);pointer-events:none;"></div>
-        <div style="max-width:1320px;margin:0 auto;position:relative;">
-            <div class="feature-row">
-                <div class="reveal">
-                    <span class="accent-line"></span>
-                    <div class="section-tag">Module 01</div>
-                    <h2 class="section-title">Backoffice<br><span class="gradient-text">Command Centre</span></h2>
-                    <p style="font-size:0.9rem;line-height:1.75;color:var(--lp-muted-2);margin:0.75rem 0 0;">
-                        Whether you run a single studio or a multi-location gym chain, the backoffice gives your team the tools to operate at peak efficiency — from onboarding members to reconciling end-of-day finances.
-                    </p>
-                    <ul class="feature-list">
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Member Lifecycle Management</strong> — Enroll, renew, freeze, and manage member records with full history, custom fields, and profile photos.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Payments &amp; Billing</strong> — Record payments, issue receipts, track outstanding balances, and reconcile daily cash flow against your company accounts.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Point of Sale &amp; Inventory</strong> — Sell supplements, merchandise, and services. Manage stock levels and get low-inventory alerts automatically.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Events &amp; Classes</strong> — Schedule group classes, workshops, and competitions. Handle registrations, capacity limits, and guest lists.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Roles &amp; Permissions</strong> — Assign granular access rights to each staff member with a full audit trail of every action taken.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Workout Program Builder</strong> — Create structured workout plans, assign them to members or groups, and track completion progress.</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="reveal reveal-delay-1">
-                    <div class="screen-card">
-                        <div class="browser-bar">
-                            <div class="browser-dot" style="background:#ff5f57;"></div>
-                            <div class="browser-dot" style="background:#febc2e;"></div>
-                            <div class="browser-dot" style="background:#28c840;"></div>
-                            <div class="browser-url"><span>app.beforward.lk/members</span></div>
-                        </div>
-                        <img src="<?= asset('images/backoffice_application.png') ?>" alt="Backoffice Screenshot" style="width:100%;display:block;">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══════════════════════════════════════════════════
-         MEMBER PORTAL DEEP DIVE
-    ══════════════════════════════════════════════════════ -->
-    <section class="section" style="position:relative;overflow:hidden;">
-        <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 0% 50%, rgba(59,130,246,0.05) 0%, transparent 60%);pointer-events:none;"></div>
-        <div style="max-width:1320px;margin:0 auto;position:relative;">
-            <div class="feature-row reverse">
-                <div class="reveal">
-                    <span class="accent-line"></span>
-                    <div class="section-tag">Module 02</div>
-                    <h2 class="section-title">Member <span class="gradient-text">Self-Service Portal</span></h2>
-                    <p style="font-size:0.9rem;line-height:1.75;color:var(--lp-muted-2);margin:0.75rem 0 0;">
-                        Give your members the transparency and convenience they expect. A clean, mobile-first portal that keeps them engaged and informed — reducing support requests for your team.
-                    </p>
-                    <ul class="feature-list">
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Membership Dashboard</strong> — Real-time view of membership status, expiry date, plan details, and renewal options.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Payment History</strong> — Browse a full transaction ledger, download receipts, and see upcoming dues at a glance.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Workout Programs</strong> — Access assigned workout plans with exercise breakdowns, sets, reps, and instructional notes.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Event Registration</strong> — Browse upcoming classes and events, register with one tap, and manage guest passes.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Notifications</strong> — Stay on top of announcements, membership renewals, and gym updates via in-app notifications.</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="reveal reveal-delay-1">
-                    <div class="screen-card">
-                        <div class="browser-bar">
-                            <div class="browser-dot" style="background:#ff5f57;"></div>
-                            <div class="browser-dot" style="background:#febc2e;"></div>
-                            <div class="browser-dot" style="background:#28c840;"></div>
-                            <div class="browser-url"><span>portal.beforward.lk/dashboard</span></div>
-                        </div>
-                        <img src="<?= asset('images/members_portal.jpg') ?>" alt="Member Portal Screenshot" style="width:100%;display:block;">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══════════════════════════════════════════════════
-         WEBSITE MANAGEMENT DEEP DIVE
-    ══════════════════════════════════════════════════════ -->
-    <section class="section" style="background:var(--lp-surface);position:relative;overflow:hidden;">
-        <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 100% 50%, rgba(16,185,129,0.04) 0%, transparent 60%);pointer-events:none;"></div>
-        <div style="max-width:1320px;margin:0 auto;position:relative;">
-            <div class="feature-row">
-                <div class="reveal">
-                    <span class="accent-line"></span>
-                    <div class="section-tag">Module 03</div>
-                    <h2 class="section-title">Website <span class="gradient-text">Management</span></h2>
-                    <p style="font-size:0.9rem;line-height:1.75;color:var(--lp-muted-2);margin:0.75rem 0 0;">
-                        Your public-facing home, built to convert visitors into members. Customize content, showcase your brand personality, and publish changes in real time — no code required.
-                    </p>
-                    <ul class="feature-list">
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Brand Customization</strong> — Upload your logo, set brand colors, and choose a layout that reflects your gym's identity.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Content Management</strong> — Edit hero banners, about sections, testimonials, and class descriptions without touching code.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Schedule &amp; Pricing Display</strong> — Automatically publish class timetables and membership pricing pulled from the backoffice.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Member Acquisition</strong> — Capture leads and direct visitors to register, linking seamlessly with the member portal.</span>
-                        </li>
-                        <li>
-                            <span class="feature-check">&#10003;</span>
-                            <span><strong style="color:var(--lp-text);">Mobile Responsive</strong> — Looks sharp on any device — phone, tablet, or desktop — out of the box.</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="reveal reveal-delay-1">
-                    <div class="screen-card">
-                        <div class="browser-bar">
-                            <div class="browser-dot" style="background:#ff5f57;"></div>
-                            <div class="browser-dot" style="background:#febc2e;"></div>
-                            <div class="browser-dot" style="background:#28c840;"></div>
-                            <div class="browser-url"><span>yourgymdomain.com</span></div>
-                        </div>
-                        <img src="<?= asset('images/customized_webpage.png') ?>" alt="Website Management Screenshot" style="width:100%;display:block;">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ═══════════════════════════════════════════════════
-         CONTACT / CTA
-    ══════════════════════════════════════════════════════ -->
-    <section class="cta-section" id="contact">
-        <div style="max-width:720px;margin:0 auto;position:relative;z-index:1;">
-            <div class="section-tag reveal" style="justify-content:center;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Get in Touch
-            </div>
-            <h2 class="section-title reveal" style="margin-bottom:1rem;">
-                Ready to Transform<br><span class="gradient-text">Your Gym Business?</span>
-            </h2>
-            <p class="reveal" style="font-size:0.95rem;line-height:1.75;color:var(--lp-muted-2);margin:0 0 0.5rem;">
-                Join the platform that brings your members, staff, and operations into a single, beautifully designed system. Reach out and we'll get you set up.
-            </p>
-
-            <div class="contact-card reveal reveal-delay-1">
-                <div class="contact-row">
-                    <div class="contact-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    </div>
-                    <div>
-                        <div class="contact-label">Email us</div>
-                        <div class="contact-value">dmhashan@gmail.com</div>
-                    </div>
-                </div>
-                <div class="contact-row">
-                    <div class="contact-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.35 2 2 0 0 1 3.6 2H6.6a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.59 9.91a16 16 0 0 0 6.07 6.07l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    </div>
-                    <div>
-                        <div class="contact-label">Call us</div>
-                        <div class="contact-value">+94 77 9600 845</div>
-                    </div>
-                </div>
-                <div class="contact-row">
-                    <div class="contact-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </div>
-                    <div>
-                        <div class="contact-label">Response time</div>
-                        <div class="contact-value">Within 24 hours</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════
-         FOOTER
-    ══════════════════════════════════════════════════════ -->
     <footer>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;">
-            <img src="<?= asset('images/product-logo.svg') ?>" alt="beForward.lk" style="height:32px;width:auto;opacity:0.6;filter:grayscale(0.2);">
-            <div style="display:flex;gap:0.5rem;align-items:center;">
-                <div style="width:1px;height:12px;background:var(--lp-border);"></div>
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <img src="<?= asset('images/logo.svg') ?>" alt="beForward.lk">
+                <span class="brand-word">beForward<b>.lk</b></span>
             </div>
-            <p style="font-size:0.75rem;color:var(--lp-muted);margin:0;">
-                &copy; <?= date('Y') ?> beForward.lk &nbsp;&mdash;&nbsp; All-in-one gym management platform.
-            </p>
+            <span>&copy; <?= date('Y') ?> beForward.lk. Move Your Gym Forward.</span>
         </div>
     </footer>
 
     <script>
-        // Scroll-reveal with stagger
-        const revealObserver = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                if (e.isIntersecting) {
-                    e.target.classList.add('visible');
-                    revealObserver.unobserve(e.target);
-                }
-            });
-        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const nav = document.querySelector('.nav');
+        const menuButton = document.querySelector('.menu-button');
+        const mobileMenu = document.querySelector('.mobile-menu');
+        const glow = document.querySelector('.cursor-glow');
 
-        // Smooth stat counter animation
-        const counterObserver = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                if (e.isIntersecting) {
-                    const el = e.target;
-                    const raw = el.textContent.trim();
-                    const num = parseFloat(raw.replace(/[^0-9.]/g, ''));
-                    if (!isNaN(num) && num > 0 && num < 10000) {
-                        const suffix = raw.replace(/[0-9.]/g, '');
-                        let start = 0;
-                        const step = num / 40;
-                        const timer = setInterval(() => {
-                            start = Math.min(start + step, num);
-                            el.textContent = (Number.isInteger(num) ? Math.round(start) : start.toFixed(1)) + suffix;
-                            if (start >= num) clearInterval(timer);
-                        }, 25);
-                    }
-                    counterObserver.unobserve(el);
-                }
+        window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 20), { passive:true });
+
+        menuButton.addEventListener('click', () => {
+            const open = mobileMenu.classList.toggle('open');
+            menuButton.setAttribute('aria-expanded', open);
+            document.body.classList.toggle('menu-open', open);
+        });
+        mobileMenu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+            mobileMenu.classList.remove('open');
+            menuButton.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('menu-open');
+        }));
+
+        const revealObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                revealObserver.unobserve(entry.target);
+            }
+        }), { threshold:.14, rootMargin:'0px 0px -50px' });
+        document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
+
+        const storySteps = [...document.querySelectorAll('.story-step')];
+        const devices = [...document.querySelectorAll('[data-device]')];
+        const storyObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const index = entry.target.dataset.step;
+            storySteps.forEach(step => step.classList.toggle('active', step.dataset.step === index));
+            devices.forEach(device => device.classList.toggle('active', device.dataset.device === index));
+        }), { threshold:.55 });
+        storySteps.forEach(step => storyObserver.observe(step));
+
+        const countObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const element = entry.target;
+            const target = Number(element.dataset.count);
+            const suffix = element.querySelector('span').outerHTML;
+            const start = performance.now();
+            const tick = now => {
+                const progress = Math.min((now - start) / 1300, 1);
+                element.innerHTML = Math.round(target * (1 - Math.pow(1 - progress, 3))) + suffix;
+                if (progress < 1) requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+            countObserver.unobserve(element);
+        }), { threshold:.6 });
+        document.querySelectorAll('[data-count]').forEach(el => countObserver.observe(el));
+
+        if (!reducedMotion && window.matchMedia('(pointer:fine)').matches) {
+            window.addEventListener('pointermove', event => {
+                glow.style.transform = `translate3d(${event.clientX}px,${event.clientY}px,0)`;
+            }, { passive:true });
+
+            document.querySelectorAll('.magnetic').forEach(button => {
+                button.addEventListener('pointermove', event => {
+                    const box = button.getBoundingClientRect();
+                    button.style.transform = `translate(${(event.clientX-box.left-box.width/2)*.13}px,${(event.clientY-box.top-box.height/2)*.18}px)`;
+                });
+                button.addEventListener('pointerleave', () => button.style.transform = '');
             });
-        }, { threshold: 0.5 });
-        document.querySelectorAll('.stat-number').forEach(el => counterObserver.observe(el));
+
+            const tilt = document.querySelector('.tilt');
+            tilt.addEventListener('pointermove', event => {
+                const box = tilt.getBoundingClientRect();
+                const x = (event.clientX - box.left) / box.width - .5;
+                const y = (event.clientY - box.top) / box.height - .5;
+                tilt.style.transform = `translateX(-50%) rotateX(${7-y*5}deg) rotateY(${x*7}deg)`;
+            });
+            tilt.addEventListener('pointerleave', () => tilt.style.transform = 'translateX(-50%) rotateX(7deg)');
+        }
     </script>
-
+    <script type="application/ld+json">
+        <?= json_encode([
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                ['@type' => 'Organization', '@id' => url('/').'#organization', 'name' => 'beForward.lk', 'url' => url('/'), 'logo' => asset('images/logo.svg'), 'email' => 'dmhashan@gmail.com', 'telephone' => '+94779600845'],
+                ['@type' => 'SoftwareApplication', 'name' => 'beForward.lk Gym Management Software', 'applicationCategory' => 'BusinessApplication', 'operatingSystem' => 'Web', 'description' => 'All-in-one gym management software for memberships, payments, attendance, workouts, bookings, reports and gym websites.', 'url' => url('/'), 'provider' => ['@id' => url('/').'#organization'], 'areaServed' => ['@type' => 'Country', 'name' => 'Sri Lanka']],
+                ['@type' => 'FAQPage', 'mainEntity' => [
+                    ['@type' => 'Question', 'name' => 'What is beForward.lk?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'beForward.lk is an all-in-one gym management platform.']],
+                    ['@type' => 'Question', 'name' => 'Is it suitable for gyms in Sri Lanka?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes. It is designed around the needs of Sri Lankan fitness businesses.']],
+                    ['@type' => 'Question', 'name' => 'Can members use it from their phones?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes. Members can use a mobile-friendly self-service portal.']],
+                ]],
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+    </script>
 </body>
-
 </html>
