@@ -4,11 +4,15 @@ namespace App\Services;
 
 use App\Models\BiometricAccessEvent;
 use App\Models\CompanyAccountTransaction;
+use App\Models\EventRegistration;
+use App\Models\Member;
+use App\Models\MemberPayment;
 use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\WalletTopup;
 use Illuminate\Support\Carbon;
 
 class DashboardOverviewService
@@ -337,11 +341,14 @@ class DashboardOverviewService
 
     private function buildAccountTransactionListForRange(int $tenantId, Carbon $startAt, Carbon $endAt): array
     {
-        return $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt)
+        $transactions = $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt)
             ->with('account:id,name')
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
-            ->get()
+            ->get();
+        $sourceDetails = $this->buildTransactionSourceDetailsMap($transactions);
+
+        return $transactions
             ->map(fn (CompanyAccountTransaction $transaction) => [
                 'id' => (int) $transaction->id,
                 'amount' => (float) $transaction->amount,
@@ -350,10 +357,105 @@ class DashboardOverviewService
                 'type' => (string) ($transaction->type ?? ''),
                 'reference_number' => $transaction->reference_number,
                 'notes' => $transaction->notes,
-                'source_label' => $this->transactionSourceLabel($transaction),
+                'source_label' => $this->transactionSourceLabel(
+                    $transaction,
+                    $sourceDetails[$this->transactionSourceKey($transaction)] ?? null,
+                ),
                 'source_path' => $this->transactionSourcePath($transaction),
             ])
             ->values()
+            ->all();
+    }
+
+    private function buildTransactionSourceDetailsMap($transactions): array
+    {
+        $referenceIdsByModel = $transactions
+            ->filter(fn (CompanyAccountTransaction $transaction) => $transaction->reference_id)
+            ->groupBy(fn (CompanyAccountTransaction $transaction) => (string) $transaction->model_name)
+            ->map(fn ($modelTransactions) => $modelTransactions->pluck('reference_id')->filter()->unique()->values());
+
+        $membersById = collect();
+        $detailsBySourceKey = [];
+
+        $payments = MemberPayment::query()
+            ->whereIn('id', $referenceIdsByModel->get('payment', collect()))
+            ->with(['member:id,name', 'membership:id,member_payment_id'])
+            ->get();
+
+        foreach ($payments as $payment) {
+            if ($payment->member) {
+                $detailsBySourceKey['payment:' . $payment->id] = [
+                    'member_id' => (int) $payment->member->id,
+                    'is_membership_payment' => (bool) $payment->membership,
+                ];
+                $membersById->put($payment->member->id, $payment->member);
+            }
+        }
+
+        $walletTopups = WalletTopup::query()
+            ->whereIn('id', $referenceIdsByModel->get('wallet_topup', collect()))
+            ->with('member:id,name')
+            ->get();
+
+        foreach ($walletTopups as $walletTopup) {
+            if ($walletTopup->member) {
+                $detailsBySourceKey['wallet_topup:' . $walletTopup->id] = [
+                    'member_id' => (int) $walletTopup->member->id,
+                ];
+                $membersById->put($walletTopup->member->id, $walletTopup->member);
+            }
+        }
+
+        $eventRegistrations = EventRegistration::query()
+            ->whereIn('id', $referenceIdsByModel->get('event_registration', collect()))
+            ->with('member:id,name')
+            ->get();
+
+        foreach ($eventRegistrations as $registration) {
+            if ($registration->member) {
+                $detailsBySourceKey['event_registration:' . $registration->id] = [
+                    'member_id' => (int) $registration->member->id,
+                ];
+                $membersById->put($registration->member->id, $registration->member);
+            }
+        }
+
+        $sales = Sale::query()
+            ->whereIn('id', $referenceIdsByModel->get('sale', collect()))
+            ->whereNotNull('customer_member_id')
+            ->get(['id', 'customer_member_id']);
+
+        $saleMemberIds = $sales->pluck('customer_member_id')->filter()->unique()->values();
+
+        if ($saleMemberIds->isNotEmpty()) {
+            Member::query()
+                ->whereIn('id', $saleMemberIds)
+                ->get(['id', 'name'])
+                ->each(fn (Member $member) => $membersById->put($member->id, $member));
+        }
+
+        foreach ($sales as $sale) {
+            if ($sale->customer_member_id) {
+                $detailsBySourceKey['sale:' . $sale->id] = [
+                    'member_id' => (int) $sale->customer_member_id,
+                ];
+            }
+        }
+
+        return collect($detailsBySourceKey)
+            ->map(function (array $details) use ($membersById) {
+                $member = $membersById->get($details['member_id']);
+
+                return $member
+                    ? array_merge($details, [
+                        'member' => [
+                            'id' => (int) $member->id,
+                            'name' => (string) $member->name,
+                        ],
+                    ])
+                    : null;
+            })
+            ->filter()
             ->all();
     }
 
@@ -365,10 +467,22 @@ class DashboardOverviewService
             ->whereDate('transaction_date', '<=', $endAt->toDateString());
     }
 
-    private function transactionSourceLabel(CompanyAccountTransaction $transaction): string
+    private function transactionSourceLabel(CompanyAccountTransaction $transaction, ?array $sourceDetails = null): string
     {
         $source = self::TRANSACTION_SOURCE_LABELS[$transaction->model_name]
             ?? ucwords(str_replace('_', ' ', (string) ($transaction->model_name ?: $transaction->type ?: 'Transaction')));
+        $memberName = $sourceDetails['member']['name'] ?? null;
+
+        if ($memberName) {
+            $source = match ($transaction->model_name) {
+                'payment' => ($sourceDetails['is_membership_payment'] ?? false) ? "{$memberName}'s Membership Payment" : "{$memberName}'s Payment",
+                'sale' => "{$memberName}'s Sale",
+                'wallet_topup' => "{$memberName}'s Wallet Top-up",
+                'event_registration' => "{$memberName}'s Event Registration",
+                default => "{$memberName}'s {$source}",
+            };
+        }
+
         $reference = trim((string) ($transaction->reference_number ?? ''));
 
         return $reference !== '' ? $source . ' · ' . $reference : $source;
@@ -387,6 +501,11 @@ class DashboardOverviewService
             'wallet_topup' => '/wallet-topups/' . $transaction->reference_id,
             default => null,
         };
+    }
+
+    private function transactionSourceKey(CompanyAccountTransaction $transaction): string
+    {
+        return (string) $transaction->model_name . ':' . (string) $transaction->reference_id;
     }
 
     private function buildSalesStatsData(int $tenantId, Carbon $startAt, Carbon $endAt): array

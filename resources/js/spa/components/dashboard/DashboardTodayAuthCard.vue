@@ -78,6 +78,83 @@
         description="No authentication records matched the selected tab and date range."
       />
 
+      <ul
+        v-else-if="groupActiveTab"
+        class="m-0 max-h-[300px] overflow-auto divide-y divide-secondary-200 p-0 dark:divide-secondary-700 sm:max-h-[340px] md:h-[340px]"
+      >
+        <li
+          v-for="group in groupedAuthList"
+          :key="`auth-group-${authActiveTab}-${group.key}`"
+          class="px-3 py-3 transition-colors hover:bg-secondary-50/70 dark:hover:bg-secondary-800/40 sm:px-4"
+        >
+          <div class="flex items-start gap-2.5 sm:gap-3">
+            <div class="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center border border-secondary-200 dark:border-secondary-700">
+              <button
+                v-if="group.picture_url"
+                type="button"
+                class="group relative h-full w-full"
+                @click="openImageViewer(group.firstEvent)"
+              >
+                <img
+                  :src="group.picture_url"
+                  alt="Captured snapshot"
+                  class="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <span class="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+              </button>
+              <ScanFace v-else class="h-4 w-4 text-secondary-400" :stroke-width="1.8" />
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <RouterLink
+                    v-if="group.member_id"
+                    :to="`/members/${group.member_id}`"
+                    class="block truncate text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400"
+                  >
+                    {{ group.name }}
+                  </RouterLink>
+                  <p v-else class="truncate text-sm font-semibold" style="color: var(--text-strong)">
+                    {{ group.name }}
+                  </p>
+                  <p class="mt-0.5 truncate text-[11px]" style="color: var(--text-muted)">
+                    {{ formatNumber(group.events.length) }} {{ group.events.length === 1 ? 'event' : 'events' }}
+                  </p>
+                </div>
+                <span
+                  class="inline-flex max-w-20 shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-center text-[10px] font-semibold leading-tight sm:max-w-none sm:text-[11px]"
+                  :class="authStatusClass(group.firstEvent)"
+                >
+                  {{ authStatusText(group.firstEvent) }}
+                </span>
+              </div>
+
+              <ol class="mt-2 space-y-1.5">
+                <li
+                  v-for="(event, index) in group.events"
+                  :key="`auth-group-event-${event.id}`"
+                  class="flex items-start gap-2 text-xs"
+                >
+                  <span class="mt-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full text-[10px] font-semibold" style="color: var(--text-muted); background: var(--surface-muted)">
+                    {{ index + 1 }}
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate" style="color: var(--text-strong)">
+                      {{ formatDateTime(event.event_time) }}
+                    </span>
+                    <span class="block truncate text-[11px]" style="color: var(--text-muted)">
+                      Method: {{ formatAuthMethod(event.auth_method) }}
+                    </span>
+                  </span>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </li>
+      </ul>
+
       <ul v-else class="m-0 max-h-[300px] overflow-auto divide-y divide-secondary-200 p-0 dark:divide-secondary-700 sm:max-h-[340px] md:h-[340px]">
         <li
           v-for="event in activeAuthList"
@@ -103,7 +180,14 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold truncate" style="color: var(--text-strong)">
+            <RouterLink
+              v-if="event.member?.id"
+              :to="`/members/${event.member.id}`"
+              class="block truncate text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400"
+            >
+              {{ event.member?.name || event.person_name || 'Unknown person' }}
+            </RouterLink>
+            <p v-else class="text-sm font-semibold truncate" style="color: var(--text-strong)">
               {{ event.member?.name || event.person_name || 'Unknown person' }}
             </p>
             <p class="text-xs truncate" style="color: var(--text-muted)">
@@ -151,6 +235,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import { ScanFace, X } from 'lucide-vue-next';
 import AppEmptyState from '../AppEmptyState.vue';
 import { useDateTimeFormat } from '../../composables/useDateTimeFormat';
@@ -226,6 +311,44 @@ const activeAuthList = computed(() => {
 
   return props.summary?.lists?.success_attempts || [];
 });
+
+const groupActiveTab = computed(() => ['success_attempts', 'payment_expired'].includes(authActiveTab.value));
+
+const groupedAuthList = computed(() => {
+  const groups = new Map();
+
+  activeAuthList.value.forEach((event) => {
+    const key = authGroupKey(event);
+    const existing = groups.get(key) || {
+      key,
+      name: event.member?.name || event.person_name || 'Unknown person',
+      member_id: event.member?.id || null,
+      picture_url: event.picture_url || '',
+      firstEvent: event,
+      events: [],
+    };
+
+    if (!existing.picture_url && event.picture_url) {
+      existing.picture_url = event.picture_url;
+      existing.firstEvent = event;
+    }
+
+    existing.events.push(event);
+    groups.set(key, existing);
+  });
+
+  return Array.from(groups.values()).map((group) => ({
+    ...group,
+    events: [...group.events].sort((a, b) => new Date(b.event_time || 0) - new Date(a.event_time || 0)),
+  }));
+});
+
+function authGroupKey(event) {
+  if (event?.member?.id) return `member-${event.member.id}`;
+  if (event?.employee_no) return `employee-${event.employee_no}`;
+  if (event?.person_name) return `person-${event.person_name}`;
+  return `event-${event?.id || 'unknown'}`;
+}
 
 function openImageViewer(event) {
   if (!event?.picture_url) return;

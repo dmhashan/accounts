@@ -58,14 +58,14 @@
       <div class="app-page-scroll flex flex-col min-h-0">
         <div class="app-widget-content-scroll flex min-h-0 flex-col gap-3 sm:gap-4">
           <div class="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-12">
-            <div class="min-h-0 md:col-span-5 xl:col-span-4">
+            <div class="min-h-0 md:col-span-6">
               <DashboardIncomeExpenseCard
                 :loading="loading"
                 :summary="incomeExpenseSummary"
               />
             </div>
 
-            <div class="min-h-0 md:col-span-7 xl:col-span-8">
+            <div class="min-h-0 md:col-span-6">
               <DashboardTodayAuthCard
                 :loading="loading"
                 :summary="todayAuthSummary"

@@ -93,9 +93,7 @@
           v-for="transaction in summary.transactions"
           :key="transaction.id"
         >
-          <component
-            :is="transaction.source_path ? RouterLink : 'div'"
-            :to="transaction.source_path || undefined"
+          <div
             class="flex min-h-12 items-center gap-2.5 px-3 py-2 transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50 sm:py-2.5"
           >
             <div
@@ -108,7 +106,14 @@
               <ArrowUpRight v-else class="h-4 w-4" />
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-xs font-semibold" style="color: var(--text-strong)">
+              <RouterLink
+                v-if="transaction.source_path"
+                :to="transaction.source_path"
+                class="block truncate text-xs font-semibold text-primary-600 hover:underline dark:text-primary-400"
+              >
+                {{ transaction.source_label }}
+              </RouterLink>
+              <p v-else class="truncate text-xs font-semibold" style="color: var(--text-strong)">
                 {{ transaction.source_label }}
               </p>
               <p class="truncate text-[10px]" style="color: var(--text-muted)">
@@ -121,7 +126,7 @@
             >
               {{ signedMoney(transaction.amount) }}
             </p>
-          </component>
+          </div>
         </li>
       </ul>
     </div>
