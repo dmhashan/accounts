@@ -36,6 +36,26 @@
     </div>
 
     <CalculatorModal v-if="calculatorOpen" @close="calculatorOpen = false" />
+    <AppConfirmModal
+      v-if="keepUnlockConfirmOpen"
+      title="Danger: Keep Door Unlocked?"
+      confirm-label="Keep Door Unlocked"
+      cancel-label="Cancel"
+      loading-label="Unlocking..."
+      variant="danger"
+      :loading="keepUnlockConfirmLoading"
+      @confirm="confirmDoorKeepUnlock"
+      @cancel="cancelDoorKeepUnlock"
+    >
+      <div class="flex gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+          <TriangleAlert class="h-5 w-5" />
+        </div>
+        <p class="text-sm font-medium text-red-800 dark:text-red-200">
+          This will leave the door open to everyone until it is reset to usual access. Only continue if staff are actively monitoring the entrance.
+        </p>
+      </div>
+    </AppConfirmModal>
   </div>
 </template>
 
@@ -46,10 +66,10 @@ import {
   Calculator,
   LayoutDashboard,
   LoaderCircle,
-  LockKeyholeOpen,
   LockOpen,
   RotateCcw,
   ShoppingBag,
+  TriangleAlert,
   UserRoundPlus,
   WalletCards,
 } from 'lucide-vue-next';
@@ -58,12 +78,15 @@ import AppMobileDrawer from './layout/AppMobileDrawer.vue';
 import AppBottomNav from './layout/AppBottomNav.vue';
 import AssistiveTouchButton from './components/AssistiveTouchButton.vue';
 import CalculatorModal from './components/CalculatorModal.vue';
+import AppConfirmModal from './components/AppConfirmModal.vue';
 import { apiRequest } from './composables/useApiClient';
 import { useAppContext } from './composables/useAppContext';
 import { routeLoader } from './routeLoader';
 
 const mobileMenuOpen = ref(false);
 const calculatorOpen = ref(false);
+const keepUnlockConfirmOpen = ref(false);
+const keepUnlockConfirmLoading = ref(false);
 const biometricConnected = ref(false);
 const doorStatusLoading = ref(false);
 const doorKeepUnlocked = ref(false);
@@ -118,6 +141,30 @@ async function triggerBiometricAction(path, options = {}) {
     doorKeepUnlocked.value = false;
     showAssistiveFeedback('error', err?.response?.data?.message || 'Action failed. Check biometric connection.');
     if (typeof options.onError === 'function') options.onError(err);
+  }
+}
+
+function requestDoorKeepUnlock() {
+  keepUnlockConfirmOpen.value = true;
+}
+
+function cancelDoorKeepUnlock() {
+  if (keepUnlockConfirmLoading.value) return;
+  keepUnlockConfirmOpen.value = false;
+}
+
+async function confirmDoorKeepUnlock() {
+  if (keepUnlockConfirmLoading.value) return;
+  keepUnlockConfirmLoading.value = true;
+  try {
+    await triggerBiometricAction('/api/settings/biometric/keep-unlock', {
+      onSuccess: () => {
+        doorKeepUnlocked.value = true;
+        keepUnlockConfirmOpen.value = false;
+      },
+    });
+  } finally {
+    keepUnlockConfirmLoading.value = false;
   }
 }
 
@@ -230,11 +277,9 @@ const assistiveActions = computed(() => {
         {
           id: 'biometric-keep-unlock',
           label: 'Door Keep Unlock',
-          icon: LockKeyholeOpen,
-          color: 'blue',
-          handler: () => triggerBiometricAction('/api/settings/biometric/keep-unlock', {
-            onSuccess: () => { doorKeepUnlocked.value = true; },
-          }),
+          icon: TriangleAlert,
+          color: 'red',
+          handler: requestDoorKeepUnlock,
         },
       ];
     }

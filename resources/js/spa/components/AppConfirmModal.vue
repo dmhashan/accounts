@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="fixed inset-0 z-[90] flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/50" @click="$emit('cancel')" />
       <div class="relative z-10 w-full max-w-sm rounded-2xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 shadow-xl">
         <div class="flex items-center justify-between p-5 border-b border-secondary-200 dark:border-secondary-700">
@@ -66,8 +66,8 @@ const props = defineProps({
 defineEmits(['confirm', 'cancel']);
 
 const variantClass = computed(() => ({
-    danger:  'bg-red-600 hover:bg-red-700',
+    danger:  'bg-red-700 hover:bg-red-800',
     warning: 'bg-amber-600 hover:bg-amber-700',
     primary: 'bg-primary-600 hover:bg-primary-700',
-}[props.variant] ?? 'bg-red-600 hover:bg-red-700'));
+}[props.variant] ?? 'bg-red-700 hover:bg-red-800'));
 </script>
