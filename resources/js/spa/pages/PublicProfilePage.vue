@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f5f5f5] flex flex-col">
+  <div class="member-portal-shell min-h-screen flex flex-col">
     <LoadingScreen v-if="screen === 'loading'" />
 
     <IdentifyScreen

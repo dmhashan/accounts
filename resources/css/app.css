@@ -760,6 +760,102 @@
         overscroll-behavior: contain;
     }
 
+    /* ── Member portal authentication ─────────────────────── */
+    .member-portal-shell {
+        color: var(--text-strong);
+        background:
+            radial-gradient(circle at 50% -12%, color-mix(in srgb, var(--color-primary-400) 18%, transparent), transparent 38rem),
+            linear-gradient(160deg, color-mix(in srgb, var(--shell-bg) 92%, var(--color-primary-100)), var(--shell-bg) 52%);
+    }
+
+    .dark .member-portal-shell {
+        background:
+            radial-gradient(circle at 50% -12%, color-mix(in srgb, var(--color-primary-500) 14%, transparent), transparent 38rem),
+            linear-gradient(160deg, color-mix(in srgb, var(--shell-bg) 94%, var(--color-primary-950)), var(--shell-bg) 52%);
+    }
+
+    .member-auth-icon {
+        color: #ffffff;
+        background: linear-gradient(145deg, var(--color-primary-500), var(--color-primary-800));
+        border: 1px solid color-mix(in srgb, var(--color-primary-300) 35%, transparent);
+        box-shadow: 0 16px 32px -18px color-mix(in srgb, var(--color-primary-800) 72%, transparent);
+    }
+
+    .member-auth-logo {
+        background: color-mix(in srgb, #ffffff 92%, var(--color-primary-100));
+    }
+
+    .dark .member-auth-logo {
+        background: color-mix(in srgb, #ffffff 94%, var(--surface-muted));
+    }
+
+    .member-auth-title {
+        color: var(--text-strong);
+    }
+
+    .member-auth-muted,
+    .member-auth-label {
+        color: var(--text-muted);
+    }
+
+    .member-auth-card {
+        background: color-mix(in srgb, var(--surface-card) 96%, transparent);
+        border: 1px solid color-mix(in srgb, var(--surface-border) 88%, var(--color-primary-200));
+        box-shadow: var(--surface-shadow);
+        backdrop-filter: blur(12px);
+    }
+
+    .member-auth-input {
+        width: 100%;
+        color: var(--text-strong);
+        background: var(--control-bg);
+        border: 1px solid var(--control-border);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    .member-auth-input::placeholder {
+        color: var(--text-muted);
+        opacity: 0.68;
+    }
+
+    .member-auth-input:focus {
+        border-color: var(--color-primary-500);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+        outline: none;
+    }
+
+    .member-auth-primary {
+        color: #ffffff;
+        background: linear-gradient(105deg, var(--color-primary-500), var(--color-primary-700));
+        box-shadow: 0 12px 24px -16px color-mix(in srgb, var(--color-primary-800) 75%, transparent);
+        transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .member-auth-primary:hover:not(:disabled) {
+        filter: brightness(1.08);
+        box-shadow: 0 16px 28px -16px color-mix(in srgb, var(--color-primary-800) 85%, transparent);
+    }
+
+    .member-auth-primary:active:not(:disabled) {
+        transform: translateY(1px);
+        filter: brightness(0.96);
+    }
+
+    .member-auth-primary:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
+    }
+
+    .member-auth-secondary {
+        color: var(--text-muted);
+        transition: color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .member-auth-secondary:hover {
+        color: var(--color-primary-600);
+        background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+    }
+
     /* ── Public Profile App ─────────────────────────────────── */
     .pp-input {
         display: block;
