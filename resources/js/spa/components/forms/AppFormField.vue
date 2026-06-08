@@ -2,7 +2,7 @@
   <div class="min-w-0" :class="wrapperClass">
     <label
       v-if="label"
-      :for="forId"
+      :for="forId || null"
       class="mb-1.5 block text-xs font-medium text-secondary-700 dark:text-secondary-300"
     >
       {{ label }}

@@ -181,6 +181,32 @@
           </div>
         </template>
       </div>
+
+      <!-- Member Reachable Configurations -->
+      <div class="app-surface rounded-2xl p-4 md:p-6 mt-6">
+        <h3 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300 uppercase tracking-wide mb-4">
+          Member Reachable Configurations
+        </h3>
+
+        <div v-if="formatsLoading" class="py-4 text-center text-sm text-secondary-500 dark:text-secondary-400">
+          Loading...
+        </div>
+
+        <template v-else>
+          <MemberReachableConfigFields v-model="memberReachableConfig" />
+
+          <div class="mt-4 flex items-center justify-end">
+            <button
+              type="button"
+              class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              :disabled="memberNotificationsSaving"
+              @click="saveMemberNotifications"
+            >
+              {{ memberNotificationsSaving ? 'Saving...' : 'Save Member Notifications' }}
+            </button>
+          </div>
+        </template>
+      </div>
     </div>
 
     <!-- Logo Crop Modal -->
@@ -205,6 +231,7 @@ import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 import AvatarCropModal from '../components/AvatarCropModal.vue';
+import MemberReachableConfigFields from '../components/settings/MemberReachableConfigFields.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const loading = ref(true);
@@ -229,6 +256,12 @@ const formatsSaving = ref(false);
 const formats = ref({ dateFormat: 'D MMM YYYY', timeFormat: 'HH:mm' });
 const dateFormatOptions = ref([]);
 const timeFormatOptions = ref([]);
+const memberNotificationsSaving = ref(false);
+const memberReachableConfig = ref({
+    member_login_url: '',
+    whatsapp_group_url: '',
+    whatsapp_groups: [],
+});
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const formatPreview = computed(() => {
@@ -282,6 +315,7 @@ async function loadFormats() {
             dateFormat: cfg['general.date_format'] || 'D MMM YYYY',
             timeFormat: cfg['general.time_format'] || 'HH:mm',
         };
+        memberReachableConfig.value = parseMemberReachableConfig(cfg['general.member_notifications']);
         dateFormatOptions.value = optRes.date_formats || [];
         timeFormatOptions.value = optRes.time_formats || [];
     } catch { /* ignore */ } finally {
@@ -307,6 +341,54 @@ async function saveFormats() {
     } finally {
         formatsSaving.value = false;
     }
+}
+
+async function saveMemberNotifications() {
+    memberNotificationsSaving.value = true;
+    saveError.value = '';
+    successMessage.value = '';
+    try {
+        await apiRequest('/api/settings/configuration', {
+            method: 'put',
+            data: {
+                'general.member_notifications': serializeMemberNotificationConfig(),
+            },
+        });
+        successMessage.value = 'Member notification settings saved.';
+        setTimeout(() => { successMessage.value = ''; }, 3000);
+    } catch (error) {
+        saveError.value = error?.response?.data?.message || error?.message || 'Failed to save member notification settings.';
+    } finally {
+        memberNotificationsSaving.value = false;
+    }
+}
+
+function parseMemberReachableConfig(raw) {
+    try {
+        const config = JSON.parse(raw || '{}') || {};
+
+        return {
+            member_login_url: config.member_login_url || '',
+            whatsapp_group_url: config.whatsapp_group_url || '',
+            whatsapp_groups: Array.isArray(config.whatsapp_groups) ? config.whatsapp_groups : [],
+        };
+    } catch {
+        return {
+            member_login_url: '',
+            whatsapp_group_url: '',
+            whatsapp_groups: [],
+        };
+    }
+}
+
+function serializeMemberNotificationConfig() {
+    return JSON.stringify({
+        member_login_url: memberReachableConfig.value.member_login_url || '',
+        whatsapp_group_url: memberReachableConfig.value.whatsapp_group_url || '',
+        whatsapp_groups: Array.isArray(memberReachableConfig.value.whatsapp_groups)
+            ? memberReachableConfig.value.whatsapp_groups
+            : [],
+    });
 }
 
 async function submit() {

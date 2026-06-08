@@ -264,6 +264,17 @@
                 </div>
               </Transition>
             </div>
+
+            <!-- Member Reachable Configurations -->
+            <div class="px-4 md:px-6 py-4 space-y-4">
+              <div>
+                <p class="text-sm font-medium" style="color: var(--text-strong)">
+                  Member Reachable Configurations
+                </p>
+              </div>
+
+              <MemberReachableConfigFields v-model="memberReachableConfig" />
+            </div>
           </div>
 
           <!-- Save button -->
@@ -296,6 +307,7 @@ import { Bell, BellRing, Mail, MessageSquare } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import MemberReachableConfigFields from '../components/settings/MemberReachableConfigFields.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const loading = ref(true);
@@ -318,6 +330,13 @@ const form = ref({
     'notifications.sms.user_id': '',
     'notifications.sms.api_key': '',
     'notifications.sms.sender_id': '',
+    'general.member_notifications': '{}',
+});
+
+const memberReachableConfig = ref({
+    member_login_url: '',
+    whatsapp_group_url: '',
+    whatsapp_groups: [],
 });
 
 function toggle(key) {
@@ -335,6 +354,7 @@ async function load() {
                 form.value[key] = data[key];
             }
         });
+        memberReachableConfig.value = parseMemberReachableConfig(form.value['general.member_notifications']);
     } catch {
         loadError.value = 'Failed to load configuration.';
     } finally {
@@ -347,6 +367,7 @@ async function save() {
     saveError.value = '';
     successMessage.value = '';
     try {
+        form.value['general.member_notifications'] = serializeMemberNotificationConfig();
         await apiRequest('/api/settings/configuration', { method: 'PUT', data: form.value });
         successMessage.value = 'Configuration saved successfully.';
         setTimeout(() => { successMessage.value = ''; }, 3000);
@@ -355,6 +376,34 @@ async function save() {
     } finally {
         submitting.value = false;
     }
+}
+
+function parseMemberReachableConfig(raw) {
+    try {
+        const config = JSON.parse(raw || '{}') || {};
+
+        return {
+            member_login_url: config.member_login_url || '',
+            whatsapp_group_url: config.whatsapp_group_url || '',
+            whatsapp_groups: Array.isArray(config.whatsapp_groups) ? config.whatsapp_groups : [],
+        };
+    } catch {
+        return {
+            member_login_url: '',
+            whatsapp_group_url: '',
+            whatsapp_groups: [],
+        };
+    }
+}
+
+function serializeMemberNotificationConfig() {
+    return JSON.stringify({
+        member_login_url: memberReachableConfig.value.member_login_url || '',
+        whatsapp_group_url: memberReachableConfig.value.whatsapp_group_url || '',
+        whatsapp_groups: Array.isArray(memberReachableConfig.value.whatsapp_groups)
+            ? memberReachableConfig.value.whatsapp_groups
+            : [],
+    });
 }
 
 onMounted(load);

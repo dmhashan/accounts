@@ -14,6 +14,7 @@ class MemberService
     public function __construct(
         private readonly MediaStorageService $media,
         private readonly BiometricSyncService $biometric,
+        private readonly AutomatedMemberNotificationService $notifications,
     ) {}
 
     public function meta(): array
@@ -218,6 +219,7 @@ class MemberService
         $member = Member::create($validated);
 
         $this->biometric->syncMember($member, 'create');
+        $this->notifications->sendWelcome($member);
 
         return $member;
     }

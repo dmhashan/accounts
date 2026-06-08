@@ -29,6 +29,7 @@ class TenantConfigurationService
         // General display preferences
         'general.date_format' => ['Date Format', DateFormat::DayMonYear->value],
         'general.time_format' => ['Time Format', TimeFormat::H24->value],
+        'general.member_notifications' => ['Member Notification Rules', '{}'],
 
         // Biometric device integration
         'biometric.enabled' => ['Biometric Integration',        '0'],

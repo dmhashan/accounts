@@ -40,6 +40,7 @@ class ConfigurationApiController extends Controller
             // General display preferences
             'general.date_format' => ['sometimes', new Enum(DateFormat::class)],
             'general.time_format' => ['sometimes', new Enum(TimeFormat::class)],
+            'general.member_notifications' => ['sometimes', 'nullable', 'json'],
 
             'notifications.inapp.enabled' => ['sometimes', 'in:0,1'],
             'notifications.email.enabled' => ['sometimes', 'in:0,1'],

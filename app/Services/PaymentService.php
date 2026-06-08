@@ -14,6 +14,7 @@ class PaymentService
 {
     public function __construct(
         private readonly BiometricSyncService $biometric,
+        private readonly AutomatedMemberNotificationService $notifications,
     ) {}
 
     public function meta(int $tenantId): array
@@ -269,6 +270,7 @@ class PaymentService
         });
 
         $this->triggerBiometricSync($payment->member_id, $tenantId);
+        $this->notifications->sendPaymentReceipt($payment);
 
         return $payment;
     }

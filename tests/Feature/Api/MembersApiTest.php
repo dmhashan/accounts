@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\MemberNotification;
 use App\Services\BiometricSyncService;
+use App\Services\TenantConfigurationService;
 use Illuminate\Support\Str;
 
 class MembersApiTest extends ApiRouteTestCase
@@ -146,6 +148,51 @@ class MembersApiTest extends ApiRouteTestCase
             'email' => 'member-store@example.com',
             'username' => 'member-store',
         ]);
+    }
+
+    public function testMembersStoreRouteSendsWelcomeNotificationWithConfiguredLinks(): void
+    {
+        $this->createRole('member');
+        $this->actingAsUser(['users.view', 'users.create']);
+
+        $biometric = \Mockery::mock(BiometricSyncService::class);
+        $biometric->shouldReceive('syncMember')->andReturnNull();
+        $this->app->instance(BiometricSyncService::class, $biometric);
+
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.inapp.enabled' => '1',
+            'general.member_notifications' => json_encode([
+                'member_login_url' => 'https://members.test/login',
+                'whatsapp_group_url' => 'https://chat.whatsapp.com/general',
+                'whatsapp_groups' => [
+                    [
+                        'name' => 'Specific Members',
+                        'url' => 'https://chat.whatsapp.com/female',
+                        'rules' => [
+                            ['field' => 'gender', 'operator' => 'equals', 'value' => 'male'],
+                            ['boolean' => 'or', 'field' => 'username', 'operator' => 'equals', 'value' => 'nimali'],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $payload = $this->memberPayload([
+            'first_name' => 'Nimali',
+            'last_name' => 'Perera',
+            'email' => 'nimali@example.com',
+            'username' => 'nimali',
+            'gender' => 'female',
+        ]);
+
+        $this->postJson('/api/members', $payload)->assertCreated();
+
+        $notification = MemberNotification::query()
+            ->where('type', 'member_welcome')
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertSame("Hi Nimali Perera, welcome to Test Gym\n\nLogin: https://members.test/login\n\nWhatsApp: https://chat.whatsapp.com/general, https://chat.whatsapp.com/female\nLet's begin your fitness journey!", $notification->body);
     }
 
     public function testMembersUpdateRouteUpdatesMember(): void

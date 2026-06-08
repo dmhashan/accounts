@@ -5,7 +5,9 @@ namespace Tests\Feature\Api;
 use App\Models\CompanyAccount;
 use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
+use App\Services\AutomatedMemberNotificationService;
 use App\Services\BiometricSyncService;
+use App\Services\TenantConfigurationService;
 use Illuminate\Support\Carbon;
 
 class PaymentsApiTest extends ApiRouteTestCase
@@ -294,6 +296,71 @@ class PaymentsApiTest extends ApiRouteTestCase
 
         $this->assertSame('4000.00', (string) $member->fresh()->current_balance);
         $this->assertDatabaseCount('payment_memberships', 1);
+    }
+
+    public function testMembershipPaymentSendsReceiptNotification(): void
+    {
+        $this->actingAsUser(['payments.manage']);
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.inapp.enabled' => '1',
+        ]);
+
+        $member = $this->createMember(null, ['first_name' => 'Kamal', 'last_name' => 'Silva', 'name' => 'Kamal Silva']);
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 2500]);
+        $account = $this->createAccount(['name' => 'Main Cash']);
+
+        $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'company_account_id' => $account->id,
+            'payment_method' => 'cash',
+            'payment_plan_id' => $plan->id,
+            'amount' => 2500,
+            'payment_date' => '2026-06-08',
+            'start_date' => '2026-06-08',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('member_notifications', [
+            'tenant_id' => $this->tenant->id,
+            'member_id' => $member->id,
+            'type' => 'membership_payment_received',
+            'body' => 'Payment received! Kamal Silva paid 2,500.00 at Test Gym on 2026-06-08 via Main Cash',
+        ]);
+    }
+
+    public function testMembershipExpiryReminderServiceQueuesDueOffsets(): void
+    {
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.inapp.enabled' => '1',
+        ]);
+
+        $member = $this->createMember(null, ['first_name' => 'Asha', 'last_name' => 'Fernando', 'name' => 'Asha Fernando']);
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month']);
+        $payment = MemberPayment::create([
+            'tenant_id' => $this->tenant->id,
+            'member_id' => $member->id,
+            'company_account_id' => $this->createAccount()->id,
+            'payment_method' => 'cash',
+            'amount' => 1000,
+            'payment_date' => '2026-06-01',
+        ]);
+        PaymentMembership::create([
+            'tenant_id' => $this->tenant->id,
+            'member_payment_id' => $payment->id,
+            'payment_plan_id' => $plan->id,
+            'start_date' => '2026-06-01',
+            'end_date' => '2026-06-15',
+        ]);
+
+        $count = app(AutomatedMemberNotificationService::class)
+            ->sendMembershipExpiryReminders(Carbon::parse('2026-06-08'));
+
+        $this->assertSame(1, $count);
+        $this->assertDatabaseHas('member_notifications', [
+            'tenant_id' => $this->tenant->id,
+            'member_id' => $member->id,
+            'type' => 'membership_expiry_7_days_before',
+            'body' => 'Hey Asha Fernando, your payment at Test Gym was due on 2026-06-15. Please renew and stay active!',
+        ]);
     }
 
     public function testInsufficientWalletBalanceFails(): void
