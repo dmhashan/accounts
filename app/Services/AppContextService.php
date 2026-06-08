@@ -39,6 +39,7 @@ class AppContextService
                 'dashboard' => $user->hasPermission('dashboard.view'),
                 'users' => $user->hasPermission('users.view'),
                 'members' => $user->hasPermission('users.view'),
+                'membersCreate' => $user->hasPermission('users.create'),
                 'roles' => $user->hasPermission('roles.view'),
                 'settings' => $user->hasPermission('settings.manage'),
                 'reports' => $user->hasPermission('reports.view'),

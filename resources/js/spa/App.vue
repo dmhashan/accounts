@@ -41,7 +41,18 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { Calculator, LoaderCircle, LockKeyholeOpen, LockOpen, RotateCcw } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
+import {
+  Calculator,
+  LayoutDashboard,
+  LoaderCircle,
+  LockKeyholeOpen,
+  LockOpen,
+  RotateCcw,
+  ShoppingBag,
+  UserRoundPlus,
+  WalletCards,
+} from 'lucide-vue-next';
 import AppSidebar from './layout/AppSidebar.vue';
 import AppMobileDrawer from './layout/AppMobileDrawer.vue';
 import AppBottomNav from './layout/AppBottomNav.vue';
@@ -58,6 +69,7 @@ const doorStatusLoading = ref(false);
 const doorKeepUnlocked = ref(false);
 const assistiveFeedback = ref({ show: false, type: 'success', message: '' });
 const appContext = useAppContext();
+const router = useRouter();
 let assistiveFeedbackTimer = null;
 
 function showAssistiveFeedback(type, message) {
@@ -136,30 +148,78 @@ async function handleAssistiveMenuOpen() {
  * Each entry: { id, label, icon (Lucide component), handler }
  */
 const assistiveActions = computed(() => {
+  const actions = [
+    {
+      id: 'calculator',
+      label: 'Calculator',
+      icon: Calculator,
+      color: 'orange',
+      handler: () => { calculatorOpen.value = true; },
+    },
+  ];
+
+  if (appContext.permissions?.dashboard) {
+    actions.push({
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      color: 'primary',
+      handler: () => router.push('/dashboard'),
+    });
+  }
+
+  if (appContext.permissions?.membersCreate) {
+    actions.push({
+      id: 'member-create',
+      label: 'Add Member',
+      icon: UserRoundPlus,
+      color: 'green',
+      handler: () => router.push('/members/new'),
+    });
+  }
+
+  if (appContext.permissions?.paymentsManage) {
+    actions.push({
+      id: 'membership-payment',
+      label: 'Membership Payment',
+      icon: WalletCards,
+      color: 'blue',
+      handler: () => router.push({
+        path: '/payments',
+        query: { action: 'membership', open: Date.now() },
+      }),
+    });
+  }
+
+  if (appContext.permissions?.salesCreate) {
+    actions.push({
+      id: 'sale-create',
+      label: 'New Sale',
+      icon: ShoppingBag,
+      color: 'purple',
+      handler: () => router.push('/sales/new'),
+    });
+  }
+
   if (biometricConnected.value) {
     if (doorStatusLoading.value) {
       return [
+        ...actions,
         {
-        id: 'biometric-status-loading',
-        label: 'Checking Door...',
-        icon: LoaderCircle,
-        color: 'indigo',
-        loading: true,
-        disabled: true,
-        handler: () => {},
+          id: 'biometric-status-loading',
+          label: 'Checking Door...',
+          icon: LoaderCircle,
+          color: 'indigo',
+          loading: true,
+          disabled: true,
+          handler: () => {},
         },
       ];
     }
 
     if (!doorKeepUnlocked.value) {
       return [
-        {
-          id: 'calculator',
-          label: 'Calculator',
-          icon: Calculator,
-          color: 'orange',
-          handler: () => { calculatorOpen.value = true; },
-        },
+        ...actions,
         {
           id: 'biometric-unlock',
           label: 'Door Unlock',
@@ -180,6 +240,7 @@ const assistiveActions = computed(() => {
     }
 
     return [
+      ...actions,
       {
         id: 'biometric-reset-mode',
         label: 'Reset to Usual Access',
@@ -193,15 +254,7 @@ const assistiveActions = computed(() => {
     ];
   }
 
-  return [
-    {
-      id: 'calculator',
-      label: 'Calculator',
-      icon: Calculator,
-      color: 'orange',
-      handler: () => { calculatorOpen.value = true; },
-    },
-  ];
+  return actions;
 });
 
 onMounted(() => {

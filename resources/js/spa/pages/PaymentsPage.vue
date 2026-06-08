@@ -449,7 +449,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { CreditCard, Plus, Tag, X } from 'lucide-vue-next';
 import AppConfirmModal from '../components/AppConfirmModal.vue';
@@ -645,6 +645,15 @@ function openMembershipModal() {
     loadMeta();
 }
 
+function openMembershipModalFromRoute() {
+    if (!canManage.value || activeTab.value !== 'payments' || route.query.action !== 'membership') {
+        return;
+    }
+
+    openMembershipModal();
+    router.replace({ path: '/payments', query: {} }).catch(() => {});
+}
+
 function closeMembershipModal() {
     memModalOpen.value = false;
 }
@@ -698,6 +707,11 @@ onMounted(() => {
     loadPayments();
     loadPlans();
     loadMeta();
+    openMembershipModalFromRoute();
 });
-</script>
 
+watch(
+    () => [route.path, route.query.action, route.query.open],
+    openMembershipModalFromRoute
+);
+</script>
