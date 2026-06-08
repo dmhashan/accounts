@@ -29,7 +29,7 @@
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased bg-gradient-to-br from-blue-50 to-indigo-100">
+<body class="app-auth-shell font-sans antialiased">
     {{ $slot }}
 </body>
 </html>

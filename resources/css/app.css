@@ -310,6 +310,74 @@
         scrollbar-color: color-mix(in srgb, var(--sidebar-border) 82%, transparent) transparent;
     }
 
+    .app-auth-shell {
+        min-height: 100vh;
+        background:
+            radial-gradient(900px circle at 10% 8%, color-mix(in srgb, var(--color-primary-300) 20%, transparent), transparent 58%),
+            radial-gradient(800px circle at 92% 92%, color-mix(in srgb, var(--shell-bg-accent) 64%, transparent), transparent 60%),
+            linear-gradient(145deg, var(--shell-bg), color-mix(in srgb, var(--shell-bg) 84%, var(--color-primary-950) 16%));
+        color: var(--text-strong);
+    }
+
+    .app-auth-card {
+        background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+        border: 1px solid var(--surface-border);
+        box-shadow:
+            inset 0 1px 0 var(--surface-highlight),
+            0 32px 72px -36px color-mix(in srgb, #000000 72%, transparent);
+        backdrop-filter: blur(20px);
+    }
+
+    .app-auth-logo {
+        width: fit-content;
+        max-width: 100%;
+        margin-bottom: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+        background: color-mix(in srgb, var(--surface-muted) 72%, transparent);
+        border: 1px solid color-mix(in srgb, var(--surface-border) 82%, transparent);
+        box-shadow: inset 0 1px 0 var(--surface-highlight);
+    }
+
+    .app-auth-label {
+        color: var(--text-strong);
+    }
+
+    .app-auth-divider {
+        border-color: var(--surface-border);
+    }
+
+    .app-auth-secondary-action {
+        background: var(--control-bg);
+        border-color: var(--control-border);
+        color: var(--text-strong);
+    }
+
+    .app-auth-secondary-action:hover {
+        background: var(--surface-muted);
+        border-color: var(--control-hover-border);
+    }
+
+    .app-auth-primary-neutral-action {
+        background: #18181b;
+        border: 1px solid #343438;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .app-auth-primary-neutral-action:hover {
+        background: #27272a;
+        border-color: #52525b;
+    }
+
+    .dark .app-auth-card {
+        background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+    }
+
+    .dark .app-auth-logo {
+        background: color-mix(in srgb, #ffffff 92%, var(--surface-muted));
+        border-color: color-mix(in srgb, #ffffff 22%, var(--surface-border));
+    }
+
     .app-logo-tile {
         background: var(--surface-muted);
         border: 1px solid var(--surface-border);

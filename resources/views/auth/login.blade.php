@@ -1,7 +1,7 @@
 <x-guest-layout>
     <x-slot name="title">Login - {{ app('tenant')->name }}</x-slot>
     @php
-        $baseInputClass = 'block h-12 w-full rounded-2xl border border-secondary-300 bg-white px-4 text-sm text-secondary-900 shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-secondary-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10';
+        $baseInputClass = 'app-form-control block h-12 w-full rounded-2xl border px-4 text-sm outline-none';
         $tenantLogoUrl = app('tenant')->logo_path
             ? app(\App\Services\MediaStorageService::class)->url(app('tenant')->logo_path)
             : asset('images/black-text-logo.png');
@@ -9,18 +9,18 @@
     
     <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div class="max-w-md w-full">
-            <div class="bg-white rounded-2xl shadow-xl p-8">
+            <div class="app-auth-card rounded-2xl p-8">
                 <!-- Header -->
                 <div class="text-center mb-8">
-                    <div class="mx-auto">
+                    <div class="amx-auto">
                         <img src="{{ $tenantLogoUrl }}" alt="{{ app('tenant')->name }} logo" class="h-32 mx-auto object-contain">
                     </div>
-                    <h2 class="text-3xl font-bold text-secondary-900">Welcome Back</h2>
-                    <p class="mt-2 text-sm text-secondary-600">Sign in to your account</p>
+                    <h2 class="text-3xl font-bold" style="color: var(--text-strong)">Welcome Back</h2>
+                    <p class="mt-2 text-sm" style="color: var(--text-muted)">Sign in to your account</p>
                 </div>
 
                 @if(session('error'))
-                    <div class="mb-6 bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm">
+                    <div class="app-alert app-alert-error mb-6">
                         {{ session('error') }}
                     </div>
                 @endif
@@ -29,7 +29,7 @@
                     @csrf
 
                     <div>
-                        <label for="login" class="block text-sm font-medium text-secondary-700 mb-2">Username or Email</label>
+                        <label for="login" class="app-auth-label block text-sm font-medium mb-2">Username or Email</label>
                         <input id="login" name="login" type="text" required autofocus
                                class="{{ $baseInputClass }} @error('login') border-red-300 focus:border-red-300 focus:ring-red-100 @enderror"
                                placeholder="john.doe or you@example.com" value="{{ old('login') }}">
@@ -39,7 +39,7 @@
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium text-secondary-700 mb-2">Password</label>
+                        <label for="password" class="app-auth-label block text-sm font-medium mb-2">Password</label>
                         <input id="password" name="password" type="password" required
                                class="{{ $baseInputClass }} @error('password') border-red-300 focus:border-red-300 focus:ring-red-100 @enderror"
                                placeholder="••••••••">
@@ -55,19 +55,19 @@
                 </form>
 
                 <div class="my-6 flex items-center">
-                    <div class="flex-1 border-t border-secondary-200"></div>
-                    <span class="px-3 text-xs uppercase tracking-wider text-secondary-500">or continue with</span>
-                    <div class="flex-1 border-t border-secondary-200"></div>
+                    <div class="app-auth-divider flex-1 border-t"></div>
+                    <span class="px-3 text-xs uppercase tracking-wider" style="color: var(--text-muted)">or continue with</span>
+                    <div class="app-auth-divider flex-1 border-t"></div>
                 </div>
 
                 <div class="space-y-3">
                     <a href="{{ route('auth.social.redirect', 'google') }}"
-                        class="w-full inline-flex items-center justify-center py-3.5 px-4 border border-secondary-300 text-secondary-900 font-semibold rounded-2xl hover:bg-secondary-50 transition-colors">
+                        class="app-auth-secondary-action w-full inline-flex items-center justify-center py-3.5 px-4 border font-semibold rounded-2xl transition-colors">
                         Continue with Google
                     </a>
 
                     <a href="{{ route('auth.social.redirect', 'apple') }}"
-                        class="w-full inline-flex items-center justify-center py-3.5 px-4 bg-secondary-900 hover:bg-secondary-800 text-white font-semibold rounded-2xl transition-colors">
+                        class="app-auth-primary-neutral-action w-full inline-flex items-center justify-center py-3.5 px-4 text-white font-semibold rounded-2xl transition-colors">
                         Continue with Apple
                     </a>
                 </div>
