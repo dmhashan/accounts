@@ -95,11 +95,15 @@ class DashboardOverviewService
         $summary['counts']['total'] = (int) (clone $baseQuery)->count();
         $summary['counts']['success'] = (int) (clone $baseQuery)
             ->where('result', 'success')
-            ->count();
+            ->whereNotNull('member_id')
+            ->distinct()
+            ->count('member_id');
         $summary['counts']['payment_expired'] = (int) (clone $baseQuery)
             ->where('result', 'failed')
             ->where('fail_reason', 'payment_expired')
-            ->count();
+            ->whereNotNull('member_id')
+            ->distinct()
+            ->count('member_id');
         $summary['counts']['other_failed'] = (int) (clone $baseQuery)
             ->where('result', 'failed')
             ->where(function ($query) {

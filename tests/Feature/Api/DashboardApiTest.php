@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\BiometricAccessEvent;
 use App\Models\CompanyAccountTransaction;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -109,6 +110,63 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('income_expense_summary.end_date', now()->subDay()->toDateString())
             ->assertJsonCount(2, 'income_expense_summary.transactions')
             ->assertJsonPath('stock_summary.selected_date', now()->subDay()->toDateString());
+    }
+
+    public function testDashboardAuthSummaryCountsMembersForSuccessAndPaymentExpiredBuckets(): void
+    {
+        $this->actingAsUser(['dashboard.view']);
+
+        $memberA = $this->createMember();
+        $memberB = $this->createMember();
+        $memberExpired = $this->createMember();
+        $eventTime = now()->startOfDay()->addHours(9);
+
+        foreach ([$memberA, $memberA, $memberB] as $index => $member) {
+            BiometricAccessEvent::create([
+                'tenant_id' => $this->tenant->id,
+                'member_id' => $member->id,
+                'biometric_member_id' => $member->biometric_member_id,
+                'employee_no' => $member->biometric_member_id,
+                'person_name' => $member->name,
+                'auth_method' => 'face',
+                'result' => 'success',
+                'event_time' => $eventTime->copy()->addMinutes($index),
+            ]);
+        }
+
+        foreach ([10, 11] as $minute) {
+            BiometricAccessEvent::create([
+                'tenant_id' => $this->tenant->id,
+                'member_id' => $memberExpired->id,
+                'biometric_member_id' => $memberExpired->biometric_member_id,
+                'employee_no' => $memberExpired->biometric_member_id,
+                'person_name' => $memberExpired->name,
+                'auth_method' => 'face',
+                'result' => 'failed',
+                'fail_reason' => 'payment_expired',
+                'event_time' => $eventTime->copy()->addMinutes($minute),
+            ]);
+        }
+
+        BiometricAccessEvent::create([
+            'tenant_id' => $this->tenant->id,
+            'employee_no' => 'UNKNOWN-1',
+            'person_name' => 'Unknown Member',
+            'auth_method' => 'face',
+            'result' => 'failed',
+            'event_time' => $eventTime->copy()->addMinutes(20),
+        ]);
+
+        $response = $this->getJson('/api/dashboard/overview');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('today_auth_summary.counts.total', 6)
+            ->assertJsonPath('today_auth_summary.counts.success', 2)
+            ->assertJsonPath('today_auth_summary.counts.payment_expired', 1)
+            ->assertJsonPath('today_auth_summary.counts.other_failed', 1)
+            ->assertJsonCount(3, 'today_auth_summary.lists.success_attempts')
+            ->assertJsonCount(2, 'today_auth_summary.lists.payment_expired');
     }
 
     public function testDashboardStatsRouteSupportsSelectableDateWeekMonthYearRanges(): void
