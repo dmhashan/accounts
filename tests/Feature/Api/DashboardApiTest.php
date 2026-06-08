@@ -65,7 +65,7 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('income_expense_summary.income', 250)
             ->assertJsonPath('income_expense_summary.expense', 0)
             ->assertJsonPath('income_expense_summary.net_movement', 250)
-            ->assertJsonPath('income_expense_summary.recent_transactions.0.source_path', '/sales/' . $todaySale->id);
+            ->assertJsonPath('income_expense_summary.transactions.0.source_path', '/sales/' . $todaySale->id);
     }
 
     public function testDashboardOverviewRouteSupportsASharedDateRange(): void
@@ -107,6 +107,7 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('income_expense_summary.net_movement', 275)
             ->assertJsonPath('income_expense_summary.start_date', now()->subDays(3)->toDateString())
             ->assertJsonPath('income_expense_summary.end_date', now()->subDay()->toDateString())
+            ->assertJsonCount(2, 'income_expense_summary.transactions')
             ->assertJsonPath('stock_summary.selected_date', now()->subDay()->toDateString());
     }
 
@@ -180,6 +181,44 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('transaction_list.0.sale_id', $yearSale->id)
             ->assertJsonPath('customer_wise_sales.0.customer_name', 'Year Customer')
             ->assertJsonPath('product_wise_sales.0.quantity_sold', 4);
+    }
+
+    public function testDashboardStatsRouteSupportsAccountTransactionsForCustomDateRange(): void
+    {
+        $this->actingAsUser(['accounts.manage']);
+
+        $account = $this->createCompanyAccount();
+        CompanyAccountTransaction::create([
+            'tenant_id' => $this->tenant->id,
+            'company_account_id' => $account->id,
+            'model_name' => 'payment',
+            'type' => 'payment',
+            'amount' => 500,
+            'transaction_date' => now()->subDays(2)->toDateString(),
+        ]);
+        CompanyAccountTransaction::create([
+            'tenant_id' => $this->tenant->id,
+            'company_account_id' => $account->id,
+            'model_name' => 'expense',
+            'type' => 'expense',
+            'amount' => -175,
+            'transaction_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $response = $this->getJson(sprintf(
+            '/api/dashboard/stats?range_type=date_range&start_date=%s&end_date=%s',
+            now()->subDays(2)->toDateString(),
+            now()->subDay()->toDateString(),
+        ));
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('range_type', 'date_range')
+            ->assertJsonPath('can_view_accounts', true)
+            ->assertJsonPath('cash_flow_summary.income', 500)
+            ->assertJsonPath('cash_flow_summary.expense', 175)
+            ->assertJsonPath('cash_flow_summary.net_movement', 325)
+            ->assertJsonCount(2, 'account_transaction_list');
     }
 
     private function createSaleWithItem(

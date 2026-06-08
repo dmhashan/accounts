@@ -1,7 +1,5 @@
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { apiRequest } from './useApiClient';
-
-const AUTO_REFRESH_MS = 60000;
 
 function getTodayInputDate() {
   const now = new Date();
@@ -40,7 +38,7 @@ function createDefaultIncomeExpenseSummary() {
     net_movement: 0,
     income_count: 0,
     expense_count: 0,
-    recent_transactions: [],
+    transactions: [],
   };
 }
 
@@ -73,7 +71,6 @@ export function useDashboardOverview() {
   const selectedEndDate = ref(getTodayInputDate());
   const selectedRangePreset = ref('today');
   const selectedRangeLabel = ref('Today');
-  let autoRefreshTimer = null;
 
   async function loadDashboardSummary() {
     loading.value = true;
@@ -126,18 +123,6 @@ export function useDashboardOverview() {
 
   onMounted(() => {
     loadDashboardSummary();
-    autoRefreshTimer = window.setInterval(() => {
-      if (!loading.value) {
-        loadDashboardSummary();
-      }
-    }, AUTO_REFRESH_MS);
-  });
-
-  onUnmounted(() => {
-    if (autoRefreshTimer) {
-      window.clearInterval(autoRefreshTimer);
-      autoRefreshTimer = null;
-    }
   });
 
   return {

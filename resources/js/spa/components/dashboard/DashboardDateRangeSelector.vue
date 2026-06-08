@@ -1,8 +1,8 @@
 <template>
-  <div ref="selectorRoot" class="relative">
+  <div ref="selectorRoot" class="relative w-full sm:w-auto">
     <button
       type="button"
-      class="inline-flex h-10 max-w-[220px] items-center gap-2 rounded-xl border border-secondary-300 bg-white px-3 text-sm font-semibold text-secondary-700 transition-colors hover:bg-secondary-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-secondary-700 dark:bg-secondary-900 dark:text-secondary-300 dark:hover:bg-secondary-800 sm:max-w-none"
+      class="inline-flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-secondary-300 bg-white px-3 text-sm font-semibold text-secondary-700 transition-colors hover:bg-secondary-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-secondary-700 dark:bg-secondary-900 dark:text-secondary-300 dark:hover:bg-secondary-800 sm:h-10 sm:w-auto sm:max-w-none"
       :disabled="disabled"
       :aria-expanded="open"
       aria-haspopup="menu"
@@ -15,14 +15,14 @@
 
     <div
       v-if="open"
-      class="app-surface absolute right-0 top-full z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-secondary-200 p-3 shadow-xl dark:border-secondary-700"
+      class="app-surface absolute right-0 top-full z-40 mt-2 w-full min-w-0 rounded-lg border border-secondary-200 p-3 shadow-xl dark:border-secondary-700 sm:w-[22rem]"
     >
       <div class="grid grid-cols-2 gap-1.5">
         <button
           v-for="preset in presets"
           :key="preset.id"
           type="button"
-          class="rounded-lg border px-3 py-2 text-left text-xs font-medium transition-colors"
+          class="min-h-11 rounded-lg border px-3 py-2 text-left text-xs font-medium transition-colors"
           :class="selectedPreset === preset.id
             ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
             : 'border-secondary-200 bg-white text-secondary-700 hover:bg-secondary-50 dark:border-secondary-700 dark:bg-secondary-900 dark:text-secondary-300 dark:hover:bg-secondary-800'"
@@ -36,22 +36,22 @@
         <p class="mb-2 text-xs font-semibold" style="color: var(--text-muted)">
           Custom date range
         </p>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <label class="min-w-0">
-            <span class="sr-only">Start date</span>
+            <span class="mb-1 block text-[10px] font-medium uppercase" style="color: var(--text-muted)">From</span>
             <input
               v-model="customStartDate"
               type="date"
-              class="w-full rounded-lg border border-secondary-300 bg-white px-2 py-2 text-xs text-secondary-700 outline-none focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-200"
+              class="h-11 w-full min-w-0 rounded-lg border border-secondary-300 bg-white px-2 text-xs text-secondary-700 outline-none focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-200"
               :max="customEndDate || today"
             />
           </label>
           <label class="min-w-0">
-            <span class="sr-only">End date</span>
+            <span class="mb-1 block text-[10px] font-medium uppercase" style="color: var(--text-muted)">To</span>
             <input
               v-model="customEndDate"
               type="date"
-              class="w-full rounded-lg border border-secondary-300 bg-white px-2 py-2 text-xs text-secondary-700 outline-none focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-200"
+              class="h-11 w-full min-w-0 rounded-lg border border-secondary-300 bg-white px-2 text-xs text-secondary-700 outline-none focus:border-primary-500 dark:border-secondary-600 dark:bg-secondary-800 dark:text-secondary-200"
               :min="customStartDate"
               :max="today"
             />
@@ -59,7 +59,7 @@
         </div>
         <button
           type="button"
-          class="mt-2.5 w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+          class="mt-2.5 min-h-11 w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="!customRangeIsValid"
           @click="applyCustomRange"
         >

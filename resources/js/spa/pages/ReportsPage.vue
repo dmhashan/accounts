@@ -19,24 +19,36 @@
                 <option value="year">
                   Year
                 </option>
+                <option value="date_range">
+                  Date Range
+                </option>
               </AppFormSelect>
             </AppFormField>
 
             <AppFormField :label="rangeValueLabel">
               <AppFormInput
-                v-if="filters.range_type !== 'year'"
+                v-if="filters.range_type !== 'year' && filters.range_type !== 'date_range'"
                 v-model="filters.range_value"
                 :type="filters.range_type"
                 required
               />
               <AppFormInput
-                v-else
+                v-else-if="filters.range_type === 'year'"
                 v-model="filters.range_value"
                 type="number"
                 min="1970"
                 max="9999"
                 required
               />
+              <div v-if="filters.range_type === 'date_range'" class="grid grid-cols-2 gap-2">
+                <AppFormInput v-model="filters.start_date" type="date" required />
+                <AppFormInput
+                  v-model="filters.end_date"
+                  type="date"
+                  :min="filters.start_date"
+                  required
+                />
+              </div>
             </AppFormField>
 
             <div class="block">
@@ -69,8 +81,78 @@
       </div>
 
       <template v-else>
+        <template v-if="cashFlowFocus">
+          <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            <article class="app-surface rounded-xl p-4">
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Income
+              </p>
+              <p class="mt-1 text-lg font-semibold text-green-700 dark:text-green-400 md:text-xl">
+                {{ statsLoading ? '-' : formatMoney(stats.cash_flow_summary.income) }}
+              </p>
+            </article>
+            <article class="app-surface rounded-xl p-4">
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Expenses
+              </p>
+              <p class="mt-1 text-lg font-semibold text-red-700 dark:text-red-400 md:text-xl">
+                {{ statsLoading ? '-' : formatMoney(stats.cash_flow_summary.expense) }}
+              </p>
+            </article>
+            <article class="app-surface col-span-2 rounded-xl p-4 md:col-span-1">
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Net Movement
+              </p>
+              <p class="mt-1 text-lg font-semibold md:text-xl" :class="Number(stats.cash_flow_summary.net_movement) >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'">
+                {{ statsLoading ? '-' : formatSignedMoney(stats.cash_flow_summary.net_movement) }}
+              </p>
+            </article>
+          </div>
+
+          <article class="app-surface overflow-hidden rounded-xl">
+            <div class="border-b border-secondary-200 px-4 py-3 dark:border-secondary-700">
+              <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                Account Transactions
+              </p>
+              <p class="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400">
+                {{ stats.range_label || 'Selected period' }}
+              </p>
+            </div>
+            <div v-if="statsLoading" class="px-4 py-4 text-sm text-secondary-500 dark:text-secondary-400">
+              Loading transactions...
+            </div>
+            <div v-else-if="stats.account_transaction_list.length === 0" class="px-4 py-4 text-sm text-secondary-500 dark:text-secondary-400">
+              No account transactions found for the selected period.
+            </div>
+            <div v-else class="divide-y divide-secondary-200 dark:divide-secondary-700">
+              <component
+                :is="transaction.source_path ? 'RouterLink' : 'div'"
+                v-for="transaction in stats.account_transaction_list"
+                :key="transaction.id"
+                :to="transaction.source_path || undefined"
+                class="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-secondary-900 dark:text-white">
+                    {{ transaction.source_label }}
+                  </p>
+                  <p class="mt-0.5 truncate text-xs text-secondary-500 dark:text-secondary-400">
+                    {{ transaction.account_name }} · {{ transaction.transaction_date }}
+                  </p>
+                  <p v-if="transaction.notes" class="mt-0.5 truncate text-xs text-secondary-500 dark:text-secondary-400">
+                    {{ transaction.notes }}
+                  </p>
+                </div>
+                <p class="shrink-0 text-sm font-semibold tabular-nums" :class="Number(transaction.amount) >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'">
+                  {{ formatSignedMoney(transaction.amount) }}
+                </p>
+              </component>
+            </div>
+          </article>
+        </template>
+
         <!-- Summary cards -->
-        <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 mb-4">
+        <div v-if="!cashFlowFocus" class="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 mb-4">
           <article class="app-surface rounded-2xl p-4">
             <p class="text-xs text-secondary-500 dark:text-secondary-400">
               Transactions
@@ -106,7 +188,7 @@
         </div>
 
         <!-- Transaction List -->
-        <article class="app-surface rounded-2xl overflow-hidden">
+        <article v-if="!cashFlowFocus" class="app-surface rounded-2xl overflow-hidden">
           <div v-if="statsLoading" class="px-4 py-4 text-sm text-secondary-500 dark:text-secondary-400">
             Loading transactions...
           </div>
@@ -377,6 +459,7 @@ import { useDateTimeFormat } from '../composables/useDateTimeFormat';
 const route = useRoute();
 
 const activeTab = ref(route.path === '/reports/customers' ? 'customers' : route.path === '/reports/products' ? 'products' : 'stats');
+const cashFlowFocus = computed(() => route.query.focus === 'cash_flow' && activeTab.value === 'stats');
 
 function switchTab(tab) {
     activeTab.value = tab;
@@ -395,8 +478,10 @@ const statsLoading = ref(false);
 const statsError = ref('');
 
 const filters = ref({
-    range_type: 'date',
+    range_type: route.query.range_type === 'date_range' ? 'date_range' : 'date',
     range_value: defaultRangeValue('date'),
+    start_date: String(route.query.start_date || toDateInputValue()),
+    end_date: String(route.query.end_date || toDateInputValue()),
 });
 
 const stats = ref(defaultStats());
@@ -406,7 +491,7 @@ const moneyFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits:
 const { formatDateTime } = useDateTimeFormat();
 
 const rangeValueLabel = computed(() => {
-    const labels = { week: 'Week', month: 'Month', year: 'Year' };
+    const labels = { week: 'Week', month: 'Month', year: 'Year', date_range: 'Date Range' };
     return labels[filters.value.range_type] || 'Date';
 });
 
@@ -423,11 +508,23 @@ function defaultStats() {
         transaction_list: [],
         customer_wise_sales: [],
         product_wise_sales: [],
+        cash_flow_summary: {
+            income: 0,
+            expense: 0,
+            net_movement: 0,
+            income_count: 0,
+            expense_count: 0,
+        },
+        account_transaction_list: [],
     };
 }
 
 function formatNumber(value) { return numberFormatter.format(Number(value || 0)); }
 function formatMoney(value) { return moneyFormatter.format(Number(value || 0)); }
+function formatSignedMoney(value) {
+    const amount = Number(value || 0);
+    return `${amount >= 0 ? '+' : '-'}${formatMoney(Math.abs(amount))}`;
+}
 
 function paymentMethodLabel(value) {
     return { cash: 'Cash', card: 'Card', bank: 'Bank Transfer', member_wallet: 'Member Wallet' }[value] || 'Other';
@@ -471,6 +568,12 @@ function defaultRangeValue(rangeType) {
 }
 
 function handleRangeTypeChange() {
+    if (filters.value.range_type === 'date_range') {
+        filters.value.start_date = filters.value.start_date || toDateInputValue();
+        filters.value.end_date = filters.value.end_date || filters.value.start_date;
+        return;
+    }
+
     filters.value.range_value = defaultRangeValue(filters.value.range_type);
 }
 
@@ -479,11 +582,18 @@ async function loadStats() {
     statsError.value = '';
     try {
         const response = await apiRequest('/api/dashboard/stats', {
-            params: { range_type: filters.value.range_type, range_value: filters.value.range_value },
+            params: {
+                range_type: filters.value.range_type,
+                range_value: filters.value.range_type === 'date_range' ? undefined : filters.value.range_value,
+                start_date: filters.value.range_type === 'date_range' ? filters.value.start_date : undefined,
+                end_date: filters.value.range_type === 'date_range' ? filters.value.end_date : undefined,
+            },
         });
         stats.value = { ...defaultStats(), ...(response || {}) };
         filters.value.range_type = stats.value.range_type || filters.value.range_type;
         filters.value.range_value = stats.value.range_value || filters.value.range_value;
+        filters.value.start_date = stats.value.start_date || filters.value.start_date;
+        filters.value.end_date = stats.value.end_date || filters.value.end_date;
     } catch (error) {
         statsError.value = error?.response?.data?.message || 'Failed to load sales stats.';
     } finally {

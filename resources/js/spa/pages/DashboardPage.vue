@@ -2,14 +2,51 @@
   <section class="app-page-frame">
     <AppPageHeader>
       <template #cta-slot>
-        <DashboardDateRangeSelector
-          :start-date="selectedStartDate"
-          :end-date="selectedEndDate"
-          :selected-preset="selectedRangePreset"
-          :range-label="selectedRangeLabel"
-          :disabled="loading"
-          @change="changeDateRange"
-        />
+        <div class="hidden items-center gap-1.5 sm:flex">
+          <DashboardDateRangeSelector
+            :start-date="selectedStartDate"
+            :end-date="selectedEndDate"
+            :selected-preset="selectedRangePreset"
+            :range-label="selectedRangeLabel"
+            :disabled="loading"
+            @change="changeDateRange"
+          />
+          <button
+            type="button"
+            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-secondary-300 bg-white px-3 text-sm font-semibold text-secondary-700 transition-colors hover:bg-secondary-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-secondary-700 dark:bg-secondary-900 dark:text-secondary-300 dark:hover:bg-secondary-800"
+            :disabled="loading"
+            title="Refresh dashboard"
+            aria-label="Refresh dashboard"
+            @click="loadDashboardSummary"
+          >
+            <RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin' : ''" />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </template>
+
+      <template #extra-slot>
+        <div class="flex items-center gap-1.5 sm:hidden">
+          <DashboardDateRangeSelector
+            class="min-w-0 flex-1"
+            :start-date="selectedStartDate"
+            :end-date="selectedEndDate"
+            :selected-preset="selectedRangePreset"
+            :range-label="selectedRangeLabel"
+            :disabled="loading"
+            @change="changeDateRange"
+          />
+          <button
+            type="button"
+            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-secondary-300 bg-white text-secondary-700 transition-colors hover:bg-secondary-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-secondary-700 dark:bg-secondary-900 dark:text-secondary-300 dark:hover:bg-secondary-800"
+            :disabled="loading"
+            title="Refresh dashboard"
+            aria-label="Refresh dashboard"
+            @click="loadDashboardSummary"
+          >
+            <RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin' : ''" />
+          </button>
+        </div>
       </template>
     </AppPageHeader>
 
@@ -19,23 +56,23 @@
 
     <div class="min-h-0 flex flex-1 flex-col">
       <div class="app-page-scroll flex flex-col min-h-0">
-        <div class="app-widget-content-scroll flex min-h-0 flex-col gap-4">
-          <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-            <div class="xl:col-span-4 min-h-0">
+        <div class="app-widget-content-scroll flex min-h-0 flex-col gap-3 sm:gap-4">
+          <div class="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-12">
+            <div class="min-h-0 md:col-span-5 xl:col-span-4">
               <DashboardIncomeExpenseCard
                 :loading="loading"
                 :summary="incomeExpenseSummary"
               />
             </div>
 
-            <div class="xl:col-span-8 min-h-0">
+            <div class="min-h-0 md:col-span-7 xl:col-span-8">
               <DashboardTodayAuthCard
                 :loading="loading"
                 :summary="todayAuthSummary"
               />
             </div>
 
-            <div class="xl:col-span-12 min-h-0">
+            <div class="min-h-0 md:col-span-12">
               <DashboardStockSummaryCard
                 :loading="loading"
                 :summary="stockSummary"
@@ -49,6 +86,7 @@
 </template>
 
 <script setup>
+import { RefreshCw } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import DashboardDateRangeSelector from '../components/dashboard/DashboardDateRangeSelector.vue';
 import DashboardIncomeExpenseCard from '../components/dashboard/DashboardIncomeExpenseCard.vue';
@@ -66,6 +104,7 @@ const {
   selectedEndDate,
   selectedRangePreset,
   selectedRangeLabel,
+  loadDashboardSummary,
   changeDateRange,
 } = useDashboardOverview();
 </script>

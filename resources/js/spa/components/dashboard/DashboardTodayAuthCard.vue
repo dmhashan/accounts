@@ -1,5 +1,5 @@
 <template>
-  <div v-if="summary.can_view" class="app-surface rounded-2xl border border-secondary-200/70 dark:border-secondary-700/70 p-4 sm:p-5 flex min-h-0 flex-col gap-4">
+  <div v-if="summary.can_view" class="app-surface flex h-full min-h-0 flex-col gap-3 rounded-xl border border-secondary-200/70 p-3.5 dark:border-secondary-700/70 sm:gap-4 sm:p-4 xl:p-5">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p class="text-xs font-semibold uppercase tracking-[0.08em]" style="color: var(--text-muted)">
@@ -14,14 +14,14 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
       <button
         type="button"
-        class="rounded-xl border px-3 py-2.5 text-left transition-colors"
+        class="min-w-0 rounded-lg border px-2 py-2.5 text-center transition-colors sm:px-3 sm:text-left"
         :class="authActiveTab === 'success_attempts' ? 'border-green-300 bg-green-50/70 dark:border-green-900/50 dark:bg-green-900/20' : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900/40 hover:bg-secondary-50 dark:hover:bg-secondary-800/70'"
         @click="authActiveTab = 'success_attempts'"
       >
-        <p class="text-[11px] sm:text-xs font-medium" style="color: var(--text-muted)">
+        <p class="min-h-7 text-[10px] font-medium leading-tight sm:min-h-0 sm:text-xs" style="color: var(--text-muted)">
           Success
         </p>
         <p class="mt-1 text-base font-bold text-green-700 dark:text-green-400 leading-none">
@@ -31,11 +31,11 @@
 
       <button
         type="button"
-        class="rounded-xl border px-3 py-2.5 text-left transition-colors"
+        class="min-w-0 rounded-lg border px-2 py-2.5 text-center transition-colors sm:px-3 sm:text-left"
         :class="authActiveTab === 'payment_expired' ? 'border-red-300 bg-red-50/70 dark:border-red-900/50 dark:bg-red-900/20' : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900/40 hover:bg-secondary-50 dark:hover:bg-secondary-800/70'"
         @click="authActiveTab = 'payment_expired'"
       >
-        <p class="text-[11px] sm:text-xs font-medium" style="color: var(--text-muted)">
+        <p class="min-h-7 text-[10px] font-medium leading-tight sm:min-h-0 sm:text-xs" style="color: var(--text-muted)">
           Payment Expired
         </p>
         <p class="mt-1 text-base font-bold text-red-700 dark:text-red-400 leading-none">
@@ -45,11 +45,11 @@
 
       <button
         type="button"
-        class="rounded-xl border px-3 py-2.5 text-left transition-colors"
+        class="min-w-0 rounded-lg border px-2 py-2.5 text-center transition-colors sm:px-3 sm:text-left"
         :class="authActiveTab === 'other_failed' ? 'border-amber-300 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-900/20' : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900/40 hover:bg-secondary-50 dark:hover:bg-secondary-800/70'"
         @click="authActiveTab = 'other_failed'"
       >
-        <p class="text-[11px] sm:text-xs font-medium" style="color: var(--text-muted)">
+        <p class="min-h-7 text-[10px] font-medium leading-tight sm:min-h-0 sm:text-xs" style="color: var(--text-muted)">
           Other Fails
         </p>
         <p class="mt-1 text-base font-bold text-amber-700 dark:text-amber-400 leading-none">
@@ -58,7 +58,7 @@
       </button>
     </div>
 
-    <div class="rounded-xl overflow-hidden" style="border: 1px solid var(--surface-border)">
+    <div class="min-h-0 overflow-hidden rounded-lg" style="border: 1px solid var(--surface-border)">
       <template v-if="loading">
         <div class="divide-y divide-secondary-200 dark:divide-secondary-700">
           <div v-for="i in 5" :key="`auth-skeleton-${i}`" class="px-4 py-3 flex items-center gap-3">
@@ -78,11 +78,11 @@
         description="No authentication records matched the selected tab and date range."
       />
 
-      <ul v-else class="m-0 p-0 h-[340px] overflow-auto divide-y divide-secondary-200 dark:divide-secondary-700">
+      <ul v-else class="m-0 max-h-[300px] overflow-auto divide-y divide-secondary-200 p-0 dark:divide-secondary-700 sm:max-h-[340px] md:h-[340px]">
         <li
           v-for="event in activeAuthList"
           :key="`auth-${authActiveTab}-${event.id}`"
-          class="px-4 py-3 flex items-center gap-3 hover:bg-secondary-50/70 dark:hover:bg-secondary-800/40 transition-colors"
+          class="flex min-h-14 items-center gap-2.5 px-3 py-2.5 transition-colors hover:bg-secondary-50/70 dark:hover:bg-secondary-800/40 sm:gap-3 sm:px-4 sm:py-3"
         >
           <div class="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center border border-secondary-200 dark:border-secondary-700">
             <button
@@ -115,7 +115,7 @@
           </div>
 
           <span
-            class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold shrink-0"
+            class="inline-flex max-w-20 shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-center text-[10px] font-semibold leading-tight sm:max-w-none sm:text-[11px]"
             :class="authStatusClass(event)"
           >
             {{ authStatusText(event) }}

@@ -1,5 +1,5 @@
 <template>
-  <article v-if="summary.can_view" class="app-surface rounded-2xl border border-secondary-200/70 p-4 dark:border-secondary-700/70 sm:p-5">
+  <article v-if="summary.can_view" class="app-surface flex h-full min-h-0 flex-col rounded-xl border border-secondary-200/70 p-3.5 dark:border-secondary-700/70 sm:p-4 xl:p-5">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p class="text-xs font-semibold uppercase tracking-[0.08em]" style="color: var(--text-muted)">
@@ -9,17 +9,22 @@
           {{ summary.range_label || 'Selected period' }}
         </p>
       </div>
-      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary-100 dark:bg-secondary-800">
+      <RouterLink
+        :to="statsLink"
+        title="View all transactions"
+        aria-label="View all transactions"
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary-100 transition-colors hover:bg-secondary-200 dark:bg-secondary-800 dark:hover:bg-secondary-700"
+      >
         <ChartNoAxesCombined class="h-5 w-5 text-secondary-700 dark:text-secondary-300" :stroke-width="2" />
-      </div>
+      </RouterLink>
     </div>
 
     <div v-if="loading" class="mt-4 grid grid-cols-2 gap-2">
       <div v-for="i in 4" :key="i" class="app-skeleton h-16 rounded-xl" />
     </div>
 
-    <div v-else class="mt-4 grid grid-cols-2 gap-2">
-      <div class="rounded-xl border border-green-200 bg-green-50/70 p-3 dark:border-green-900/50 dark:bg-green-900/20">
+    <div v-else class="mt-3 grid grid-cols-2 gap-2 sm:mt-4">
+      <div class="min-w-0 rounded-lg border border-green-200 bg-green-50/70 p-2.5 dark:border-green-900/50 dark:bg-green-900/20 sm:p-3">
         <p class="text-[11px] font-medium text-green-700 dark:text-green-400">
           Income
         </p>
@@ -31,7 +36,7 @@
         </p>
       </div>
 
-      <div class="rounded-xl border border-red-200 bg-red-50/70 p-3 dark:border-red-900/50 dark:bg-red-900/20">
+      <div class="min-w-0 rounded-lg border border-red-200 bg-red-50/70 p-2.5 dark:border-red-900/50 dark:bg-red-900/20 sm:p-3">
         <p class="text-[11px] font-medium text-red-700 dark:text-red-400">
           Expenses
         </p>
@@ -43,7 +48,7 @@
         </p>
       </div>
 
-      <div class="col-span-2 flex items-center justify-between rounded-xl p-3" style="background: var(--surface-muted); border: 1px solid var(--surface-border)">
+      <div class="col-span-2 flex min-h-14 items-center justify-between rounded-lg p-2.5 sm:p-3" style="background: var(--surface-muted); border: 1px solid var(--surface-border)">
         <div>
           <p class="text-[11px] font-medium" style="color: var(--text-muted)">
             Net Movement
@@ -52,20 +57,17 @@
             {{ signedMoney(summary.net_movement) }}
           </p>
         </div>
-        <RouterLink to="/accounts/transactions" class="text-xs font-semibold text-primary-600 hover:underline dark:text-primary-400">
+        <RouterLink :to="statsLink" class="text-xs font-semibold text-primary-600 hover:underline dark:text-primary-400">
           All transactions
         </RouterLink>
       </div>
     </div>
 
-    <div class="mt-4 overflow-hidden rounded-xl" style="border: 1px solid var(--surface-border)">
-      <div class="flex items-center justify-between px-3 py-2" style="background: var(--surface-muted)">
+    <div class="mt-3 min-h-0 overflow-hidden rounded-lg sm:mt-4" style="border: 1px solid var(--surface-border)">
+      <div class="px-3 py-2" style="background: var(--surface-muted)">
         <p class="text-[11px] font-semibold uppercase tracking-[0.06em]" style="color: var(--text-muted)">
-          Recent Activity
+          Transactions
         </p>
-        <RouterLink to="/expenses" class="text-[11px] font-semibold text-primary-600 hover:underline dark:text-primary-400">
-          Expenses
-        </RouterLink>
       </div>
 
       <div v-if="loading" class="divide-y divide-secondary-200 dark:divide-secondary-700">
@@ -80,18 +82,21 @@
       </div>
 
       <AppEmptyState
-        v-else-if="summary.recent_transactions.length === 0"
+        v-else-if="summary.transactions.length === 0"
         :icon="ReceiptText"
         title="No cash flow"
         description="No income or expense transactions were recorded in this period."
       />
 
-      <ul v-else class="m-0 divide-y divide-secondary-200 p-0 dark:divide-secondary-700">
-        <li v-for="transaction in summary.recent_transactions" :key="transaction.id">
+      <ul v-else class="m-0 max-h-[360px] divide-y divide-secondary-200 overflow-auto p-0 dark:divide-secondary-700">
+        <li
+          v-for="transaction in summary.transactions"
+          :key="transaction.id"
+        >
           <component
             :is="transaction.source_path ? RouterLink : 'div'"
             :to="transaction.source_path || undefined"
-            class="flex items-center gap-2.5 px-3 py-2.5 transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50"
+            class="flex min-h-12 items-center gap-2.5 px-3 py-2 transition-colors hover:bg-secondary-50 dark:hover:bg-secondary-800/50 sm:py-2.5"
           >
             <div
               class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
@@ -141,7 +146,9 @@ const props = defineProps({
       net_movement: 0,
       income_count: 0,
       expense_count: 0,
-      recent_transactions: [],
+      start_date: '',
+      end_date: '',
+      transactions: [],
     }),
   },
 });
@@ -155,6 +162,17 @@ const numberFormatter = new Intl.NumberFormat();
 const netAmountClass = computed(() => Number(props.summary.net_movement || 0) >= 0
   ? 'text-green-700 dark:text-green-400'
   : 'text-red-700 dark:text-red-400');
+
+const statsLink = computed(() => ({
+  path: '/stats',
+  query: {
+    tab: 'stats',
+    focus: 'cash_flow',
+    range_type: 'date_range',
+    start_date: props.summary.start_date,
+    end_date: props.summary.end_date,
+  },
+}));
 
 function money(value) {
   return moneyFormatter.format(Math.abs(Number(value || 0)));

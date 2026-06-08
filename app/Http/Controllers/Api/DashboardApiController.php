@@ -37,8 +37,10 @@ class DashboardApiController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'range_type' => ['nullable', 'string', 'in:date,week,month,year'],
+            'range_type' => ['nullable', 'string', 'in:date,week,month,year,date_range'],
             'range_value' => ['nullable', 'string', 'max:20'],
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
         ]);
 
         /** @var User $user */
@@ -52,6 +54,8 @@ class DashboardApiController extends Controller
             $tenant,
             $validated['range_type'] ?? 'date',
             $validated['range_value'] ?? null,
+            $validated['start_date'] ?? null,
+            $validated['end_date'] ?? null,
         ));
     }
 }

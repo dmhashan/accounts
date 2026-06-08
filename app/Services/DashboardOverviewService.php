@@ -15,11 +15,9 @@ class DashboardOverviewService
 {
     private const LOW_STOCK_THRESHOLD = 5;
 
-    private const SALES_RANGE_TYPES = ['date', 'week', 'month', 'year'];
+    private const SALES_RANGE_TYPES = ['date', 'week', 'month', 'year', 'date_range'];
 
     private const AUTH_WIDGET_LIMIT = 20;
-
-    private const CASH_FLOW_WIDGET_LIMIT = 5;
 
     private const TRANSACTION_SOURCE_LABELS = [
         'sale' => 'Sale',
@@ -174,14 +172,23 @@ class DashboardOverviewService
         ];
     }
 
-    public function buildStats(User $user, Tenant $tenant, string $rangeType = 'date', ?string $rangeValue = null): array
-    {
-        [$normalizedRangeType, $normalizedRangeValue, $startAt, $endAt, $rangeLabel] = $this->resolveSalesRange($rangeType, $rangeValue);
+    public function buildStats(
+        User $user,
+        Tenant $tenant,
+        string $rangeType = 'date',
+        ?string $rangeValue = null,
+        ?string $startDate = null,
+        ?string $endDate = null,
+    ): array {
+        [$normalizedRangeType, $normalizedRangeValue, $startAt, $endAt, $rangeLabel] = $this->resolveSalesRange($rangeType, $rangeValue, $startDate, $endDate);
 
         $canViewSalesSummary = $user->hasPermission('sales.process');
+        $canViewAccountSummary = $user->hasPermission('accounts.manage');
 
         $stats = [
-            'can_view' => $canViewSalesSummary,
+            'can_view' => $canViewSalesSummary || $canViewAccountSummary,
+            'can_view_sales' => $canViewSalesSummary,
+            'can_view_accounts' => $canViewAccountSummary,
             'range_type' => $normalizedRangeType,
             'range_value' => $normalizedRangeValue,
             'range_label' => $rangeLabel,
@@ -194,16 +201,29 @@ class DashboardOverviewService
             'transaction_list' => [],
             'customer_wise_sales' => [],
             'product_wise_sales' => [],
+            'cash_flow_summary' => [
+                'income' => 0,
+                'expense' => 0,
+                'net_movement' => 0,
+                'income_count' => 0,
+                'expense_count' => 0,
+            ],
+            'account_transaction_list' => [],
         ];
 
-        if (!$canViewSalesSummary) {
-            return $stats;
+        if ($canViewSalesSummary) {
+            $stats = array_merge(
+                $stats,
+                $this->buildSalesStatsData($tenant->id, $startAt, $endAt),
+            );
         }
 
-        return array_merge(
-            $stats,
-            $this->buildSalesStatsData($tenant->id, $startAt, $endAt),
-        );
+        if ($canViewAccountSummary) {
+            $stats['cash_flow_summary'] = $this->buildCashFlowTotals($tenant->id, $startAt, $endAt);
+            $stats['account_transaction_list'] = $this->buildAccountTransactionListForRange($tenant->id, $startAt, $endAt);
+        }
+
+        return $stats;
     }
 
     private function buildStockSummary(User $user, int $tenantId, string $today): array
@@ -285,44 +305,64 @@ class DashboardOverviewService
             'net_movement' => 0,
             'income_count' => 0,
             'expense_count' => 0,
-            'recent_transactions' => [],
+            'transactions' => [],
         ];
 
         if (!$canViewAccounts) {
             return $summary;
         }
 
-        $baseQuery = CompanyAccountTransaction::query()
-            ->where('tenant_id', $tenantId)
-            ->whereDate('transaction_date', '>=', $startAt->toDateString())
-            ->whereDate('transaction_date', '<=', $endAt->toDateString());
+        $summary = array_merge($summary, $this->buildCashFlowTotals($tenantId, $startAt, $endAt));
+        $summary['transactions'] = $this->buildAccountTransactionListForRange($tenantId, $startAt, $endAt);
 
+        return $summary;
+    }
+
+    private function buildCashFlowTotals(int $tenantId, Carbon $startAt, Carbon $endAt): array
+    {
+        $baseQuery = $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt);
         $incomeQuery = (clone $baseQuery)->where('amount', '>', 0);
         $expenseQuery = (clone $baseQuery)->where('amount', '<', 0);
+        $income = round((float) (clone $incomeQuery)->sum('amount'), 2);
+        $expense = round(abs((float) (clone $expenseQuery)->sum('amount')), 2);
 
-        $summary['income'] = round((float) (clone $incomeQuery)->sum('amount'), 2);
-        $summary['expense'] = round(abs((float) (clone $expenseQuery)->sum('amount')), 2);
-        $summary['net_movement'] = round($summary['income'] - $summary['expense'], 2);
-        $summary['income_count'] = (int) (clone $incomeQuery)->count();
-        $summary['expense_count'] = (int) (clone $expenseQuery)->count();
-        $summary['recent_transactions'] = (clone $baseQuery)
+        return [
+            'income' => $income,
+            'expense' => $expense,
+            'net_movement' => round($income - $expense, 2),
+            'income_count' => (int) (clone $incomeQuery)->count(),
+            'expense_count' => (int) (clone $expenseQuery)->count(),
+        ];
+    }
+
+    private function buildAccountTransactionListForRange(int $tenantId, Carbon $startAt, Carbon $endAt): array
+    {
+        return $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt)
             ->with('account:id,name')
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
-            ->limit(self::CASH_FLOW_WIDGET_LIMIT)
             ->get()
             ->map(fn (CompanyAccountTransaction $transaction) => [
                 'id' => (int) $transaction->id,
                 'amount' => (float) $transaction->amount,
                 'transaction_date' => $transaction->transaction_date?->toDateString(),
                 'account_name' => (string) ($transaction->account?->name ?? 'Account'),
+                'type' => (string) ($transaction->type ?? ''),
+                'reference_number' => $transaction->reference_number,
+                'notes' => $transaction->notes,
                 'source_label' => $this->transactionSourceLabel($transaction),
                 'source_path' => $this->transactionSourcePath($transaction),
             ])
             ->values()
             ->all();
+    }
 
-        return $summary;
+    private function accountTransactionRangeQuery(int $tenantId, Carbon $startAt, Carbon $endAt)
+    {
+        return CompanyAccountTransaction::query()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('transaction_date', '>=', $startAt->toDateString())
+            ->whereDate('transaction_date', '<=', $endAt->toDateString());
     }
 
     private function transactionSourceLabel(CompanyAccountTransaction $transaction): string
@@ -482,7 +522,7 @@ class DashboardOverviewService
             ->all();
     }
 
-    private function resolveSalesRange(string $rangeType, ?string $rangeValue): array
+    private function resolveSalesRange(string $rangeType, ?string $rangeValue, ?string $startDate = null, ?string $endDate = null): array
     {
         $normalizedRangeType = in_array($rangeType, self::SALES_RANGE_TYPES, true)
             ? $rangeType
@@ -492,8 +532,48 @@ class DashboardOverviewService
             'week' => $this->resolveWeekRange($rangeValue),
             'month' => $this->resolveMonthRange($rangeValue),
             'year' => $this->resolveYearRange($rangeValue),
+            'date_range' => $this->resolveCustomDateRange($startDate, $endDate),
             default => $this->resolveDateRange($rangeValue),
         };
+    }
+
+    private function resolveCustomDateRange(?string $startDate, ?string $endDate): array
+    {
+        $start = $this->resolveDateString($startDate) ?? Carbon::today();
+        $end = $this->resolveDateString($endDate) ?? $start->copy();
+
+        if ($end->lt($start)) {
+            $end = $start->copy();
+        }
+
+        $startAt = $start->copy()->startOfDay();
+        $endAt = $end->copy()->endOfDay();
+        $rangeLabel = $startAt->toDateString() === $endAt->toDateString()
+            ? $startAt->format('d M Y')
+            : $startAt->format('d M Y') . ' - ' . $endAt->format('d M Y');
+
+        return [
+            'date_range',
+            $startAt->toDateString() . '_' . $endAt->toDateString(),
+            $startAt,
+            $endAt,
+            $rangeLabel,
+        ];
+    }
+
+    private function resolveDateString(?string $date): ?Carbon
+    {
+        if (is_string($date) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches)) {
+            $year = (int) $matches[1];
+            $month = (int) $matches[2];
+            $day = (int) $matches[3];
+
+            if (checkdate($month, $day, $year)) {
+                return Carbon::create($year, $month, $day, 0, 0, 0);
+            }
+        }
+
+        return null;
     }
 
     private function resolveDateRange(?string $rangeValue): array
