@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\MemberAttendance;
 use App\Models\MemberNotification;
+use App\Services\AutomatedMemberNotificationService;
 use App\Services\BiometricSyncService;
 use App\Services\TenantConfigurationService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class MembersApiTest extends ApiRouteTestCase
@@ -193,6 +196,71 @@ class MembersApiTest extends ApiRouteTestCase
 
         $this->assertNotNull($notification);
         $this->assertSame("Hi Nimali Perera, welcome to Test Gym\n\nLogin: https://members.test/login\n\nWhatsApp: https://chat.whatsapp.com/general, https://chat.whatsapp.com/female\nLet's begin your fitness journey!", $notification->body);
+    }
+
+    public function testMemberMilestoneServiceSendsBirthdayNotification(): void
+    {
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.inapp.enabled' => '1',
+        ]);
+
+        $member = $this->createMember(null, [
+            'first_name' => 'Asha',
+            'last_name' => 'Fernando',
+            'name' => 'Asha Fernando',
+            'date_of_birth' => '1994-06-09',
+        ]);
+
+        $count = app(AutomatedMemberNotificationService::class)
+            ->sendMemberMilestoneNotifications(Carbon::parse('2026-06-09'));
+
+        $this->assertSame(1, $count);
+        $this->assertDatabaseHas('member_notifications', [
+            'tenant_id' => $this->tenant->id,
+            'member_id' => $member->id,
+            'type' => 'member_birthday',
+            'body' => 'Happy Birthday Asha Fernando! Wishing you a strong, healthy and joyful year ahead from everyone at Test Gym. Keep moving, keep growing!',
+        ]);
+    }
+
+    public function testMemberMilestoneServiceSendsJoinAnniversaryWithLastYearAttendance(): void
+    {
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.inapp.enabled' => '1',
+        ]);
+
+        $member = $this->createMember(null, [
+            'first_name' => 'Kamal',
+            'last_name' => 'Silva',
+            'name' => 'Kamal Silva',
+            'date_of_birth' => '1990-01-01',
+            'joined_date' => '2025-06-09',
+        ]);
+
+        foreach (['2025-06-09', '2025-12-15', '2026-06-08'] as $date) {
+            MemberAttendance::create([
+                'tenant_id' => $this->tenant->id,
+                'member_id' => $member->id,
+                'attended_date' => $date,
+            ]);
+        }
+
+        MemberAttendance::create([
+            'tenant_id' => $this->tenant->id,
+            'member_id' => $member->id,
+            'attended_date' => '2025-06-08',
+        ]);
+
+        $count = app(AutomatedMemberNotificationService::class)
+            ->sendMemberMilestoneNotifications(Carbon::parse('2026-06-09'));
+
+        $this->assertSame(1, $count);
+        $this->assertDatabaseHas('member_notifications', [
+            'tenant_id' => $this->tenant->id,
+            'member_id' => $member->id,
+            'type' => 'member_join_anniversary',
+            'body' => 'Happy fitness anniversary Kamal Silva! You showed up for 2 training days at Test Gym in the last year. That consistency matters. Keep pushing forward!',
+        ]);
     }
 
     public function testMembersUpdateRouteUpdatesMember(): void

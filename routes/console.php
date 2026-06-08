@@ -15,4 +15,12 @@ Artisan::command('notifications:membership-expiry', function () {
     $this->info("Queued {$count} membership expiry notification(s).");
 })->purpose('Queue membership payment expiry notifications');
 
+Artisan::command('notifications:member-milestones', function () {
+    $count = app(App\Services\AutomatedMemberNotificationService::class)
+        ->sendMemberMilestoneNotifications();
+
+    $this->info("Queued {$count} member milestone notification(s).");
+})->purpose('Queue member birthday and join anniversary notifications');
+
 Schedule::command('notifications:membership-expiry')->dailyAt('06:00');
+Schedule::command('notifications:member-milestones')->dailyAt('06:00');

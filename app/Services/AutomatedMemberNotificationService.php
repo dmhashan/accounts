@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Jobs\SendMemberNotificationJob;
 use App\Models\Member;
+use App\Models\MemberAttendance;
 use App\Models\MemberNotification;
 use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
@@ -117,6 +118,14 @@ class AutomatedMemberNotificationService
         return $sent;
     }
 
+    public function sendMemberMilestoneNotifications(?Carbon $today = null): int
+    {
+        $today ??= today();
+
+        return $this->sendBirthdayNotifications($today)
+            + $this->sendJoinAnniversaryNotifications($today);
+    }
+
     /**
      * @return array{member_login_url?: string, whatsapp_group_url?: string, whatsapp_groups?: array<int, mixed>}
      */
@@ -227,6 +236,99 @@ class AutomatedMemberNotificationService
         };
     }
 
+    private function sendBirthdayNotifications(Carbon $today): int
+    {
+        $sent = 0;
+
+        $members = Member::query()
+            ->where('is_active', true)
+            ->whereNotNull('date_of_birth')
+            ->whereMonth('date_of_birth', $today->month)
+            ->whereDay('date_of_birth', $today->day)
+            ->with('tenant')
+            ->get();
+
+        foreach ($members as $member) {
+            if (!$member->tenant || $this->alreadyCreatedToday($member, 'member_birthday', $today)) {
+                continue;
+            }
+
+            $message = sprintf(
+                'Happy Birthday %s! Wishing you a strong, healthy and joyful year ahead from everyone at %s. Keep moving, keep growing!',
+                $this->memberName($member),
+                $this->tenantName($member->tenant),
+            );
+
+            SendMemberNotificationJob::dispatch(
+                $member->tenant_id,
+                $member->id,
+                'member_birthday',
+                'Happy Birthday',
+                $message,
+            );
+
+            $sent++;
+        }
+
+        return $sent;
+    }
+
+    private function sendJoinAnniversaryNotifications(Carbon $today): int
+    {
+        $sent = 0;
+
+        $members = Member::query()
+            ->where('is_active', true)
+            ->whereNotNull('joined_date')
+            ->whereDate('joined_date', '<', $today->toDateString())
+            ->whereMonth('joined_date', $today->month)
+            ->whereDay('joined_date', $today->day)
+            ->with('tenant')
+            ->get();
+
+        foreach ($members as $member) {
+            if (!$member->tenant || $this->alreadyCreatedToday($member, 'member_join_anniversary', $today)) {
+                continue;
+            }
+
+            $attendanceDays = $this->attendanceDaysInPreviousYear($member, $today);
+            $message = sprintf(
+                'Happy fitness anniversary %s! You showed up for %d training %s at %s in the last year. That consistency matters. Keep pushing forward!',
+                $this->memberName($member),
+                $attendanceDays,
+                $attendanceDays === 1 ? 'day' : 'days',
+                $this->tenantName($member->tenant),
+            );
+
+            SendMemberNotificationJob::dispatch(
+                $member->tenant_id,
+                $member->id,
+                'member_join_anniversary',
+                'Happy fitness anniversary',
+                $message,
+            );
+
+            $sent++;
+        }
+
+        return $sent;
+    }
+
+    private function attendanceDaysInPreviousYear(Member $member, Carbon $today): int
+    {
+        $startDate = $today->copy()->subYear()->addDay()->toDateString();
+        $endDate = $today->copy()->subDay()->toDateString();
+
+        return MemberAttendance::query()
+            ->where('tenant_id', $member->tenant_id)
+            ->where('member_id', $member->id)
+            ->whereDate('attended_date', '>=', $startDate)
+            ->whereDate('attended_date', '<=', $endDate)
+            ->distinct()
+            ->pluck('attended_date')
+            ->count();
+    }
+
     private function isLatestMembershipForMember(PaymentMembership $membership): bool
     {
         $memberId = $membership->payment?->member_id;
@@ -252,6 +354,16 @@ class AutomatedMemberNotificationService
             ->where('member_id', $member->id)
             ->where('type', $type)
             ->where('body', $message)
+            ->exists();
+    }
+
+    private function alreadyCreatedToday(Member $member, string $type, Carbon $today): bool
+    {
+        return MemberNotification::query()
+            ->where('tenant_id', $member->tenant_id)
+            ->where('member_id', $member->id)
+            ->where('type', $type)
+            ->whereDate('created_at', $today->toDateString())
             ->exists();
     }
 
