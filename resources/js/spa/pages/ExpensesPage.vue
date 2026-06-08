@@ -52,6 +52,10 @@
                 <span class="text-secondary-500 dark:text-secondary-400">Reference:</span> {{ expense.reference_number }}
               </div>
 
+              <div v-if="expense.documents_count" class="text-xs text-secondary-500 dark:text-secondary-400">
+                {{ expense.documents_count }} {{ expense.documents_count === 1 ? 'document' : 'documents' }}
+              </div>
+
               <p v-if="expense.notes" class="text-xs text-secondary-600 dark:text-secondary-300">
                 {{ expense.notes }}
               </p>
@@ -80,6 +84,9 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                     Notes
                   </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Docs
+                  </th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                     Amount
                   </th>
@@ -107,12 +114,15 @@
                   <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 max-w-xs truncate">
                     {{ expense.notes || '-' }}
                   </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ expense.documents_count || '-' }}
+                  </td>
                   <td class="px-6 py-4 text-sm font-medium text-red-600 dark:text-red-400 text-right">
                     -{{ money(expense.amount) }}
                   </td>
                 </tr>
                 <tr v-if="expenses.length === 0">
-                  <td colspan="6" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                  <td colspan="7" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
                     No expenses recorded.
                   </td>
                 </tr>

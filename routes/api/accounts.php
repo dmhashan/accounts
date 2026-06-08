@@ -19,6 +19,8 @@ Route::post('/accounts/expenses', [CompanyAccountApiController::class, 'storeExp
 Route::get('/accounts/expenses/{expense}', [CompanyAccountApiController::class, 'showExpense'])->middleware(['auth', 'permission:accounts.manage']);
 Route::put('/accounts/expenses/{expense}', [CompanyAccountApiController::class, 'updateExpense'])->middleware(['auth', 'permission:accounts.manage']);
 Route::delete('/accounts/expenses/{expense}', [CompanyAccountApiController::class, 'destroyExpense'])->middleware(['auth', 'permission:accounts.manage']);
+Route::get('/accounts/expenses/{expense}/documents/{document}/url', [CompanyAccountApiController::class, 'expenseDocumentUrl'])->middleware(['auth', 'permission:accounts.manage']);
+Route::delete('/accounts/expenses/{expense}/documents/{document}', [CompanyAccountApiController::class, 'destroyExpenseDocument'])->middleware(['auth', 'permission:accounts.manage']);
 
 Route::get('/accounts/{account}', [CompanyAccountApiController::class, 'show'])->middleware(['auth', 'permission:accounts.manage']);
 Route::put('/accounts/{account}', [CompanyAccountApiController::class, 'update'])->middleware(['auth', 'permission:accounts.manage']);

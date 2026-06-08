@@ -79,6 +79,64 @@
           </p>
         </div>
       </div>
+
+      <div class="app-surface rounded-2xl p-4 md:p-6">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold text-secondary-900 dark:text-white">
+              Documents
+            </h2>
+          </div>
+          <RouterLink
+            :to="`/expenses/${route.params.id}/edit`"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-700 px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+          >
+            Add
+          </RouterLink>
+        </div>
+
+        <div v-if="documents.length === 0" class="rounded-xl border border-dashed border-secondary-300 dark:border-secondary-700 px-4 py-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
+          No documents uploaded yet.
+        </div>
+
+        <div v-else class="divide-y divide-secondary-200 dark:divide-secondary-700 overflow-hidden rounded-xl border border-secondary-200 dark:border-secondary-700">
+          <div
+            v-for="doc in documents"
+            :key="doc.id"
+            class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-secondary-900 dark:text-white">
+                {{ doc.original_filename }}
+              </p>
+              <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+                {{ formatFileSize(doc.file_size) }}
+                <span v-if="doc.uploaded_by"> · by {{ doc.uploaded_by.name }}</span>
+                <span v-if="doc.created_at"> · {{ doc.created_at }}</span>
+              </p>
+            </div>
+
+            <div class="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-700 px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 disabled:opacity-50"
+                :disabled="openingDocumentId === doc.id"
+                @click="openDocument(doc)"
+              >
+                Open
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                :disabled="deletingDocumentId === doc.id"
+                @click="deleteDocument(doc)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -96,6 +154,10 @@ const loading = ref(false);
 const errorMessage = ref('');
 const expense = ref({});
 const deleting = ref(false);
+const openingDocumentId = ref(null);
+const deletingDocumentId = ref(null);
+
+const documents = ref([]);
 
 function money(value) {
     return Number(value || 0).toFixed(2);
@@ -114,12 +176,53 @@ async function deleteExpense() {
     }
 }
 
+async function openDocument(doc) {
+    openingDocumentId.value = doc.id;
+    try {
+        const response = await apiRequest(`/api/accounts/expenses/${route.params.id}/documents/${doc.id}/url`);
+        if (response.url) {
+            window.open(response.url, '_blank', 'noopener');
+        }
+    } catch (e) {
+        alert(e?.response?.data?.message || 'Failed to open document.');
+    } finally {
+        openingDocumentId.value = null;
+    }
+}
+
+async function deleteDocument(doc) {
+    if (!confirm(`Delete document "${doc.original_filename}"?`)) return;
+
+    deletingDocumentId.value = doc.id;
+    try {
+        await apiRequest(`/api/accounts/expenses/${route.params.id}/documents/${doc.id}`, { method: 'DELETE' });
+        documents.value = documents.value.filter((item) => item.id !== doc.id);
+    } catch (e) {
+        alert(e?.response?.data?.message || 'Failed to delete document.');
+    } finally {
+        deletingDocumentId.value = null;
+    }
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = Number(bytes);
+    let index = 0;
+    while (size >= 1024 && index < units.length - 1) {
+        size /= 1024;
+        index += 1;
+    }
+    return `${size.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
 async function load() {
     loading.value = true;
     errorMessage.value = '';
     try {
         const response = await apiRequest(`/api/accounts/expenses/${route.params.id}`);
         expense.value = response.data || response;
+        documents.value = expense.value.documents || [];
     } catch {
         errorMessage.value = 'Failed to load expense.';
     } finally {

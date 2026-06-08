@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransfer;
 use App\Models\Expense;
+use App\Models\ExpenseDocument;
 use App\Services\CompanyAccountService;
 use App\Services\ExpenseService;
 use Illuminate\Http\JsonResponse;
@@ -17,8 +18,7 @@ class CompanyAccountApiController extends Controller
     public function __construct(
         private readonly CompanyAccountService $companyAccountService,
         private readonly ExpenseService $expenseService,
-    ) {
-    }
+    ) {}
 
     public function meta(): JsonResponse
     {
@@ -70,6 +70,7 @@ class CompanyAccountApiController extends Controller
     public function destroy(CompanyAccount $account): JsonResponse
     {
         $error = $this->companyAccountService->destroyAccount($account, app('tenant')->id);
+
         if ($error) {
             return response()->json([
                 'message' => $error,
@@ -108,6 +109,7 @@ class CompanyAccountApiController extends Controller
         $validated = $request->validate($this->transferRules());
 
         $result = $this->companyAccountService->storeTransfer($tenantId, $validated);
+
         if (isset($result['error'])) {
             return response()->json([
                 'message' => $result['error'],
@@ -129,6 +131,7 @@ class CompanyAccountApiController extends Controller
         $validated = $request->validate($this->transferRules());
 
         $error = $this->companyAccountService->updateTransfer($transfer, app('tenant')->id, $validated);
+
         if ($error) {
             return response()->json([
                 'message' => $error,
@@ -197,7 +200,12 @@ class CompanyAccountApiController extends Controller
     {
         $validated = $request->validate($this->expenseRules());
 
-        $expense = $this->expenseService->storeExpense(app('tenant')->id, $validated);
+        $expense = $this->expenseService->storeExpense(
+            app('tenant')->id,
+            $validated,
+            $request->file('documents', []),
+            $request->user()?->id,
+        );
 
         return response()->json([
             'message' => 'Expense recorded successfully.',
@@ -209,7 +217,13 @@ class CompanyAccountApiController extends Controller
     {
         $validated = $request->validate($this->expenseRules());
 
-        $this->expenseService->updateExpense($expense, app('tenant')->id, $validated);
+        $this->expenseService->updateExpense(
+            $expense,
+            app('tenant')->id,
+            $validated,
+            $request->file('documents', []),
+            $request->user()?->id,
+        );
 
         return response()->json([
             'message' => 'Expense updated successfully.',
@@ -225,6 +239,22 @@ class CompanyAccountApiController extends Controller
         ]);
     }
 
+    public function expenseDocumentUrl(Expense $expense, ExpenseDocument $document): JsonResponse
+    {
+        return response()->json([
+            'url' => $this->expenseService->documentUrl($expense, $document, app('tenant')->id),
+        ]);
+    }
+
+    public function destroyExpenseDocument(Expense $expense, ExpenseDocument $document): JsonResponse
+    {
+        $this->expenseService->destroyDocument($expense, $document, app('tenant')->id);
+
+        return response()->json([
+            'message' => 'Document deleted successfully.',
+        ]);
+    }
+
     private function expenseRules(): array
     {
         return [
@@ -234,6 +264,12 @@ class CompanyAccountApiController extends Controller
             'expense_date' => ['required', 'date'],
             'reference_number' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'documents' => ['nullable', 'array', 'max:10'],
+            'documents.*' => [
+                'file',
+                'mimes:pdf,jpg,jpeg,png,webp,gif,doc,docx,xls,xlsx,txt',
+                'max:' . ExpenseService::MAX_DOCUMENT_SIZE_KB,
+            ],
         ];
     }
 }

@@ -87,6 +87,49 @@
           <AppFormField label="Notes" class="md:col-span-2" optional>
             <AppFormTextarea v-model="form.notes" rows="3" maxlength="1000" />
           </AppFormField>
+
+          <AppFormField
+            label="Documents"
+            class="md:col-span-2"
+            optional
+          >
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.txt"
+              class="w-full rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-600 dark:file:bg-primary-900/30 dark:file:text-primary-400"
+              @change="handleDocumentChange"
+            />
+
+            <div v-if="selectedDocuments.length" class="mt-3 flex flex-wrap gap-2">
+              <span
+                v-for="file in selectedDocuments"
+                :key="file.name + file.size"
+                class="inline-flex max-w-full items-center gap-2 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800 px-2.5 py-1.5 text-xs text-secondary-700 dark:text-secondary-200"
+              >
+                <span class="truncate">{{ file.name }}</span>
+                <span class="shrink-0 text-secondary-400">{{ formatFileSize(file.size) }}</span>
+              </span>
+            </div>
+
+            <div v-if="isEdit && existingDocuments.length" class="mt-3 space-y-2">
+              <p class="text-xs font-medium text-secondary-500 dark:text-secondary-400">
+                Current documents
+              </p>
+              <div
+                v-for="doc in existingDocuments"
+                :key="doc.id"
+                class="flex items-center justify-between gap-3 rounded-lg border border-secondary-200 dark:border-secondary-700 px-3 py-2 text-sm"
+              >
+                <span class="min-w-0 truncate text-secondary-800 dark:text-secondary-200">
+                  {{ doc.original_filename }}
+                </span>
+                <span class="shrink-0 text-xs text-secondary-400">
+                  {{ formatFileSize(doc.file_size) }}
+                </span>
+              </div>
+            </div>
+          </AppFormField>
         </div>
 
         <div class="mt-5 flex items-center justify-end gap-2">
@@ -120,6 +163,8 @@ const isEdit = computed(() => Boolean(route.params.id));
 const submitting = ref(false);
 const errorMessage = ref('');
 const accounts = ref([]);
+const selectedDocuments = ref([]);
+const existingDocuments = ref([]);
 
 const expenseCategories = [
     'Building Rent',
@@ -190,6 +235,37 @@ async function loadExpense() {
         reference_number: expense.reference_number || '',
         notes: expense.notes || '',
     };
+    existingDocuments.value = expense.documents || [];
+}
+
+function handleDocumentChange(event) {
+    selectedDocuments.value = Array.from(event.target.files || []);
+}
+
+function appendExpenseFormData(payload) {
+    const formData = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+        formData.append(key, value ?? '');
+    });
+
+    selectedDocuments.value.forEach((file) => {
+        formData.append('documents[]', file);
+    });
+
+    return formData;
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = Number(bytes);
+    let index = 0;
+    while (size >= 1024 && index < units.length - 1) {
+        size /= 1024;
+        index += 1;
+    }
+    return `${size.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
 async function submit() {
@@ -207,18 +283,19 @@ async function submit() {
         };
 
         if (isEdit.value) {
+            const data = selectedDocuments.value.length ? appendExpenseFormData({ ...payload, _method: 'PUT' }) : payload;
             await apiRequest(`/api/accounts/expenses/${route.params.id}`, {
-                method: 'put',
-                data: payload,
+                method: selectedDocuments.value.length ? 'post' : 'put',
+                data,
             });
         } else {
             await apiRequest('/api/accounts/expenses', {
                 method: 'post',
-                data: payload,
+                data: selectedDocuments.value.length ? appendExpenseFormData(payload) : payload,
             });
         }
 
-        router.push({ path: '/accounts', query: { tab: 'expenses' } });
+        router.push('/expenses');
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to save expense.';
     } finally {
