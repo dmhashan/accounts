@@ -8,10 +8,10 @@ import { apiRequest } from '../../spa/composables/useApiClient';
 // ---------------------------------------------------------------------------
 
 const mockPush = vi.fn();
-const mockQuery = {};
+const mockRoute = { params: {}, query: {}, path: '/workout' };
 
 vi.mock('vue-router', () => ({
-    useRoute: () => ({ params: {}, query: mockQuery }),
+    useRoute: () => mockRoute,
     useRouter: () => ({ push: mockPush }),
     RouterLink: { name: 'RouterLink', template: '<a><slot /></a>', props: ['to'] },
 }));
@@ -67,8 +67,12 @@ const assignmentsResponse = { data: { data: [] } };
 // ---------------------------------------------------------------------------
 
 function mountWorkoutPage(query = {}) {
-    Object.keys(mockQuery).forEach((k) => delete mockQuery[k]);
-    Object.assign(mockQuery, query);
+    mockRoute.query = query;
+    mockRoute.path = query.tab === 'exercises'
+        ? '/workout/exercises'
+        : query.tab === 'assignments'
+            ? '/workout/assignments'
+            : '/workout';
 
     return mount(WorkoutPage, {
         global: { stubs: globalStubs },
@@ -143,45 +147,13 @@ describe('WorkoutPage', () => {
         expect(wrapper.text()).toContain('No exercises found.');
     });
 
-    it('calls DELETE /api/exercises/:id when user confirms exercise deletion', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
-        // After delete, reload exercises
-        vi.mocked(apiRequest).mockImplementation((url, options) => {
-            if (url.startsWith('/api/exercises') && options?.method === 'delete') {
-                return Promise.resolve({});
-            }
-            return Promise.resolve(exercisesResponse);
-        });
-
+    it('navigates to an exercise when its row is clicked', async () => {
         const wrapper = mountWorkoutPage({ tab: 'exercises' });
         await flushPromises();
 
-        // Click first Delete button in the exercises section
-        const deleteButtons = wrapper.findAll('button').filter((b) => b.text().trim() === 'Delete');
-        await deleteButtons[0].trigger('click');
-        await flushPromises();
+        await wrapper.find('article').trigger('click');
 
-        expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Bench Press'));
-        expect(apiRequest).toHaveBeenCalledWith(
-            '/api/exercises/1',
-            expect.objectContaining({ method: 'delete' }),
-        );
-    });
-
-    it('does not delete an exercise when the user cancels the confirm dialog', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(false);
-
-        const wrapper = mountWorkoutPage({ tab: 'exercises' });
-        await flushPromises();
-
-        const deleteButtons = wrapper.findAll('button').filter((b) => b.text().trim() === 'Delete');
-        await deleteButtons[0].trigger('click');
-        await flushPromises();
-
-        expect(apiRequest).not.toHaveBeenCalledWith(
-            expect.stringContaining('/api/exercises/'),
-            expect.objectContaining({ method: 'delete' }),
-        );
+        expect(mockPush).toHaveBeenCalledWith('/workout/exercises/1');
     });
 
     // ── Programs tab ─────────────────────────────────────────────────────────
@@ -206,47 +178,44 @@ describe('WorkoutPage', () => {
         expect(wrapper.text()).not.toContain('Cardio Blast');
     });
 
-    it('calls DELETE /api/workout-programs/:id when user confirms program deletion', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
-        vi.mocked(apiRequest).mockImplementation((url, options) => {
-            if (url.startsWith('/api/workout-programs') && options?.method === 'delete') {
-                return Promise.resolve({});
+    it('navigates to a program when its row is clicked', async () => {
+        const wrapper = mountWorkoutPage();
+        await flushPromises();
+
+        await wrapper.find('article').trigger('click');
+
+        expect(mockPush).toHaveBeenCalledWith('/workout/programs/10');
+    });
+
+    it('navigates to an assignment when its row is clicked', async () => {
+        vi.mocked(apiRequest).mockImplementation((url) => {
+            if (url === '/api/workout-program-assignments') {
+                return Promise.resolve({
+                    data: {
+                        data: [{
+                            id: 20,
+                            member_name: 'Member Tester',
+                            member_code: '0042',
+                            assigned_program_title: 'Strength Builder',
+                            effective_date: '2026-06-09',
+                            created_at: '2026-06-09',
+                        }],
+                    },
+                });
             }
-            return Promise.resolve(programsResponse);
+
+            if (url === '/api/exercises') return Promise.resolve(exercisesResponse);
+            if (url === '/api/workout-programs') return Promise.resolve(programsResponse);
+
+            return Promise.resolve({ data: {} });
         });
 
-        const wrapper = mountWorkoutPage();
+        const wrapper = mountWorkoutPage({ tab: 'assignments' });
         await flushPromises();
 
-        const deleteButtons = wrapper.findAll('button').filter((b) => b.text().trim() === 'Delete');
-        await deleteButtons[0].trigger('click');
-        await flushPromises();
+        await wrapper.find('article').trigger('click');
 
-        expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Strength Builder'));
-        expect(apiRequest).toHaveBeenCalledWith(
-            '/api/workout-programs/10',
-            expect.objectContaining({ method: 'delete' }),
-        );
-    });
-
-    it('navigates to exercise edit page when "Edit" is clicked', async () => {
-        const wrapper = mountWorkoutPage({ tab: 'exercises' });
-        await flushPromises();
-
-        const editButtons = wrapper.findAll('button').filter((b) => b.text().trim() === 'Edit');
-        await editButtons[0].trigger('click');
-
-        expect(mockPush).toHaveBeenCalledWith('/workout/exercises/1/edit');
-    });
-
-    it('navigates to program manage page when "Manage" is clicked', async () => {
-        const wrapper = mountWorkoutPage();
-        await flushPromises();
-
-        const manageButtons = wrapper.findAll('button').filter((b) => b.text().trim() === 'Manage');
-        await manageButtons[0].trigger('click');
-
-        expect(mockPush).toHaveBeenCalledWith('/workout/programs/10/edit');
+        expect(mockPush).toHaveBeenCalledWith('/workout/assignments/20');
     });
 
     // ── Tab switching ────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ use App\Services\AutomatedMemberNotificationService;
 use App\Services\BiometricSyncService;
 use App\Services\TenantConfigurationService;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class PaymentsApiTest extends ApiRouteTestCase
 {
@@ -51,9 +52,7 @@ class PaymentsApiTest extends ApiRouteTestCase
             ->assertJsonValidationErrors(['duration_unit']);
     }
 
-    /**
-     * @dataProvider realWorldPlansProvider
-     */
+    #[DataProvider('realWorldPlansProvider')]
     public function testCreateAndStoreRealWorldPlans(string $name, int $value, string $unit, float $price): void
     {
         $this->actingAsUser(['payments.manage']);
@@ -132,9 +131,7 @@ class PaymentsApiTest extends ApiRouteTestCase
     // End-date computation per unit
     // ------------------------------------------------------------------
 
-    /**
-     * @dataProvider endDateProvider
-     */
+    #[DataProvider('endDateProvider')]
     public function testRecordingMembershipPaymentComputesEndDate(int $value, string $unit, string $start, string $expectedEnd): void
     {
         $this->actingAsUser(['payments.manage']);

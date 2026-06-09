@@ -33,14 +33,14 @@ class ReconciliationService
             ->groupBy('role_id');
 
         return [
-            'roles'    => $roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug]),
+            'roles' => $roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug]),
             'accounts' => $accounts->map(fn ($a) => ['id' => $a->id, 'name' => $a->name]),
-            'configs'  => $configs->map(fn ($group) => $group->map(fn ($c) => [
-                'id'           => $c->id,
-                'role_id'      => $c->role_id,
-                'type'         => $c->type,
+            'configs' => $configs->map(fn ($group) => $group->map(fn ($c) => [
+                'id' => $c->id,
+                'role_id' => $c->role_id,
+                'type' => $c->type,
                 'reference_id' => $c->reference_id,
-                'is_active'    => $c->is_active,
+                'is_active' => $c->is_active,
             ])->values())->toArray(),
         ];
     }
@@ -56,12 +56,12 @@ class ReconciliationService
                 }
                 ReconciliationConfig::updateOrCreate(
                     [
-                        'tenant_id'    => $tenantId,
-                        'role_id'      => $roleId,
-                        'type'         => $item['type'],
+                        'tenant_id' => $tenantId,
+                        'role_id' => $roleId,
+                        'type' => $item['type'],
                         'reference_id' => $item['reference_id'],
                     ],
-                    ['is_active' => $item['is_active'] ?? true]
+                    ['is_active' => $item['is_active'] ?? true],
                 );
             }
         });
@@ -72,7 +72,7 @@ class ReconciliationService
     public function getTodaySession(int $tenantId): ?array
     {
         $session = ReconciliationSession::where('tenant_id', $tenantId)
-            ->where('date', Carbon::today()->toDateString())
+            ->whereDate('date', Carbon::today()->toDateString())
             ->first();
 
         return $session ? $this->serializeSession($session) : null;
@@ -106,8 +106,9 @@ class ReconciliationService
                     + (float) ($a->incoming_total ?? 0)
                     + (float) ($a->transaction_total ?? 0)
                     - (float) ($a->outgoing_total ?? 0),
-                    2
+                    2,
                 );
+
                 return ['id' => $a->id, 'name' => $a->name, 'current_value' => $currentBalance];
             });
 
@@ -118,7 +119,7 @@ class ReconciliationService
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $productIds   = $productList->pluck('id');
+        $productIds = $productList->pluck('id');
         $variationIds = $productList->flatMap(fn ($p) => $p->variations->pluck('id'));
 
         // Back-room stock (quantity field)
@@ -150,22 +151,23 @@ class ReconciliationService
             ->pluck('total_qty', 'product_variation_id');
 
         $stockItems = [];
+
         foreach ($productList as $product) {
             if ($product->variations->isEmpty()) {
                 $stockItems[] = [
-                    'id'                    => $product->id,
-                    'name'                  => $product->name,
-                    'type'                  => 'stock',
-                    'current_value'         => round((float) ($productStockTotals[$product->id] ?? 0), 2),
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'type' => 'stock',
+                    'current_value' => round((float) ($productStockTotals[$product->id] ?? 0), 2),
                     'current_display_value' => round((float) ($productDisplayTotals[$product->id] ?? 0), 2),
                 ];
             } else {
                 foreach ($product->variations as $variation) {
                     $stockItems[] = [
-                        'id'                    => $variation->id,
-                        'name'                  => $product->name . ' – ' . $variation->name,
-                        'type'                  => 'stock_variation',
-                        'current_value'         => round((float) ($variationStockTotals[$variation->id] ?? 0), 2),
+                        'id' => $variation->id,
+                        'name' => $product->name . ' – ' . $variation->name,
+                        'type' => 'stock_variation',
+                        'current_value' => round((float) ($variationStockTotals[$variation->id] ?? 0), 2),
                         'current_display_value' => round((float) ($variationDisplayTotals[$variation->id] ?? 0), 2),
                     ];
                 }
@@ -185,7 +187,7 @@ class ReconciliationService
         $today = Carbon::today()->toDateString();
 
         $existing = ReconciliationSession::where('tenant_id', $tenantId)
-            ->where('date', $today)
+            ->whereDate('date', $today)
             ->first();
 
         if ($existing) {
@@ -195,17 +197,17 @@ class ReconciliationService
         return DB::transaction(function () use ($tenantId, $userId, $today, $entries) {
             $session = ReconciliationSession::create([
                 'tenant_id' => $tenantId,
-                'date'      => $today,
-                'status'    => 'open',
+                'date' => $today,
+                'status' => 'open',
                 'opened_by' => $userId,
             ]);
 
             foreach ($entries as $entry) {
                 ReconciliationEntry::create([
-                    'session_id'    => $session->id,
-                    'type'          => $entry['type'],
-                    'reference_id'  => $entry['reference_id'],
-                    'stage'         => 'open',
+                    'session_id' => $session->id,
+                    'type' => $entry['type'],
+                    'reference_id' => $entry['reference_id'],
+                    'stage' => 'open',
                     'entered_value' => $entry['entered_value'],
                 ]);
             }
@@ -236,18 +238,18 @@ class ReconciliationService
             $closeEntry = $session->entries->first(
                 fn ($e) => $e->stage === 'close'
                     && $e->type === $entry->type
-                    && $e->reference_id === $entry->reference_id
+                    && $e->reference_id === $entry->reference_id,
             );
 
             $items[] = [
-                'type'           => $entry->type,
-                'reference_id'   => $entry->reference_id,
-                'label'          => $label,
-                'opening_value'  => (float) $entry->entered_value,
-                'system_delta'   => $systemDelta,
+                'type' => $entry->type,
+                'reference_id' => $entry->reference_id,
+                'label' => $label,
+                'opening_value' => (float) $entry->entered_value,
+                'system_delta' => $systemDelta,
                 'expected_close' => round((float) $entry->entered_value + $systemDelta, 2),
-                'actual_close'   => $closeEntry ? (float) $closeEntry->entered_value : null,
-                'difference'     => $closeEntry
+                'actual_close' => $closeEntry ? (float) $closeEntry->entered_value : null,
+                'difference' => $closeEntry
                     ? round((float) $closeEntry->entered_value - ((float) $entry->entered_value + $systemDelta), 2)
                     : null,
             ];
@@ -255,7 +257,7 @@ class ReconciliationService
 
         return [
             'session' => $this->serializeSession($session),
-            'items'   => $items,
+            'items' => $items,
         ];
     }
 
@@ -274,9 +276,10 @@ class ReconciliationService
         foreach ($openEntries as $openEntry) {
             $hasClose = $session->entries->contains(
                 fn ($e) => $e->stage === 'close'
-                    && $e->type         === $openEntry->type
-                    && $e->reference_id === $openEntry->reference_id
+                    && $e->type === $openEntry->type
+                    && $e->reference_id === $openEntry->reference_id,
             );
+
             if (!$hasClose) {
                 return 'Please complete all closing values before confirming.';
             }
@@ -284,10 +287,10 @@ class ReconciliationService
 
         return DB::transaction(function () use ($session, $userId, $reason) {
             $session->update([
-                'status'             => 'closed',
-                'closed_by'          => $userId,
-                'closed_at'          => now(),
-                'adjustment_reason'  => $reason,
+                'status' => 'closed',
+                'closed_by' => $userId,
+                'closed_at' => now(),
+                'adjustment_reason' => $reason,
             ]);
 
             $session->load('entries');
@@ -308,12 +311,12 @@ class ReconciliationService
             foreach ($entries as $entry) {
                 ReconciliationEntry::updateOrCreate(
                     [
-                        'session_id'   => $session->id,
-                        'type'         => $entry['type'],
+                        'session_id' => $session->id,
+                        'type' => $entry['type'],
                         'reference_id' => $entry['reference_id'],
-                        'stage'        => 'close',
+                        'stage' => 'close',
                     ],
-                    ['entered_value' => $entry['entered_value']]
+                    ['entered_value' => $entry['entered_value']],
                 );
             }
         });
@@ -332,9 +335,9 @@ class ReconciliationService
             'data' => collect($sessions->items())->map(fn ($s) => $this->serializeSession($s)),
             'meta' => [
                 'current_page' => $sessions->currentPage(),
-                'last_page'    => $sessions->lastPage(),
-                'per_page'     => $sessions->perPage(),
-                'total'        => $sessions->total(),
+                'last_page' => $sessions->lastPage(),
+                'per_page' => $sessions->perPage(),
+                'total' => $sessions->total(),
             ],
         ];
     }
@@ -426,10 +429,13 @@ class ReconciliationService
 
         if ($type === 'stock_variation' || $type === 'stock_variation_display') {
             $variation = ProductVariation::with('product:id,name')->find($referenceId);
+
             if ($variation) {
                 $label = $variation->product->name . ' – ' . $variation->name;
+
                 return $type === 'stock_variation_display' ? $label . ' (Display)' : $label;
             }
+
             return "Variation #{$referenceId}";
         }
 
@@ -445,14 +451,14 @@ class ReconciliationService
     private function serializeSession(ReconciliationSession $session): array
     {
         return [
-            'id'                 => $session->id,
-            'date'               => $session->date->toDateString(),
-            'status'             => $session->status,
-            'opened_by'          => $session->opener?->name ?? $session->opened_by,
-            'closed_by'          => $session->closer?->name ?? $session->closed_by,
-            'closed_at'          => $session->closed_at?->toISOString(),
-            'adjustment_reason'  => $session->adjustment_reason,
-            'notes'              => $session->notes,
+            'id' => $session->id,
+            'date' => $session->date->toDateString(),
+            'status' => $session->status,
+            'opened_by' => $session->opener?->name ?? $session->opened_by,
+            'closed_by' => $session->closer?->name ?? $session->closed_by,
+            'closed_at' => $session->closed_at?->toISOString(),
+            'adjustment_reason' => $session->adjustment_reason,
+            'notes' => $session->notes,
         ];
     }
 }

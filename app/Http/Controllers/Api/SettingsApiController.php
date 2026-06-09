@@ -108,7 +108,7 @@ class SettingsApiController extends Controller
         $commandRules = match ($command) {
             'legacy:sync-attendance' => [
                 'date_start' => ['required', 'date_format:Y-m-d'],
-                'date_end' => ['required', 'date_format:Y-m-d', 'gte:date_start'],
+                'date_end' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_start'],
             ],
             'legacy:sync-payments' => [
                 'date_start' => ['nullable', 'date_format:Y-m-d'],

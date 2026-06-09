@@ -328,12 +328,12 @@ class SyncLegacyMembersCommand extends Command
         }
 
         $candidates = [
-            $payload,
             Arr::get($payload, 'data'),
             Arr::get($payload, 'member'),
             Arr::get($payload, 'result'),
             Arr::get($payload, 'data.member'),
             Arr::get($payload, 'data.result'),
+            $payload,
         ];
 
         foreach ($candidates as $candidate) {
@@ -537,9 +537,11 @@ class SyncLegacyMembersCommand extends Command
             return (float) $value;
         }
 
-        $normalized = preg_replace('/[^\d.\-]/', '', (string) $value);
+        $normalized = str_replace(',', '', (string) $value);
 
-        return is_numeric($normalized) ? (float) $normalized : null;
+        return preg_match('/-?\d+(?:\.\d+)?/', $normalized, $matches)
+            ? (float) $matches[0]
+            : null;
     }
 
     private function toBool(mixed $value, bool $default = false): bool

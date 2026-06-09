@@ -47,10 +47,12 @@ class SendBulkNotificationJob implements ShouldQueue
         }
 
         $channels = $tenantConfig->enabledChannels($notification->tenant_id, $this->channels);
+        $recipients = $notification->recipients
+            ->filter(fn ($recipient) => $recipient->member?->tenant_id === $notification->tenant_id);
 
         // SMS — single bulk API call for all recipients
         if (in_array('sms', $channels, true)) {
-            $contacts = $notification->recipients()->pluck('phone_number')->values()->all();
+            $contacts = $recipients->pluck('phone_number')->filter()->values()->all();
 
             if (!empty($contacts)) {
                 $smsService->sendBulk($contacts, $notification->message, $notification->tenant_id);
@@ -62,12 +64,8 @@ class SendBulkNotificationJob implements ShouldQueue
         $now = now();
         $tenantBranding = TenantEmailBranding::forTenantId($notification->tenant_id);
 
-        foreach ($notification->recipients as $recipient) {
+        foreach ($recipients as $recipient) {
             $member = $recipient->member;
-
-            if (!$member) {
-                continue;
-            }
 
             if (in_array('email', $channels, true) && $member->email) {
                 try {
