@@ -22,5 +22,5 @@ Artisan::command('notifications:member-milestones', function () {
     $this->info("Queued {$count} member milestone notification(s).");
 })->purpose('Queue member birthday and join anniversary notifications');
 
-Schedule::command('notifications:membership-expiry')->dailyAt('06:00');
-Schedule::command('notifications:member-milestones')->dailyAt('06:00');
+Schedule::command('notifications:membership-expiry')->dailyAt('01:00')->timezone('UTC');
+Schedule::command('notifications:member-milestones')->dailyAt('01:00')->timezone('UTC');
