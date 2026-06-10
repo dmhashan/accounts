@@ -264,17 +264,6 @@
                 </div>
               </Transition>
             </div>
-
-            <!-- Member Reachable Configurations -->
-            <div class="px-4 md:px-6 py-4 space-y-4">
-              <div>
-                <p class="text-sm font-medium" style="color: var(--text-strong)">
-                  Member Reachable Configurations
-                </p>
-              </div>
-
-              <MemberReachableConfigFields v-model="memberReachableConfig" />
-            </div>
           </div>
 
           <!-- Save button -->
@@ -307,7 +296,6 @@ import { Bell, BellRing, Mail, MessageSquare } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
-import MemberReachableConfigFields from '../components/settings/MemberReachableConfigFields.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const loading = ref(true);
