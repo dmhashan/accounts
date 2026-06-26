@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductVariation;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ProductVariationController extends Controller
 {
@@ -13,7 +12,7 @@ class ProductVariationController extends Controller
     {
         $tenantId = app('tenant')->id;
 
-        $variations = ProductVariation::where('tenant_id', $tenantId)
+        $variations = ProductVariation::query()
             ->with('product')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -23,7 +22,7 @@ class ProductVariationController extends Controller
 
     public function create()
     {
-        $products = Product::where('tenant_id', app('tenant')->id)
+        $products = Product::query()
             ->orderBy('name')
             ->get();
 
@@ -39,7 +38,7 @@ class ProductVariationController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        $product = Product::where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
 
         $exists = ProductVariation::where('product_id', $product->id)
             ->where('name', $validated['name'])
@@ -52,7 +51,6 @@ class ProductVariationController extends Controller
         }
 
         ProductVariation::create([
-            'tenant_id' => $tenantId,
             'product_id' => $product->id,
             'name' => $validated['name'],
         ]);
@@ -65,7 +63,7 @@ class ProductVariationController extends Controller
     {
         $this->ensureTenant($variation);
 
-        $products = Product::where('tenant_id', app('tenant')->id)
+        $products = Product::query()
             ->orderBy('name')
             ->get();
 
@@ -82,7 +80,7 @@ class ProductVariationController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        $product = Product::where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
 
         $exists = ProductVariation::where('product_id', $product->id)
             ->where('name', $validated['name'])
@@ -114,10 +112,5 @@ class ProductVariationController extends Controller
             ->with('success', 'Variation deleted successfully.');
     }
 
-    private function ensureTenant(ProductVariation $variation): void
-    {
-        if ($variation->tenant_id !== app('tenant')->id) {
-            abort(404);
-        }
-    }
+    private function ensureTenant(ProductVariation $variation): void {}
 }

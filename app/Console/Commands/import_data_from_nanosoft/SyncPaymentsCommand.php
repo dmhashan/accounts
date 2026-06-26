@@ -51,7 +51,7 @@ class SyncPaymentsCommand extends Command
         }
 
         $accountName = trim((string) $this->option('account-name'));
-        $cashAccount = CompanyAccount::where('tenant_id', $tenant->id)
+        $cashAccount = CompanyAccount::query()
             ->where('name', $accountName)
             ->first();
 
@@ -197,7 +197,6 @@ class SyncPaymentsCommand extends Command
                 try {
                     DB::table('member_payments')->upsert(
                         [
-                            'tenant_id' => $tenant->id,
                             'member_id' => $localMemberId,
                             'company_account_id' => $cashAccount->id,
                             'amount' => $amount,
@@ -209,20 +208,18 @@ class SyncPaymentsCommand extends Command
                             'created_at' => now(),
                             'updated_at' => now(),
                         ],
-                        ['tenant_id', 'legacy_uuid'],
+                        ['legacy_uuid'],
                         ['member_id', 'company_account_id', 'legacy_member_id', 'legacy_username', 'amount', 'payment_date', 'notes', 'updated_at'],
                     );
 
                     // Always sync membership record with start/end dates
                     $paymentId = DB::table('member_payments')
-                        ->where('tenant_id', $tenant->id)
                         ->where('legacy_uuid', $legacyUuid)
                         ->value('id');
 
                     if ($paymentId) {
                         DB::table('payment_memberships')->upsert(
                             [
-                                'tenant_id' => $tenant->id,
                                 'member_payment_id' => $paymentId,
                                 'payment_plan_id' => $planId,
                                 'start_date' => $startDt,
@@ -265,7 +262,6 @@ class SyncPaymentsCommand extends Command
         $this->info('Re-mapping member_id for unlinked payment records...');
 
         $unlinked = DB::table('member_payments')
-            ->where('tenant_id', $tenant->id)
             ->whereNull('member_id')
             ->whereNotNull('legacy_username')
             ->distinct()
@@ -274,7 +270,7 @@ class SyncPaymentsCommand extends Command
         if ($unlinked->isEmpty()) {
             $this->line('  Nothing to remap.');
         } else {
-            $memberMap = Member::where('tenant_id', $tenant->id)
+            $memberMap = Member::query()
                 ->whereIn('username', $unlinked)
                 ->pluck('id', 'username');
 
@@ -282,7 +278,6 @@ class SyncPaymentsCommand extends Command
 
             foreach ($memberMap as $username => $memberId) {
                 $affected = DB::table('member_payments')
-                    ->where('tenant_id', $tenant->id)
                     ->whereNull('member_id')
                     ->where('legacy_username', $username)
                     ->update(['member_id' => $memberId, 'updated_at' => now()]);
@@ -299,11 +294,11 @@ class SyncPaymentsCommand extends Command
         $this->info('Syncing account transactions...');
 
         $txSynced = 0;
-        MemberPayment::where('tenant_id', $tenant->id)
+        MemberPayment::query()
             ->whereNotNull('legacy_uuid')
             ->whereNotNull('company_account_id')
             ->with('member:id,first_name,last_name,name')
-            ->chunkById(200, function ($payments) use ($tenant, &$txSynced) {
+            ->chunkById(200, function ($payments) use (&$txSynced) {
                 foreach ($payments as $payment) {
                     $member = $payment->member;
                     $memberName = $member
@@ -316,7 +311,6 @@ class SyncPaymentsCommand extends Command
                             'reference_id' => $payment->id,
                         ],
                         [
-                            'tenant_id' => $tenant->id,
                             'company_account_id' => $payment->company_account_id,
                             'type' => 'payment',
                             'amount' => (float) $payment->amount,
@@ -380,7 +374,7 @@ class SyncPaymentsCommand extends Command
             return null;
         }
 
-        $id = Member::where('tenant_id', $tenantId)
+        $id = Member::query()
             ->where('username', $username)
             ->value('id');
 
@@ -420,7 +414,7 @@ class SyncPaymentsCommand extends Command
         }
 
         $plan = PaymentPlan::firstOrCreate(
-            ['tenant_id' => $tenantId, 'name' => $planName],
+            ['name' => $planName],
             ['duration_value' => $value, 'duration_unit' => $unit, 'price' => $amount, 'is_active' => true],
         );
 

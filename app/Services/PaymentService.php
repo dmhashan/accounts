@@ -20,20 +20,18 @@ class PaymentService
     public function meta(int $tenantId): array
     {
         $members = Member::query()
-            ->where('tenant_id', $tenantId)
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get(['id', 'first_name', 'last_name', 'name', 'phone_number']);
 
         $accounts = CompanyAccount::query()
-            ->where('tenant_id', $tenantId)
             ->orderBy('name')
             ->withSum('incomingTransfers as incoming_total', 'amount')
             ->withSum('outgoingTransfers as outgoing_total', 'amount')
             ->withSum('transactions as transaction_total', 'amount')
             ->get();
 
-        $plans = PaymentPlan::where('tenant_id', $tenantId)
+        $plans = PaymentPlan::query()
             ->where('is_active', true)
             ->orderByRaw(PaymentPlan::durationDaysOrderRaw())
             ->get(['id', 'name', 'duration_value', 'duration_unit', 'price']);
@@ -105,7 +103,6 @@ class PaymentService
         // Find the last membership for this member (latest end_date)
         $lastMembership = PaymentMembership::query()
             ->whereHas('payment', fn ($q) => $q
-                ->where('tenant_id', $tenantId)
                 ->where('member_id', $member->id),
             )
             ->with(['payment', 'plan'])
@@ -155,7 +152,6 @@ class PaymentService
     public function memberPayments(int $memberId, int $tenantId, int $perPage): array
     {
         $payments = MemberPayment::query()
-            ->where('tenant_id', $tenantId)
             ->where('member_id', $memberId)
             ->with(['account:id,name', 'membership.plan:id,name'])
             ->orderBy('payment_date', 'desc')
@@ -176,7 +172,6 @@ class PaymentService
     public function payments(int $tenantId, int $perPage): array
     {
         $payments = MemberPayment::query()
-            ->where('tenant_id', $tenantId)
             ->with([
                 'member:id,first_name,last_name,name,phone_number',
                 'account:id,name',
@@ -200,7 +195,6 @@ class PaymentService
     public function showPayment(MemberPayment $payment, int $tenantId): array
     {
         $payment = MemberPayment::query()
-            ->where('tenant_id', $tenantId)
             ->with([
                 'member:id,first_name,last_name,name,phone_number',
                 'account:id,name',
@@ -229,7 +223,6 @@ class PaymentService
                     abort(422, 'Please select a member for wallet payment.');
                 }
                 $member = Member::query()
-                    ->where('tenant_id', $tenantId)
                     ->lockForUpdate()
                     ->find((int) $validated['member_id']);
 
@@ -250,7 +243,6 @@ class PaymentService
             }
 
             $payment = MemberPayment::create([
-                'tenant_id' => $tenantId,
                 'member_id' => $validated['member_id'] ?? null,
                 'company_account_id' => $accountId,
                 'payment_method' => $isWalletPayment ? 'member_wallet' : 'cash',
@@ -281,7 +273,6 @@ class PaymentService
 
         DB::transaction(function () use ($payment, $tenantId, $validated) {
             $lockedPayment = MemberPayment::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($payment->id);
 
@@ -322,7 +313,6 @@ class PaymentService
     public function destroyPayment(MemberPayment $payment, int $tenantId): void
     {
         $lockedPayment = MemberPayment::query()
-            ->where('tenant_id', $tenantId)
             ->find($payment->id);
 
         if (!$lockedPayment) {
@@ -334,7 +324,6 @@ class PaymentService
         // Refund wallet if this was a wallet payment
         if ($lockedPayment->payment_method === 'member_wallet' && $lockedPayment->member_id) {
             $member = Member::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($lockedPayment->member_id);
 
@@ -361,7 +350,7 @@ class PaymentService
             return;
         }
 
-        $member = Member::where('id', $memberId)->where('tenant_id', $tenantId)->first();
+        $member = Member::where('id', $memberId)->first();
 
         if ($member) {
             $this->biometric->syncMember($member, 'update');
@@ -387,7 +376,6 @@ class PaymentService
             PaymentMembership::updateOrCreate(
                 ['member_payment_id' => $payment->id],
                 [
-                    'tenant_id' => $tenantId,
                     'payment_plan_id' => $planId,
                     'start_date' => $startDate,
                     'end_date' => $endDate,
@@ -411,7 +399,6 @@ class PaymentService
                 'reference_id' => $payment->id,
             ],
             [
-                'tenant_id' => $tenantId,
                 'company_account_id' => $payment->company_account_id,
                 'type' => 'payment',
                 'amount' => (float) $payment->amount,
@@ -426,7 +413,6 @@ class PaymentService
     {
         $exists = Member::query()
             ->where('id', $memberId)
-            ->where('tenant_id', $tenantId)
             ->exists();
 
         if (!$exists) {
@@ -438,7 +424,6 @@ class PaymentService
     {
         $exists = CompanyAccount::query()
             ->where('id', $accountId)
-            ->where('tenant_id', $tenantId)
             ->exists();
 
         if (!$exists) {

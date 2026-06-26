@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Expense extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'company_account_id',
         'category',
         'amount',

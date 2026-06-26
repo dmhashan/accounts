@@ -40,7 +40,7 @@ class StoreWorkoutDayExerciseRequest extends FormRequest
 
             $tenantId = app('tenant')->id;
             $variationNames = ExerciseVariation::query()
-                ->whereHas('exercise', fn ($query) => $query->where('id', $exerciseId)->where('tenant_id', $tenantId))
+                ->whereHas('exercise', fn ($query) => $query->where('id', $exerciseId))
                 ->pluck('variation_name')
                 ->map(fn ($name) => trim((string) $name))
                 ->all();

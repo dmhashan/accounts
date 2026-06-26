@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DailySummaryReport extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'report_date',
         'prepared_by_user_id',
         'prepared_by_name',

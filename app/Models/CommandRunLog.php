@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CommandRunLog extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'user_id',
         'command',
         'params',

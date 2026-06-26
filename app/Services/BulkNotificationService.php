@@ -17,7 +17,6 @@ class BulkNotificationService
     public function index(int $tenantId, int $perPage, string $search): array
     {
         $notifications = BulkNotification::query()
-            ->where('tenant_id', $tenantId)
             ->when($search !== '', fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->withCount('recipients')
             ->orderBy('created_at', 'desc')
@@ -60,7 +59,6 @@ class BulkNotificationService
         return DB::transaction(function () use ($tenant, $user, $data) {
             /** @var BulkNotification $notification */
             $notification = BulkNotification::create([
-                'tenant_id' => $tenant->id,
                 'created_by' => $user->id,
                 'name' => $data['name'],
                 'message' => $data['message'],
@@ -121,7 +119,6 @@ class BulkNotificationService
         }
 
         $members = Member::query()
-            ->where('tenant_id', $tenantId)
             ->whereIn('id', $memberIds)
             ->whereNotNull('phone_number')
             ->where('phone_number', '!=', '')

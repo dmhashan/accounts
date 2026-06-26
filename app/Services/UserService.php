@@ -22,7 +22,6 @@ class UserService
     public function index(int $tenantId, User $currentUser, int $perPage, string $search): array
     {
         $users = User::query()
-            ->where('tenant_id', $tenantId)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
                     $innerQuery->where('name', 'like', "%{$search}%")
@@ -75,7 +74,6 @@ class UserService
     public function store(int $tenantId, array $validated): User
     {
         $user = User::create([
-            'tenant_id' => $tenantId,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
@@ -145,8 +143,6 @@ class UserService
 
     public function ensureTenantUser(User $user, int $tenantId): void
     {
-        if ($user->tenant_id !== $tenantId) {
-            abort(404);
-        }
+        //
     }
 }

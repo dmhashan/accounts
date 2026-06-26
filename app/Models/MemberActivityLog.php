@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MemberActivityLog extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'session_id',
         'event_type',
@@ -85,8 +84,8 @@ class MemberActivityLog extends Model
 
         return [
             'device_type' => $deviceType,
-            'browser'     => $browser,
-            'os'          => $os,
+            'browser' => $browser,
+            'os' => $os,
         ];
     }
 }

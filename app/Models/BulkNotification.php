@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class BulkNotification extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'created_by',
         'name',
         'message',

@@ -367,7 +367,7 @@ class SyncLegacyMembersCommand extends Command
             [$firstName, $lastName] = $this->splitName($name);
         }
 
-        $existingMember = Member::where('tenant_id', $tenant->id)
+        $existingMember = Member::query()
             ->where('email', $email)
             ->first();
 
@@ -400,7 +400,6 @@ class SyncLegacyMembersCommand extends Command
         ) {
             if (!$existingMember) {
                 $existingMember = new Member;
-                $existingMember->tenant_id = $tenant->id;
                 $existingMember->biometric_member_id = $this->resolveLocalMemberCode($tenant, $detail, $legacyId);
                 $existingMember->biometric_last_synced_at = now();
                 $memberStatus = 'created';
@@ -636,13 +635,13 @@ class SyncLegacyMembersCommand extends Command
 
         // Only accept pure-numeric candidates
         if ($candidate !== '' && ctype_digit($candidate)) {
-            if (!Member::where('tenant_id', $tenant->id)->where('biometric_member_id', $candidate)->exists()) {
+            if (!Member::query()->where('biometric_member_id', $candidate)->exists()) {
                 return $candidate;
             }
         }
 
         // Use numeric legacyId if available and free within the tenant
-        if (ctype_digit($legacyId) && !Member::where('tenant_id', $tenant->id)->where('biometric_member_id', $legacyId)->exists()) {
+        if (ctype_digit($legacyId) && !Member::query()->where('biometric_member_id', $legacyId)->exists()) {
             return $legacyId;
         }
 
@@ -651,7 +650,7 @@ class SyncLegacyMembersCommand extends Command
 
     private function resolveOrCreatePaymentPlan(Tenant $tenant, string $name, ?float $price): int
     {
-        $plan = PaymentPlan::where('tenant_id', $tenant->id)
+        $plan = PaymentPlan::query()
             ->whereRaw('LOWER(name) = ?', [strtolower($name)])
             ->first();
 
@@ -660,7 +659,6 @@ class SyncLegacyMembersCommand extends Command
         }
 
         return PaymentPlan::create([
-            'tenant_id' => $tenant->id,
             'name' => $name,
             'duration_value' => 1,
             'duration_unit' => 'month',

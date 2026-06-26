@@ -50,10 +50,6 @@ class DeleteMemberUsersCommand extends Command
 
         $userQuery = User::where('role_id', $memberRole->id);
 
-        if ($tenantId) {
-            $userQuery->where('tenant_id', (int) $tenantId);
-        }
-
         $userCount = $userQuery->count();
 
         $this->line("Found {$userCount} user(s) with the member role.");

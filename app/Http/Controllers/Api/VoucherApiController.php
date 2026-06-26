@@ -60,10 +60,6 @@ class VoucherApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($voucher->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
         $voucher->load(['createdBy:id,name', 'redemption.member:id,first_name,last_name,name,biometric_member_id', 'redemption.redeemedBy:id,name']);
 
         return response()->json([
@@ -125,10 +121,6 @@ class VoucherApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
         $validated = $request->validate([
             'uuid' => ['required', 'string', 'max:36'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -154,10 +146,6 @@ class VoucherApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
-
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
 
         $perPage = min($request->integer('per_page', 15), 50);
 

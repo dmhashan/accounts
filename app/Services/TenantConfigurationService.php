@@ -5,13 +5,9 @@ namespace App\Services;
 use App\Enums\DateFormat;
 use App\Enums\TimeFormat;
 use App\Models\TenantConfiguration;
-use Illuminate\Database\Eloquent\Builder;
 
 class TenantConfigurationService
 {
-    /** @var array<string, bool> */
-    private array $tenantIdColumnCache = [];
-
     /**
      * Configuration key metadata: key => [title, default]
      */
@@ -84,7 +80,7 @@ class TenantConfigurationService
 
     public function all(int $tenantId): array
     {
-        $rows = $this->queryForTenant($tenantId)
+        $rows = TenantConfiguration::query()
             ->pluck('value', 'key')
             ->all();
 
@@ -109,52 +105,11 @@ class TenantConfigurationService
             [$title] = self::SCHEMA[$key];
 
             TenantConfiguration::updateOrCreate(
-                $this->lookupForTenant($tenantId, $key),
+                ['key' => $key],
                 ['title' => $title, 'value' => (string) $value],
             );
         }
 
         return $this->all($tenantId);
-    }
-
-    /**
-     * @return Builder<TenantConfiguration>
-     */
-    private function queryForTenant(int $tenantId): Builder
-    {
-        $query = TenantConfiguration::query();
-
-        if ($this->hasTenantIdColumn()) {
-            $query->where('tenant_id', $tenantId);
-        }
-
-        return $query;
-    }
-
-    /**
-     * @return array<string, int|string>
-     */
-    private function lookupForTenant(int $tenantId, string $key): array
-    {
-        if (!$this->hasTenantIdColumn()) {
-            return ['key' => $key];
-        }
-
-        return ['tenant_id' => $tenantId, 'key' => $key];
-    }
-
-    private function hasTenantIdColumn(): bool
-    {
-        $model = new TenantConfiguration;
-        $connection = $model->getConnection();
-        $table = $model->getTable();
-        $cacheKey = implode(':', [
-            $connection->getName(),
-            $connection->getDatabaseName() ?? '',
-            $table,
-        ]);
-
-        return $this->tenantIdColumnCache[$cacheKey]
-            ??= $connection->getSchemaBuilder()->hasColumn($table, 'tenant_id');
     }
 }

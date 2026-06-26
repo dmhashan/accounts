@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class WorkoutProgram extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'title',
         'description',
         'duration_weeks',

@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MemberAttendance extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'biometric_access_event_id',
         'legacy_uuid',

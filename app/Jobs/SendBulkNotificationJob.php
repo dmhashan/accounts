@@ -46,30 +46,30 @@ class SendBulkNotificationJob implements ShouldQueue
             return;
         }
 
-        $channels = $tenantConfig->enabledChannels($notification->tenant_id, $this->channels);
-        $recipients = $notification->recipients
-            ->filter(fn ($recipient) => $recipient->member?->tenant_id === $notification->tenant_id);
+        $tenantId = (int) app('tenant')->id;
+        $channels = $tenantConfig->enabledChannels($tenantId, $this->channels);
+        $recipients = $notification->recipients;
 
         // SMS — single bulk API call for all recipients
         if (in_array('sms', $channels, true)) {
             $contacts = $recipients->pluck('phone_number')->filter()->values()->all();
 
             if (!empty($contacts)) {
-                $smsService->sendBulk($contacts, $notification->message, $notification->tenant_id);
+                $smsService->sendBulk($contacts, $notification->message, $tenantId);
             }
         }
 
         // Email and in-app per member
         $inAppInserts = [];
         $now = now();
-        $tenantBranding = TenantEmailBranding::forTenantId($notification->tenant_id);
+        $tenantBranding = TenantEmailBranding::forTenantId($tenantId);
 
         foreach ($recipients as $recipient) {
             $member = $recipient->member;
 
             if (in_array('email', $channels, true) && $member->email) {
                 try {
-                    $tenantMail->mailerForTenant($notification->tenant_id)
+                    $tenantMail->mailerForTenant($tenantId)
                         ->to($member->email)
                         ->send(new MemberNotificationMail(
                             $notification->name,
@@ -89,7 +89,6 @@ class SendBulkNotificationJob implements ShouldQueue
 
             if (in_array('in_app', $channels, true)) {
                 $inAppInserts[] = [
-                    'tenant_id' => $notification->tenant_id,
                     'member_id' => $member->id,
                     'type' => 'bulk',
                     'title' => $notification->name,

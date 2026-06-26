@@ -63,7 +63,7 @@ class DailySummaryService
 
     private function buildAccounts(int $tenantId, string $dateStr, Carbon $startOf): \Illuminate\Support\Collection
     {
-        $accounts = CompanyAccount::where('tenant_id', $tenantId)
+        $accounts = CompanyAccount::query()
             ->orderBy('name')
             ->get(['id', 'name', 'opening_balance']);
 
@@ -124,7 +124,7 @@ class DailySummaryService
     private function buildIncome(int $tenantId, string $dateStr): array
     {
         // Positive transactions grouped by source.
-        $grouped = CompanyAccountTransaction::where('tenant_id', $tenantId)
+        $grouped = CompanyAccountTransaction::query()
             ->whereDate('transaction_date', $dateStr)
             ->where('amount', '>', 0)
             ->selectRaw('model_name, SUM(amount) as total, COUNT(*) as count')
@@ -141,7 +141,6 @@ class DailySummaryService
         $total = round(array_sum(array_column($breakdown, 'amount')), 2);
 
         $transactions = CompanyAccountTransaction::with('account:id,name')
-            ->where('tenant_id', $tenantId)
             ->whereDate('transaction_date', $dateStr)
             ->where('amount', '>', 0)
             ->orderByDesc('id')
@@ -166,7 +165,7 @@ class DailySummaryService
 
     private function buildExpense(int $tenantId, string $dateStr): array
     {
-        $grouped = CompanyAccountTransaction::where('tenant_id', $tenantId)
+        $grouped = CompanyAccountTransaction::query()
             ->whereDate('transaction_date', $dateStr)
             ->where('amount', '<', 0)
             ->selectRaw('model_name, SUM(amount) as total, COUNT(*) as count')
@@ -183,7 +182,6 @@ class DailySummaryService
         $total = round(array_sum(array_column($breakdown, 'amount')), 2);
 
         $transactions = CompanyAccountTransaction::with('account:id,name')
-            ->where('tenant_id', $tenantId)
             ->whereDate('transaction_date', $dateStr)
             ->where('amount', '<', 0)
             ->orderByDesc('id')
@@ -218,7 +216,7 @@ class DailySummaryService
     private function buildStock(int $tenantId, string $dateStr, Carbon $startOf, Carbon $endOf): array
     {
         // Current live on-hand per product (quantity + cost value).
-        $current = StockEntry::where('tenant_id', $tenantId)
+        $current = StockEntry::query()
             ->selectRaw('product_id, SUM(quantity) as qty, SUM(quantity * purchasing_price) as value')
             ->groupBy('product_id')
             ->get()
@@ -229,7 +227,7 @@ class DailySummaryService
         // Revenue earned from those sold units during the day.
         $revenueDay = $this->revenueByProduct($tenantId, $dateStr);
         // Units received during the day (stock entries created that day).
-        $receivedDay = StockEntry::where('tenant_id', $tenantId)
+        $receivedDay = StockEntry::query()
             ->whereDate('created_at', $dateStr)
             ->selectRaw('product_id, SUM(quantity) as qty')
             ->groupBy('product_id')
@@ -237,13 +235,13 @@ class DailySummaryService
 
         // Movements AFTER the selected day, used to roll the live stock back.
         $soldAfter = $this->soldByProduct($tenantId, fn ($q) => $q->where('sales.created_at', '>', $endOf));
-        $receivedAfter = StockEntry::where('tenant_id', $tenantId)
+        $receivedAfter = StockEntry::query()
             ->where('created_at', '>', $endOf)
             ->selectRaw('product_id, SUM(quantity) as qty')
             ->groupBy('product_id')
             ->pluck('qty', 'product_id');
 
-        $products = Product::where('tenant_id', $tenantId)
+        $products = Product::query()
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -300,7 +298,6 @@ class DailySummaryService
     {
         $query = SaleItem::query()
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->where('sales.tenant_id', $tenantId)
             ->whereNull('sales.deleted_at')
             ->selectRaw('sale_items.product_id, SUM(sale_items.quantity) as qty')
             ->groupBy('sale_items.product_id');
@@ -314,7 +311,6 @@ class DailySummaryService
     {
         return SaleItem::query()
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->where('sales.tenant_id', $tenantId)
             ->whereNull('sales.deleted_at')
             ->whereDate('sales.created_at', $dateStr)
             ->selectRaw('sale_items.product_id, SUM(sale_items.subtotal) as revenue')

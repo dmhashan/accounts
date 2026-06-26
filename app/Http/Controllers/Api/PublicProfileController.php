@@ -36,7 +36,7 @@ class PublicProfileController extends Controller
         $tenant = app('tenant');
         $phone = trim($request->phone_number);
 
-        $member = Member::where('tenant_id', $tenant->id)
+        $member = Member::query()
             ->where('phone_number', $phone)
             ->where('is_active', true)
             ->first();
@@ -79,7 +79,7 @@ class PublicProfileController extends Controller
             ], 422);
         }
 
-        $member = Member::where('tenant_id', $tenant->id)
+        $member = Member::query()
             ->where('phone_number', $phone)
             ->where('is_active', true)
             ->first();
@@ -107,7 +107,7 @@ class PublicProfileController extends Controller
         $tenant = app('tenant');
         $memberId = $request->input('_pp_member_id');
 
-        $member = Member::where('tenant_id', $tenant->id)
+        $member = Member::query()
             ->where('id', $memberId)
             ->where('is_active', true)
             ->firstOrFail();
@@ -118,13 +118,12 @@ class PublicProfileController extends Controller
             'assignedProgram.days.dayExercises.exercise',
             'assignedProgram.extras',
         ])
-            ->where('tenant_id', $tenant->id)
             ->where('member_id', $member->id)
             ->orderByDesc('effective_date')
             ->get();
 
         // Sales / invoices
-        $sales = Sale::where('tenant_id', $tenant->id)
+        $sales = Sale::query()
             ->where('customer_member_id', $member->id)
             ->orderByDesc('created_at')
             ->with(['items.product', 'items.variation'])
@@ -238,7 +237,7 @@ class PublicProfileController extends Controller
     {
         $tenant = app('tenant');
 
-        $event = \App\Models\Event::where('tenant_id', $tenant->id)
+        $event = \App\Models\Event::query()
             ->where('slug', $slug)
             ->where('is_active', true)
             ->first();
@@ -295,7 +294,7 @@ class PublicProfileController extends Controller
         $memberId = $request->input('_pp_member_id');
         $perPage = min(max(1, (int) $request->input('per_page', 15)), 50);
 
-        $member = Member::where('tenant_id', $tenant->id)
+        $member = Member::query()
             ->where('id', $memberId)
             ->where('is_active', true)
             ->firstOrFail();
@@ -313,7 +312,7 @@ class PublicProfileController extends Controller
         $page = max(1, (int) $request->input('page', 1));
         $perPage = min(max(1, (int) $request->input('per_page', 15)), 50);
 
-        $notifications = BulkNotification::where('tenant_id', $tenant->id)
+        $notifications = BulkNotification::query()
             ->where('status', 'sent')
             ->whereHas('recipients', fn ($q) => $q->where('member_id', $memberId))
             ->orderByDesc('sent_at')
@@ -343,7 +342,7 @@ class PublicProfileController extends Controller
         $page = max(1, (int) $request->input('page', 1));
         $perPage = min(max(1, (int) $request->input('per_page', 10)), 50);
 
-        $events = \App\Models\Event::where('tenant_id', $tenant->id)
+        $events = \App\Models\Event::query()
             ->where('is_active', true)
             ->where('start_datetime', '>', now())
             ->orderBy('start_datetime')
@@ -398,7 +397,6 @@ class PublicProfileController extends Controller
         }
 
         MemberActivityLog::create([
-            'tenant_id' => $tenant->id,
             'member_id' => $memberId,
             'session_id' => $request->session_id,
             'event_type' => $request->event_type,
@@ -423,7 +421,7 @@ class PublicProfileController extends Controller
         $tenant = app('tenant');
         $memberId = $request->input('_pp_member_id');
 
-        $event = \App\Models\Event::where('tenant_id', $tenant->id)
+        $event = \App\Models\Event::query()
             ->where('slug', $slug)
             ->where('is_active', true)
             ->first();
@@ -449,7 +447,7 @@ class PublicProfileController extends Controller
         $tenant = app('tenant');
         $memberId = $request->input('_pp_member_id');
 
-        $event = \App\Models\Event::where('tenant_id', $tenant->id)
+        $event = \App\Models\Event::query()
             ->where('slug', $slug)
             ->where('is_active', true)
             ->first();

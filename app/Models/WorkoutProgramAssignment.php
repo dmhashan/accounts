@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class WorkoutProgramAssignment extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'source_program_id',
         'assigned_program_id',

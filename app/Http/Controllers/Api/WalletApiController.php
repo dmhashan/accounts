@@ -12,9 +12,7 @@ use Illuminate\Http\Request;
 
 class WalletApiController extends Controller
 {
-    public function __construct(private readonly WalletService $walletService)
-    {
-    }
+    public function __construct(private readonly WalletService $walletService) {}
 
     public function meta(): JsonResponse
     {
@@ -37,16 +35,12 @@ class WalletApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
         $validated = $request->validate([
             'company_account_id' => ['required', 'integer'],
-            'amount'             => ['required', 'numeric', 'min:0.01'],
-            'topup_date'         => ['required', 'date'],
-            'reference_number'   => ['nullable', 'string', 'max:255'],
-            'notes'              => ['nullable', 'string', 'max:1000'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'topup_date' => ['required', 'date'],
+            'reference_number' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $topup = $this->walletService->topup($member, $tenant->id, $validated, $request->user()->id);
@@ -54,7 +48,7 @@ class WalletApiController extends Controller
         $member->refresh();
 
         return response()->json([
-            'topup'           => $topup,
+            'topup' => $topup,
             'current_balance' => round((float) $member->current_balance, 2),
         ], 201);
     }
@@ -63,10 +57,6 @@ class WalletApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
-
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
 
         $perPage = min((int) $request->integer('per_page', 15), 50);
 
@@ -77,10 +67,6 @@ class WalletApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
-
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
 
         $perPage = min((int) $request->integer('per_page', 15), 50);
 

@@ -17,7 +17,6 @@ class VoucherService
     public function index(int $tenantId, array $filters = []): array
     {
         $query = Voucher::query()
-            ->where('tenant_id', $tenantId)
             ->with('createdBy:id,name')
             ->withExists('redemption as is_redeemed_flag');
 
@@ -50,7 +49,6 @@ class VoucherService
     public function store(int $tenantId, array $validated, int $createdBy): Voucher
     {
         $voucher = Voucher::create([
-            'tenant_id' => $tenantId,
             'name' => trim($validated['name']),
             'uuid' => Str::uuid()->toString(),
             'amount' => (float) $validated['amount'],
@@ -67,9 +65,6 @@ class VoucherService
 
     public function update(Voucher $voucher, int $tenantId, array $validated): Voucher
     {
-        if ($voucher->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         if ($voucher->isRedeemed()) {
             abort(422, 'Cannot edit a redeemed voucher.');
@@ -92,9 +87,6 @@ class VoucherService
 
     public function destroy(Voucher $voucher, int $tenantId): void
     {
-        if ($voucher->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         if ($voucher->isRedeemed()) {
             abort(422, 'Cannot delete a redeemed voucher.');
@@ -111,7 +103,6 @@ class VoucherService
         return DB::transaction(function () use ($member, $tenantId, $uuid, $notes, $redeemedBy) {
             /** @var Voucher|null $voucher */
             $voucher = Voucher::query()
-                ->where('tenant_id', $tenantId)
                 ->where('uuid', $uuid)
                 ->lockForUpdate()
                 ->first();
@@ -139,7 +130,6 @@ class VoucherService
             }
 
             $lockedMember = Member::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($member->id);
 
@@ -148,7 +138,6 @@ class VoucherService
             }
 
             $redemption = VoucherRedemption::create([
-                'tenant_id' => $tenantId,
                 'voucher_id' => $voucher->id,
                 'member_id' => $lockedMember->id,
                 'redeemed_by' => $redeemedBy,
@@ -175,7 +164,6 @@ class VoucherService
     public function redemptionHistory(Member $member, int $tenantId, int $perPage): array
     {
         $paginated = VoucherRedemption::query()
-            ->where('tenant_id', $tenantId)
             ->where('member_id', $member->id)
             ->with(['voucher:id,name,uuid,amount', 'redeemedBy:id,name'])
             ->orderBy('created_at', 'desc')

@@ -29,19 +29,18 @@ class SendDailySummaryReportJob implements ShouldQueue
 
     public function handle(TenantMailService $tenantMail): void
     {
-        $report = DailySummaryReport::where('tenant_id', $this->tenantId)
+        $report = DailySummaryReport::query()
             ->find($this->reportId);
 
         if (!$report || !$report->pdf_path) {
             Log::warning('SendDailySummaryReportJob: report or PDF path missing.', [
-                'tenant_id' => $this->tenantId,
                 'report_id' => $this->reportId,
             ]);
 
             return;
         }
 
-        $recipients = User::where('tenant_id', $this->tenantId)
+        $recipients = User::query()
             ->whereHas('role', fn ($q) => $q->where('slug', 'admin'))
             ->whereNotNull('email')
             ->where('email', '!=', '')
@@ -49,7 +48,6 @@ class SendDailySummaryReportJob implements ShouldQueue
 
         if ($recipients->isEmpty()) {
             Log::info('SendDailySummaryReportJob: no admin recipients found.', [
-                'tenant_id' => $this->tenantId,
             ]);
 
             return;

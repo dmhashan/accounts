@@ -38,7 +38,7 @@ class ImportBiometricAccessEventsJob implements ShouldQueue
         $tenant = Tenant::find($this->tenantId);
 
         if (!$tenant) {
-            Log::warning('ImportBiometricAccessEventsJob: tenant not found.', ['tenant_id' => $this->tenantId]);
+            Log::warning('ImportBiometricAccessEventsJob: tenant not found.');
 
             return;
         }
@@ -48,6 +48,6 @@ class ImportBiometricAccessEventsJob implements ShouldQueue
 
         $result = $biometric->importDeviceEvents($tenant, $this->syncFrom, $this->syncTo);
 
-        Log::info('ImportBiometricAccessEventsJob: complete', array_merge(['tenant_id' => $this->tenantId], $result));
+        Log::info('ImportBiometricAccessEventsJob: complete', $result);
     }
 }

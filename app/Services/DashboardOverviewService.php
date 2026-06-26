@@ -89,7 +89,6 @@ class DashboardOverviewService
         }
 
         $baseQuery = BiometricAccessEvent::query()
-            ->where('tenant_id', $tenantId)
             ->whereBetween('event_time', [$startAt, $endAt]);
 
         $summary['counts']['total'] = (int) (clone $baseQuery)->count();
@@ -253,11 +252,9 @@ class DashboardOverviewService
         }
 
         $variationAvailability = ProductVariation::query()
-            ->where('product_variations.tenant_id', $tenantId)
             ->leftJoin('products', 'products.id', '=', 'product_variations.product_id')
-            ->leftJoin('stock_entries', function ($join) use ($tenantId, $today) {
+            ->leftJoin('stock_entries', function ($join) use ($today) {
                 $join->on('stock_entries.product_variation_id', '=', 'product_variations.id')
-                    ->where('stock_entries.tenant_id', $tenantId)
                     ->where(function ($query) use ($today) {
                         $query->whereDate('stock_entries.expiry_date', '>=', $today)
                             ->orWhereNull('stock_entries.expiry_date');
@@ -466,7 +463,6 @@ class DashboardOverviewService
     private function accountTransactionRangeQuery(int $tenantId, Carbon $startAt, Carbon $endAt)
     {
         return CompanyAccountTransaction::query()
-            ->where('tenant_id', $tenantId)
             ->whereDate('transaction_date', '>=', $startAt->toDateString())
             ->whereDate('transaction_date', '<=', $endAt->toDateString());
     }
@@ -530,7 +526,6 @@ class DashboardOverviewService
     private function buildSalesSummaryTotals(int $tenantId, Carbon $startAt, Carbon $endAt): array
     {
         $totals = Sale::query()
-            ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startAt, $endAt])
             ->selectRaw('COUNT(*) as transactions, COALESCE(SUM(total_amount), 0) as gross_amount, COALESCE(SUM(paid_amount), 0) as paid_amount')
             ->first();
@@ -550,7 +545,6 @@ class DashboardOverviewService
     private function buildTransactionListForRange(int $tenantId, Carbon $startAt, Carbon $endAt): array
     {
         return Sale::query()
-            ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startAt, $endAt])
             ->with(['items:id,sale_id,quantity'])
             ->orderByDesc('created_at')
@@ -596,7 +590,6 @@ class DashboardOverviewService
         $customerNameExpression = "COALESCE(NULLIF(TRIM(customer_name), ''), 'Walk-in')";
 
         return Sale::query()
-            ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startAt, $endAt])
             ->selectRaw($customerNameExpression . ' as customer_name')
             ->selectRaw('COUNT(*) as transactions')
@@ -621,7 +614,6 @@ class DashboardOverviewService
         return SaleItem::query()
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->leftJoin('products', 'products.id', '=', 'sale_items.product_id')
-            ->where('sales.tenant_id', $tenantId)
             ->whereNull('sales.deleted_at')
             ->whereBetween('sales.created_at', [$startAt, $endAt])
             ->groupBy('sale_items.product_id', 'products.name')

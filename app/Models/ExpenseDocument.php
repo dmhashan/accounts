@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ExpenseDocument extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'expense_id',
         'uploaded_by',
         'path',

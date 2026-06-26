@@ -22,17 +22,17 @@ class AutomatedMemberNotificationService
 
     public function sendWelcome(Member $member): void
     {
-        $tenant = $member->tenant;
-
-        if (!$tenant) {
+        if (!app()->bound('tenant')) {
             return;
         }
 
-        $config = $this->notificationConfig($member->tenant_id);
+        $tenant = app('tenant');
+        $tenantId = (int) $tenant->id;
+        $config = $this->notificationConfig($tenantId);
         $message = $this->welcomeMessage($member, $tenant, $config);
 
         SendMemberNotificationJob::dispatch(
-            $member->tenant_id,
+            $tenantId,
             $member->id,
             'member_welcome',
             'Welcome to ' . $this->tenantName($tenant),
@@ -42,14 +42,16 @@ class AutomatedMemberNotificationService
 
     public function sendPaymentReceipt(MemberPayment $payment): void
     {
-        $payment->loadMissing(['member', 'tenant', 'account']);
+        $payment->loadMissing(['member', 'account']);
 
-        if (!$payment->member || !$payment->tenant) {
+        if (!$payment->member || !app()->bound('tenant')) {
             return;
         }
 
+        $tenant = app('tenant');
+        $tenantId = (int) $tenant->id;
         $memberName = $this->memberName($payment->member);
-        $tenantName = $this->tenantName($payment->tenant);
+        $tenantName = $this->tenantName($tenant);
         $accountName = $payment->account?->name ?: ($payment->payment_method === 'member_wallet' ? 'Member Wallet' : 'Cash');
         $amount = number_format((float) $payment->amount, 2, '.', ',');
         $paymentDate = $payment->payment_date?->toDateString() ?? now()->toDateString();
@@ -57,7 +59,7 @@ class AutomatedMemberNotificationService
         $message = "Payment received! {$memberName} paid {$amount} at {$tenantName} on {$paymentDate} via {$accountName}";
 
         SendMemberNotificationJob::dispatch(
-            $payment->tenant_id,
+            $tenantId,
             $payment->member->id,
             'membership_payment_received',
             'Payment received',
@@ -82,7 +84,7 @@ class AutomatedMemberNotificationService
             foreach ($memberships as $membership) {
                 $payment = $membership->payment;
                 $member = $payment?->member;
-                $tenant = $member?->tenant;
+                $tenant = app()->bound('tenant') ? app('tenant') : null;
 
                 if (!$payment || !$member || !$tenant) {
                     continue;
@@ -105,7 +107,7 @@ class AutomatedMemberNotificationService
                 }
 
                 SendMemberNotificationJob::dispatch(
-                    $member->tenant_id,
+                    (int) $tenant->id,
                     $member->id,
                     $type,
                     'Membership payment reminder',
@@ -250,18 +252,20 @@ class AutomatedMemberNotificationService
             ->get();
 
         foreach ($members as $member) {
-            if (!$member->tenant || $this->alreadyCreatedToday($member, 'member_birthday', $today)) {
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+
+            if (!$tenant || $this->alreadyCreatedToday($member, 'member_birthday', $today)) {
                 continue;
             }
 
             $message = sprintf(
                 'Happy Birthday %s! Wishing you a strong, healthy and joyful year ahead from everyone at %s. Keep moving, keep growing!',
                 $this->memberName($member),
-                $this->tenantName($member->tenant),
+                $this->tenantName($tenant),
             );
 
             SendMemberNotificationJob::dispatch(
-                $member->tenant_id,
+                (int) $tenant->id,
                 $member->id,
                 'member_birthday',
                 'Happy Birthday',
@@ -288,7 +292,9 @@ class AutomatedMemberNotificationService
             ->get();
 
         foreach ($members as $member) {
-            if (!$member->tenant || $this->alreadyCreatedToday($member, 'member_join_anniversary', $today)) {
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+
+            if (!$tenant || $this->alreadyCreatedToday($member, 'member_join_anniversary', $today)) {
                 continue;
             }
 
@@ -298,11 +304,11 @@ class AutomatedMemberNotificationService
                 $this->memberName($member),
                 $attendanceDays,
                 $attendanceDays === 1 ? 'day' : 'days',
-                $this->tenantName($member->tenant),
+                $this->tenantName($tenant),
             );
 
             SendMemberNotificationJob::dispatch(
-                $member->tenant_id,
+                (int) $tenant->id,
                 $member->id,
                 'member_join_anniversary',
                 'Happy fitness anniversary',
@@ -321,7 +327,6 @@ class AutomatedMemberNotificationService
         $endDate = $today->copy()->subDay()->toDateString();
 
         return MemberAttendance::query()
-            ->where('tenant_id', $member->tenant_id)
             ->where('member_id', $member->id)
             ->whereDate('attended_date', '>=', $startDate)
             ->whereDate('attended_date', '<=', $endDate)
@@ -351,7 +356,6 @@ class AutomatedMemberNotificationService
     private function alreadyCreated(Member $member, string $type, string $message): bool
     {
         return MemberNotification::query()
-            ->where('tenant_id', $member->tenant_id)
             ->where('member_id', $member->id)
             ->where('type', $type)
             ->where('body', $message)
@@ -361,7 +365,6 @@ class AutomatedMemberNotificationService
     private function alreadyCreatedToday(Member $member, string $type, Carbon $today): bool
     {
         return MemberNotification::query()
-            ->where('tenant_id', $member->tenant_id)
             ->where('member_id', $member->id)
             ->where('type', $type)
             ->whereDate('created_at', $today->toDateString())

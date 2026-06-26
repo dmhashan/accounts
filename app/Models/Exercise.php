@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Exercise extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'name',
         'status',
         'default_sets',

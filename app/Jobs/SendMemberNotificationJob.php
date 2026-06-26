@@ -36,11 +36,10 @@ class SendMemberNotificationJob implements ShouldQueue
 
     public function handle(SmsService $smsService, TenantMailService $tenantMail, TenantConfigurationService $tenantConfig): void
     {
-        $member = Member::where('tenant_id', $this->tenantId)->find($this->memberId);
+        $member = Member::query()->find($this->memberId);
 
         if (!$member) {
             Log::warning('SendMemberNotificationJob: Member not found.', [
-                'tenant_id' => $this->tenantId,
                 'member_id' => $this->memberId,
             ]);
 
@@ -96,7 +95,6 @@ class SendMemberNotificationJob implements ShouldQueue
     private function sendInApp(Member $member): void
     {
         MemberNotification::create([
-            'tenant_id' => $this->tenantId,
             'member_id' => $member->id,
             'type' => $this->type,
             'title' => $this->title,

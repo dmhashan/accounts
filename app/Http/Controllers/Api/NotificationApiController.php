@@ -38,7 +38,6 @@ class NotificationApiController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $members = Member::query()
-            ->where('tenant_id', $tenant->id)
             ->where('is_temp', false)
             ->whereNotNull('phone_number')
             ->where('phone_number', '!=', '')
@@ -141,6 +140,5 @@ class NotificationApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        abort_if($notification->tenant_id !== $tenant->id, 403);
     }
 }

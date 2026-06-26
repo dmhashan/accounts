@@ -8,7 +8,7 @@ class PaymentPlanService
 {
     public function index(int $tenantId): array
     {
-        $plans = PaymentPlan::where('tenant_id', $tenantId)
+        $plans = PaymentPlan::query()
             ->withCount('members')
             ->orderByRaw(PaymentPlan::durationDaysOrderRaw())
             ->orderBy('name')
@@ -22,7 +22,6 @@ class PaymentPlanService
     public function store(int $tenantId, array $validated): PaymentPlan
     {
         return PaymentPlan::create([
-            'tenant_id' => $tenantId,
             'name' => trim($validated['name']),
             'duration_value' => (int) $validated['duration_value'],
             'duration_unit' => $validated['duration_unit'],
@@ -80,10 +79,5 @@ class PaymentPlanService
         ];
     }
 
-    private function ensureTenant(PaymentPlan $plan, int $tenantId): void
-    {
-        if ($plan->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureTenant(PaymentPlan $plan, int $tenantId): void {}
 }

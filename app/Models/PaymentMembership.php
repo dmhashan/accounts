@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PaymentMembership extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_payment_id',
         'payment_plan_id',
         'start_date',

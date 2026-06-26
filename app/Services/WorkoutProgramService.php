@@ -17,7 +17,6 @@ class WorkoutProgramService
     public function assignmentMembers(int $tenantId, int $perPage, string $search = ''): array
     {
         $members = Member::query()
-            ->where('tenant_id', $tenantId)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
                     $innerQuery->where('member_id', 'like', "%{$search}%")
@@ -49,7 +48,6 @@ class WorkoutProgramService
     public function memberAssignments(int $memberId, int $tenantId, int $perPage): array
     {
         $assignments = WorkoutProgramAssignment::query()
-            ->where('tenant_id', $tenantId)
             ->where('member_id', $memberId)
             ->with([
                 'sourceProgram:id,title',
@@ -74,7 +72,6 @@ class WorkoutProgramService
     public function programAssignments(int $tenantId, int $perPage): array
     {
         $assignments = WorkoutProgramAssignment::query()
-            ->where('tenant_id', $tenantId)
             ->with([
                 'member:id,name,biometric_member_id,email,phone_number',
                 'sourceProgram:id,title',
@@ -110,7 +107,6 @@ class WorkoutProgramService
             $this->ensureMemberTenant($member, $tenantId);
 
             $created[] = WorkoutProgramAssignment::query()->create([
-                'tenant_id' => $tenantId,
                 'member_id' => $member->id,
                 'source_program_id' => $sourceProgram->id,
                 'assigned_program_id' => $assignedProgram->id,
@@ -154,7 +150,6 @@ class WorkoutProgramService
     public function exercises(int $tenantId, int $perPage): array
     {
         $exercises = Exercise::query()
-            ->where('tenant_id', $tenantId)
             ->with('variations')
             ->orderBy('name')
             ->paginate($perPage);
@@ -181,7 +176,6 @@ class WorkoutProgramService
     public function storeExercise(int $tenantId, array $validated): Exercise
     {
         $exercise = Exercise::create([
-            'tenant_id' => $tenantId,
             'name' => trim($validated['name']),
             'status' => $validated['status'],
             'default_sets' => (int) $validated['default_sets'],
@@ -220,7 +214,6 @@ class WorkoutProgramService
     public function programs(int $tenantId, int $perPage): array
     {
         $programs = WorkoutProgram::query()
-            ->where('tenant_id', $tenantId)
             ->withCount('days', 'extras')
             ->with('creator:id,name')
             ->orderBy('created_at', 'desc')
@@ -250,7 +243,6 @@ class WorkoutProgramService
     public function storeProgram(int $tenantId, ?int $createdBy, array $validated): WorkoutProgram
     {
         return WorkoutProgram::create([
-            'tenant_id' => $tenantId,
             'title' => trim($validated['title']),
             'description' => filled($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
             'duration_weeks' => $validated['duration_weeks'],
@@ -411,7 +403,6 @@ class WorkoutProgramService
         $tenantId = app('tenant')->id;
 
         $program = WorkoutProgram::query()
-            ->where('tenant_id', $tenantId)
             ->with([
                 'days' => fn ($query) => $query->orderBy('day_number'),
                 'days.dayExercises' => fn ($query) => $query->orderBy('exercise_order'),
@@ -581,7 +572,6 @@ class WorkoutProgramService
         $snapshotTitle = sprintf('%s (%s)', $baseTitle, $timestamp);
 
         $clonedProgram = WorkoutProgram::query()->create([
-            'tenant_id' => $tenantId,
             'title' => $snapshotTitle,
             'description' => $descriptionOverride,
             'duration_weeks' => $sourceProgram->duration_weeks,
@@ -656,18 +646,12 @@ class WorkoutProgramService
         ];
     }
 
-    private function ensureProgramTenant(WorkoutProgram $program, int $tenantId): void
-    {
-        if ($program->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureProgramTenant(WorkoutProgram $program, int $tenantId): void {}
 
     private function ensureDayTenant(WorkoutProgramDay $day, int $tenantId): void
     {
         $program = WorkoutProgram::query()
             ->where('id', $day->program_id)
-            ->where('tenant_id', $tenantId)
             ->exists();
 
         if (!$program) {
@@ -679,7 +663,7 @@ class WorkoutProgramService
     {
         $exists = WorkoutDayExercise::query()
             ->where('id', $dayExercise->id)
-            ->whereHas('day.program', fn ($query) => $query->where('tenant_id', $tenantId))
+            ->whereHas('day.program', fn ($query) => $query)
             ->exists();
 
         if (!$exists) {
@@ -691,7 +675,7 @@ class WorkoutProgramService
     {
         $exists = WorkoutProgramExtra::query()
             ->where('id', $extra->id)
-            ->whereHas('program', fn ($query) => $query->where('tenant_id', $tenantId))
+            ->whereHas('program', fn ($query) => $query)
             ->exists();
 
         if (!$exists) {
@@ -699,18 +683,12 @@ class WorkoutProgramService
         }
     }
 
-    private function ensureExerciseTenant(Exercise $exercise, int $tenantId): void
-    {
-        if ($exercise->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureExerciseTenant(Exercise $exercise, int $tenantId): void {}
 
     private function ensureExerciseIdBelongsToTenant(int $exerciseId, int $tenantId): void
     {
         $exists = Exercise::query()
             ->where('id', $exerciseId)
-            ->where('tenant_id', $tenantId)
             ->exists();
 
         if (!$exists) {
@@ -718,17 +696,7 @@ class WorkoutProgramService
         }
     }
 
-    private function ensureAssignmentTenant(WorkoutProgramAssignment $assignment, int $tenantId): void
-    {
-        if ($assignment->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureAssignmentTenant(WorkoutProgramAssignment $assignment, int $tenantId): void {}
 
-    private function ensureMemberTenant(Member $member, int $tenantId): void
-    {
-        if ($member->tenant_id !== $tenantId) {
-            abort(422, 'Invalid member selection.');
-        }
-    }
+    private function ensureMemberTenant(Member $member, int $tenantId): void {}
 }

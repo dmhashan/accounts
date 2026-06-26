@@ -19,7 +19,6 @@ class ProfileService
         }
 
         $member = Member::query()
-            ->where('tenant_id', $tenant->id)
             ->where('user_id', $user->id)
             ->first();
 

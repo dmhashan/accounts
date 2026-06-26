@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class FormTemplate extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'created_by',
         'title',
         'description',
@@ -19,9 +18,9 @@ class FormTemplate extends Model
     ];
 
     protected $casts = [
-        'fields'       => 'array',
+        'fields' => 'array',
         'translations' => 'array',
-        'is_active'    => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function tenant(): BelongsTo

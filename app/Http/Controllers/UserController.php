@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
+use App\Rules\UniqueTenantEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Rules\UniqueTenantEmail;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $tenant = app('tenant');
-        
-        $users = User::where('tenant_id', $tenant->id)
+        $users = User::query()
             ->with('role')
             ->paginate(10);
 
@@ -24,7 +22,7 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
-        
+
         return view('users.create', compact('roles'));
     }
 
@@ -40,7 +38,6 @@ class UserController extends Controller
         ]);
 
         User::create([
-            'tenant_id' => $tenant->id,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
@@ -53,23 +50,13 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        // Ensure user belongs to current tenant
-        if ($user->tenant_id !== app('tenant')->id) {
-            abort(404);
-        }
-
         $roles = Role::all();
-        
+
         return view('users.edit', compact('user', 'roles'));
     }
 
     public function update(Request $request, User $user)
     {
-        // Ensure user belongs to current tenant
-        if ($user->tenant_id !== app('tenant')->id) {
-            abort(404);
-        }
-
         $tenant = app('tenant');
 
         $validated = $request->validate([
@@ -88,7 +75,7 @@ class UserController extends Controller
             $request->validate([
                 'password' => 'required|string|min:8|confirmed',
             ]);
-            
+
             $user->update([
                 'password' => Hash::make($request->password),
             ]);
@@ -100,11 +87,6 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        // Ensure user belongs to current tenant
-        if ($user->tenant_id !== app('tenant')->id) {
-            abort(404);
-        }
-
         // Prevent deleting self
         if ($user->id === auth()->id()) {
             return redirect()->route('users.index')
@@ -117,4 +99,3 @@ class UserController extends Controller
             ->with('success', 'User deleted successfully.');
     }
 }
-

@@ -15,7 +15,7 @@ class MemberController extends Controller
     public function publicProfile($username)
     {
         $tenant = app('tenant');
-        $member = Member::where('tenant_id', $tenant->id)
+        $member = Member::query()
             ->where('username', $username)
             ->where('is_active', true)
             ->with('user')
@@ -38,13 +38,12 @@ class MemberController extends Controller
             'assignedProgram.days.dayExercises.exercise',
             'assignedProgram.extras',
         ])
-            ->where('tenant_id', $tenant->id)
             ->where('member_id', $member->id)
             ->orderByDesc('effective_date')
             ->get();
 
         // Sales/Finance
-        $sales = \App\Models\Sale::where('tenant_id', $tenant->id)
+        $sales = \App\Models\Sale::query()
             ->where('customer_member_id', $member->id)
             ->orderByDesc('created_at')
             ->with(['items.product', 'items.variation'])
@@ -123,7 +122,7 @@ class MemberController extends Controller
 
     public function index()
     {
-        $members = Member::where('tenant_id', app('tenant')->id)
+        $members = Member::query()
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -150,13 +149,13 @@ class MemberController extends Controller
                 'string',
                 'max:50',
                 'alpha_dash',
-                Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
+                Rule::unique('members'),
             ],
             'gender' => 'required|in:male,female',
             'email' => [
                 'required',
                 'email',
-                Rule::unique('members')->where(fn ($q) => $q->where('tenant_id', $tenant->id)),
+                Rule::unique('members'),
             ],
             'phone_number' => 'required|string|max:20',
             'nic' => 'nullable|string|max:50',
@@ -174,7 +173,6 @@ class MemberController extends Controller
 
         // Generate member ID server-side and compose full name
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
-        $validated['tenant_id'] = $tenant->id;
         $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $validated['is_active'] = true;
         $validated['is_verified'] = true; // Admin-created members are verified
@@ -193,9 +191,6 @@ class MemberController extends Controller
     public function edit(Member $member)
     {
         // Ensure member belongs to current tenant
-        if ($member->tenant_id !== app('tenant')->id) {
-            abort(403);
-        }
 
         if (!$member->first_name || !$member->last_name) {
             $parts = preg_split('/\s+/', trim($member->name ?? ''), 2);
@@ -209,25 +204,16 @@ class MemberController extends Controller
     public function update(Request $request, Member $member)
     {
         // Ensure member belongs to current tenant
-        if ($member->tenant_id !== app('tenant')->id) {
-            abort(403);
-        }
 
         $tenant = app('tenant');
 
-        $memberUsernameRule = Rule::unique('members')
-            ->where(fn ($q) => $q->where('tenant_id', $tenant->id))
-            ->ignore($member->id);
+        $memberUsernameRule = Rule::unique('members')->ignore($member->id);
 
-        $memberEmailRule = Rule::unique('members')
-            ->where(fn ($q) => $q->where('tenant_id', $tenant->id))
-            ->ignore($member->id);
+        $memberEmailRule = Rule::unique('members')->ignore($member->id);
 
-        $userUsernameRule = Rule::unique('users')
-            ->where(fn ($q) => $q->where('tenant_id', $tenant->id));
+        $userUsernameRule = Rule::unique('users');
 
-        $userEmailRule = Rule::unique('users')
-            ->where(fn ($q) => $q->where('tenant_id', $tenant->id));
+        $userEmailRule = Rule::unique('users');
 
         if ($member->user_id) {
             $userUsernameRule = $userUsernameRule->ignore($member->user_id);
@@ -294,9 +280,6 @@ class MemberController extends Controller
     public function toggleStatus(Member $member)
     {
         // Ensure member belongs to current tenant
-        if ($member->tenant_id !== app('tenant')->id) {
-            abort(403);
-        }
 
         $member->update([
             'is_active' => !$member->is_active,
@@ -311,9 +294,6 @@ class MemberController extends Controller
     public function toggleVerification(Member $member)
     {
         // Ensure member belongs to current tenant
-        if ($member->tenant_id !== app('tenant')->id) {
-            abort(403);
-        }
 
         $member->update([
             'is_verified' => !$member->is_verified,
@@ -328,9 +308,6 @@ class MemberController extends Controller
     public function destroy(Member $member)
     {
         // Ensure member belongs to current tenant
-        if ($member->tenant_id !== app('tenant')->id) {
-            abort(403);
-        }
 
         // Delete linked user if exists
         if ($member->user) {
@@ -350,7 +327,7 @@ class MemberController extends Controller
     public function profile()
     {
         // For members, show only their own profile
-        $member = Member::where('tenant_id', app('tenant')->id)
+        $member = Member::query()
             ->where('user_id', auth()->id())
             ->with('user')
             ->firstOrFail();

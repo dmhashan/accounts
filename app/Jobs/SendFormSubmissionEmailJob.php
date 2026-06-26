@@ -26,13 +26,12 @@ class SendFormSubmissionEmailJob implements ShouldQueue
 
     public function handle(\App\Services\TenantMailService $tenantMail): void
     {
-        $submission = FormSubmission::where('tenant_id', $this->tenantId)
+        $submission = FormSubmission::query()
             ->with(['template:id,title', 'member:id,first_name,last_name,name,email,biometric_member_id,profile_photo_path'])
             ->find($this->submissionId);
 
         if (!$submission || !$submission->pdf_path) {
             Log::warning('SendFormSubmissionEmailJob: Submission or PDF path not found.', [
-                'tenant_id' => $this->tenantId,
                 'submission_id' => $this->submissionId,
             ]);
 

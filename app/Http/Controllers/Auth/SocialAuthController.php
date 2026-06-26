@@ -8,7 +8,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
-use Throwable;
 
 class SocialAuthController extends Controller
 {
@@ -27,11 +26,10 @@ class SocialAuthController extends Controller
 
         try {
             $socialUser = Socialite::driver($provider)->user();
-        } catch (Throwable $exception) {
+        } catch (\Throwable $exception) {
             return redirect()->route('login.form')->with('error', 'Unable to sign in with ' . ucfirst($provider) . '. Please try again.');
         }
 
-        $tenant = app('tenant');
         $email = $socialUser->getEmail();
 
         if (!$email) {
@@ -39,8 +37,7 @@ class SocialAuthController extends Controller
                 ->with('error', 'SSO login failed: provider did not return an email address.');
         }
 
-        $user = User::where('tenant_id', $tenant->id)
-            ->where('email', $email)
+        $user = User::where('email', $email)
             ->first();
 
         if (!$user) {
@@ -79,7 +76,7 @@ class SocialAuthController extends Controller
 
         config()->set(
             'services.' . $provider . '.redirect',
-            $this->resolveCallbackUrl($request, $provider)
+            $this->resolveCallbackUrl($request, $provider),
         );
     }
 

@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\CompanyAccount;
 use App\Models\Member;
 use App\Models\ProductVariation;
-use App\Models\CompanyAccount;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
 use Illuminate\Support\Carbon;
@@ -18,7 +18,6 @@ class SaleMetaService
 
         $variationSalesCounts = SaleItem::query()
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->where('sales.tenant_id', $tenantId)
             ->whereNull('sales.deleted_at')
             ->where('sales.created_at', '>=', $salesWindowStart)
             ->groupBy('sale_items.product_variation_id')
@@ -26,7 +25,6 @@ class SaleMetaService
             ->pluck('total_quantity_sold', 'sale_items.product_variation_id');
 
         $variations = ProductVariation::query()
-            ->where('tenant_id', $tenantId)
             ->with('product:id,name')
             ->get()
             ->sort(function (ProductVariation $left, ProductVariation $right) use ($variationSalesCounts) {
@@ -45,7 +43,6 @@ class SaleMetaService
             ->values();
 
         $availableStock = StockEntry::query()
-            ->where('tenant_id', $tenantId)
             ->where(function ($query) use ($today) {
                 $query->whereDate('expiry_date', '>=', $today)
                     ->orWhereNull('expiry_date');
@@ -55,7 +52,6 @@ class SaleMetaService
             ->pluck('total', 'product_variation_id');
 
         $priceMap = StockEntry::query()
-            ->where('tenant_id', $tenantId)
             ->where(function ($query) use ($today) {
                 $query->whereDate('expiry_date', '>=', $today)
                     ->orWhereNull('expiry_date');
@@ -73,13 +69,11 @@ class SaleMetaService
             });
 
         $members = Member::query()
-            ->where('tenant_id', $tenantId)
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get(['id', 'first_name', 'last_name', 'name', 'phone_number']);
 
         $accounts = CompanyAccount::query()
-            ->where('tenant_id', $tenantId)
             ->orderBy('name')
             ->withSum('incomingTransfers as incoming_total', 'amount')
             ->withSum('outgoingTransfers as outgoing_total', 'amount')
@@ -99,6 +93,7 @@ class SaleMetaService
             })->values(),
             'members' => $members->map(function (Member $member) {
                 $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
+
                 if ($name === '') {
                     $name = $member->name ?: 'Member';
                 }
@@ -113,15 +108,15 @@ class SaleMetaService
                 ];
             })->values(),
             'accounts' => $accounts->map(fn (CompanyAccount $account) => [
-                'id'              => $account->id,
-                'name'            => $account->name,
-                'label'           => $account->name,
+                'id' => $account->id,
+                'name' => $account->name,
+                'label' => $account->name,
                 'current_balance' => round(
                     (float) $account->opening_balance
                     + (float) ($account->incoming_total ?? 0)
                     + (float) ($account->transaction_total ?? 0)
                     - (float) ($account->outgoing_total ?? 0),
-                    2
+                    2,
                 ),
             ])->values(),
         ];

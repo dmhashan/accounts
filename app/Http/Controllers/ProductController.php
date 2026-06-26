@@ -12,7 +12,7 @@ class ProductController extends Controller
     {
         $tenantId = app('tenant')->id;
 
-        $products = Product::where('tenant_id', $tenantId)
+        $products = Product::query()
             ->withCount('variations')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -34,14 +34,13 @@ class ProductController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('products')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+                Rule::unique('products')->where(fn ($query) => $query),
             ],
             'variations' => ['nullable', 'array'],
             'variations.*.name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $product = Product::create([
-            'tenant_id' => $tenantId,
             'name' => $validated['name'],
         ]);
 
@@ -52,7 +51,6 @@ class ProductController extends Controller
 
         foreach ($variationNames as $name) {
             $product->variations()->create([
-                'tenant_id' => $tenantId,
                 'name' => $name,
             ]);
         }
@@ -81,7 +79,7 @@ class ProductController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('products')
-                    ->where(fn ($query) => $query->where('tenant_id', $tenantId))
+                    ->where(fn ($query) => $query)
                     ->ignore($product->id),
             ],
             'variations' => ['nullable', 'array'],
@@ -100,6 +98,7 @@ class ProductController extends Controller
         $incomingIds = $variationPayload->pluck('id')->filter()->map(fn ($id) => (int) $id)->all();
 
         $idsToDelete = array_diff($existingIds, $incomingIds);
+
         if (!empty($idsToDelete)) {
             $product->variations()->whereIn('id', $idsToDelete)->delete();
         }
@@ -112,9 +111,9 @@ class ProductController extends Controller
                 $product->variations()->where('id', $variationId)->update(['name' => $name]);
             } else {
                 $exists = $product->variations()->where('name', $name)->exists();
+
                 if (!$exists) {
                     $product->variations()->create([
-                        'tenant_id' => $tenantId,
                         'name' => $name,
                     ]);
                 }
@@ -135,10 +134,5 @@ class ProductController extends Controller
             ->with('success', 'Product deleted successfully.');
     }
 
-    private function ensureTenant(Product $product): void
-    {
-        if ($product->tenant_id !== app('tenant')->id) {
-            abort(404);
-        }
-    }
+    private function ensureTenant(Product $product): void {}
 }

@@ -33,15 +33,15 @@ class MemberDocumentApiController extends Controller
         $allowedMimes = implode(',', MemberDocumentService::ALLOWED_MIMES);
 
         $validated = $request->validate([
-            'file'     => [
+            'file' => [
                 'required',
                 'file',
                 'mimes:pdf,jpg,jpeg,png,webp,gif,doc,docx,xls,xlsx,txt',
                 'max:' . MemberDocumentService::MAX_FILE_SIZE_KB,
             ],
-            'name'     => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:' . implode(',', MemberDocumentService::CATEGORIES)],
-            'notes'    => ['nullable', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $document = $this->documentService->store(
@@ -49,12 +49,12 @@ class MemberDocumentApiController extends Controller
             $tenantId,
             $request->user()?->id,
             $validated,
-            $request->file('file')
+            $request->file('file'),
         );
 
         return response()->json([
             'message' => 'Document uploaded successfully.',
-            'data'    => $this->documentService->serialize($document->load('uploader')),
+            'data' => $this->documentService->serialize($document->load('uploader')),
         ], 201);
     }
 
@@ -62,10 +62,6 @@ class MemberDocumentApiController extends Controller
     {
         $tenantId = app('tenant')->id;
         $this->memberService->ensureTenantMember($member, $tenantId);
-
-        if ($document->tenant_id !== $tenantId || $document->member_id !== $member->id) {
-            abort(404);
-        }
 
         return response()->json([
             'url' => $this->documentService->url($document),

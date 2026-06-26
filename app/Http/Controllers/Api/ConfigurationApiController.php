@@ -85,7 +85,6 @@ class ConfigurationApiController extends Controller
 
         if ($biometricWebhookKeys !== []) {
             Log::debug('Biometric real-time push: settings update requested', [
-                'tenant_id' => $tenant->id,
                 'settings' => $biometricWebhookKeys,
             ]);
         }
@@ -94,7 +93,6 @@ class ConfigurationApiController extends Controller
 
         if ($biometricWebhookKeys !== []) {
             Log::debug('Biometric real-time push: settings update saved', [
-                'tenant_id' => $tenant->id,
                 'settings' => array_intersect_key($data, $biometricWebhookKeys),
             ]);
         }

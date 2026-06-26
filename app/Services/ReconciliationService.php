@@ -23,11 +23,11 @@ class ReconciliationService
     {
         $roles = Role::withCount('users')->orderBy('name')->get();
 
-        $accounts = CompanyAccount::where('tenant_id', $tenantId)
+        $accounts = CompanyAccount::query()
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $configs = ReconciliationConfig::where('tenant_id', $tenantId)
+        $configs = ReconciliationConfig::query()
             ->where('type', 'account')
             ->get()
             ->groupBy('role_id');
@@ -47,7 +47,7 @@ class ReconciliationService
 
     public function saveAdminConfig(int $tenantId, int $roleId, array $items): void
     {
-        DB::transaction(function () use ($tenantId, $roleId, $items) {
+        DB::transaction(function () use ($roleId, $items) {
             // items: [['type' => 'account', 'reference_id' => int, 'is_active' => bool]]
             // Stock is not configurable — all products are always included, so skip any stock items.
             foreach ($items as $item) {
@@ -56,7 +56,6 @@ class ReconciliationService
                 }
                 ReconciliationConfig::updateOrCreate(
                     [
-                        'tenant_id' => $tenantId,
                         'role_id' => $roleId,
                         'type' => $item['type'],
                         'reference_id' => $item['reference_id'],
@@ -71,7 +70,7 @@ class ReconciliationService
 
     public function getTodaySession(int $tenantId): ?array
     {
-        $session = ReconciliationSession::where('tenant_id', $tenantId)
+        $session = ReconciliationSession::query()
             ->whereDate('date', Carbon::today()->toDateString())
             ->first();
 
@@ -86,7 +85,7 @@ class ReconciliationService
      */
     public function getFormConfig(int $tenantId, int $roleId): array
     {
-        $configs = ReconciliationConfig::where('tenant_id', $tenantId)
+        $configs = ReconciliationConfig::query()
             ->where('role_id', $roleId)
             ->where('type', 'account')
             ->where('is_active', true)
@@ -95,7 +94,6 @@ class ReconciliationService
         $accountIds = $configs->pluck('reference_id');
 
         $accounts = CompanyAccount::whereIn('id', $accountIds)
-            ->where('tenant_id', $tenantId)
             ->withSum('incomingTransfers as incoming_total', 'amount')
             ->withSum('outgoingTransfers as outgoing_total', 'amount')
             ->withSum('transactions as transaction_total', 'amount')
@@ -114,7 +112,7 @@ class ReconciliationService
 
         // Products with variations → one item per variation (type=stock_variation, reference_id=variation_id).
         // Products with no variations → one item per product    (type=stock,             reference_id=product_id).
-        $productList = Product::where('tenant_id', $tenantId)
+        $productList = Product::query()
             ->with('variations:id,product_id,name')
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -123,28 +121,28 @@ class ReconciliationService
         $variationIds = $productList->flatMap(fn ($p) => $p->variations->pluck('id'));
 
         // Back-room stock (quantity field)
-        $productStockTotals = StockEntry::where('tenant_id', $tenantId)
+        $productStockTotals = StockEntry::query()
             ->whereIn('product_id', $productIds)
             ->whereNull('product_variation_id')
             ->selectRaw('product_id, SUM(quantity) as total_qty')
             ->groupBy('product_id')
             ->pluck('total_qty', 'product_id');
 
-        $variationStockTotals = StockEntry::where('tenant_id', $tenantId)
+        $variationStockTotals = StockEntry::query()
             ->whereIn('product_variation_id', $variationIds)
             ->selectRaw('product_variation_id, SUM(quantity) as total_qty')
             ->groupBy('product_variation_id')
             ->pluck('total_qty', 'product_variation_id');
 
         // Display stock (display_quantity field)
-        $productDisplayTotals = StockEntry::where('tenant_id', $tenantId)
+        $productDisplayTotals = StockEntry::query()
             ->whereIn('product_id', $productIds)
             ->whereNull('product_variation_id')
             ->selectRaw('product_id, SUM(display_quantity) as total_qty')
             ->groupBy('product_id')
             ->pluck('total_qty', 'product_id');
 
-        $variationDisplayTotals = StockEntry::where('tenant_id', $tenantId)
+        $variationDisplayTotals = StockEntry::query()
             ->whereIn('product_variation_id', $variationIds)
             ->selectRaw('product_variation_id, SUM(display_quantity) as total_qty')
             ->groupBy('product_variation_id')
@@ -186,7 +184,7 @@ class ReconciliationService
     {
         $today = Carbon::today()->toDateString();
 
-        $existing = ReconciliationSession::where('tenant_id', $tenantId)
+        $existing = ReconciliationSession::query()
             ->whereDate('date', $today)
             ->first();
 
@@ -194,9 +192,8 @@ class ReconciliationService
             return 'A reconciliation session for today already exists.';
         }
 
-        return DB::transaction(function () use ($tenantId, $userId, $today, $entries) {
+        return DB::transaction(function () use ($userId, $today, $entries) {
             $session = ReconciliationSession::create([
-                'tenant_id' => $tenantId,
                 'date' => $today,
                 'status' => 'open',
                 'opened_by' => $userId,
@@ -226,7 +223,7 @@ class ReconciliationService
         $session->load('entries');
         $openEntries = $session->entries->where('stage', 'open');
         $date = $session->date->toDateString();
-        $tenantId = $session->tenant_id;
+        $tenantId = (int) app('tenant')->id;
 
         $items = [];
 
@@ -326,7 +323,7 @@ class ReconciliationService
 
     public function history(int $tenantId, int $perPage): array
     {
-        $sessions = ReconciliationSession::where('tenant_id', $tenantId)
+        $sessions = ReconciliationSession::query()
             ->with(['opener', 'closer'])
             ->orderBy('date', 'desc')
             ->paginate($perPage);
@@ -344,9 +341,6 @@ class ReconciliationService
 
     public function showSession(ReconciliationSession $session, int $tenantId): array
     {
-        if ($session->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $session->load(['entries', 'opener', 'closer']);
 
@@ -360,13 +354,11 @@ class ReconciliationService
         if ($type === 'account') {
             // Sum credits minus debits recorded in company_account_transactions on that date
             $credits = (float) CompanyAccountTransaction::where('company_account_id', $referenceId)
-                ->where('tenant_id', $tenantId)
                 ->whereDate('transaction_date', $date)
                 ->where('type', 'credit')
                 ->sum('amount');
 
             $debits = (float) CompanyAccountTransaction::where('company_account_id', $referenceId)
-                ->where('tenant_id', $tenantId)
                 ->whereDate('transaction_date', $date)
                 ->where('type', 'debit')
                 ->sum('amount');
@@ -376,8 +368,8 @@ class ReconciliationService
 
         if ($type === 'stock') {
             // Product with no variations
-            $sold = (float) SaleItem::whereHas('sale', function ($q) use ($tenantId, $date) {
-                $q->where('tenant_id', $tenantId)
+            $sold = (float) SaleItem::whereHas('sale', function ($q) use ($date) {
+                $q
                     ->whereDate('created_at', $date)
                     ->whereNull('deleted_at');
             })
@@ -385,7 +377,7 @@ class ReconciliationService
                 ->whereNull('product_variation_id')
                 ->sum('quantity');
 
-            $received = (float) StockEntry::where('tenant_id', $tenantId)
+            $received = (float) StockEntry::query()
                 ->where('product_id', $referenceId)
                 ->whereNull('product_variation_id')
                 ->whereDate('created_at', $date)
@@ -395,15 +387,15 @@ class ReconciliationService
         }
 
         if ($type === 'stock_variation') {
-            $sold = (float) SaleItem::whereHas('sale', function ($q) use ($tenantId, $date) {
-                $q->where('tenant_id', $tenantId)
+            $sold = (float) SaleItem::whereHas('sale', function ($q) use ($date) {
+                $q
                     ->whereDate('created_at', $date)
                     ->whereNull('deleted_at');
             })
                 ->where('product_variation_id', $referenceId)
                 ->sum('quantity');
 
-            $received = (float) StockEntry::where('tenant_id', $tenantId)
+            $received = (float) StockEntry::query()
                 ->where('product_variation_id', $referenceId)
                 ->whereDate('created_at', $date)
                 ->sum('quantity');
@@ -423,7 +415,6 @@ class ReconciliationService
     {
         if ($type === 'account') {
             return CompanyAccount::where('id', $referenceId)
-                ->where('tenant_id', $tenantId)
                 ->value('name') ?? "Account #{$referenceId}";
         }
 
@@ -440,11 +431,10 @@ class ReconciliationService
         }
 
         if ($type === 'stock_display') {
-            return (Product::where('id', $referenceId)->where('tenant_id', $tenantId)->value('name') ?? "Product #{$referenceId}") . ' (Display)';
+            return (Product::where('id', $referenceId)->value('name') ?? "Product #{$referenceId}") . ' (Display)';
         }
 
         return Product::where('id', $referenceId)
-            ->where('tenant_id', $tenantId)
             ->value('name') ?? "Product #{$referenceId}";
     }
 

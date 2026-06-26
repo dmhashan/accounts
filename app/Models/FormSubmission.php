@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class FormSubmission extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'form_template_id',
         'member_id',
         'submitted_by',
@@ -19,7 +18,7 @@ class FormSubmission extends Model
     ];
 
     protected $casts = [
-        'responses'    => 'array',
+        'responses' => 'array',
         'submitted_at' => 'datetime',
     ];
 

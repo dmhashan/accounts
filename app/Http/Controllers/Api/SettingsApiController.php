@@ -151,7 +151,6 @@ class SettingsApiController extends Controller
         // legacy:sync-members: no date options; no extra params needed
 
         $log = CommandRunLog::create([
-            'tenant_id' => $tenant->id,
             'user_id' => $request->user()?->id,
             'command' => $command,
             'params' => $this->safeLogParams($params),
@@ -172,7 +171,7 @@ class SettingsApiController extends Controller
     {
         $tenant = app('tenant');
 
-        $logs = CommandRunLog::where('tenant_id', $tenant->id)
+        $logs = CommandRunLog::query()
             ->when($request->filled('command'), fn ($q) => $q->where('command', $request->input('command')))
             ->with('user:id,name')
             ->orderByDesc('created_at')

@@ -60,7 +60,6 @@ class CompanyAccountService
     public function storeAccount(int $tenantId, array $validated): CompanyAccount
     {
         return CompanyAccount::create([
-            'tenant_id' => $tenantId,
             'name' => trim($validated['name']),
             'opening_balance' => $validated['opening_balance'],
             'description' => filled($validated['description'] ?? null) ? trim((string) $validated['description']) : null,
@@ -83,7 +82,6 @@ class CompanyAccountService
         $this->ensureAccountTenant($account, $tenantId);
 
         $hasTransfers = CompanyAccountTransfer::query()
-            ->where('tenant_id', $tenantId)
             ->where(function (Builder $query) use ($account) {
                 $query->where('source_account_id', $account->id)
                     ->orWhere('destination_account_id', $account->id);
@@ -91,7 +89,6 @@ class CompanyAccountService
             ->exists();
 
         $hasTransactions = CompanyAccountTransaction::query()
-            ->where('tenant_id', $tenantId)
             ->where('company_account_id', $account->id)
             ->exists();
 
@@ -107,7 +104,6 @@ class CompanyAccountService
     public function transactions(int $tenantId, int $perPage): array
     {
         $transactions = CompanyAccountTransaction::query()
-            ->where('tenant_id', $tenantId)
             ->with(['account:id,name'])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -200,7 +196,6 @@ class CompanyAccountService
     public function transfers(int $tenantId, int $perPage): array
     {
         $transfers = CompanyAccountTransfer::query()
-            ->where('tenant_id', $tenantId)
             ->with([
                 'sourceAccount:id,name',
                 'destinationAccount:id,name',
@@ -223,7 +218,6 @@ class CompanyAccountService
     public function showTransfer(CompanyAccountTransfer $transfer, int $tenantId): array
     {
         $transfer = CompanyAccountTransfer::query()
-            ->where('tenant_id', $tenantId)
             ->with([
                 'sourceAccount:id,name',
                 'destinationAccount:id,name',
@@ -259,7 +253,6 @@ class CompanyAccountService
             }
 
             $transfer = CompanyAccountTransfer::create([
-                'tenant_id' => $tenantId,
                 'source_account_id' => $sourceAccount->id,
                 'destination_account_id' => $destinationAccount->id,
                 'amount' => $validated['amount'],
@@ -281,7 +274,6 @@ class CompanyAccountService
     {
         return DB::transaction(function () use ($transfer, $tenantId, $validated) {
             $lockedTransfer = CompanyAccountTransfer::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($transfer->id);
 
@@ -326,7 +318,6 @@ class CompanyAccountService
     {
         DB::transaction(function () use ($transfer, $tenantId) {
             $lockedTransfer = CompanyAccountTransfer::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($transfer->id);
 
@@ -346,7 +337,6 @@ class CompanyAccountService
     private function accountQuery(int $tenantId): Builder
     {
         return CompanyAccount::query()
-            ->where('tenant_id', $tenantId)
             ->withSum('incomingTransfers as incoming_total', 'amount')
             ->withSum('outgoingTransfers as outgoing_total', 'amount')
             ->withSum('transactions as transaction_total', 'amount');
@@ -385,12 +375,7 @@ class CompanyAccountService
         ];
     }
 
-    private function ensureAccountTenant(CompanyAccount $account, int $tenantId): void
-    {
-        if ($account->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureAccountTenant(CompanyAccount $account, int $tenantId): void {}
 
     private function lockAccounts(int $tenantId, array $accountIds): Collection
     {
@@ -398,7 +383,6 @@ class CompanyAccountService
         sort($accountIds);
 
         return CompanyAccount::query()
-            ->where('tenant_id', $tenantId)
             ->whereIn('id', $accountIds)
             ->lockForUpdate()
             ->get()
@@ -426,11 +410,9 @@ class CompanyAccountService
     private function accountBalance(CompanyAccount $account, int $tenantId, ?int $excludedTransferId = null): float
     {
         $incomingQuery = CompanyAccountTransfer::query()
-            ->where('tenant_id', $tenantId)
             ->where('destination_account_id', $account->id);
 
         $outgoingQuery = CompanyAccountTransfer::query()
-            ->where('tenant_id', $tenantId)
             ->where('source_account_id', $account->id);
 
         if ($excludedTransferId) {
@@ -439,7 +421,6 @@ class CompanyAccountService
         }
 
         $transactionTotal = CompanyAccountTransaction::query()
-            ->where('tenant_id', $tenantId)
             ->where('company_account_id', $account->id)
             ->sum('amount');
 

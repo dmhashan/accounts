@@ -119,7 +119,6 @@ class SyncAttendanceCommand extends Command
                 try {
                     DB::table('member_attendances')->upsert(
                         [
-                            'tenant_id' => $tenant->id,
                             'member_id' => $localMemberId,
                             'legacy_uuid' => $legacyUuid,
                             'legacy_member_id' => $legacyMemberId,
@@ -128,7 +127,7 @@ class SyncAttendanceCommand extends Command
                             'created_at' => now(),
                             'updated_at' => now(),
                         ],
-                        ['tenant_id', 'legacy_uuid', 'attended_date'],
+                        ['legacy_uuid', 'attended_date'],
                         ['member_id', 'legacy_member_id', 'username', 'updated_at'],
                     );
                     $dayInserted++;
@@ -158,7 +157,6 @@ class SyncAttendanceCommand extends Command
         $this->info('Re-mapping member_id for unlinked attendance records...');
 
         $unlinked = DB::table('member_attendances')
-            ->where('tenant_id', $tenant->id)
             ->whereNull('member_id')
             ->whereNotNull('username')
             ->distinct()
@@ -168,7 +166,7 @@ class SyncAttendanceCommand extends Command
             $this->line('  Nothing to remap.');
         } else {
             // Build username → member id map in one query
-            $memberMap = Member::where('tenant_id', $tenant->id)
+            $memberMap = Member::query()
                 ->whereIn('username', $unlinked)
                 ->pluck('id', 'username');
 
@@ -176,7 +174,6 @@ class SyncAttendanceCommand extends Command
 
             foreach ($memberMap as $username => $memberId) {
                 $affected = DB::table('member_attendances')
-                    ->where('tenant_id', $tenant->id)
                     ->whereNull('member_id')
                     ->where('username', $username)
                     ->update(['member_id' => $memberId, 'updated_at' => now()]);
@@ -237,7 +234,7 @@ class SyncAttendanceCommand extends Command
         }
 
         /** @var Member|null $member */
-        $member = Member::where('tenant_id', $tenantId)
+        $member = Member::query()
             ->where('username', $username)
             ->value('id');
 

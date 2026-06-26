@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class WalletTopup extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'company_account_id',
         'amount',

@@ -60,15 +60,15 @@ class MemberApiController extends Controller
                 'string',
                 'max:50',
                 'alpha_dash',
-                Rule::unique('members')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
-                Rule::unique('users')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+                Rule::unique('members'),
+                Rule::unique('users'),
             ],
             'gender' => ['required', 'in:male,female'],
             'email' => [
                 'required',
                 'email',
-                Rule::unique('members')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
-                Rule::unique('users')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+                Rule::unique('members'),
+                Rule::unique('users'),
             ],
             'phone_number' => ['required', 'string', 'max:20'],
             'allow_sms' => ['boolean'],
@@ -103,7 +103,7 @@ class MemberApiController extends Controller
             'email' => [
                 'nullable',
                 'email',
-                Rule::unique('members')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+                Rule::unique('members'),
             ],
         ]);
 
@@ -145,15 +145,11 @@ class MemberApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        $memberUsernameRule = Rule::unique('members')
-            ->where(fn ($query) => $query->where('tenant_id', $tenant->id))
-            ->ignore($member->id);
-        $memberEmailRule = Rule::unique('members')
-            ->where(fn ($query) => $query->where('tenant_id', $tenant->id))
-            ->ignore($member->id);
+        $memberUsernameRule = Rule::unique('members')->ignore($member->id);
+        $memberEmailRule = Rule::unique('members')->ignore($member->id);
 
-        $userUsernameRule = Rule::unique('users')->where(fn ($query) => $query->where('tenant_id', $tenant->id));
-        $userEmailRule = Rule::unique('users')->where(fn ($query) => $query->where('tenant_id', $tenant->id));
+        $userUsernameRule = Rule::unique('users');
+        $userEmailRule = Rule::unique('users');
 
         if ($member->user_id) {
             $userUsernameRule = $userUsernameRule->ignore($member->user_id);
@@ -246,7 +242,7 @@ class MemberApiController extends Controller
         $toDate = sprintf('%04d-12-31', $year);
         $includePictureUrls = $request->boolean('include_picture_urls', false);
 
-        $records = MemberAttendance::where('tenant_id', $tenant->id)
+        $records = MemberAttendance::query()
             ->where(function ($q) use ($member) {
                 $q->where('member_id', $member->id)
                     ->orWhere(function ($q2) use ($member) {
@@ -260,9 +256,8 @@ class MemberApiController extends Controller
             ->whereBetween('attended_date', [$fromDate, $toDate])
             ->orderBy('attended_date')
             ->with([
-                'biometricAccessEvent' => function ($q) use ($tenant) {
-                    $q->where('tenant_id', $tenant->id)
-                        ->select(['id', 'tenant_id', 'event_time', 'picture_path']);
+                'biometricAccessEvent' => function ($q) {
+                    $q->select(['id', 'event_time', 'picture_path']);
                 },
             ])
             ->get(['id', 'attended_date', 'biometric_access_event_id']);

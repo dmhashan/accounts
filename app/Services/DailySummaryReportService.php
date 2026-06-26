@@ -63,7 +63,6 @@ class DailySummaryReportService
         );
 
         $report = DailySummaryReport::create([
-            'tenant_id' => $tenantId,
             'report_date' => $reportDate,
             'prepared_by_user_id' => $userId,
             'prepared_by_name' => trim((string) ($payload['prepared_by_name'] ?? '')),
@@ -90,7 +89,7 @@ class DailySummaryReportService
 
     public function history(int $tenantId, int $perPage): array
     {
-        $reports = DailySummaryReport::where('tenant_id', $tenantId)
+        $reports = DailySummaryReport::query()
             ->with('preparedBy:id,name')
             ->orderByDesc('report_date')
             ->orderByDesc('id')

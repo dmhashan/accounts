@@ -27,7 +27,6 @@ class MemberService
     public function index(int $tenantId, User $currentUser, int $perPage, string $search, ?bool $isTemp = null, ?int $planId = null): array
     {
         $members = Member::query()
-            ->where('tenant_id', $tenantId)
             ->when($isTemp !== null, fn ($q) => $q->where('is_temp', $isTemp))
             ->when($planId !== null, fn ($q) => $q->where('payment_plan_id', $planId))
             ->when($search !== '', function ($query) use ($search) {
@@ -121,12 +120,12 @@ class MemberService
         $tenantName = (string) $tenant->name;
         $fileName = 'google-contacts-members-' . now()->format('Ymd_His') . '.csv';
 
-        return response()->streamDownload(function () use ($headers, $tenantId, $tenantName) {
+        return response()->streamDownload(function () use ($headers, $tenantName) {
             $output = fopen('php://output', 'w');
 
             fputcsv($output, $headers);
 
-            foreach (Member::query()->where('tenant_id', $tenantId)->orderBy('created_at', 'desc')->cursor() as $member) {
+            foreach (Member::query()->orderBy('created_at', 'desc')->cursor() as $member) {
                 [$firstName, $lastName] = $this->resolveFirstAndLastName($member);
 
                 $fileAs = trim($firstName . ' ' . $lastName);
@@ -190,7 +189,6 @@ class MemberService
         $lastName = trim($validated['last_name'] ?? '');
 
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
-        $validated['tenant_id'] = $tenant->id;
         $validated['name'] = trim("$firstName $lastName") ?: $firstName ?: $lastName;
         $validated['is_active'] = true;
         $validated['is_verified'] = false;
@@ -202,7 +200,6 @@ class MemberService
     public function store(Tenant $tenant, array $validated): Member
     {
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
-        $validated['tenant_id'] = $tenant->id;
         $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $validated['is_active'] = true;
         $validated['is_verified'] = true;
@@ -376,9 +373,7 @@ class MemberService
 
     public function ensureTenantMember(Member $member, int $tenantId): void
     {
-        if ($member->tenant_id !== $tenantId) {
-            abort(404);
-        }
+        //
     }
 
     private function resolveFirstAndLastName(Member $member): array

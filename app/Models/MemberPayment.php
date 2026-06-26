@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class MemberPayment extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'company_account_id',
         'payment_method',

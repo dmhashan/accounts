@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CompanyAccountTransaction extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'company_account_id',
         'model_name',
         'reference_id',

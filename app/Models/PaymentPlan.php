@@ -16,7 +16,6 @@ class PaymentPlan extends Model
     public const UNITS = ['day', 'week', 'month', 'year'];
 
     protected $fillable = [
-        'tenant_id',
         'name',
         'duration_value',
         'duration_unit',

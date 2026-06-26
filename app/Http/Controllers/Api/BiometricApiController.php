@@ -149,10 +149,6 @@ class BiometricApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
         if ($member->biometric_member_id) {
             return response()->json([
                 'message' => 'Member already has a biometric ID.',
@@ -186,10 +182,6 @@ class BiometricApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
         $this->biometric->syncMember($member, 'manual_sync');
 
         $member->refresh();
@@ -208,11 +200,7 @@ class BiometricApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
-        $logs = BiometricSyncLog::where('tenant_id', $tenant->id)
+        $logs = BiometricSyncLog::query()
             ->where('member_id', $member->id)
             ->orderByDesc('created_at')
             ->limit(20)
@@ -241,10 +229,6 @@ class BiometricApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
         $result = $this->biometric->setupMemberFingerprint($member);
 
         return response()->json($result);
@@ -259,10 +243,6 @@ class BiometricApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
-
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
 
         $result = $this->biometric->getMemberDeviceInfo($member);
 
@@ -279,10 +259,6 @@ class BiometricApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
-
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
 
         $result = $this->biometric->uploadFaceAsAvatar($member);
 
@@ -305,10 +281,6 @@ class BiometricApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        if ($member->tenant_id !== $tenant->id) {
-            abort(404);
-        }
-
         $result = $this->biometric->getMemberFaceImage($member);
 
         if (!$result['success'] || $result['body'] === '') {
@@ -330,7 +302,7 @@ class BiometricApiController extends Controller
         $tenant = app('tenant');
         $perPage = max(1, min(100, (int) $request->query('per_page', 20)));
 
-        $query = BiometricSyncLog::where('tenant_id', $tenant->id)
+        $query = BiometricSyncLog::query()
             ->with('member:id,name,biometric_member_id')
             ->orderByDesc('created_at');
 
@@ -386,7 +358,7 @@ class BiometricApiController extends Controller
             ? Carbon::parse($validated['to'])
             : null;
 
-        $baseQuery = BiometricAccessEvent::where('tenant_id', $tenant->id);
+        $baseQuery = BiometricAccessEvent::query();
 
         if ($from) {
             $baseQuery->where('event_time', '>=', $from);
@@ -513,7 +485,6 @@ class BiometricApiController extends Controller
             ->updateBatch($tenant->id, ['biometric.webhook_token' => $token]);
 
         Log::info('Biometric real-time push: token generated', [
-            'tenant_id' => $tenant->id,
             'tenant_domain' => $tenant->domain,
         ]);
 
@@ -535,14 +506,12 @@ class BiometricApiController extends Controller
         $tenant = app('tenant');
 
         Log::debug('Biometric real-time push: configure requested', [
-            'tenant_id' => $tenant->id,
             'tenant_domain' => $tenant->domain,
         ]);
 
         $result = $this->biometric->configureWebhook($tenant);
 
         Log::debug('Biometric real-time push: configure completed', [
-            'tenant_id' => $tenant->id,
             'success' => $result['success'] ?? false,
             'message' => $result['message'] ?? null,
         ]);
@@ -566,7 +535,6 @@ class BiometricApiController extends Controller
         $tenant = app('tenant');
 
         Log::debug('Biometric real-time push: status requested', [
-            'tenant_id' => $tenant->id,
             'tenant_domain' => $tenant->domain,
         ]);
 

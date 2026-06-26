@@ -16,12 +16,12 @@ class StockController extends Controller
         $today = Carbon::today()->toDateString();
         $lowStockThreshold = 5;
 
-        $stockEntries = StockEntry::where('tenant_id', $tenantId)
+        $stockEntries = StockEntry::query()
             ->with(['product', 'variation'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $availableTotals = StockEntry::where('tenant_id', $tenantId)
+        $availableTotals = StockEntry::query()
             ->whereDate('expiry_date', '>=', $today)
             ->groupBy('product_variation_id')
             ->selectRaw('product_variation_id, SUM(quantity) as total')
@@ -34,11 +34,11 @@ class StockController extends Controller
     {
         $tenantId = app('tenant')->id;
 
-        $products = Product::where('tenant_id', $tenantId)
+        $products = Product::query()
             ->orderBy('name')
             ->get();
 
-        $variations = ProductVariation::where('tenant_id', $tenantId)
+        $variations = ProductVariation::query()
             ->with('product')
             ->orderBy('name')
             ->get();
@@ -61,8 +61,8 @@ class StockController extends Controller
             'foreign_selling_price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $product = Product::where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
-        $variation = ProductVariation::where('tenant_id', $tenantId)->findOrFail($validated['product_variation_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
+        $variation = ProductVariation::query()->findOrFail($validated['product_variation_id']);
 
         if ($variation->product_id !== $product->id) {
             return back()->withInput()->withErrors([
@@ -71,7 +71,6 @@ class StockController extends Controller
         }
 
         StockEntry::create([
-            'tenant_id' => $tenantId,
             'product_id' => $product->id,
             'product_variation_id' => $variation->id,
             'quantity' => $validated['quantity'],
@@ -91,11 +90,11 @@ class StockController extends Controller
         $this->ensureTenant($stock);
         $tenantId = app('tenant')->id;
 
-        $products = Product::where('tenant_id', $tenantId)
+        $products = Product::query()
             ->orderBy('name')
             ->get();
 
-        $variations = ProductVariation::where('tenant_id', $tenantId)
+        $variations = ProductVariation::query()
             ->with('product')
             ->orderBy('name')
             ->get();
@@ -119,8 +118,8 @@ class StockController extends Controller
             'foreign_selling_price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $product = Product::where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
-        $variation = ProductVariation::where('tenant_id', $tenantId)->findOrFail($validated['product_variation_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
+        $variation = ProductVariation::query()->findOrFail($validated['product_variation_id']);
 
         if ($variation->product_id !== $product->id) {
             return back()->withInput()->withErrors([
@@ -153,10 +152,5 @@ class StockController extends Controller
             ->with('success', 'Stock entry deleted successfully.');
     }
 
-    private function ensureTenant(StockEntry $stock): void
-    {
-        if ($stock->tenant_id !== app('tenant')->id) {
-            abort(404);
-        }
-    }
+    private function ensureTenant(StockEntry $stock): void {}
 }

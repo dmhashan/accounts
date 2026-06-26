@@ -25,7 +25,7 @@ class UpdateExerciseRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('exercises')
-                    ->where(fn ($query) => $query->where('tenant_id', $tenantId))
+                    ->where(fn ($query) => $query)
                     ->ignore($exercise->id),
             ],
             'status' => ['required', Rule::in(['active', 'inactive'])],

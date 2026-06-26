@@ -10,17 +10,10 @@ class LoginController extends Controller
 {
     public function showLoginForm(Request $request)
     {
-        $tenant = app('tenant');
         $user = Auth::user();
 
-        if ($user && $user->tenant_id === $tenant->id) {
+        if ($user) {
             return redirect()->route('dashboard');
-        }
-
-        if ($user && $user->tenant_id !== $tenant->id) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
         }
 
         return view('auth.login');
@@ -28,8 +21,6 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $tenant = app('tenant');
-
         $credentials = $request->validate([
             'login' => ['required', 'string'],
             'password' => ['required'],
@@ -39,13 +30,13 @@ class LoginController extends Controller
         $isEmail = filter_var($login, FILTER_VALIDATE_EMAIL);
 
         $attemptData = [
-            'tenant_id' => $tenant->id,
             'password' => $credentials['password'],
             $isEmail ? 'email' : 'username' => $login,
         ];
 
         if (Auth::attempt($attemptData)) {
             $request->session()->regenerate();
+
             return redirect()->route('dashboard');
         }
 

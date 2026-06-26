@@ -28,7 +28,6 @@ class RegisterController extends Controller
         ]);
 
         Member::create([
-            'tenant_id' => $tenant->id,
             'biometric_member_id' => Member::generateBiometricMemberId($tenant->id),
             'name' => $validated['name'],
             'email' => $validated['email'],

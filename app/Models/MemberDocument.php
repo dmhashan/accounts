@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MemberDocument extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'uploaded_by',
         'name',

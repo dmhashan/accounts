@@ -10,7 +10,6 @@ class BiometricAccessEvent extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'biometric_member_id',
         'employee_no',

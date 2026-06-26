@@ -17,7 +17,6 @@ class WalletService
     public function meta(int $tenantId): array
     {
         $accounts = CompanyAccount::query()
-            ->where('tenant_id', $tenantId)
             ->orderBy('name')
             ->withSum('incomingTransfers as incoming_total', 'amount')
             ->withSum('outgoingTransfers as outgoing_total', 'amount')
@@ -43,7 +42,6 @@ class WalletService
     {
         return DB::transaction(function () use ($member, $tenantId, $validated, $createdBy) {
             $account = CompanyAccount::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find((int) $validated['company_account_id']);
 
@@ -52,7 +50,6 @@ class WalletService
             }
 
             $lockedMember = Member::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($member->id);
 
@@ -61,7 +58,6 @@ class WalletService
             }
 
             $topup = WalletTopup::create([
-                'tenant_id' => $tenantId,
                 'member_id' => $lockedMember->id,
                 'company_account_id' => $account->id,
                 'amount' => (float) $validated['amount'],
@@ -76,7 +72,6 @@ class WalletService
             ]);
 
             CompanyAccountTransaction::create([
-                'tenant_id' => $tenantId,
                 'company_account_id' => $account->id,
                 'model_name' => 'wallet_topup',
                 'reference_id' => $topup->id,
@@ -99,7 +94,6 @@ class WalletService
     public function topupHistory(Member $member, int $tenantId, int $perPage): array
     {
         $topups = WalletTopup::query()
-            ->where('tenant_id', $tenantId)
             ->where('member_id', $member->id)
             ->with('account:id,name')
             ->orderBy('topup_date', 'desc')
@@ -121,7 +115,6 @@ class WalletService
     {
         // Build a unified list of wallet movements
         $topups = WalletTopup::query()
-            ->where('tenant_id', $tenantId)
             ->where('member_id', $member->id)
             ->get()
             ->map(fn (WalletTopup $t) => [
@@ -137,7 +130,6 @@ class WalletService
             ]);
 
         $walletSales = Sale::query()
-            ->where('tenant_id', $tenantId)
             ->where('customer_member_id', $member->id)
             ->where('payment_method', 'member_wallet')
             ->whereNull('deleted_at')
@@ -155,7 +147,6 @@ class WalletService
             ]);
 
         $walletPayments = MemberPayment::query()
-            ->where('tenant_id', $tenantId)
             ->where('member_id', $member->id)
             ->where('payment_method', 'member_wallet')
             ->get()
@@ -194,9 +185,6 @@ class WalletService
 
     public function show(WalletTopup $topup, int $tenantId): array
     {
-        if ($topup->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $topup->load(['member:id,first_name,last_name,name,biometric_member_id,email,phone_number', 'account:id,name', 'createdBy:id,name']);
 

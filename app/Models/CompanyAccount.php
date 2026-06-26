@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CompanyAccount extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'name',
         'opening_balance',
         'description',

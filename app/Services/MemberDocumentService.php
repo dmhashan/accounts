@@ -31,7 +31,6 @@ class MemberDocumentService
     public function index(Member $member, int $tenantId): array
     {
         $documents = MemberDocument::query()
-            ->where('tenant_id', $tenantId)
             ->where('member_id', $member->id)
             ->with('uploader:id,name')
             ->orderByDesc('created_at')
@@ -46,20 +45,19 @@ class MemberDocumentService
     {
         $path = $this->media->store(
             $file,
-            "members/{$member->id}/documents"
+            "members/{$member->id}/documents",
         );
 
         return MemberDocument::create([
-            'tenant_id'         => $tenantId,
-            'member_id'         => $member->id,
-            'uploaded_by'       => $uploadedBy,
-            'name'              => trim($validated['name']),
-            'category'          => $validated['category'] ?? 'other',
-            'path'              => $path,
-            'mime_type'         => $file->getMimeType(),
-            'file_size'         => $file->getSize(),
+            'member_id' => $member->id,
+            'uploaded_by' => $uploadedBy,
+            'name' => trim($validated['name']),
+            'category' => $validated['category'] ?? 'other',
+            'path' => $path,
+            'mime_type' => $file->getMimeType(),
+            'file_size' => $file->getSize(),
             'original_filename' => $file->getClientOriginalName(),
-            'notes'             => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+            'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
         ]);
     }
 
@@ -70,9 +68,6 @@ class MemberDocumentService
 
     public function destroy(MemberDocument $document, int $tenantId): void
     {
-        if ($document->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $this->media->delete($document->path);
         $document->delete();
@@ -81,15 +76,15 @@ class MemberDocumentService
     public function serialize(MemberDocument $doc): array
     {
         return [
-            'id'                => $doc->id,
-            'name'              => $doc->name,
-            'category'          => $doc->category,
-            'mime_type'         => $doc->mime_type,
-            'file_size'         => $doc->file_size,
+            'id' => $doc->id,
+            'name' => $doc->name,
+            'category' => $doc->category,
+            'mime_type' => $doc->mime_type,
+            'file_size' => $doc->file_size,
             'original_filename' => $doc->original_filename,
-            'notes'             => $doc->notes,
-            'uploaded_by'       => $doc->uploader ? ['id' => $doc->uploader->id, 'name' => $doc->uploader->name] : null,
-            'created_at'        => optional($doc->created_at)->format('d M Y, H:i'),
+            'notes' => $doc->notes,
+            'uploaded_by' => $doc->uploader ? ['id' => $doc->uploader->id, 'name' => $doc->uploader->name] : null,
+            'created_at' => optional($doc->created_at)->format('d M Y, H:i'),
         ];
     }
 }

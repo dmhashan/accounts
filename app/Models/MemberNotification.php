@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MemberNotification extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'member_id',
         'type',
         'title',

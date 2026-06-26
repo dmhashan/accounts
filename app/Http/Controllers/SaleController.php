@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
-use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -18,7 +17,7 @@ class SaleController extends Controller
     {
         $tenantId = app('tenant')->id;
 
-        $sales = Sale::where('tenant_id', $tenantId)
+        $sales = Sale::query()
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -30,12 +29,12 @@ class SaleController extends Controller
         $tenantId = app('tenant')->id;
         $today = Carbon::today()->toDateString();
 
-        $variations = ProductVariation::where('tenant_id', $tenantId)
+        $variations = ProductVariation::query()
             ->with('product')
             ->orderBy('name')
             ->get();
 
-        $availableStock = StockEntry::where('tenant_id', $tenantId)
+        $availableStock = StockEntry::query()
             ->where(function ($query) use ($today) {
                 $query->whereDate('expiry_date', '>=', $today)
                     ->orWhereNull('expiry_date');
@@ -44,7 +43,7 @@ class SaleController extends Controller
             ->selectRaw('product_variation_id, SUM(quantity) as total')
             ->pluck('total', 'product_variation_id');
 
-        $priceMap = StockEntry::where('tenant_id', $tenantId)
+        $priceMap = StockEntry::query()
             ->where(function ($query) use ($today) {
                 $query->whereDate('expiry_date', '>=', $today)
                     ->orWhereNull('expiry_date');
@@ -54,13 +53,14 @@ class SaleController extends Controller
             ->groupBy('product_variation_id')
             ->map(function ($entries) {
                 $entry = $entries->first();
+
                 return [
                     'local' => $entry->local_selling_price,
                     'foreign' => $entry->foreign_selling_price,
                 ];
             });
 
-        $members = Member::where('tenant_id', $tenantId)
+        $members = Member::query()
             ->orderBy('name')
             ->get();
 
@@ -82,11 +82,11 @@ class SaleController extends Controller
 
         $today = Carbon::today()->toDateString();
 
-        return DB::transaction(function () use ($validated, $tenantId, $today) {
+        return DB::transaction(function () use ($validated, $today) {
             $itemsPayload = $validated['items'];
             $variationIds = collect($itemsPayload)->pluck('product_variation_id')->unique();
 
-            $variations = ProductVariation::where('tenant_id', $tenantId)
+            $variations = ProductVariation::query()
                 ->whereIn('id', $variationIds)
                 ->with('product')
                 ->get()
@@ -102,7 +102,7 @@ class SaleController extends Controller
             foreach ($itemsPayload as $item) {
                 $variation = $variations->get($item['product_variation_id']);
 
-                $available = StockEntry::where('tenant_id', $tenantId)
+                $available = StockEntry::query()
                     ->where('product_variation_id', $variation->id)
                     ->where(function ($query) use ($today) {
                         $query->whereDate('expiry_date', '>=', $today)
@@ -114,7 +114,7 @@ class SaleController extends Controller
                     abort(422, 'Insufficient stock for ' . $variation->product->name . ' - ' . $variation->name);
                 }
 
-                $priceEntry = StockEntry::where('tenant_id', $tenantId)
+                $priceEntry = StockEntry::query()
                     ->where('product_variation_id', $variation->id)
                     ->where(function ($query) use ($today) {
                         $query->whereDate('expiry_date', '>=', $today)
@@ -147,7 +147,6 @@ class SaleController extends Controller
             $balance = $paidAmount - $total;
 
             $sale = Sale::create([
-                'tenant_id' => $tenantId,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_type' => $validated['customer_type'],
                 'total_amount' => $total,
@@ -163,7 +162,7 @@ class SaleController extends Controller
             foreach ($itemsPayload as $item) {
                 $remaining = $item['quantity'];
 
-                $entries = StockEntry::where('tenant_id', $tenantId)
+                $entries = StockEntry::query()
                     ->where('product_variation_id', $item['product_variation_id'])
                     ->whereDate('expiry_date', '>=', $today)
                     ->orderBy('expiry_date')
@@ -189,10 +188,6 @@ class SaleController extends Controller
     public function destroy(Sale $sale)
     {
         $tenantId = app('tenant')->id;
-
-        if ($sale->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $sale->delete();
 

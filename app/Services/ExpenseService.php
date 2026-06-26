@@ -18,7 +18,6 @@ class ExpenseService
     public function expenses(int $tenantId, int $perPage): array
     {
         $expenses = Expense::query()
-            ->where('tenant_id', $tenantId)
             ->with('account:id,name')
             ->withCount('documents')
             ->orderBy('expense_date', 'desc')
@@ -39,7 +38,6 @@ class ExpenseService
     public function showExpense(Expense $expense, int $tenantId): array
     {
         $expense = Expense::query()
-            ->where('tenant_id', $tenantId)
             ->with(['account:id,name', 'documents.uploader:id,name'])
             ->find($expense->id);
 
@@ -56,7 +54,6 @@ class ExpenseService
             $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
 
             $expense = Expense::create([
-                'tenant_id' => $tenantId,
                 'company_account_id' => $validated['company_account_id'],
                 'category' => trim($validated['category']),
                 'amount' => $validated['amount'],
@@ -76,7 +73,6 @@ class ExpenseService
     {
         DB::transaction(function () use ($expense, $tenantId, $validated, $documents, $uploadedBy) {
             $lockedExpense = Expense::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($expense->id);
 
@@ -103,7 +99,6 @@ class ExpenseService
     public function destroyExpense(Expense $expense, int $tenantId): void
     {
         $lockedExpense = Expense::query()
-            ->where('tenant_id', $tenantId)
             ->find($expense->id);
 
         if (!$lockedExpense) {
@@ -146,7 +141,6 @@ class ExpenseService
                 'reference_id' => $expense->id,
             ],
             [
-                'tenant_id' => $tenantId,
                 'company_account_id' => $expense->company_account_id,
                 'type' => 'expense',
                 'amount' => -(float) $expense->amount,
@@ -161,7 +155,6 @@ class ExpenseService
     {
         $exists = CompanyAccount::query()
             ->where('id', $accountId)
-            ->where('tenant_id', $tenantId)
             ->exists();
 
         if (!$exists) {
@@ -171,11 +164,7 @@ class ExpenseService
 
     private function ensureDocumentBelongsToExpense(Expense $expense, ExpenseDocument $document, int $tenantId): void
     {
-        if (
-            $expense->tenant_id !== $tenantId ||
-            $document->tenant_id !== $tenantId ||
-            $document->expense_id !== $expense->id
-        ) {
+        if ($document->expense_id !== $expense->id) {
             abort(404);
         }
     }
@@ -190,7 +179,6 @@ class ExpenseService
             $path = $this->media->store($file, "expenses/{$expense->id}/documents");
 
             ExpenseDocument::create([
-                'tenant_id' => $tenantId,
                 'expense_id' => $expense->id,
                 'uploaded_by' => $uploadedBy,
                 'path' => $path,

@@ -31,10 +31,6 @@ class FormBuilderApiController extends Controller
     {
         $tenantId = app('tenant')->id;
 
-        if ($template->tenant_id !== $tenantId) {
-            abort(404);
-        }
-
         return response()->json($this->formService->showTemplate($template));
     }
 
@@ -76,10 +72,6 @@ class FormBuilderApiController extends Controller
     public function updateTemplate(Request $request, FormTemplate $template): JsonResponse
     {
         $tenantId = app('tenant')->id;
-
-        if ($template->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -127,10 +119,6 @@ class FormBuilderApiController extends Controller
     {
         $tenantId = app('tenant')->id;
 
-        if ($template->tenant_id !== $tenantId) {
-            abort(404);
-        }
-
         return response()->json($this->formService->listSubmissions($tenantId, templateId: $template->id));
     }
 
@@ -145,10 +133,6 @@ class FormBuilderApiController extends Controller
     public function submitForm(Request $request, FormTemplate $template, Member $member): JsonResponse
     {
         $tenantId = app('tenant')->id;
-
-        if ($template->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $this->memberService->ensureTenantMember($member, $tenantId);
 

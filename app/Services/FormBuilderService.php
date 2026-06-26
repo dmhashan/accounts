@@ -38,7 +38,7 @@ class FormBuilderService
 
     public function listTemplates(int $tenantId, bool $activeOnly = false): array
     {
-        $query = FormTemplate::where('tenant_id', $tenantId)
+        $query = FormTemplate::query()
             ->with('creator:id,name')
             ->orderByDesc('created_at');
 
@@ -61,7 +61,6 @@ class FormBuilderService
     public function storeTemplate(int $tenantId, ?int $createdBy, array $validated): FormTemplate
     {
         return FormTemplate::create([
-            'tenant_id' => $tenantId,
             'created_by' => $createdBy,
             'title' => trim($validated['title']),
             'description' => filled($validated['description'] ?? null) ? trim($validated['description']) : null,
@@ -73,9 +72,6 @@ class FormBuilderService
 
     public function updateTemplate(FormTemplate $template, int $tenantId, array $validated): FormTemplate
     {
-        if ($template->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $template->update([
             'title' => trim($validated['title']),
@@ -90,9 +86,6 @@ class FormBuilderService
 
     public function destroyTemplate(FormTemplate $template, int $tenantId): void
     {
-        if ($template->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $template->delete();
     }
@@ -101,7 +94,7 @@ class FormBuilderService
 
     public function listSubmissions(int $tenantId, ?int $memberId = null, ?int $templateId = null): array
     {
-        $query = FormSubmission::where('tenant_id', $tenantId)
+        $query = FormSubmission::query()
             ->with(['template:id,title', 'member:id,first_name,last_name,biometric_member_id', 'submitter:id,name'])
             ->orderByDesc('created_at');
 
@@ -120,9 +113,6 @@ class FormBuilderService
 
     public function showSubmission(FormSubmission $submission, int $tenantId): array
     {
-        if ($submission->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $submission->loadMissing(['template', 'member:id,first_name,last_name,biometric_member_id', 'submitter:id,name']);
 
@@ -137,12 +127,8 @@ class FormBuilderService
         array $responses,
         string $language = 'en',
     ): FormSubmission {
-        if ($template->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         $submission = FormSubmission::create([
-            'tenant_id' => $tenantId,
             'form_template_id' => $template->id,
             'member_id' => $member->id,
             'submitted_by' => $submittedBy,
@@ -157,7 +143,6 @@ class FormBuilderService
             $submission->update(['pdf_path' => $pdfPath]);
 
             MemberDocument::create([
-                'tenant_id' => $tenantId,
                 'member_id' => $member->id,
                 'uploaded_by' => $submittedBy,
                 'name' => $template->title,
@@ -182,13 +167,10 @@ class FormBuilderService
 
     public function destroySubmission(FormSubmission $submission, int $tenantId): void
     {
-        if ($submission->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         if ($submission->pdf_path) {
             // Delete the linked MemberDocument record and the file
-            MemberDocument::where('tenant_id', $tenantId)
+            MemberDocument::query()
                 ->where('path', $submission->pdf_path)
                 ->delete();
             $this->media->delete($submission->pdf_path);
@@ -199,9 +181,6 @@ class FormBuilderService
 
     public function pdfUrl(FormSubmission $submission, int $tenantId): string
     {
-        if ($submission->tenant_id !== $tenantId) {
-            abort(404);
-        }
 
         if (!$submission->pdf_path) {
             // Regenerate if missing

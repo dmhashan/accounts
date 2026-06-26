@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class VoucherRedemption extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'voucher_id',
         'member_id',
         'redeemed_by',

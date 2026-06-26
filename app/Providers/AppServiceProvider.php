@@ -2,10 +2,7 @@
 
 namespace App\Providers;
 
-use App\Services\Tenancy\TenantColumn;
 use App\Services\Tenancy\TenantDatabaseManager;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -31,14 +28,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        EloquentBuilder::macro('forTenant', function (int $tenantId, string $column = 'tenant_id') {
-            return TenantColumn::scope($this, $tenantId, $column);
-        });
-
-        QueryBuilder::macro('forTenant', function (int $tenantId, string $column = 'tenant_id') {
-            return TenantColumn::scope($this, $tenantId, $column);
-        });
-
         if ($this->app->environment('testing')) {
             $this->loadMigrationsFrom(database_path('migrations/tenant'));
         }

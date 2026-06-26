@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ReconciliationConfig extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'role_id',
         'type',
         'reference_id',

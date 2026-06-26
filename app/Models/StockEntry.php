@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StockEntry extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'product_id',
         'product_variation_id',
         'quantity',

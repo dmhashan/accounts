@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductVariation;
-use App\Models\AuditLog;
 use App\Models\StockEntry;
 use Illuminate\Support\Carbon;
 
@@ -12,19 +11,15 @@ class InventoryService
 {
     private const LOW_STOCK_THRESHOLD = 5;
 
-    public function __construct(private readonly AuditService $auditService)
-    {
-    }
+    public function __construct(private readonly AuditService $auditService) {}
 
     public function meta(int $tenantId): array
     {
         $products = Product::query()
-            ->where('tenant_id', $tenantId)
             ->orderBy('name')
             ->get(['id', 'name']);
 
         $variations = ProductVariation::query()
-            ->where('tenant_id', $tenantId)
             ->with('product:id,name')
             ->orderBy('name')
             ->get(['id', 'product_id', 'name']);
@@ -36,7 +31,7 @@ class InventoryService
                     'id' => $variation->id,
                     'product_id' => $variation->product_id,
                     'name' => $variation->name,
-                    'label' => trim(($variation->product?->name ?? 'Product').' - '.$variation->name),
+                    'label' => trim(($variation->product?->name ?? 'Product') . ' - ' . $variation->name),
                 ];
             })->values(),
         ];
@@ -45,7 +40,6 @@ class InventoryService
     public function products(int $tenantId, int $perPage): array
     {
         $products = Product::query()
-            ->where('tenant_id', $tenantId)
             ->withCount('variations')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -87,7 +81,6 @@ class InventoryService
     public function storeProduct(int $tenantId, array $validated): Product
     {
         $product = Product::create([
-            'tenant_id' => $tenantId,
             'name' => $validated['name'],
         ]);
 
@@ -100,7 +93,6 @@ class InventoryService
 
         foreach ($variationNames as $name) {
             $product->variations()->create([
-                'tenant_id' => $tenantId,
                 'name' => $name,
             ]);
         }
@@ -130,6 +122,7 @@ class InventoryService
         $incomingIds = $variationPayload->pluck('id')->filter()->all();
 
         $idsToDelete = array_diff($existingIds, $incomingIds);
+
         if (!empty($idsToDelete)) {
             $product->variations()->whereIn('id', $idsToDelete)->delete();
         }
@@ -143,9 +136,9 @@ class InventoryService
             }
 
             $exists = $product->variations()->where('name', $variation['name'])->exists();
+
             if (!$exists) {
                 $product->variations()->create([
-                    'tenant_id' => $tenantId,
                     'name' => $variation['name'],
                 ]);
             }
@@ -161,7 +154,6 @@ class InventoryService
     public function variations(int $tenantId): array
     {
         $variations = ProductVariation::query()
-            ->where('tenant_id', $tenantId)
             ->with('product:id,name')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -180,7 +172,7 @@ class InventoryService
 
     public function storeVariation(int $tenantId, array $validated): array
     {
-        $product = Product::query()->where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
 
         $exists = ProductVariation::query()
             ->where('product_id', $product->id)
@@ -194,7 +186,6 @@ class InventoryService
         }
 
         $variation = ProductVariation::create([
-            'tenant_id' => $tenantId,
             'product_id' => $product->id,
             'name' => $validated['name'],
         ]);
@@ -208,7 +199,7 @@ class InventoryService
     {
         $this->ensureVariationTenant($variation, $tenantId);
 
-        $product = Product::query()->where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
 
         $exists = ProductVariation::query()
             ->where('product_id', $product->id)
@@ -239,13 +230,11 @@ class InventoryService
         $today = Carbon::today()->toDateString();
 
         $stockEntries = StockEntry::query()
-            ->where('tenant_id', $tenantId)
             ->with(['product:id,name', 'variation:id,name'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
         $displayTotals = StockEntry::query()
-            ->where('tenant_id', $tenantId)
             ->where(function ($query) use ($today) {
                 $query->whereDate('expiry_date', '>=', $today)->orWhereNull('expiry_date');
             })
@@ -304,8 +293,8 @@ class InventoryService
 
     public function storeStock(int $tenantId, array $validated): array
     {
-        $product = Product::query()->where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
-        $variation = ProductVariation::query()->where('tenant_id', $tenantId)->findOrFail($validated['product_variation_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
+        $variation = ProductVariation::query()->findOrFail($validated['product_variation_id']);
 
         if ($variation->product_id !== $product->id) {
             return [
@@ -314,12 +303,12 @@ class InventoryService
         }
 
         $displayQty = (int) ($validated['display_quantity'] ?? 0);
+
         if ($displayQty > (int) $validated['quantity']) {
             return ['error' => 'Display quantity cannot exceed total stock quantity.'];
         }
 
         $stock = StockEntry::create([
-            'tenant_id' => $tenantId,
             'product_id' => $product->id,
             'product_variation_id' => $variation->id,
             'quantity' => $validated['quantity'],
@@ -347,8 +336,8 @@ class InventoryService
     {
         $this->ensureStockTenant($stock, $tenantId);
 
-        $product = Product::query()->where('tenant_id', $tenantId)->findOrFail($validated['product_id']);
-        $variation = ProductVariation::query()->where('tenant_id', $tenantId)->findOrFail($validated['product_variation_id']);
+        $product = Product::query()->findOrFail($validated['product_id']);
+        $variation = ProductVariation::query()->findOrFail($validated['product_variation_id']);
 
         if ($variation->product_id !== $product->id) {
             return 'Selected variation does not belong to the selected product.';
@@ -434,24 +423,9 @@ class InventoryService
         return $this->auditService->recent($tenantId, StockEntry::class, 100);
     }
 
-    private function ensureProductTenant(Product $product, int $tenantId): void
-    {
-        if ($product->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureProductTenant(Product $product, int $tenantId): void {}
 
-    private function ensureVariationTenant(ProductVariation $variation, int $tenantId): void
-    {
-        if ($variation->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureVariationTenant(ProductVariation $variation, int $tenantId): void {}
 
-    private function ensureStockTenant(StockEntry $stock, int $tenantId): void
-    {
-        if ($stock->tenant_id !== $tenantId) {
-            abort(404);
-        }
-    }
+    private function ensureStockTenant(StockEntry $stock, int $tenantId): void {}
 }

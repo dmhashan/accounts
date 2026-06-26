@@ -69,7 +69,6 @@ class BiometricWebhookController extends Controller
         $incoming = (string) $request->query('token', '');
 
         Log::debug('Biometric real-time push: tenant config loaded', [
-            'tenant_id' => $tenant->id,
             'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
             'has_stored_token' => $storedToken !== '',
             'has_incoming_token' => $incoming !== '',
@@ -80,7 +79,6 @@ class BiometricWebhookController extends Controller
         if ($storedToken === '' || !hash_equals($storedToken, $incoming)) {
             Log::warning('Biometric real-time push: invalid token', [
                 'tenant' => $tenantDomain,
-                'tenant_id' => $tenant->id,
                 'ip' => $request->ip(),
                 'has_stored_token' => $storedToken !== '',
                 'has_incoming_token' => $incoming !== '',
@@ -92,7 +90,6 @@ class BiometricWebhookController extends Controller
         // 3. Only process when webhook is enabled
         if (($allConfig['biometric.webhook_enabled'] ?? '0') !== '1') {
             Log::info('Biometric real-time push: request ignored because feature is disabled', [
-                'tenant_id' => $tenant->id,
                 'tenant' => $tenantDomain,
             ]);
 
@@ -105,7 +102,6 @@ class BiometricWebhookController extends Controller
         if (!$event) {
             // Not an access event we handle — acknowledge and discard
             Log::debug('Biometric real-time push: payload ignored after parsing', [
-                'tenant_id' => $tenant->id,
                 'content_type' => $request->header('Content-Type'),
                 'body_preview' => mb_substr($request->getContent(), 0, 1000),
             ]);
@@ -114,7 +110,6 @@ class BiometricWebhookController extends Controller
         }
 
         Log::debug('Biometric real-time push: parsed event', [
-            'tenant_id' => $tenant->id,
             'event' => $this->summariseEvent($event),
         ]);
 
@@ -123,7 +118,6 @@ class BiometricWebhookController extends Controller
             $this->biometric->handleIncomingEvent($tenant, $event);
 
             Log::debug('Biometric real-time push: event handed to sync service', [
-                'tenant_id' => $tenant->id,
                 'employee_no' => $event['employeeNoString'] ?? null,
                 'minor' => $event['minor'] ?? null,
                 'time' => $event['time'] ?? null,

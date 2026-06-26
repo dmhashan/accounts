@@ -19,18 +19,18 @@ class ReconciliationApiController extends Controller
     public function config(): JsonResponse
     {
         return response()->json(
-            $this->reconciliationService->getAdminConfig(app('tenant')->id)
+            $this->reconciliationService->getAdminConfig(app('tenant')->id),
         );
     }
 
     public function saveConfig(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'role_id'              => ['required', 'integer', 'exists:roles,id'],
-            'items'                => ['required', 'array'],
-            'items.*.type'         => ['required', 'in:account,stock,stock_variation'],
+            'role_id' => ['required', 'integer', 'exists:roles,id'],
+            'items' => ['required', 'array'],
+            'items.*.type' => ['required', 'in:account,stock,stock_variation'],
             'items.*.reference_id' => ['required', 'integer'],
-            'items.*.is_active'    => ['boolean'],
+            'items.*.is_active' => ['boolean'],
         ]);
 
         $this->reconciliationService->saveAdminConfig(
@@ -58,7 +58,7 @@ class ReconciliationApiController extends Controller
         $roleId = $request->user()->role_id;
 
         return response()->json(
-            $this->reconciliationService->getFormConfig(app('tenant')->id, $roleId)
+            $this->reconciliationService->getFormConfig(app('tenant')->id, $roleId),
         );
     }
 
@@ -67,8 +67,8 @@ class ReconciliationApiController extends Controller
     public function open(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'entries'                => ['required', 'array', 'min:1'],
-            'entries.*.type'         => ['required', 'in:account,stock,stock_variation,stock_display,stock_variation_display'],
+            'entries' => ['required', 'array', 'min:1'],
+            'entries.*.type' => ['required', 'in:account,stock,stock_variation,stock_display,stock_variation_display'],
             'entries.*.reference_id' => ['required', 'integer'],
             'entries.*.entered_value' => ['required', 'numeric', 'min:0'],
         ]);
@@ -93,9 +93,9 @@ class ReconciliationApiController extends Controller
         $this->guardSession($session);
 
         $validated = $request->validate([
-            'entries'                 => ['required', 'array', 'min:1'],
-            'entries.*.type'          => ['required', 'in:account,stock,stock_variation,stock_display,stock_variation_display'],
-            'entries.*.reference_id'  => ['required', 'integer'],
+            'entries' => ['required', 'array', 'min:1'],
+            'entries.*.type' => ['required', 'in:account,stock,stock_variation,stock_display,stock_variation_display'],
+            'entries.*.reference_id' => ['required', 'integer'],
             'entries.*.entered_value' => ['required', 'numeric', 'min:0'],
         ]);
 
@@ -111,7 +111,7 @@ class ReconciliationApiController extends Controller
         $this->guardSession($session);
 
         return response()->json(
-            $this->reconciliationService->getClosePreview($session)
+            $this->reconciliationService->getClosePreview($session),
         );
     }
 
@@ -145,23 +145,18 @@ class ReconciliationApiController extends Controller
         $perPage = min((int) $request->integer('per_page', 10), 50);
 
         return response()->json(
-            $this->reconciliationService->history(app('tenant')->id, $perPage)
+            $this->reconciliationService->history(app('tenant')->id, $perPage),
         );
     }
 
     public function show(ReconciliationSession $session): JsonResponse
     {
         return response()->json(
-            $this->reconciliationService->showSession($session, app('tenant')->id)
+            $this->reconciliationService->showSession($session, app('tenant')->id),
         );
     }
 
     // ── Guard helper ──────────────────────────────────────────────────────────
 
-    private function guardSession(ReconciliationSession $session): void
-    {
-        if ($session->tenant_id !== app('tenant')->id) {
-            abort(404);
-        }
-    }
+    private function guardSession(ReconciliationSession $session): void {}
 }

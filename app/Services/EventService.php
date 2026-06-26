@@ -11,7 +11,7 @@ class EventService
 {
     public function index(int $tenantId, int $perPage, string $search = ''): array
     {
-        $query = Event::where('tenant_id', $tenantId)
+        $query = Event::query()
             ->when($search !== '', fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->withCount('registrations')
             ->withSum(['registrations as total_paid' => fn ($q) => $q->where('is_paid', true)], 'total_fee')
@@ -55,8 +55,7 @@ class EventService
 
     public function store(int $tenantId, array $data): Event
     {
-        $data['tenant_id'] = $tenantId;
-        $data['slug'] = $this->uniqueSlug($tenantId, $data['slug'] ?? $data['name']);
+        $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
 
         return Event::create($data);
     }
@@ -64,7 +63,7 @@ class EventService
     public function update(Event $event, array $data): Event
     {
         if (isset($data['slug'])) {
-            $data['slug'] = $this->uniqueSlug($event->tenant_id, $data['slug'], $event->id);
+            $data['slug'] = $this->uniqueSlug($data['slug'], $event->id);
         }
 
         $event->update($data);
@@ -128,7 +127,6 @@ class EventService
 
         $registration = EventRegistration::create([
             'event_id' => $event->id,
-            'tenant_id' => $tenantId,
             'member_id' => $memberId,
             'name' => $data['name'],
             'email' => $data['email'] ?? null,
@@ -192,7 +190,7 @@ class EventService
 
     public function publicEvent(string $slug, int $tenantId): ?array
     {
-        $event = Event::where('tenant_id', $tenantId)
+        $event = Event::query()
             ->where('slug', $slug)
             ->where('is_active', true)
             ->withCount('registrations')
@@ -250,7 +248,6 @@ class EventService
                 'reference_id' => $registration->id,
             ],
             [
-                'tenant_id' => $registration->tenant_id,
                 'company_account_id' => $accountId,
                 'type' => 'credit',
                 'amount' => (float) $registration->total_fee,
@@ -297,14 +294,14 @@ class EventService
         return $registration->fresh(['guests']);
     }
 
-    private function uniqueSlug(int $tenantId, string $base, ?int $excludeId = null): string
+    private function uniqueSlug(string $base, ?int $excludeId = null): string
     {
         $slug = Str::slug($base);
         $original = $slug;
         $counter = 1;
 
         while (true) {
-            $exists = Event::where('tenant_id', $tenantId)
+            $exists = Event::query()
                 ->where('slug', $slug)
                 ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
                 ->exists();

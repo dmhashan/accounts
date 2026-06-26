@@ -104,7 +104,7 @@ class BiometricSyncService
      */
     public function syncMember(Member $member, string $action): void
     {
-        $tenantId = $member->tenant_id;
+        $tenantId = (int) app('tenant')->id;
 
         try {
             // Manual sync only requires the device to be enabled (not auto-sync toggle)
@@ -229,7 +229,6 @@ class BiometricSyncService
             ]);
 
             $this->writeLog([
-                'tenant_id' => $tenantId,
                 'member_id' => $member->id,
                 'biometric_member_id' => $member->biometric_member_id,
                 'direction' => 'up',
@@ -270,7 +269,7 @@ class BiometricSyncService
             return ['synced' => 0, 'failed' => 0, 'message' => 'Member sync is disabled.'];
         }
 
-        $members = Member::where('tenant_id', $tenant->id)
+        $members = Member::query()
             ->where('is_temp', false)
             ->get();
 
@@ -278,7 +277,7 @@ class BiometricSyncService
             $this->syncMember($member, 'manual_sync');
 
             // Check the latest log for this member
-            $log = BiometricSyncLog::where('tenant_id', $tenant->id)
+            $log = BiometricSyncLog::query()
                 ->where('member_id', $member->id)
                 ->latest('created_at')
                 ->first();
@@ -309,7 +308,6 @@ class BiometricSyncService
 
         if (!$this->isEnabled($tenantId)) {
             Log::info('Biometric real-time push: configure blocked because biometric integration is disabled', [
-                'tenant_id' => $tenantId,
                 'tenant_domain' => $tenant->domain,
             ]);
 
@@ -321,7 +319,6 @@ class BiometricSyncService
 
         if (!$driver) {
             Log::warning('Biometric real-time push: configure blocked because no device driver is available', [
-                'tenant_id' => $tenantId,
                 'device_maker' => $allConfig['biometric.device_maker'] ?? '',
                 'device_model' => $allConfig['biometric.device_model'] ?? '',
                 'device_ip_set' => ($allConfig['biometric.device_ip'] ?? '') !== '',
@@ -336,7 +333,6 @@ class BiometricSyncService
 
         if (!$serverHost) {
             Log::warning('Biometric real-time push: configure blocked because server host is missing', [
-                'tenant_id' => $tenantId,
                 'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
                 'server_port' => $serverPort,
                 'has_token' => $token !== '',
@@ -347,7 +343,6 @@ class BiometricSyncService
 
         if (!$token) {
             Log::warning('Biometric real-time push: configure blocked because token is missing', [
-                'tenant_id' => $tenantId,
                 'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
                 'server_host' => $serverHost,
                 'server_port' => $serverPort,
@@ -361,7 +356,6 @@ class BiometricSyncService
         $model = $allConfig['biometric.device_model'] ?? '';
 
         Log::debug('Biometric real-time push: sending device notification config', [
-            'tenant_id' => $tenantId,
             'tenant_domain' => $tenant->domain,
             'webhook_enabled' => $allConfig['biometric.webhook_enabled'] ?? '0',
             'device_maker' => $maker,
@@ -375,14 +369,12 @@ class BiometricSyncService
         $result = $driver->configureHttpNotification($serverHost, $serverPort, $path);
 
         Log::debug('Biometric real-time push: device configure response', [
-            'tenant_id' => $tenantId,
             'success' => $result['success'] ?? false,
             'message' => $result['message'] ?? null,
             'data' => $this->maskWebhookToken($result['data'] ?? []),
         ]);
 
         $this->writeLog([
-            'tenant_id' => $tenantId,
             'member_id' => null,
             'biometric_member_id' => null,
             'direction' => 'up',
@@ -409,7 +401,6 @@ class BiometricSyncService
 
         if (!$driver) {
             Log::warning('Biometric real-time push: status blocked because no device driver is available', [
-                'tenant_id' => $tenant->id,
                 'device_maker' => $allConfig['biometric.device_maker'] ?? '',
                 'device_model' => $allConfig['biometric.device_model'] ?? '',
             ]);
@@ -420,7 +411,6 @@ class BiometricSyncService
         $result = $driver->getHttpNotificationConfig();
 
         Log::debug('Biometric real-time push: device status response', [
-            'tenant_id' => $tenant->id,
             'success' => $result['success'] ?? false,
             'message' => $result['message'] ?? null,
             'data' => $this->maskWebhookToken($result['data'] ?? []),
@@ -439,7 +429,6 @@ class BiometricSyncService
     public function handleIncomingEvent(Tenant $tenant, array $event): void
     {
         Log::debug('Biometric real-time push: event ingest started', [
-            'tenant_id' => $tenant->id,
             'employee_no' => $event['employeeNoString'] ?? null,
             'minor' => $event['minor'] ?? null,
             'time' => $event['time'] ?? null,
@@ -451,7 +440,6 @@ class BiometricSyncService
         $member = $ingestion['member'];
 
         Log::debug('Biometric real-time push: event ingest finished', [
-            'tenant_id' => $tenant->id,
             'inserted' => $ingestion['inserted'],
             'is_auth' => $ingestion['is_auth'],
             'event_at' => $ingestion['event_at']?->toIso8601String(),
@@ -467,7 +455,6 @@ class BiometricSyncService
             unset($logEvent['picture_bytes'], $logEvent['picture_content_type']);
 
             $this->writeLog([
-                'tenant_id' => $tenant->id,
                 'member_id' => $member?->id,
                 'biometric_member_id' => $member?->biometric_member_id,
                 'direction' => 'down',
@@ -568,7 +555,6 @@ class BiometricSyncService
 
         if (!$classification) {
             Log::debug('Biometric real-time push: access event ignored because minor code is not an auth event', [
-                'tenant_id' => $tenant->id,
                 'minor' => $minor,
                 'employee_no' => $event['employeeNoString'] ?? null,
                 'time' => $event['time'] ?? null,
@@ -590,7 +576,7 @@ class BiometricSyncService
         // De-duplicate: the same scan may arrive via both the real-time webhook
         // and a later manual device import. Match on tenant + person + type + time.
         if (!empty($event['time'])) {
-            $existingQuery = BiometricAccessEvent::where('tenant_id', $tenant->id)
+            $existingQuery = BiometricAccessEvent::query()
                 ->where('minor_code', $minor)
                 ->where('event_time', $eventTime);
 
@@ -602,7 +588,6 @@ class BiometricSyncService
 
             if ($existing) {
                 Log::debug('Biometric real-time push: duplicate access event found', [
-                    'tenant_id' => $tenant->id,
                     'existing_event_id' => $existing->id,
                     'employee_no' => $employeeNo,
                     'minor' => $minor,
@@ -672,7 +657,6 @@ class BiometricSyncService
         $picturePath = $this->storeEventPicture($tenant, $event);
 
         $createdEvent = BiometricAccessEvent::create([
-            'tenant_id' => $tenant->id,
             'member_id' => $member?->id,
             'biometric_member_id' => $member?->biometric_member_id ?: $employeeNo,
             'employee_no' => $employeeNo,
@@ -691,7 +675,6 @@ class BiometricSyncService
         }
 
         Log::debug('Biometric real-time push: access event created', [
-            'tenant_id' => $tenant->id,
             'event_id' => $createdEvent->id,
             'member_id' => $member?->id,
             'employee_no' => $employeeNo,
@@ -712,7 +695,7 @@ class BiometricSyncService
     {
         $attendedDate = $eventTime->toDateString();
 
-        $attendance = MemberAttendance::where('tenant_id', $tenant->id)
+        $attendance = MemberAttendance::query()
             ->where('member_id', $member->id)
             ->where('attended_date', $attendedDate)
             ->first();
@@ -738,7 +721,6 @@ class BiometricSyncService
         }
 
         MemberAttendance::create([
-            'tenant_id' => $tenant->id,
             'member_id' => $member->id,
             'biometric_access_event_id' => $biometricAccessEventId,
             'legacy_uuid' => null,
@@ -845,7 +827,6 @@ class BiometricSyncService
             }
 
             $this->writeLogSafely([
-                'tenant_id' => $tenantId,
                 'member_id' => null,
                 'biometric_member_id' => null,
                 'direction' => 'down',
@@ -872,7 +853,7 @@ class BiometricSyncService
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::error('BiometricSyncService::importDeviceEvents error', ['tenant_id' => $tenantId, 'error' => $e->getMessage()]);
+            Log::error('BiometricSyncService::importDeviceEvents error', ['error' => $e->getMessage()]);
             $errors++;
         }
 
@@ -1009,7 +990,7 @@ class BiometricSyncService
 
         $candidates = array_values(array_unique(array_filter($candidates, static fn ($v) => $v !== '')));
 
-        $query = Member::where('tenant_id', $tenant->id)
+        $query = Member::query()
             ->whereNotNull('biometric_member_id')
             ->where(function ($q) use ($candidates, $employeeNo) {
                 $q->whereIn('biometric_member_id', $candidates);
@@ -1063,7 +1044,6 @@ class BiometricSyncService
         $result = $driver->testConnection();
 
         $this->writeLog([
-            'tenant_id' => $tenant->id,
             'member_id' => null,
             'biometric_member_id' => null,
             'direction' => 'up',
@@ -1134,7 +1114,6 @@ class BiometricSyncService
         }
 
         $latest = BiometricSyncLog::query()
-            ->where('tenant_id', $tenant->id)
             ->where('direction', 'up')
             ->where('status', 'success')
             ->whereIn('action', ['keep_unlock', 'keep_close', 'unlock', 'close'])
@@ -1177,7 +1156,6 @@ class BiometricSyncService
         $result = $command($driver);
 
         $this->writeLog([
-            'tenant_id' => $tenant->id,
             'member_id' => null,
             'biometric_member_id' => null,
             'direction' => 'up',
@@ -1203,7 +1181,7 @@ class BiometricSyncService
      */
     public function setupMemberFingerprint(Member $member): array
     {
-        $allConfig = $this->config->all($member->tenant_id);
+        $allConfig = $this->config->all((int) app('tenant')->id);
         $driver = $this->buildDriver($allConfig);
 
         if (!$driver) {
@@ -1244,7 +1222,7 @@ class BiometricSyncService
      */
     public function getMemberDeviceInfo(Member $member): array
     {
-        $tenantId = $member->tenant_id;
+        $tenantId = (int) app('tenant')->id;
         $allConfig = $this->config->all($tenantId);
         $driver = $this->buildDriver($allConfig);
 
@@ -1367,7 +1345,7 @@ class BiometricSyncService
      */
     public function getMemberFaceImage(Member $member): array
     {
-        $tenantId = $member->tenant_id;
+        $tenantId = (int) app('tenant')->id;
         $allConfig = $this->config->all($tenantId);
         $driver = $this->buildDriver($allConfig);
 

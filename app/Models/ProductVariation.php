@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ProductVariation extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'product_id',
         'name',
     ];

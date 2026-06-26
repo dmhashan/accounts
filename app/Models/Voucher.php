@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Voucher extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'name',
         'uuid',
         'amount',
@@ -20,7 +19,7 @@ class Voucher extends Model
     ];
 
     protected $casts = [
-        'amount'     => 'decimal:2',
+        'amount' => 'decimal:2',
         'valid_from' => 'date',
         'valid_until' => 'date',
     ];
@@ -62,10 +61,6 @@ class Voucher extends Model
             return false;
         }
 
-        if ($this->valid_until && $today->gt($this->valid_until->endOfDay())) {
-            return false;
-        }
-
-        return true;
+        return !($this->valid_until && $today->gt($this->valid_until->endOfDay()));
     }
 }

@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Event extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'name',
         'slug',
         'start_datetime',
@@ -24,11 +23,11 @@ class Event extends Model
     ];
 
     protected $casts = [
-        'start_datetime'        => 'datetime',
-        'end_datetime'          => 'datetime',
-        'ticket_fee'            => 'decimal:2',
+        'start_datetime' => 'datetime',
+        'end_datetime' => 'datetime',
+        'ticket_fee' => 'decimal:2',
         'additional_ticket_fee' => 'decimal:2',
-        'is_active'             => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function tenant(): BelongsTo

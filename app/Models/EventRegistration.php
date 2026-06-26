@@ -10,7 +10,6 @@ class EventRegistration extends Model
 {
     protected $fillable = [
         'event_id',
-        'tenant_id',
         'member_id',
         'name',
         'email',
@@ -25,9 +24,9 @@ class EventRegistration extends Model
     ];
 
     protected $casts = [
-        'total_fee'   => 'decimal:2',
-        'is_paid'     => 'boolean',
-        'paid_at'     => 'datetime',
+        'total_fee' => 'decimal:2',
+        'is_paid' => 'boolean',
+        'paid_at' => 'datetime',
         'is_attended' => 'boolean',
         'attended_at' => 'datetime',
     ];

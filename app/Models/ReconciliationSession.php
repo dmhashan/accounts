@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ReconciliationSession extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'date',
         'status',
         'opened_by',
@@ -20,7 +19,7 @@ class ReconciliationSession extends Model
     ];
 
     protected $casts = [
-        'date'      => 'date',
+        'date' => 'date',
         'closed_at' => 'datetime',
     ];
 

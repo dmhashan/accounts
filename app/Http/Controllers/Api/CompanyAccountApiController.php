@@ -155,7 +155,7 @@ class CompanyAccountApiController extends Controller
     private function accountRules(int $tenantId, ?CompanyAccount $account = null): array
     {
         $nameRule = Rule::unique('company_accounts')
-            ->where(fn ($query) => $query->where('tenant_id', $tenantId));
+            ->where(fn ($query) => $query);
 
         if ($account) {
             $nameRule = $nameRule->ignore($account->id);

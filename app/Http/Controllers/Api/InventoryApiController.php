@@ -13,9 +13,7 @@ use Illuminate\Validation\Rule;
 
 class InventoryApiController extends Controller
 {
-    public function __construct(private readonly InventoryService $inventoryService)
-    {
-    }
+    public function __construct(private readonly InventoryService $inventoryService) {}
 
     public function meta(): JsonResponse
     {
@@ -45,7 +43,7 @@ class InventoryApiController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('products')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+                Rule::unique('products'),
             ],
             'variations' => ['nullable', 'array'],
             'variations.*.name' => ['nullable', 'string', 'max:255'],
@@ -72,7 +70,6 @@ class InventoryApiController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('products')
-                    ->where(fn ($query) => $query->where('tenant_id', $tenantId))
                     ->ignore($product->id),
             ],
             'variations' => ['nullable', 'array'],
@@ -111,6 +108,7 @@ class InventoryApiController extends Controller
         ]);
 
         $result = $this->inventoryService->storeVariation($tenantId, $validated);
+
         if (isset($result['error'])) {
             return response()->json([
                 'message' => $result['error'],
@@ -138,6 +136,7 @@ class InventoryApiController extends Controller
         ]);
 
         $error = $this->inventoryService->updateVariation($variation, $tenantId, $validated);
+
         if ($error) {
             return response()->json([
                 'message' => $error,
@@ -189,6 +188,7 @@ class InventoryApiController extends Controller
         ]);
 
         $result = $this->inventoryService->storeStock($tenantId, $validated);
+
         if (isset($result['error'])) {
             return response()->json([
                 'message' => $result['error'],
@@ -222,6 +222,7 @@ class InventoryApiController extends Controller
         ]);
 
         $error = $this->inventoryService->updateStock($stock, $tenantId, $validated);
+
         if ($error) {
             return response()->json([
                 'message' => $error,

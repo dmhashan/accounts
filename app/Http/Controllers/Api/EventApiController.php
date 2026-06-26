@@ -9,19 +9,16 @@ use App\Models\Member;
 use App\Services\EventService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class EventApiController extends Controller
 {
-    public function __construct(private readonly EventService $service)
-    {
-    }
+    public function __construct(private readonly EventService $service) {}
 
     public function index(Request $request): JsonResponse
     {
-        $tenant  = app('tenant');
+        $tenant = app('tenant');
         $perPage = min((int) $request->integer('per_page', 15), 50);
-        $search  = trim((string) $request->query('search', ''));
+        $search = trim((string) $request->query('search', ''));
 
         return response()->json($this->service->index($tenant->id, $perPage, $search));
     }
@@ -49,7 +46,7 @@ class EventApiController extends Controller
     {
         $this->authorizeEvent($event);
 
-        $tenant    = app('tenant');
+        $tenant = app('tenant');
         $validated = $request->validate($this->rules($tenant->id, $event->id));
 
         $this->service->update($event, $validated);
@@ -70,9 +67,9 @@ class EventApiController extends Controller
         $this->authorizeEvent($event);
 
         $perPage = min((int) $request->integer('per_page', 20), 100);
-        $search  = trim((string) $request->query('search', ''));
-        $status  = in_array($request->query('status'), ['paid', 'unpaid'], true) ? $request->query('status') : '';
-        $type    = in_array($request->query('type'), ['member', 'walkin'], true) ? $request->query('type') : '';
+        $search = trim((string) $request->query('search', ''));
+        $status = in_array($request->query('status'), ['paid', 'unpaid'], true) ? $request->query('status') : '';
+        $type = in_array($request->query('type'), ['member', 'walkin'], true) ? $request->query('type') : '';
 
         return response()->json($this->service->registrations($event, $perPage, $search, $status, $type));
     }
@@ -84,12 +81,12 @@ class EventApiController extends Controller
         abort_if($registration->is_paid, 422, 'Cannot edit a paid registration.');
 
         $validated = $request->validate([
-            'name'           => ['required', 'string', 'max:200'],
-            'email'          => ['nullable', 'email', 'max:150'],
-            'phone'          => ['nullable', 'string', 'max:30'],
-            'notes'          => ['nullable', 'string', 'max:1000'],
-            'guests'         => ['nullable', 'array', 'max:20'],
-            'guests.*.name'  => ['required', 'string', 'max:200'],
+            'name' => ['required', 'string', 'max:200'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'guests' => ['nullable', 'array', 'max:20'],
+            'guests.*.name' => ['required', 'string', 'max:200'],
             'guests.*.notes' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -97,7 +94,7 @@ class EventApiController extends Controller
 
         return response()->json([
             'message' => 'Registration updated.',
-            'data'    => $this->service->toRegistrationItem($updated),
+            'data' => $this->service->toRegistrationItem($updated),
         ]);
     }
 
@@ -120,27 +117,27 @@ class EventApiController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'member_id'          => ['nullable', 'integer', 'exists:members,id'],
-            'name'               => ['required', 'string', 'max:200'],
-            'email'              => ['nullable', 'email', 'max:150'],
-            'phone'              => ['nullable', 'string', 'max:30'],
-            'notes'              => ['nullable', 'string', 'max:1000'],
-            'guests'             => ['nullable', 'array', 'max:20'],
-            'guests.*.name'      => ['required', 'string', 'max:200'],
-            'guests.*.notes'     => ['nullable', 'string', 'max:500'],
-            'is_paid'            => ['boolean'],
+            'member_id' => ['nullable', 'integer', 'exists:members,id'],
+            'name' => ['required', 'string', 'max:200'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'guests' => ['nullable', 'array', 'max:20'],
+            'guests.*.name' => ['required', 'string', 'max:200'],
+            'guests.*.notes' => ['nullable', 'string', 'max:500'],
+            'is_paid' => ['boolean'],
             'company_account_id' => ['nullable', 'integer', 'exists:company_accounts,id'],
-            'is_attended'        => ['boolean'],
+            'is_attended' => ['boolean'],
         ]);
 
-        if (! empty($validated['is_paid'])) {
+        if (!empty($validated['is_paid'])) {
             abort_if(empty($validated['company_account_id']), 422, 'A company account is required to mark registration as paid.');
         }
 
         $memberId = null;
+
         if (!empty($validated['member_id'])) {
             $member = Member::where('id', $validated['member_id'])
-                ->where('tenant_id', $tenant->id)
                 ->first();
             abort_if(!$member, 404, 'Member not found.');
 
@@ -156,7 +153,7 @@ class EventApiController extends Controller
 
         return response()->json([
             'message' => 'Registration added successfully.',
-            'data'    => $this->service->toRegistrationItem($registration->load('guests')),
+            'data' => $this->service->toRegistrationItem($registration->load('guests')),
         ], 201);
     }
 
@@ -171,7 +168,7 @@ class EventApiController extends Controller
 
         return response()->json([
             'message' => 'Attendance marked.',
-            'data'    => $this->service->toRegistrationItem($updated),
+            'data' => $this->service->toRegistrationItem($updated),
         ]);
     }
 
@@ -190,30 +187,29 @@ class EventApiController extends Controller
 
         return response()->json([
             'message' => 'Payment recorded successfully.',
-            'data'    => $this->service->toRegistrationItem($updated),
+            'data' => $this->service->toRegistrationItem($updated),
         ]);
     }
 
     private function authorizeEvent(Event $event): void
     {
         $tenant = app('tenant');
-        abort_if($event->tenant_id !== $tenant->id, 403, 'Forbidden.');
     }
 
     private function rules(int $tenantId, ?int $excludeId = null): array
     {
         return [
-            'name'                   => ['required', 'string', 'max:255'],
-            'slug'                   => ['nullable', 'string', 'max:150'],
-            'start_datetime'         => ['required', 'date'],
-            'end_datetime'           => ['nullable', 'date', 'after:start_datetime'],
-            'venue'                  => ['nullable', 'string', 'max:255'],
-            'venue_url'              => ['nullable', 'url', 'max:500'],
-            'agenda'                 => ['nullable', 'string'],
-            'registration_process'   => ['nullable', 'string'],
-            'ticket_fee'             => ['nullable', 'numeric', 'min:0'],
-            'additional_ticket_fee'  => ['nullable', 'numeric', 'min:0'],
-            'is_active'              => ['boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:150'],
+            'start_datetime' => ['required', 'date'],
+            'end_datetime' => ['nullable', 'date', 'after:start_datetime'],
+            'venue' => ['nullable', 'string', 'max:255'],
+            'venue_url' => ['nullable', 'url', 'max:500'],
+            'agenda' => ['nullable', 'string'],
+            'registration_process' => ['nullable', 'string'],
+            'ticket_fee' => ['nullable', 'numeric', 'min:0'],
+            'additional_ticket_fee' => ['nullable', 'numeric', 'min:0'],
+            'is_active' => ['boolean'],
         ];
     }
 }

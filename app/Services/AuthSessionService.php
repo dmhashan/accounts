@@ -12,7 +12,6 @@ class AuthSessionService
         $isEmail = filter_var($login, FILTER_VALIDATE_EMAIL) !== false;
 
         return Auth::attempt([
-            'tenant_id' => $tenantId,
             'password' => $password,
             $isEmail ? 'email' : 'username' => $login,
         ]);

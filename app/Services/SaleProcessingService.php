@@ -30,7 +30,6 @@ class SaleProcessingService
             [$paidAmount, $balance, $isPaid, $accountId] = $this->resolvePayment($validated, $member, $total, $tenantId);
 
             $sale = Sale::create([
-                'tenant_id' => $tenantId,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_member_id' => $member?->id,
                 'account_id' => $accountId,
@@ -111,7 +110,6 @@ class SaleProcessingService
     {
         $paid = DB::transaction(function () use ($sale, $tenantId, $validated) {
             $lockedSale = Sale::query()
-                ->where('tenant_id', $tenantId)
                 ->lockForUpdate()
                 ->find($sale->id);
 
@@ -131,7 +129,6 @@ class SaleProcessingService
                 }
 
                 $member = Member::query()
-                    ->where('tenant_id', $tenantId)
                     ->lockForUpdate()
                     ->find($lockedSale->customer_member_id);
 
@@ -181,7 +178,6 @@ class SaleProcessingService
         $variationIds = collect($itemsPayload)->pluck('product_variation_id')->unique();
 
         $variations = ProductVariation::query()
-            ->where('tenant_id', $tenantId)
             ->whereIn('id', $variationIds)
             ->with('product')
             ->get()
@@ -198,7 +194,6 @@ class SaleProcessingService
             $variation = $variations->get($item['product_variation_id']);
 
             $available = StockEntry::query()
-                ->where('tenant_id', $tenantId)
                 ->where('product_variation_id', $variation->id)
                 ->where(function ($query) use ($today) {
                     $query->whereDate('expiry_date', '>=', $today)
@@ -211,7 +206,6 @@ class SaleProcessingService
             }
 
             $priceEntry = StockEntry::query()
-                ->where('tenant_id', $tenantId)
                 ->where('product_variation_id', $variation->id)
                 ->where(function ($query) use ($today) {
                     $query->whereDate('expiry_date', '>=', $today)
@@ -250,7 +244,6 @@ class SaleProcessingService
         }
 
         $member = Member::query()
-            ->where('tenant_id', $tenantId)
             ->lockForUpdate()
             ->find($validated['customer_member_id']);
 
@@ -306,7 +299,6 @@ class SaleProcessingService
         }
 
         $account = CompanyAccount::query()
-            ->where('tenant_id', $tenantId)
             ->find((int) $validated['account_id']);
 
         if (!$account) {
@@ -332,7 +324,6 @@ class SaleProcessingService
             $remaining = $item['quantity'];
 
             $entries = StockEntry::query()
-                ->where('tenant_id', $tenantId)
                 ->where('product_variation_id', $item['product_variation_id'])
                 ->where(function ($query) use ($today) {
                     $query->whereDate('expiry_date', '>=', $today)
@@ -382,7 +373,6 @@ class SaleProcessingService
             $remaining = $item->quantity;
 
             $entries = StockEntry::query()
-                ->where('tenant_id', $tenantId)
                 ->where('product_variation_id', $item->product_variation_id)
                 ->where(function ($query) use ($today) {
                     $query->whereDate('expiry_date', '>=', $today)
@@ -423,7 +413,6 @@ class SaleProcessingService
         }
 
         $oldMember = Member::query()
-            ->where('tenant_id', $tenantId)
             ->lockForUpdate()
             ->find($sale->customer_member_id);
 
@@ -455,7 +444,6 @@ class SaleProcessingService
                 'reference_id' => $sale->id,
             ],
             [
-                'tenant_id' => $tenantId,
                 'company_account_id' => $sale->account_id,
                 'type' => 'sale_payment',
                 'amount' => (float) $sale->total_amount,
@@ -480,7 +468,7 @@ class SaleProcessingService
         $body = "Payment received for Sale #{$sale->id}: LKR {$amount}{$ref}. Thank you! View your account: {$profileUrl}";
 
         SendMemberNotificationJob::dispatch(
-            $sale->tenant_id,
+            (int) app('tenant')->id,
             $sale->customer_member_id,
             'sale_paid',
             $title,
@@ -509,7 +497,7 @@ class SaleProcessingService
         $body = "Outstanding for Sale #{$sale->id}: LKR {$due}{$ref}. Total outstanding: LKR {$totalDue}. Please settle soon. View your account: {$profileUrl}";
 
         SendMemberNotificationJob::dispatch(
-            $sale->tenant_id,
+            (int) app('tenant')->id,
             $sale->customer_member_id,
             'sale_outstanding',
             $title,

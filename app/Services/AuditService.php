@@ -16,7 +16,6 @@ class AuditService
         ?array $after = null,
     ): AuditLog {
         return AuditLog::create([
-            'tenant_id' => $tenantId,
             'user_id' => Auth::id(),
             'action' => $action,
             'auditable_type' => get_class($subject),
@@ -30,7 +29,6 @@ class AuditService
     public function forModel(int $tenantId, string $type, int $id, int $perPage = 20): array
     {
         $logs = AuditLog::query()
-            ->where('tenant_id', $tenantId)
             ->where('auditable_type', $type)
             ->where('auditable_id', $id)
             ->with('user:id,name')
@@ -58,7 +56,6 @@ class AuditService
     public function recent(int $tenantId, string $type, int $limit = 50): array
     {
         $logs = AuditLog::query()
-            ->where('tenant_id', $tenantId)
             ->where('auditable_type', $type)
             ->with('user:id,name')
             ->orderByDesc('created_at')

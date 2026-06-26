@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class ForgotPasswordController extends Controller
 {
@@ -25,7 +25,6 @@ class ForgotPasswordController extends Controller
 
         // Check if user exists in current tenant
         $user = User::where('email', $request->email)
-            ->where('tenant_id', app('tenant')->id)
             ->first();
 
         if (!$user) {
@@ -39,11 +38,11 @@ class ForgotPasswordController extends Controller
 
         // Create new token
         $token = Str::random(64);
-        
+
         DB::table('password_reset_tokens')->insert([
             'email' => $request->email,
             'token' => Hash::make($token),
-            'created_at' => Carbon::now()
+            'created_at' => Carbon::now(),
         ]);
 
         // In production, send email with reset link
@@ -64,7 +63,7 @@ class ForgotPasswordController extends Controller
     {
         return view('auth.reset-password', [
             'token' => $token,
-            'email' => $request->email
+            'email' => $request->email,
         ]);
     }
 
@@ -87,8 +86,10 @@ class ForgotPasswordController extends Controller
 
         // Check if token is not older than 1 hour
         $createdAt = Carbon::parse($resetRecord->created_at);
+
         if ($createdAt->addHour()->isPast()) {
             DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
             return back()->withErrors(['email' => 'Password reset token has expired.']);
         }
 
@@ -99,7 +100,6 @@ class ForgotPasswordController extends Controller
 
         // Find user and update password
         $user = User::where('email', $request->email)
-            ->where('tenant_id', app('tenant')->id)
             ->first();
 
         if (!$user) {
@@ -107,7 +107,7 @@ class ForgotPasswordController extends Controller
         }
 
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
         // Delete the token

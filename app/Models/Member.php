@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Member extends Model
 {
     protected $fillable = [
-        'tenant_id',
         'user_id',
         'biometric_member_id',
         'first_name',
@@ -67,8 +66,7 @@ class Member extends Model
     public static function generateBiometricMemberId(int $tenantId): string
     {
         $driver = \DB::getDriverName();
-        $query = self::where('tenant_id', $tenantId)
-            ->whereNotNull('biometric_member_id');
+        $query = self::whereNotNull('biometric_member_id');
 
         if ($driver === 'mysql') {
             $max = (int) $query

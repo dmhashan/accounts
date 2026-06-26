@@ -16,7 +16,6 @@ class MemberActivityLogController extends Controller
         $tenant = app('tenant');
 
         $query = MemberActivityLog::with('member:id,first_name,last_name,name,biometric_member_id')
-            ->where('tenant_id', $tenant->id)
             ->orderByDesc('created_at');
 
         // Filters
@@ -67,7 +66,6 @@ class MemberActivityLogController extends Controller
         $tenant = app('tenant');
 
         $query = MemberActivityLog::with('member:id,first_name,last_name,name,biometric_member_id')
-            ->where('tenant_id', $tenant->id)
             ->orderByDesc('created_at');
 
         if ($request->filled('member_id')) {

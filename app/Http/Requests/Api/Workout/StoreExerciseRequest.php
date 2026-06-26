@@ -21,7 +21,7 @@ class StoreExerciseRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('exercises')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+                Rule::unique('exercises')->where(fn ($query) => $query),
             ],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'default_sets' => ['required', 'integer', 'gt:0'],
