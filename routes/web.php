@@ -16,7 +16,7 @@ Route::get('/', function (TenantDatabaseManager $tenancy) {
         return view('product-landing-page');
     }
 
-    if (auth()->check() && auth()->user()?->tenant_id === $tenant->id) {
+    if (auth()->check()) {
         return view('spa');
     }
 
