@@ -38,6 +38,7 @@ return new class extends Migration
             ->pluck('id');
 
         $rows = [];
+
         foreach ($adminRoleIds as $roleId) {
             $rows[] = [
                 'role_id' => $roleId,

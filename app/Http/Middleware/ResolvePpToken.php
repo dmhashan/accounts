@@ -2,20 +2,19 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class ResolvePpToken
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, \Closure $next)
     {
-        $token  = $request->header('X-PP-Token');
+        $token = $request->header('X-PP-Token');
         $tenant = app('tenant');
 
         $data = $token ? Cache::get("pp_token:{$token}") : null;
 
-        if (! $data || $data['tenant_id'] !== $tenant->id) {
+        if (!$data || ($data['tenant_uuid'] ?? null) !== $tenant->tenant_uuid) {
             return response()->json(['message' => 'Unauthorized.'], 401);
         }
 

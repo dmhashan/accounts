@@ -21,9 +21,11 @@ return new class extends Migration
         if (Schema::hasColumn('company_account_transactions', 'sale_id')) {
             DB::statement("UPDATE company_account_transactions SET model_name = 'sale', reference_id = sale_id WHERE sale_id IS NOT NULL AND model_name IS NULL");
         }
+
         if (Schema::hasColumn('company_account_transactions', 'expense_id')) {
             DB::statement("UPDATE company_account_transactions SET model_name = 'expense', reference_id = expense_id WHERE expense_id IS NOT NULL AND model_name IS NULL");
         }
+
         if (Schema::hasColumn('company_account_transactions', 'payment_id')) {
             DB::statement("UPDATE company_account_transactions SET model_name = 'payment', reference_id = payment_id WHERE payment_id IS NOT NULL AND model_name IS NULL");
         }
@@ -32,16 +34,22 @@ return new class extends Migration
         if (Schema::hasColumn('company_account_transactions', 'sale_id')) {
             Schema::table('company_account_transactions', function (Blueprint $table) {
                 $table->dropForeign(['sale_id']);
-                try { $table->dropUnique('cat_sale_type_unique'); } catch (\Throwable $e) {}
+
+                try {
+                    $table->dropUnique('cat_sale_type_unique');
+                } catch (Throwable $e) {
+                }
                 $table->dropColumn('sale_id');
             });
         }
+
         if (Schema::hasColumn('company_account_transactions', 'expense_id')) {
             Schema::table('company_account_transactions', function (Blueprint $table) {
                 $table->dropForeign(['expense_id']);
                 $table->dropColumn('expense_id');
             });
         }
+
         if (Schema::hasColumn('company_account_transactions', 'payment_id')) {
             Schema::table('company_account_transactions', function (Blueprint $table) {
                 $table->dropForeign(['payment_id']);

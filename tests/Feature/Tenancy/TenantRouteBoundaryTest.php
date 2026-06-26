@@ -3,11 +3,27 @@
 namespace Tests\Feature\Tenancy;
 
 use App\Http\Middleware\IdentifyTenant;
+use App\Http\Middleware\InitializeTenantConnection;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Routing\Route;
+use Illuminate\Session\Middleware\StartSession;
 use Tests\TestCase;
 
 class TenantRouteBoundaryTest extends TestCase
 {
+    public function testTenantConnectionInitializesBeforeSessionAuthentication(): void
+    {
+        $kernel = app(Kernel::class);
+        $web = $kernel->getMiddlewareGroups()['web'];
+        $priority = $kernel->getMiddlewarePriority();
+
+        $this->assertSame(InitializeTenantConnection::class, $web[0]);
+        $this->assertLessThan(
+            array_search(StartSession::class, $priority, true),
+            array_search(InitializeTenantConnection::class, $priority, true),
+        );
+    }
+
     public function testTenantApiRoutesResolveATenantBeforeTheirControllerRuns(): void
     {
         $exceptions = [

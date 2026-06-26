@@ -27,7 +27,7 @@ class PublicProfileApiTest extends ApiRouteTestCase
         ])->assertOk()
             ->assertJsonPath('message', 'OTP sent successfully.');
 
-        $otp = Cache::get('otp:' . $this->tenant->id . ':0771234567');
+        $otp = Cache::get('otp:' . $this->tenant->tenant_uuid . ':0771234567');
         $this->assertMatchesRegularExpression('/^\d{6}$/', $otp);
 
         $token = (string) $this->postJson('/api/public/verify-otp', [
@@ -37,7 +37,7 @@ class PublicProfileApiTest extends ApiRouteTestCase
 
         $this->assertSame([
             'member_id' => $member->id,
-            'tenant_id' => $this->tenant->id,
+            'tenant_uuid' => $this->tenant->tenant_uuid,
         ], Cache::get('pp_token:' . $token));
 
         $this->withHeader('X-PP-Token', $token)
@@ -64,7 +64,7 @@ class PublicProfileApiTest extends ApiRouteTestCase
 
         Cache::put('pp_token:' . $token, [
             'member_id' => $member->id,
-            'tenant_id' => $otherTenant->id,
+            'tenant_uuid' => $otherTenant->tenant_uuid,
         ]);
 
         $this->withHeader('X-PP-Token', $token)
@@ -79,7 +79,7 @@ class PublicProfileApiTest extends ApiRouteTestCase
         $token = Str::uuid()->toString();
         Cache::put('pp_token:' . $token, [
             'member_id' => $member->id,
-            'tenant_id' => $this->tenant->id,
+            'tenant_uuid' => $this->tenant->tenant_uuid,
         ]);
 
         $event = Event::create([

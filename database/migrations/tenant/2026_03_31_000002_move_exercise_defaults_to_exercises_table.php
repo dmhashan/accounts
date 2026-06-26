@@ -114,6 +114,7 @@ return new class extends Migration
                 ->chunkById(200, function ($variations) use ($exerciseDefaults) {
                     foreach ($variations as $variation) {
                         $defaults = $exerciseDefaults->get($variation->exercise_id);
+
                         if (!$defaults) {
                             continue;
                         }

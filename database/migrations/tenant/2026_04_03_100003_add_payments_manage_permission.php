@@ -45,6 +45,7 @@ return new class extends Migration
             $adminRoleIds = DB::table('roles')->where('slug', 'admin')->pluck('id');
 
             $rows = [];
+
             foreach ($adminRoleIds as $roleId) {
                 $rows[] = ['role_id' => $roleId, 'permission_id' => $permissionId];
             }

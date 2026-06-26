@@ -14,7 +14,7 @@ return new class extends Migration
                 'name' => 'Manage Reconciliation',
                 'feature' => 'Reconciliation',
                 'description' => 'Configure reconciliation forms and view all session history',
-            ]
+            ],
         );
 
         $perform = Permission::firstOrCreate(
@@ -23,10 +23,11 @@ return new class extends Migration
                 'name' => 'Perform Reconciliation',
                 'feature' => 'Reconciliation',
                 'description' => 'Open and close daily reconciliation sessions',
-            ]
+            ],
         );
 
         $admin = Role::where('slug', 'admin')->first();
+
         if ($admin) {
             $admin->permissions()->syncWithoutDetaching([$manage->id, $perform->id]);
         }

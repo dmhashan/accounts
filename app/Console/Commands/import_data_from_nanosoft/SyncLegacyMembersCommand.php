@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\Commands\import_data_from_nanosoft;
 
 use App\Models\Member;
 use App\Models\PaymentPlan;
 use App\Models\Tenant;
+use App\Services\Tenancy\TenantDatabaseManager;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\Response;
@@ -258,26 +259,23 @@ class SyncLegacyMembersCommand extends Command
 
     private function resolveTenant(): ?Tenant
     {
+        $tenancy = app(TenantDatabaseManager::class);
         $tenantId = $this->option('tenant-id');
 
         if ($tenantId !== null && $tenantId !== '') {
-            return Tenant::find((int) $tenantId);
+            return $tenancy->activateById((int) $tenantId);
         }
 
         $tenantDomain = trim((string) $this->option('tenant-domain'));
 
         if ($tenantDomain !== '') {
-            return Tenant::where('domain', $tenantDomain)->first();
+            return $tenancy->activateByDomain($tenantDomain);
         }
 
         $bypassDomain = (string) config('app.multitenancy_bypass_domain');
 
         if ($bypassDomain !== '') {
-            $tenant = Tenant::where('domain', $bypassDomain)->first();
-
-            if ($tenant) {
-                return $tenant;
-            }
+            return $tenancy->activateByDomain($bypassDomain);
         }
 
         return null;

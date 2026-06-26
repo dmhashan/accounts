@@ -48,7 +48,7 @@ class PublicProfileController extends Controller
         }
 
         $otp = str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-        $cacheKey = "otp:{$tenant->id}:{$phone}";
+        $cacheKey = "otp:{$tenant->tenant_uuid}:{$phone}";
 
         Cache::put($cacheKey, $otp, now()->addMinutes(10));
 
@@ -70,7 +70,7 @@ class PublicProfileController extends Controller
 
         $tenant = app('tenant');
         $phone = trim($request->phone_number);
-        $cacheKey = "otp:{$tenant->id}:{$phone}";
+        $cacheKey = "otp:{$tenant->tenant_uuid}:{$phone}";
         $stored = Cache::get($cacheKey);
 
         if (!$stored || $stored !== $request->otp) {
@@ -93,7 +93,7 @@ class PublicProfileController extends Controller
         $token = (string) \Illuminate\Support\Str::uuid();
         Cache::put("pp_token:{$token}", [
             'member_id' => $member->id,
-            'tenant_id' => $tenant->id,
+            'tenant_uuid' => $tenant->tenant_uuid,
         ], now()->addMonths(3));
 
         return response()->json(['token' => $token]);
@@ -264,7 +264,7 @@ class PublicProfileController extends Controller
         if ($token) {
             $cached = Cache::get("pp_token:{$token}");
 
-            if ($cached && $cached['tenant_id'] === $tenant->id) {
+            if ($cached && ($cached['tenant_uuid'] ?? null) === $tenant->tenant_uuid) {
                 $memberId = $cached['member_id'];
             }
         }
@@ -392,7 +392,7 @@ class PublicProfileController extends Controller
         if ($token) {
             $cached = Cache::get("pp_token:{$token}");
 
-            if ($cached && $cached['tenant_id'] === $tenant->id) {
+            if ($cached && ($cached['tenant_uuid'] ?? null) === $tenant->tenant_uuid) {
                 $memberId = $cached['member_id'];
             }
         }

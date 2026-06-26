@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\Commands\import_data_from_nanosoft;
 
 use App\Models\Member;
-use App\Models\MemberAttendance;
 use App\Models\Tenant;
+use App\Services\Tenancy\TenantDatabaseManager;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Console\Command;
@@ -27,27 +27,33 @@ class SyncAttendanceCommand extends Command
     public function handle(): int
     {
         $token = trim((string) $this->option('access-token'));
+
         if ($token === '') {
             $this->error('--access-token is required.');
+
             return self::FAILURE;
         }
 
         $tenant = $this->resolveTenant();
+
         if (!$tenant) {
             $this->error('Tenant not found. Provide --tenant-id or --tenant-domain.');
+
             return self::FAILURE;
         }
 
         $dateStart = $this->resolveDate('date-start');
-        $dateEnd   = $this->resolveDate('date-end');
+        $dateEnd = $this->resolveDate('date-end');
 
         if (!$dateStart || !$dateEnd) {
             $this->error('--date-start and --date-end are required and must be valid dates (YYYY-MM-DD).');
+
             return self::FAILURE;
         }
 
         if ($dateStart->gt($dateEnd)) {
             $this->error('--date-start must not be after --date-end.');
+
             return self::FAILURE;
         }
 
@@ -59,8 +65,8 @@ class SyncAttendanceCommand extends Command
         $period = CarbonPeriod::create($dateStart, $dateEnd);
 
         $inserted = 0;
-        $skipped  = 0;
-        $errors   = 0;
+        $skipped = 0;
+        $errors = 0;
 
         foreach ($period as $date) {
             $dateStr = $date->toDateString();
@@ -90,7 +96,7 @@ class SyncAttendanceCommand extends Command
             }
 
             $dayInserted = 0;
-            $daySkipped  = 0;
+            $daySkipped = 0;
 
             foreach ($members as $entry) {
                 if (!is_array($entry)) {
@@ -98,9 +104,9 @@ class SyncAttendanceCommand extends Command
                     continue;
                 }
 
-                $legacyUuid     = isset($entry['id']) ? (string) $entry['id'] : null;
+                $legacyUuid = isset($entry['id']) ? (string) $entry['id'] : null;
                 $legacyMemberId = isset($entry['memberId']) ? (int) $entry['memberId'] : null;
-                $username       = isset($entry['username']) ? (string) $entry['username'] : null;
+                $username = isset($entry['username']) ? (string) $entry['username'] : null;
 
                 if (!$legacyUuid) {
                     $daySkipped++;
@@ -113,17 +119,17 @@ class SyncAttendanceCommand extends Command
                 try {
                     DB::table('member_attendances')->upsert(
                         [
-                            'tenant_id'        => $tenant->id,
-                            'member_id'        => $localMemberId,
-                            'legacy_uuid'      => $legacyUuid,
+                            'tenant_id' => $tenant->id,
+                            'member_id' => $localMemberId,
+                            'legacy_uuid' => $legacyUuid,
                             'legacy_member_id' => $legacyMemberId,
-                            'username'         => $username,
-                            'attended_date'    => $dateStr,
-                            'created_at'       => now(),
-                            'updated_at'       => now(),
+                            'username' => $username,
+                            'attended_date' => $dateStr,
+                            'created_at' => now(),
+                            'updated_at' => now(),
                         ],
                         ['tenant_id', 'legacy_uuid', 'attended_date'],
-                        ['member_id', 'legacy_member_id', 'username', 'updated_at']
+                        ['member_id', 'legacy_member_id', 'username', 'updated_at'],
                     );
                     $dayInserted++;
                 } catch (\Throwable $e) {
@@ -133,9 +139,9 @@ class SyncAttendanceCommand extends Command
             }
 
             $inserted += $dayInserted;
-            $skipped  += $daySkipped;
+            $skipped += $daySkipped;
 
-            $this->line("  {$dateStr} — {$dayInserted} upserted, {$daySkipped} skipped (total in payload: " . count($members) . ")");
+            $this->line("  {$dateStr} — {$dayInserted} upserted, {$daySkipped} skipped (total in payload: " . count($members) . ')');
         }
 
         $this->newLine();
@@ -167,6 +173,7 @@ class SyncAttendanceCommand extends Command
                 ->pluck('id', 'username');
 
             $remapped = 0;
+
             foreach ($memberMap as $username => $memberId) {
                 $affected = DB::table('member_attendances')
                     ->where('tenant_id', $tenant->id)
@@ -187,6 +194,7 @@ class SyncAttendanceCommand extends Command
     private function resolveDate(string $option): ?Carbon
     {
         $value = trim((string) $this->option($option));
+
         if ($value === '') {
             return null;
         }
@@ -200,19 +208,23 @@ class SyncAttendanceCommand extends Command
 
     private function resolveTenant(): ?Tenant
     {
+        $tenancy = app(TenantDatabaseManager::class);
         $tenantId = $this->option('tenant-id');
+
         if ($tenantId !== null && $tenantId !== '') {
-            return Tenant::find((int) $tenantId);
+            return $tenancy->activateById((int) $tenantId);
         }
 
         $tenantDomain = trim((string) $this->option('tenant-domain'));
+
         if ($tenantDomain !== '') {
-            return Tenant::where('domain', $tenantDomain)->first();
+            return $tenancy->activateByDomain($tenantDomain);
         }
 
         $bypassDomain = (string) config('app.multitenancy_bypass_domain');
+
         if ($bypassDomain !== '') {
-            return Tenant::where('domain', $bypassDomain)->first();
+            return $tenancy->activateByDomain($bypassDomain);
         }
 
         return null;
@@ -234,7 +246,7 @@ class SyncAttendanceCommand extends Command
 
     private function requestWithRetry(string $token, string $url, array $query = []): ?Response
     {
-        $attempts         = 3;
+        $attempts = 3;
         $delayMicroseconds = 500000;
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {

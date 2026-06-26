@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant;
 use App\Services\BiometricSyncService;
+use App\Services\Tenancy\TenantDatabaseManager;
 use App\Services\TenantConfigurationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -26,6 +26,7 @@ class BiometricWebhookController extends Controller
     public function __construct(
         private readonly BiometricSyncService $biometric,
         private readonly TenantConfigurationService $config,
+        private readonly TenantDatabaseManager $tenancy,
     ) {}
 
     /**
@@ -33,8 +34,8 @@ class BiometricWebhookController extends Controller
      */
     public function handle(Request $request, string $tenantDomain): Response
     {
-        // 1. Resolve tenant by domain
-        $tenant = Tenant::where('domain', $tenantDomain)->first();
+        // 1. Resolve and activate tenant by domain
+        $tenant = $this->tenancy->activateByDomain($tenantDomain);
 
         Log::debug('Biometric real-time push: incoming request', [
             'route_tenant_domain' => $tenantDomain,
@@ -61,11 +62,6 @@ class BiometricWebhookController extends Controller
 
             return response('', 404);
         }
-
-        // The webhook route has no IdentifyTenant middleware, so bind the tenant
-        // into the container now — MediaStorageService relies on app('tenant')
-        // when storing the captured authentication snapshot.
-        app()->instance('tenant', $tenant);
 
         // 2. Validate webhook token (constant-time comparison to prevent timing attacks)
         $allConfig = $this->config->all($tenant->id);

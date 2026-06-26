@@ -31,7 +31,7 @@ return new class extends Migration
                     Schema::table('exercises', function (Blueprint $table) {
                         $table->dropIndex('exercises_tenant_muscle_idx');
                     });
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // Index might already be absent in some environments.
                 }
 
@@ -82,7 +82,7 @@ return new class extends Migration
                     Schema::table('exercises', function (Blueprint $table) {
                         $table->index(['tenant_id', 'muscle_group'], 'exercises_tenant_muscle_idx');
                     });
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // Ignore if index already exists.
                 }
             }

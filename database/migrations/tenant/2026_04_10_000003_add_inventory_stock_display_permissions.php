@@ -14,7 +14,7 @@ return new class extends Migration
                 'name' => 'Manage Stock',
                 'feature' => 'Inventory',
                 'description' => 'Create and manage stock entries',
-            ]
+            ],
         );
 
         $displayPermission = Permission::firstOrCreate(
@@ -23,10 +23,11 @@ return new class extends Migration
                 'name' => 'Manage Display',
                 'feature' => 'Inventory',
                 'description' => 'Release stock items to the display shelf for sale',
-            ]
+            ],
         );
 
         $admin = Role::where('slug', 'admin')->first();
+
         if ($admin) {
             $admin->permissions()->syncWithoutDetaching([$stockPermission->id, $displayPermission->id]);
         }

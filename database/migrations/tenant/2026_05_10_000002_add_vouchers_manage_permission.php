@@ -9,10 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         $permission = Permission::firstOrCreate(
-            ['slug' => 'forms.manage'],
-            ['name' => 'Manage Forms', 'feature' => 'Forms']
+            ['slug' => 'vouchers.manage'],
+            ['name' => 'Manage Vouchers', 'feature' => 'Vouchers'],
         );
 
+        // Grant to all admin / owner / super-admin roles automatically
         Role::whereIn('slug', ['super-admin', 'admin', 'owner'])
             ->get()
             ->each(fn (Role $role) => $role->permissions()->syncWithoutDetaching([$permission->id]));
@@ -20,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Permission::where('slug', 'forms.manage')->delete();
+        Permission::where('slug', 'vouchers.manage')->delete();
     }
 };
