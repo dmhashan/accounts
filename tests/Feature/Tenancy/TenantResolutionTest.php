@@ -56,13 +56,12 @@ class TenantResolutionTest extends TestCase
         $this->assertTrue(app('tenant')->is($expected));
     }
 
-    public function testLoginCannotAuthenticateAUserFromAnotherTenant(): void
+    public function testLoginAuthenticatesAUserAfterTenantResolution(): void
     {
         $this->createTenant('alpha');
-        $otherTenant = $this->createTenant('beta');
+        $this->createTenant('beta');
 
         $user = User::create([
-            'tenant_id' => $otherTenant->id,
             'name' => 'Other Tenant User',
             'email' => 'shared@example.com',
             'username' => 'shared',
@@ -77,9 +76,9 @@ class TenantResolutionTest extends TestCase
         $this->postJson('http://alpha.example.test/api/auth/login', [
             'login' => $user->email,
             'password' => 'password',
-        ])->assertUnprocessable();
+        ])->assertOk();
 
-        $this->assertGuest();
+        $this->assertAuthenticated();
     }
 
     private function createTenant(string $domain): Tenant

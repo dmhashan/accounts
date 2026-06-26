@@ -74,7 +74,6 @@ class PaymentsApiTest extends ApiRouteTestCase
             'name' => $name,
             'duration_value' => $value,
             'duration_unit' => $unit,
-            'tenant_id' => $this->tenant->id,
         ]);
     }
 
@@ -240,7 +239,6 @@ class PaymentsApiTest extends ApiRouteTestCase
         $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
 
         $payment = MemberPayment::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'company_account_id' => $this->createAccount()->id,
             'payment_method' => 'cash',
@@ -248,7 +246,6 @@ class PaymentsApiTest extends ApiRouteTestCase
             'payment_date' => '2026-01-15',
         ]);
         PaymentMembership::create([
-            'tenant_id' => $this->tenant->id,
             'member_payment_id' => $payment->id,
             'payment_plan_id' => $plan->id,
             'start_date' => '2026-01-15',
@@ -317,7 +314,6 @@ class PaymentsApiTest extends ApiRouteTestCase
         ])->assertCreated();
 
         $this->assertDatabaseHas('member_notifications', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'membership_payment_received',
             'body' => 'Payment received! Kamal Silva paid 2,500.00 at Test Gym on 2026-06-08 via Main Cash',
@@ -333,7 +329,6 @@ class PaymentsApiTest extends ApiRouteTestCase
         $member = $this->createMember(null, ['first_name' => 'Asha', 'last_name' => 'Fernando', 'name' => 'Asha Fernando']);
         $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month']);
         $payment = MemberPayment::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'company_account_id' => $this->createAccount()->id,
             'payment_method' => 'cash',
@@ -341,7 +336,6 @@ class PaymentsApiTest extends ApiRouteTestCase
             'payment_date' => '2026-06-01',
         ]);
         PaymentMembership::create([
-            'tenant_id' => $this->tenant->id,
             'member_payment_id' => $payment->id,
             'payment_plan_id' => $plan->id,
             'start_date' => '2026-06-01',
@@ -353,7 +347,6 @@ class PaymentsApiTest extends ApiRouteTestCase
 
         $this->assertSame(1, $count);
         $this->assertDatabaseHas('member_notifications', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'membership_expiry_7_days_before',
             'body' => 'Hey Asha Fernando, your payment at Test Gym was due on 2026-06-15. Please renew and stay active!',
@@ -405,7 +398,6 @@ class PaymentsApiTest extends ApiRouteTestCase
     private function createAccount(array $attributes = []): CompanyAccount
     {
         return CompanyAccount::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'name' => 'Cash',
             'opening_balance' => 0,
         ], $attributes));

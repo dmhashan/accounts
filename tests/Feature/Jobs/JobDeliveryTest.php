@@ -51,7 +51,6 @@ class JobDeliveryTest extends ApiRouteTestCase
         ))->handle($sms, app(TenantMailService::class), app(TenantConfigurationService::class));
 
         $this->assertDatabaseHas('member_notifications', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'delivery',
         ]);
@@ -73,7 +72,6 @@ class JobDeliveryTest extends ApiRouteTestCase
             'notifications.inapp.enabled' => '1',
         ]);
         $notification = BulkNotification::create([
-            'tenant_id' => $this->tenant->id,
             'created_by' => $creator->id,
             'name' => 'Bulk delivery',
             'message' => 'Bulk body',
@@ -96,7 +94,6 @@ class JobDeliveryTest extends ApiRouteTestCase
         $this->assertSame('sent', $notification->fresh()->status);
         Mail::assertSent(MemberNotificationMail::class);
         $this->assertDatabaseHas('member_notifications', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'bulk',
         ]);
@@ -114,13 +111,11 @@ class JobDeliveryTest extends ApiRouteTestCase
         $admin = $this->createUser(role: $adminRole);
         $member = $this->createMember();
         $template = FormTemplate::create([
-            'tenant_id' => $this->tenant->id,
             'title' => 'Health Form',
             'fields' => [],
             'is_active' => true,
         ]);
         $submission = FormSubmission::create([
-            'tenant_id' => $this->tenant->id,
             'form_template_id' => $template->id,
             'member_id' => $member->id,
             'responses' => [],
@@ -128,7 +123,6 @@ class JobDeliveryTest extends ApiRouteTestCase
             'submitted_at' => now(),
         ]);
         $report = DailySummaryReport::create([
-            'tenant_id' => $this->tenant->id,
             'report_date' => today(),
             'prepared_by_name' => $admin->name,
             'system_snapshot' => [],
@@ -201,7 +195,6 @@ class JobDeliveryTest extends ApiRouteTestCase
     private function createCommandLog(string $command): CommandRunLog
     {
         return CommandRunLog::create([
-            'tenant_id' => $this->tenant->id,
             'command' => $command,
             'params' => [],
         ]);

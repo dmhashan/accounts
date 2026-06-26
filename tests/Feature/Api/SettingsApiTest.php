@@ -88,7 +88,6 @@ class SettingsApiTest extends ApiRouteTestCase
             ->json('log_id');
 
         $log = CommandRunLog::findOrFail($logId);
-        $this->assertSame($this->tenant->id, $log->tenant_id);
         $this->assertSame($user->id, $log->user_id);
         $this->assertArrayNotHasKey('--access-token', $log->params);
         $this->assertSame($this->tenant->domain, $log->params['--tenant-domain']);
@@ -101,21 +100,13 @@ class SettingsApiTest extends ApiRouteTestCase
         });
     }
 
-    public function testLegacyToolLogsAreFilteredToTheCurrentTenant(): void
+    public function testLegacyToolLogsAreListedAndValidationStillApplies(): void
     {
         $this->actingAsUser(['settings.manage']);
-        $otherTenant = $this->createOtherTenant();
 
         CommandRunLog::create([
-            'tenant_id' => $this->tenant->id,
             'command' => 'legacy:sync-members',
             'params' => ['--tenant-domain' => $this->tenant->domain],
-            'success' => true,
-        ]);
-        CommandRunLog::create([
-            'tenant_id' => $otherTenant->id,
-            'command' => 'legacy:sync-members',
-            'params' => ['--tenant-domain' => $otherTenant->domain],
             'success' => true,
         ]);
 

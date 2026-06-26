@@ -39,7 +39,7 @@ class WorkoutProgramApiController extends Controller
 
         return $this->success(
             'Member workout assignments fetched successfully.',
-            $this->workoutProgramService->memberAssignments($member->id, $tenantId, $perPage)
+            $this->workoutProgramService->memberAssignments($member->id, $tenantId, $perPage),
         );
     }
 
@@ -49,7 +49,7 @@ class WorkoutProgramApiController extends Controller
 
         return $this->success(
             'Workout programs fetched successfully.',
-            $this->workoutProgramService->programs(app('tenant')->id, $perPage)
+            $this->workoutProgramService->programs(app('tenant')->id, $perPage),
         );
     }
 
@@ -58,7 +58,7 @@ class WorkoutProgramApiController extends Controller
         $program = $this->workoutProgramService->storeProgram(
             app('tenant')->id,
             $request->user()?->id,
-            $request->validated()
+            $request->validated(),
         );
 
         return $this->success('Workout program created successfully.', [
@@ -70,7 +70,7 @@ class WorkoutProgramApiController extends Controller
     {
         return $this->success(
             'Workout program fetched successfully.',
-            $this->workoutProgramService->fullProgram($program, app('tenant')->id)
+            $this->workoutProgramService->fullProgram($program, app('tenant')->id),
         );
     }
 
@@ -161,7 +161,7 @@ class WorkoutProgramApiController extends Controller
     {
         return $this->success(
             'Customer workout view fetched successfully.',
-            $this->workoutProgramService->getCustomerView($program->id)
+            $this->workoutProgramService->getCustomerView($program->id),
         );
     }
 
@@ -171,7 +171,7 @@ class WorkoutProgramApiController extends Controller
 
         return $this->success(
             'Workout program assignments fetched successfully.',
-            $this->workoutProgramService->programAssignments(app('tenant')->id, $perPage)
+            $this->workoutProgramService->programAssignments(app('tenant')->id, $perPage),
         );
     }
 
@@ -182,7 +182,7 @@ class WorkoutProgramApiController extends Controller
 
         return $this->success(
             'Workout assignment members fetched successfully.',
-            $this->workoutProgramService->assignmentMembers(app('tenant')->id, $perPage, $search)
+            $this->workoutProgramService->assignmentMembers(app('tenant')->id, $perPage, $search),
         );
     }
 
@@ -191,7 +191,7 @@ class WorkoutProgramApiController extends Controller
         $result = $this->workoutProgramService->storeProgramAssignments(
             app('tenant')->id,
             $request->user()?->id,
-            $request->validated()
+            $request->validated(),
         );
 
         return $this->success('Workout program assignments created successfully.', $result, 201);
@@ -203,7 +203,7 @@ class WorkoutProgramApiController extends Controller
             $assignment,
             app('tenant')->id,
             $request->user()?->id,
-            $request->validated()
+            $request->validated(),
         );
 
         return $this->success('Workout program assignment updated successfully.');

@@ -3,17 +3,14 @@
 namespace Tests\Feature\Api;
 
 use App\Models\MemberActivityLog;
-use App\Models\Tenant;
-use Illuminate\Support\Str;
 
 class MemberActivityApiTest extends ApiRouteTestCase
 {
-    public function testActivityListFiltersAndExcludesOtherTenants(): void
+    public function testActivityListFiltersRows(): void
     {
         $this->actingAsUser(['activity.view']);
         $member = $this->createMember();
         $matching = MemberActivityLog::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'session_id' => 'current-session',
             'event_type' => 'tab_view',
@@ -22,23 +19,16 @@ class MemberActivityApiTest extends ApiRouteTestCase
             'os' => 'iOS',
         ]);
         MemberActivityLog::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'session_id' => 'other-event',
             'event_type' => 'login',
             'device_type' => 'desktop',
         ]);
 
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-activity',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
         MemberActivityLog::create([
-            'tenant_id' => $otherTenant->id,
             'member_id' => $member->id,
             'session_id' => 'private-session',
-            'event_type' => 'tab_view',
+            'event_type' => 'profile_view',
             'device_type' => 'mobile',
         ]);
 
@@ -54,7 +44,6 @@ class MemberActivityApiTest extends ApiRouteTestCase
         $this->actingAsUser(['activity.view']);
         $member = $this->createMember();
         MemberActivityLog::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'session_id' => 'export-session',
             'event_type' => 'workout_opened',

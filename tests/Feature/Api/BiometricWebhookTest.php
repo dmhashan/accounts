@@ -33,11 +33,10 @@ class BiometricWebhookTest extends ApiRouteTestCase
             ->assertOk();
 
         $this->assertDatabaseHas('member_attendances', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
         ]);
 
-        $event = BiometricAccessEvent::where('tenant_id', $this->tenant->id)->first();
+        $event = BiometricAccessEvent::first();
         $this->assertNotNull($event);
         $this->assertSame('success', $event->result);
         $this->assertSame('face', $event->auth_method);
@@ -49,9 +48,9 @@ class BiometricWebhookTest extends ApiRouteTestCase
         $this->postEvent($this->buildXml('9999', 76, 'Unknown'))
             ->assertOk();
 
-        $this->assertSame(0, MemberAttendance::where('tenant_id', $this->tenant->id)->count());
+        $this->assertSame(0, MemberAttendance::count());
 
-        $event = BiometricAccessEvent::where('tenant_id', $this->tenant->id)->first();
+        $event = BiometricAccessEvent::first();
         $this->assertNotNull($event);
         $this->assertSame('failed', $event->result);
         $this->assertSame('face', $event->auth_method);

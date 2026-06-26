@@ -56,7 +56,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -93,16 +93,16 @@ return [
             }
 
             return [
-                'driver'                  => 's3',
-                'key'                     => $cfg['access_key_id'],
-                'secret'                  => $cfg['access_key_secret'],
-                'region'                  => $cfg['default_region'] ?? 'auto',
-                'bucket'                  => $cfg['bucket'],
-                'url'                     => $cfg['url'] ?: null,
-                'endpoint'                => $cfg['endpoint'],
+                'driver' => 's3',
+                'key' => $cfg['access_key_id'],
+                'secret' => $cfg['access_key_secret'],
+                'region' => $cfg['default_region'] ?? 'auto',
+                'bucket' => $cfg['bucket'],
+                'url' => $cfg['url'] ?: null,
+                'endpoint' => $cfg['endpoint'],
                 'use_path_style_endpoint' => $cfg['use_path_style_endpoint'] ?? false,
-                'throw'                   => true,
-                'report'                  => false,
+                'throw' => true,
+                'report' => false,
             ];
         })(),
 

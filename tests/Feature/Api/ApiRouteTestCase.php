@@ -42,6 +42,8 @@ abstract class ApiRouteTestCase extends TestCase
             'app.multitenancy_enabled' => false,
             'app.multitenancy_bypass_domain' => $this->tenant->domain,
         ]);
+
+        $this->app->instance('tenant', $this->tenant);
     }
 
     protected function actingAsUser(array $permissions = [], array $attributes = [], ?Role $role = null): User
@@ -62,7 +64,6 @@ abstract class ApiRouteTestCase extends TestCase
         }
 
         return User::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'role_id' => $role->id,
             'name' => 'User ' . $sequence,
             'email' => 'user' . $sequence . '@example.com',
@@ -127,7 +128,6 @@ abstract class ApiRouteTestCase extends TestCase
         $plan = $this->createPaymentPlan();
 
         return Member::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'user_id' => $user?->id,
             'biometric_member_id' => Member::generateBiometricMemberId($this->tenant->id),
             'first_name' => $firstName,
@@ -156,7 +156,6 @@ abstract class ApiRouteTestCase extends TestCase
         $sequence = $this->nextSequence();
 
         return PaymentPlan::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'name' => 'Plan ' . $sequence,
             'duration_value' => 1,
             'duration_unit' => 'month',
@@ -170,7 +169,6 @@ abstract class ApiRouteTestCase extends TestCase
         $sequence = $this->nextSequence();
 
         return Product::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'name' => 'Product ' . $sequence,
         ], $attributes));
     }
@@ -180,7 +178,6 @@ abstract class ApiRouteTestCase extends TestCase
         $sequence = $this->nextSequence();
 
         return ProductVariation::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'product_id' => $product->id,
             'name' => 'Variation ' . $sequence,
         ], $attributes));
@@ -189,7 +186,6 @@ abstract class ApiRouteTestCase extends TestCase
     protected function createStockEntry(Product $product, ProductVariation $variation, array $attributes = []): StockEntry
     {
         $data = array_merge([
-            'tenant_id' => $this->tenant->id,
             'product_id' => $product->id,
             'product_variation_id' => $variation->id,
             'quantity' => 20,
@@ -211,7 +207,6 @@ abstract class ApiRouteTestCase extends TestCase
     protected function createSale(array $attributes = []): Sale
     {
         return Sale::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'customer_name' => 'Walk In',
             'customer_type' => 'local',
             'payment_method' => 'cash',
@@ -227,7 +222,6 @@ abstract class ApiRouteTestCase extends TestCase
         $sequence = $this->nextSequence();
 
         return CompanyAccount::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'name' => 'Account ' . $sequence,
             'opening_balance' => 0,
             'description' => 'Test account',
@@ -237,7 +231,6 @@ abstract class ApiRouteTestCase extends TestCase
     protected function createCompanyAccountTransfer(CompanyAccount $sourceAccount, CompanyAccount $destinationAccount, array $attributes = []): CompanyAccountTransfer
     {
         return CompanyAccountTransfer::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'source_account_id' => $sourceAccount->id,
             'destination_account_id' => $destinationAccount->id,
             'amount' => 100,

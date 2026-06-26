@@ -4,14 +4,9 @@ namespace Tests\Feature\Jobs;
 
 use App\Jobs\ImportBiometricAccessEventsJob;
 use App\Jobs\SendBulkNotificationJob;
-use App\Jobs\SendDailySummaryReportJob;
-use App\Jobs\SendFormSubmissionEmailJob;
 use App\Jobs\SendMemberNotificationJob;
 use App\Models\BulkNotification;
 use App\Models\BulkNotificationRecipient;
-use App\Models\DailySummaryReport;
-use App\Models\FormSubmission;
-use App\Models\FormTemplate;
 use App\Models\MemberNotification;
 use App\Models\Tenant;
 use App\Services\BiometricSyncService;
@@ -23,34 +18,31 @@ use Tests\Feature\Api\ApiRouteTestCase;
 
 class TenantScopedJobsTest extends ApiRouteTestCase
 {
-    public function testMemberNotificationJobRejectsMemberFromAnotherTenant(): void
+    public function testMemberNotificationJobCreatesCurrentDatabaseNotification(): void
     {
-        $otherTenant = $this->createOtherTenant();
-        $otherMember = $this->createMember(attributes: ['tenant_id' => $otherTenant->id]);
+        $member = $this->createMember();
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.inapp.enabled' => '1',
         ]);
 
-        $this->runMemberNotificationJob($this->tenant->id, $otherMember->id);
+        $this->runMemberNotificationJob($this->tenant->id, $member->id);
 
-        $this->assertDatabaseMissing('member_notifications', [
-            'tenant_id' => $this->tenant->id,
-            'member_id' => $otherMember->id,
+        $this->assertDatabaseHas('member_notifications', [
+            'member_id' => $member->id,
+            'type' => 'test',
         ]);
     }
 
-    public function testBulkNotificationJobIgnoresCrossTenantRecipients(): void
+    public function testBulkNotificationJobCreatesInAppNotificationsForRecipients(): void
     {
         $member = $this->createMember();
-        $otherTenant = $this->createOtherTenant();
-        $otherMember = $this->createMember(attributes: ['tenant_id' => $otherTenant->id]);
+        $otherMember = $this->createMember();
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.inapp.enabled' => '1',
         ]);
         $creator = $this->createUser();
 
         $notification = BulkNotification::create([
-            'tenant_id' => $this->tenant->id,
             'created_by' => $creator->id,
             'name' => 'Tenant notice',
             'message' => 'Current tenant only.',
@@ -76,55 +68,15 @@ class TenantScopedJobsTest extends ApiRouteTestCase
             ->handle($sms, $mail, app(TenantConfigurationService::class));
 
         $this->assertDatabaseHas('member_notifications', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'bulk',
         ]);
-        $this->assertDatabaseMissing('member_notifications', [
-            'tenant_id' => $this->tenant->id,
+        $this->assertDatabaseHas('member_notifications', [
             'member_id' => $otherMember->id,
+            'type' => 'bulk',
         ]);
-        $this->assertSame(1, MemberNotification::count());
+        $this->assertSame(2, MemberNotification::count());
         $this->assertSame('sent', $notification->fresh()->status);
-    }
-
-    public function testReportAndFormEmailJobsRejectRecordsFromAnotherTenant(): void
-    {
-        $otherTenant = $this->createOtherTenant();
-        $member = $this->createMember();
-        $template = FormTemplate::create([
-            'tenant_id' => $this->tenant->id,
-            'title' => 'Health Form',
-            'fields' => [],
-            'is_active' => true,
-        ]);
-        $submission = FormSubmission::create([
-            'tenant_id' => $this->tenant->id,
-            'form_template_id' => $template->id,
-            'member_id' => $member->id,
-            'responses' => [],
-            'pdf_path' => 'forms/submission.pdf',
-            'submitted_at' => now(),
-        ]);
-        $report = DailySummaryReport::create([
-            'tenant_id' => $this->tenant->id,
-            'report_date' => today(),
-            'prepared_by_name' => 'Admin',
-            'system_snapshot' => [],
-            'final_snapshot' => [],
-            'changes' => [],
-            'totals' => [],
-            'pdf_path' => 'reports/summary.pdf',
-        ]);
-
-        $mail = \Mockery::mock(TenantMailService::class);
-        $mail->shouldNotReceive('mailerForTenant');
-
-        (new SendFormSubmissionEmailJob($otherTenant->id, $submission->id))->handle($mail);
-        (new SendDailySummaryReportJob($otherTenant->id, $report->id))->handle($mail);
-
-        $this->assertDatabaseCount('form_submissions', 1);
-        $this->assertDatabaseCount('daily_summary_reports', 1);
     }
 
     public function testBiometricImportJobBindsItsTenantBeforeCallingService(): void

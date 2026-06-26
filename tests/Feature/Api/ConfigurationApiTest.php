@@ -19,7 +19,6 @@ class ConfigurationApiTest extends ApiRouteTestCase
             ]);
 
         $this->assertDatabaseHas('tenant_configurations', [
-            'tenant_id' => $this->tenant->id,
             'key' => 'general.color_theme',
             'value' => 'forest',
         ]);

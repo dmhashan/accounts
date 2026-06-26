@@ -78,7 +78,7 @@ class AutomatedMemberNotificationService
 
             $memberships = PaymentMembership::query()
                 ->whereDate('end_date', $dueDate)
-                ->with(['payment.member.tenant'])
+                ->with(['payment.member'])
                 ->get();
 
             foreach ($memberships as $membership) {
@@ -248,7 +248,6 @@ class AutomatedMemberNotificationService
             ->whereNotNull('date_of_birth')
             ->whereMonth('date_of_birth', $today->month)
             ->whereDay('date_of_birth', $today->day)
-            ->with('tenant')
             ->get();
 
         foreach ($members as $member) {
@@ -288,7 +287,6 @@ class AutomatedMemberNotificationService
             ->whereDate('joined_date', '<', $today->toDateString())
             ->whereMonth('joined_date', $today->month)
             ->whereDay('joined_date', $today->day)
-            ->with('tenant')
             ->get();
 
         foreach ($members as $member) {

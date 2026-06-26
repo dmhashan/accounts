@@ -3,11 +3,11 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Exercise;
-use App\Models\WorkoutProgram;
-use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutDayExercise;
-use App\Models\WorkoutProgramExtra;
+use App\Models\WorkoutProgram;
 use App\Models\WorkoutProgramAssignment;
+use App\Models\WorkoutProgramDay;
+use App\Models\WorkoutProgramExtra;
 
 class WorkoutsApiTest extends ApiRouteTestCase
 {
@@ -18,12 +18,11 @@ class WorkoutsApiTest extends ApiRouteTestCase
     private function createExercise(array $attributes = []): Exercise
     {
         static $seq = 0;
-        ++$seq;
+        $seq++;
 
         return Exercise::create(array_merge([
-            'tenant_id'    => $this->tenant->id,
-            'name'         => 'Exercise '.$seq,
-            'status'       => 'active',
+            'name' => 'Exercise ' . $seq,
+            'status' => 'active',
             'default_sets' => 3,
             'default_reps' => '10',
             'default_tempo' => '2-1-2',
@@ -34,12 +33,11 @@ class WorkoutsApiTest extends ApiRouteTestCase
     private function createProgram(array $attributes = []): WorkoutProgram
     {
         static $seq = 0;
-        ++$seq;
+        $seq++;
 
         return WorkoutProgram::create(array_merge([
-            'tenant_id'      => $this->tenant->id,
-            'title'          => 'Program '.$seq,
-            'description'    => 'Test program',
+            'title' => 'Program ' . $seq,
+            'description' => 'Test program',
             'duration_weeks' => 4,
         ], $attributes));
     }
@@ -47,39 +45,39 @@ class WorkoutsApiTest extends ApiRouteTestCase
     private function createDay(WorkoutProgram $program, array $attributes = []): WorkoutProgramDay
     {
         static $seq = 0;
-        ++$seq;
+        $seq++;
 
         return WorkoutProgramDay::create(array_merge([
             'program_id' => $program->id,
             'day_number' => $seq,
-            'title'      => 'Day '.$seq,
+            'title' => 'Day ' . $seq,
         ], $attributes));
     }
 
     private function createDayExercise(WorkoutProgramDay $day, Exercise $exercise, array $attributes = []): WorkoutDayExercise
     {
         return WorkoutDayExercise::create(array_merge([
-            'day_id'          => $day->id,
-            'exercise_id'     => $exercise->id,
-            'w1_w3_exercise'  => '',
-            'w2_w4_exercise'  => '',
-            'sets'            => 3,
-            'reps'            => '10',
-            'tempo'           => '2-1-2',
-            'rest_seconds'    => 60,
-            'exercise_order'  => 1,
+            'day_id' => $day->id,
+            'exercise_id' => $exercise->id,
+            'w1_w3_exercise' => '',
+            'w2_w4_exercise' => '',
+            'sets' => 3,
+            'reps' => '10',
+            'tempo' => '2-1-2',
+            'rest_seconds' => 60,
+            'exercise_order' => 1,
         ], $attributes));
     }
 
     private function createExtra(WorkoutProgram $program, array $attributes = []): WorkoutProgramExtra
     {
         return WorkoutProgramExtra::create(array_merge([
-            'program_id'    => $program->id,
-            'type'          => 'core',
+            'program_id' => $program->id,
+            'type' => 'core',
             'exercise_name' => 'Plank',
-            'sets'          => 3,
-            'reps_or_time'  => '30s',
-            'rest'          => '30s',
+            'sets' => 3,
+            'reps_or_time' => '30s',
+            'rest' => '30s',
         ], $attributes));
     }
 
@@ -88,11 +86,10 @@ class WorkoutsApiTest extends ApiRouteTestCase
         $member = $this->createMember();
 
         return WorkoutProgramAssignment::create(array_merge([
-            'tenant_id'          => $this->tenant->id,
-            'member_id'          => $member->id,
-            'source_program_id'  => $program->id,
+            'member_id' => $member->id,
+            'source_program_id' => $program->id,
             'assigned_program_id' => $program->id,
-            'effective_date'     => now()->toDateString(),
+            'effective_date' => now()->toDateString(),
         ], $attributes));
     }
 
@@ -100,7 +97,7 @@ class WorkoutsApiTest extends ApiRouteTestCase
     // Exercises
     // -------------------------------------------------------------------------
 
-    public function test_exercises_index_returns_paginated_list(): void
+    public function testExercisesIndexReturnsPaginatedList(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $exercise = $this->createExercise();
@@ -111,18 +108,18 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonFragment(['id' => $exercise->id]);
     }
 
-    public function test_exercises_store_creates_exercise_with_variations(): void
+    public function testExercisesStoreCreatesExerciseWithVariations(): void
     {
         $this->actingAsUser(['workouts.manage']);
 
         $response = $this->postJson('/api/exercises', [
-            'name'          => 'Bench Press',
-            'status'        => 'active',
-            'default_sets'  => 4,
-            'default_reps'  => '8',
+            'name' => 'Bench Press',
+            'status' => 'active',
+            'default_sets' => 4,
+            'default_reps' => '8',
             'default_tempo' => '3-1-1',
-            'default_rest'  => 90,
-            'variations'    => [
+            'default_rest' => 90,
+            'variations' => [
                 ['variation_name' => 'Close Grip'],
                 ['variation_name' => 'Wide Grip'],
             ],
@@ -133,13 +130,12 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'Exercise created successfully.');
 
         $this->assertDatabaseHas('exercises', [
-            'tenant_id' => $this->tenant->id,
-            'name'      => 'Bench Press',
-            'status'    => 'active',
+            'name' => 'Bench Press',
+            'status' => 'active',
         ]);
     }
 
-    public function test_exercises_store_returns_422_for_missing_required_fields(): void
+    public function testExercisesStoreReturns422ForMissingRequiredFields(): void
     {
         $this->actingAsUser(['workouts.manage']);
 
@@ -148,50 +144,50 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonValidationErrors(['name', 'status', 'default_sets', 'default_reps', 'default_tempo', 'default_rest']);
     }
 
-    public function test_exercises_show_returns_exercise(): void
+    public function testExercisesShowReturnsExercise(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $exercise = $this->createExercise(['name' => 'Squat']);
 
-        $this->getJson('/api/exercises/'.$exercise->id)
+        $this->getJson('/api/exercises/' . $exercise->id)
             ->assertOk()
             ->assertJsonPath('data.id', $exercise->id)
             ->assertJsonPath('data.name', 'Squat');
     }
 
-    public function test_exercises_update_updates_exercise(): void
+    public function testExercisesUpdateUpdatesExercise(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $exercise = $this->createExercise(['name' => 'Deadlift']);
 
-        $this->putJson('/api/exercises/'.$exercise->id, [
-            'name'          => 'Romanian Deadlift',
-            'status'        => 'active',
-            'default_sets'  => 3,
-            'default_reps'  => '12',
+        $this->putJson('/api/exercises/' . $exercise->id, [
+            'name' => 'Romanian Deadlift',
+            'status' => 'active',
+            'default_sets' => 3,
+            'default_reps' => '12',
             'default_tempo' => '2-0-2',
-            'default_rest'  => 75,
+            'default_rest' => 75,
         ])->assertOk()->assertJsonPath('message', 'Exercise updated successfully.');
 
         $this->assertDatabaseHas('exercises', [
-            'id'   => $exercise->id,
+            'id' => $exercise->id,
             'name' => 'Romanian Deadlift',
         ]);
     }
 
-    public function test_exercises_destroy_deletes_exercise(): void
+    public function testExercisesDestroyDeletesExercise(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $exercise = $this->createExercise();
 
-        $this->deleteJson('/api/exercises/'.$exercise->id)
+        $this->deleteJson('/api/exercises/' . $exercise->id)
             ->assertOk()
             ->assertJsonPath('message', 'Exercise deleted successfully.');
 
         $this->assertDatabaseMissing('exercises', ['id' => $exercise->id]);
     }
 
-    public function test_exercises_require_workouts_manage_permission(): void
+    public function testExercisesRequireWorkoutsManagePermission(): void
     {
         $this->actingAsUser([]);
 
@@ -203,7 +199,7 @@ class WorkoutsApiTest extends ApiRouteTestCase
     // Workout Programs
     // -------------------------------------------------------------------------
 
-    public function test_workout_programs_index_returns_paginated_list(): void
+    public function testWorkoutProgramsIndexReturnsPaginatedList(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
@@ -214,13 +210,13 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonFragment(['id' => $program->id]);
     }
 
-    public function test_workout_programs_store_creates_program(): void
+    public function testWorkoutProgramsStoreCreatesProgram(): void
     {
         $this->actingAsUser(['workouts.manage']);
 
         $response = $this->postJson('/api/workout-programs', [
-            'title'          => 'Strength Builder',
-            'description'    => '12-week strength program',
+            'title' => 'Strength Builder',
+            'description' => '12-week strength program',
             'duration_weeks' => 12,
         ]);
 
@@ -229,13 +225,12 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'Workout program created successfully.');
 
         $this->assertDatabaseHas('workout_programs', [
-            'tenant_id'      => $this->tenant->id,
-            'title'          => 'Strength Builder',
+            'title' => 'Strength Builder',
             'duration_weeks' => 12,
         ]);
     }
 
-    public function test_workout_programs_store_returns_422_for_invalid_data(): void
+    public function testWorkoutProgramsStoreReturns422ForInvalidData(): void
     {
         $this->actingAsUser(['workouts.manage']);
 
@@ -244,56 +239,56 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonValidationErrors(['title', 'duration_weeks']);
     }
 
-    public function test_workout_programs_show_returns_full_program(): void
+    public function testWorkoutProgramsShowReturnsFullProgram(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram(['title' => 'Full Body']);
 
-        $this->getJson('/api/workout-programs/'.$program->id)
+        $this->getJson('/api/workout-programs/' . $program->id)
             ->assertOk()
             ->assertJsonPath('data.id', $program->id)
             ->assertJsonPath('data.title', 'Full Body');
     }
 
-    public function test_workout_programs_update_updates_program(): void
+    public function testWorkoutProgramsUpdateUpdatesProgram(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram(['title' => 'Old Title']);
 
-        $this->putJson('/api/workout-programs/'.$program->id, [
-            'title'          => 'New Title',
-            'description'    => 'Updated description',
+        $this->putJson('/api/workout-programs/' . $program->id, [
+            'title' => 'New Title',
+            'description' => 'Updated description',
             'duration_weeks' => 8,
         ])->assertOk()->assertJsonPath('message', 'Workout program updated successfully.');
 
         $this->assertDatabaseHas('workout_programs', [
-            'id'             => $program->id,
-            'title'          => 'New Title',
+            'id' => $program->id,
+            'title' => 'New Title',
             'duration_weeks' => 8,
         ]);
     }
 
-    public function test_workout_programs_destroy_deletes_program(): void
+    public function testWorkoutProgramsDestroyDeletesProgram(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
 
-        $this->deleteJson('/api/workout-programs/'.$program->id)
+        $this->deleteJson('/api/workout-programs/' . $program->id)
             ->assertOk()
             ->assertJsonPath('message', 'Workout program deleted successfully.');
 
         $this->assertDatabaseMissing('workout_programs', ['id' => $program->id]);
     }
 
-    public function test_workout_program_customer_view_returns_structured_data(): void
+    public function testWorkoutProgramCustomerViewReturnsStructuredData(): void
     {
         $this->actingAsUser(['workouts.manage']);
-        $program  = $this->createProgram(['title' => 'Customer View Program']);
-        $day      = $this->createDay($program, ['day_number' => 1, 'title' => 'Push Day']);
+        $program = $this->createProgram(['title' => 'Customer View Program']);
+        $day = $this->createDay($program, ['day_number' => 1, 'title' => 'Push Day']);
         $exercise = $this->createExercise(['name' => 'Push Up']);
         $this->createDayExercise($day, $exercise);
 
-        $this->getJson('/api/workout-programs/'.$program->id.'/customer-view')
+        $this->getJson('/api/workout-programs/' . $program->id . '/customer-view')
             ->assertOk()
             ->assertJsonPath('data.programTitle', 'Customer View Program')
             ->assertJsonStructure(['data' => ['programTitle', 'duration', 'days', 'core', 'cardio']]);
@@ -303,15 +298,15 @@ class WorkoutsApiTest extends ApiRouteTestCase
     // Program Days
     // -------------------------------------------------------------------------
 
-    public function test_workout_program_days_add_update_destroy(): void
+    public function testWorkoutProgramDaysAddUpdateDestroy(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
 
         // Add day
-        $addResponse = $this->postJson('/api/workout-programs/'.$program->id.'/days', [
+        $addResponse = $this->postJson('/api/workout-programs/' . $program->id . '/days', [
             'day_number' => 1,
-            'title'      => 'Leg Day',
+            'title' => 'Leg Day',
         ]);
 
         $addResponse
@@ -321,43 +316,43 @@ class WorkoutsApiTest extends ApiRouteTestCase
         $dayId = (int) $addResponse->json('data.id');
 
         $this->assertDatabaseHas('workout_program_days', [
-            'id'         => $dayId,
+            'id' => $dayId,
             'program_id' => $program->id,
-            'title'      => 'Leg Day',
+            'title' => 'Leg Day',
         ]);
 
         // Update day
-        $this->putJson('/api/workout-program-days/'.$dayId, [
+        $this->putJson('/api/workout-program-days/' . $dayId, [
             'day_number' => 1,
-            'title'      => 'Leg & Glute Day',
+            'title' => 'Leg & Glute Day',
         ])->assertOk()->assertJsonPath('message', 'Workout day updated successfully.');
 
         $this->assertDatabaseHas('workout_program_days', [
-            'id'    => $dayId,
+            'id' => $dayId,
             'title' => 'Leg & Glute Day',
         ]);
 
         // Destroy day
-        $this->deleteJson('/api/workout-program-days/'.$dayId)
+        $this->deleteJson('/api/workout-program-days/' . $dayId)
             ->assertOk()
             ->assertJsonPath('message', 'Workout day deleted successfully.');
 
         $this->assertDatabaseMissing('workout_program_days', ['id' => $dayId]);
     }
 
-    public function test_add_day_returns_422_for_duplicate_day_number(): void
+    public function testAddDayReturns422ForDuplicateDayNumber(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
 
-        $this->postJson('/api/workout-programs/'.$program->id.'/days', [
+        $this->postJson('/api/workout-programs/' . $program->id . '/days', [
             'day_number' => 1,
-            'title'      => 'Day One',
+            'title' => 'Day One',
         ])->assertCreated();
 
-        $this->postJson('/api/workout-programs/'.$program->id.'/days', [
+        $this->postJson('/api/workout-programs/' . $program->id . '/days', [
             'day_number' => 1,
-            'title'      => 'Day One Again',
+            'title' => 'Day One Again',
         ])->assertStatus(422)->assertJsonValidationErrors(['day_number']);
     }
 
@@ -365,20 +360,20 @@ class WorkoutsApiTest extends ApiRouteTestCase
     // Day Exercises
     // -------------------------------------------------------------------------
 
-    public function test_workout_day_exercises_add_update_destroy(): void
+    public function testWorkoutDayExercisesAddUpdateDestroy(): void
     {
         $this->actingAsUser(['workouts.manage']);
-        $program  = $this->createProgram();
-        $day      = $this->createDay($program, ['day_number' => 1]);
+        $program = $this->createProgram();
+        $day = $this->createDay($program, ['day_number' => 1]);
         $exercise = $this->createExercise(['name' => 'Pull Up']);
 
         // Add exercise to day
-        $addResponse = $this->postJson('/api/workout-program-days/'.$day->id.'/exercises', [
-            'exercise_id'    => $exercise->id,
-            'sets'           => 4,
-            'reps'           => '8',
-            'tempo'          => '3-1-1',
-            'rest_seconds'   => 90,
+        $addResponse = $this->postJson('/api/workout-program-days/' . $day->id . '/exercises', [
+            'exercise_id' => $exercise->id,
+            'sets' => 4,
+            'reps' => '8',
+            'tempo' => '3-1-1',
+            'rest_seconds' => 90,
             'exercise_order' => 1,
         ]);
 
@@ -389,42 +384,42 @@ class WorkoutsApiTest extends ApiRouteTestCase
         $dayExerciseId = (int) $addResponse->json('data.id');
 
         $this->assertDatabaseHas('workout_day_exercises', [
-            'id'          => $dayExerciseId,
-            'day_id'      => $day->id,
+            'id' => $dayExerciseId,
+            'day_id' => $day->id,
             'exercise_id' => $exercise->id,
-            'sets'        => 4,
+            'sets' => 4,
         ]);
 
         // Update day exercise
-        $this->putJson('/api/workout-day-exercises/'.$dayExerciseId, [
-            'exercise_id'    => $exercise->id,
-            'sets'           => 5,
-            'reps'           => '6',
-            'tempo'          => '4-1-1',
-            'rest_seconds'   => 120,
+        $this->putJson('/api/workout-day-exercises/' . $dayExerciseId, [
+            'exercise_id' => $exercise->id,
+            'sets' => 5,
+            'reps' => '6',
+            'tempo' => '4-1-1',
+            'rest_seconds' => 120,
             'exercise_order' => 1,
         ])->assertOk()->assertJsonPath('message', 'Workout day exercise updated successfully.');
 
         $this->assertDatabaseHas('workout_day_exercises', [
-            'id'   => $dayExerciseId,
+            'id' => $dayExerciseId,
             'sets' => 5,
         ]);
 
         // Destroy day exercise
-        $this->deleteJson('/api/workout-day-exercises/'.$dayExerciseId)
+        $this->deleteJson('/api/workout-day-exercises/' . $dayExerciseId)
             ->assertOk()
             ->assertJsonPath('message', 'Workout day exercise deleted successfully.');
 
         $this->assertDatabaseMissing('workout_day_exercises', ['id' => $dayExerciseId]);
     }
 
-    public function test_add_day_exercise_returns_422_for_missing_fields(): void
+    public function testAddDayExerciseReturns422ForMissingFields(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
-        $day     = $this->createDay($program, ['day_number' => 1]);
+        $day = $this->createDay($program, ['day_number' => 1]);
 
-        $this->postJson('/api/workout-program-days/'.$day->id.'/exercises', [])
+        $this->postJson('/api/workout-program-days/' . $day->id . '/exercises', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['exercise_id', 'sets', 'reps', 'tempo', 'rest_seconds', 'exercise_order']);
     }
@@ -433,19 +428,19 @@ class WorkoutsApiTest extends ApiRouteTestCase
     // Extras (core & cardio)
     // -------------------------------------------------------------------------
 
-    public function test_workout_program_core_extra_add_update_destroy(): void
+    public function testWorkoutProgramCoreExtraAddUpdateDestroy(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
 
         // Add core extra
-        $addResponse = $this->postJson('/api/workout-programs/'.$program->id.'/extras', [
-            'type'          => 'core',
+        $addResponse = $this->postJson('/api/workout-programs/' . $program->id . '/extras', [
+            'type' => 'core',
             'exercise_name' => 'Plank',
-            'sets'          => 3,
-            'reps_or_time'  => '30s',
-            'rest'          => '20s',
-            'notes'         => 'Keep body straight',
+            'sets' => 3,
+            'reps_or_time' => '30s',
+            'rest' => '20s',
+            'notes' => 'Keep body straight',
         ]);
 
         $addResponse
@@ -455,45 +450,45 @@ class WorkoutsApiTest extends ApiRouteTestCase
         $extraId = (int) $addResponse->json('data.id');
 
         $this->assertDatabaseHas('workout_program_extras', [
-            'id'            => $extraId,
-            'program_id'    => $program->id,
-            'type'          => 'core',
+            'id' => $extraId,
+            'program_id' => $program->id,
+            'type' => 'core',
             'exercise_name' => 'Plank',
         ]);
 
         // Update extra
-        $this->putJson('/api/workout-program-extras/'.$extraId, [
-            'type'          => 'core',
+        $this->putJson('/api/workout-program-extras/' . $extraId, [
+            'type' => 'core',
             'exercise_name' => 'Side Plank',
-            'sets'          => 4,
-            'reps_or_time'  => '20s',
-            'rest'          => '15s',
+            'sets' => 4,
+            'reps_or_time' => '20s',
+            'rest' => '15s',
         ])->assertOk()->assertJsonPath('message', 'Workout program extra updated successfully.');
 
         $this->assertDatabaseHas('workout_program_extras', [
-            'id'            => $extraId,
+            'id' => $extraId,
             'exercise_name' => 'Side Plank',
         ]);
 
         // Destroy extra
-        $this->deleteJson('/api/workout-program-extras/'.$extraId)
+        $this->deleteJson('/api/workout-program-extras/' . $extraId)
             ->assertOk()
             ->assertJsonPath('message', 'Workout program extra deleted successfully.');
 
         $this->assertDatabaseMissing('workout_program_extras', ['id' => $extraId]);
     }
 
-    public function test_workout_program_cardio_extra_add_and_update(): void
+    public function testWorkoutProgramCardioExtraAddAndUpdate(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
 
-        $addResponse = $this->postJson('/api/workout-programs/'.$program->id.'/extras', [
-            'type'                => 'cardio',
-            'frequency_per_week'  => 3,
-            'duration_minutes'    => 30,
-            'cardio_type'         => 'Cycling',
-            'notes'               => 'Moderate intensity',
+        $addResponse = $this->postJson('/api/workout-programs/' . $program->id . '/extras', [
+            'type' => 'cardio',
+            'frequency_per_week' => 3,
+            'duration_minutes' => 30,
+            'cardio_type' => 'Cycling',
+            'notes' => 'Moderate intensity',
         ]);
 
         $addResponse
@@ -503,30 +498,30 @@ class WorkoutsApiTest extends ApiRouteTestCase
         $extraId = (int) $addResponse->json('data.id');
 
         $this->assertDatabaseHas('workout_program_extras', [
-            'id'          => $extraId,
-            'type'        => 'cardio',
+            'id' => $extraId,
+            'type' => 'cardio',
             'cardio_type' => 'Cycling',
         ]);
 
-        $this->putJson('/api/workout-program-extras/'.$extraId, [
-            'type'               => 'cardio',
+        $this->putJson('/api/workout-program-extras/' . $extraId, [
+            'type' => 'cardio',
             'frequency_per_week' => 4,
-            'duration_minutes'   => 45,
-            'cardio_type'        => 'Running',
+            'duration_minutes' => 45,
+            'cardio_type' => 'Running',
         ])->assertOk()->assertJsonPath('message', 'Workout program extra updated successfully.');
 
         $this->assertDatabaseHas('workout_program_extras', [
-            'id'          => $extraId,
+            'id' => $extraId,
             'cardio_type' => 'Running',
         ]);
     }
 
-    public function test_add_extra_returns_422_for_invalid_type(): void
+    public function testAddExtraReturns422ForInvalidType(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram();
 
-        $this->postJson('/api/workout-programs/'.$program->id.'/extras', [
+        $this->postJson('/api/workout-programs/' . $program->id . '/extras', [
             'type' => 'invalid',
         ])->assertStatus(422)->assertJsonValidationErrors(['type']);
     }
@@ -535,10 +530,10 @@ class WorkoutsApiTest extends ApiRouteTestCase
     // Assignments
     // -------------------------------------------------------------------------
 
-    public function test_workout_assignment_index_returns_paginated_list(): void
+    public function testWorkoutAssignmentIndexReturnsPaginatedList(): void
     {
         $this->actingAsUser(['workouts.manage']);
-        $program    = $this->createProgram();
+        $program = $this->createProgram();
         $assignment = $this->createAssignment($program);
 
         $this->getJson('/api/workout-program-assignments')
@@ -547,7 +542,7 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonFragment(['id' => $assignment->id]);
     }
 
-    public function test_workout_assignment_members_route_returns_searchable_list(): void
+    public function testWorkoutAssignmentMembersRouteReturnsSearchableList(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $this->createMember(null, ['first_name' => 'Assignable', 'last_name' => 'Member', 'name' => 'Assignable Member']);
@@ -557,7 +552,7 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonStructure(['data']);
     }
 
-    public function test_workout_assignment_store_creates_assignment_for_members(): void
+    public function testWorkoutAssignmentStoreCreatesAssignmentForMembers(): void
     {
         $this->actingAsUser(['workouts.manage']);
         $program = $this->createProgram(['title' => 'Assignment Plan']);
@@ -565,8 +560,8 @@ class WorkoutsApiTest extends ApiRouteTestCase
         $memberB = $this->createMember();
 
         $response = $this->postJson('/api/workout-program-assignments', [
-            'program_id'     => $program->id,
-            'member_ids'     => [$memberA->id, $memberB->id],
+            'program_id' => $program->id,
+            'member_ids' => [$memberA->id, $memberB->id],
             'effective_date' => now()->toDateString(),
         ]);
 
@@ -576,18 +571,16 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonPath('data.count', 2);
 
         $this->assertDatabaseHas('workout_program_assignments', [
-            'tenant_id'         => $this->tenant->id,
-            'member_id'         => $memberA->id,
+            'member_id' => $memberA->id,
             'source_program_id' => $program->id,
         ]);
 
         $this->assertDatabaseHas('workout_program_assignments', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $memberB->id,
         ]);
     }
 
-    public function test_workout_assignment_store_returns_422_for_missing_fields(): void
+    public function testWorkoutAssignmentStoreReturns422ForMissingFields(): void
     {
         $this->actingAsUser(['workouts.manage']);
 
@@ -596,41 +589,40 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonValidationErrors(['program_id', 'member_ids', 'effective_date']);
     }
 
-    public function test_workout_assignment_update_updates_assignment(): void
+    public function testWorkoutAssignmentUpdateUpdatesAssignment(): void
     {
         $this->actingAsUser(['workouts.manage']);
-        $program    = $this->createProgram();
-        $member     = $this->createMember();
+        $program = $this->createProgram();
+        $member = $this->createMember();
         $assignment = WorkoutProgramAssignment::create([
-            'tenant_id'           => $this->tenant->id,
-            'member_id'           => $member->id,
-            'source_program_id'   => $program->id,
+            'member_id' => $member->id,
+            'source_program_id' => $program->id,
             'assigned_program_id' => $program->id,
-            'effective_date'      => now()->subDays(5)->toDateString(),
+            'effective_date' => now()->subDays(5)->toDateString(),
         ]);
 
         $newProgram = $this->createProgram(['title' => 'Updated Plan']);
-        $newDate    = now()->toDateString();
+        $newDate = now()->toDateString();
 
-        $this->putJson('/api/workout-program-assignments/'.$assignment->id, [
-            'program_id'     => $newProgram->id,
-            'member_id'      => $member->id,
+        $this->putJson('/api/workout-program-assignments/' . $assignment->id, [
+            'program_id' => $newProgram->id,
+            'member_id' => $member->id,
             'effective_date' => $newDate,
         ])->assertOk()->assertJsonPath('message', 'Workout program assignment updated successfully.');
 
         $this->assertDatabaseHas('workout_program_assignments', [
-            'id'                => $assignment->id,
+            'id' => $assignment->id,
             'source_program_id' => $newProgram->id,
         ]);
     }
 
-    public function test_workout_assignment_destroy_deletes_assignment(): void
+    public function testWorkoutAssignmentDestroyDeletesAssignment(): void
     {
         $this->actingAsUser(['workouts.manage']);
-        $program    = $this->createProgram();
+        $program = $this->createProgram();
         $assignment = $this->createAssignment($program);
 
-        $this->deleteJson('/api/workout-program-assignments/'.$assignment->id)
+        $this->deleteJson('/api/workout-program-assignments/' . $assignment->id)
             ->assertOk()
             ->assertJsonPath('message', 'Workout program assignment deleted successfully.');
 

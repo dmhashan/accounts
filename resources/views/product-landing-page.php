@@ -583,8 +583,8 @@
         <?= json_encode([
             '@context' => 'https://schema.org',
             '@graph' => [
-                ['@type' => 'Organization', '@id' => url('/').'#organization', 'name' => 'beForward.lk', 'url' => url('/'), 'logo' => asset('images/logo.svg'), 'email' => 'dmhashan@gmail.com', 'telephone' => '+94779600845'],
-                ['@type' => 'SoftwareApplication', 'name' => 'beForward.lk Gym Management Software', 'applicationCategory' => 'BusinessApplication', 'operatingSystem' => 'Web', 'description' => 'All-in-one gym management software for memberships, payments, attendance, workouts, bookings, reports and gym websites.', 'url' => url('/'), 'provider' => ['@id' => url('/').'#organization'], 'areaServed' => ['@type' => 'Country', 'name' => 'Sri Lanka']],
+                ['@type' => 'Organization', '@id' => url('/') . '#organization', 'name' => 'beForward.lk', 'url' => url('/'), 'logo' => asset('images/logo.svg'), 'email' => 'dmhashan@gmail.com', 'telephone' => '+94779600845'],
+                ['@type' => 'SoftwareApplication', 'name' => 'beForward.lk Gym Management Software', 'applicationCategory' => 'BusinessApplication', 'operatingSystem' => 'Web', 'description' => 'All-in-one gym management software for memberships, payments, attendance, workouts, bookings, reports and gym websites.', 'url' => url('/'), 'provider' => ['@id' => url('/') . '#organization'], 'areaServed' => ['@type' => 'Country', 'name' => 'Sri Lanka']],
                 ['@type' => 'FAQPage', 'mainEntity' => [
                     ['@type' => 'Question', 'name' => 'What is beForward.lk?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'beForward.lk is an all-in-one gym management platform.']],
                     ['@type' => 'Question', 'name' => 'Is it suitable for gyms in Sri Lanka?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes. It is designed around the needs of Sri Lankan fitness businesses.']],

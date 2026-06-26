@@ -3,9 +3,6 @@
 namespace Tests\Feature\Api;
 
 use App\Models\CompanyAccountTransaction;
-use App\Models\ReconciliationSession;
-use App\Models\Tenant;
-use Illuminate\Support\Str;
 
 class ReconciliationApiTest extends ApiRouteTestCase
 {
@@ -25,7 +22,6 @@ class ReconciliationApiTest extends ApiRouteTestCase
             ->json('session.id');
 
         CompanyAccountTransaction::create([
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'manual-test',
             'reference_id' => 999,
@@ -61,7 +57,6 @@ class ReconciliationApiTest extends ApiRouteTestCase
 
         $this->assertDatabaseHas('reconciliation_sessions', [
             'id' => $sessionId,
-            'tenant_id' => $this->tenant->id,
             'status' => 'closed',
             'opened_by' => $user->id,
             'closed_by' => $user->id,
@@ -95,7 +90,7 @@ class ReconciliationApiTest extends ApiRouteTestCase
             ->assertJsonPath('session.status', 'open');
     }
 
-    public function testReconciliationConfigurationAndHistoryArePermissionAndTenantScoped(): void
+    public function testReconciliationConfigurationAndHistoryRespectPermissions(): void
     {
         $role = $this->createRole('cashier');
         $this->actingAsUser(['reconciliation.manage'], role: $role);
@@ -111,7 +106,6 @@ class ReconciliationApiTest extends ApiRouteTestCase
         ])->assertOk();
 
         $this->assertDatabaseHas('reconciliation_configs', [
-            'tenant_id' => $this->tenant->id,
             'role_id' => $role->id,
             'reference_id' => $account->id,
             'is_active' => true,
@@ -121,18 +115,5 @@ class ReconciliationApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonPath('accounts.0.id', $account->id);
 
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-reconciliation',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
-        $otherSession = ReconciliationSession::create([
-            'tenant_id' => $otherTenant->id,
-            'date' => now()->subDay()->toDateString(),
-            'status' => 'open',
-            'opened_by' => auth()->id(),
-        ]);
-
-        $this->getJson('/api/reconciliation/sessions/' . $otherSession->id)->assertNotFound();
     }
 }

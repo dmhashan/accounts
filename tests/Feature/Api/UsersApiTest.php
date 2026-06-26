@@ -65,7 +65,6 @@ class UsersApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'User created successfully.');
 
         $this->assertDatabaseHas('users', [
-            'tenant_id' => $this->tenant->id,
             'email' => 'created-user@example.com',
             'role_id' => $role->id,
         ]);

@@ -2,20 +2,19 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\CompanyAccountTransaction;
 use App\Models\SaleItem;
 
 class SalesApiTest extends ApiRouteTestCase
 {
     // Inventory impact tests
 
-    public function test_sale_create_deducts_inventory_stock(): void
+    public function testSaleCreateDeductsInventoryStock(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create']);
 
-        $product   = $this->createProduct(['name' => 'Stock Test Product']);
+        $product = $this->createProduct(['name' => 'Stock Test Product']);
         $variation = $this->createVariation($product, ['name' => 'Stock Test Variation']);
-        $stock     = $this->createStockEntry($product, $variation, [
+        $stock = $this->createStockEntry($product, $variation, [
             'quantity' => 10,
             'local_selling_price' => 100,
             'foreign_selling_price' => 130,
@@ -33,13 +32,13 @@ class SalesApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('stock_entries', ['id' => $stock->id, 'quantity' => 7]);
     }
 
-    public function test_sale_update_adjusts_inventory_for_increase_and_decrease(): void
+    public function testSaleUpdateAdjustsInventoryForIncreaseAndDecrease(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.edit']);
 
-        $product   = $this->createProduct(['name' => 'Update Stock Product']);
+        $product = $this->createProduct(['name' => 'Update Stock Product']);
         $variation = $this->createVariation($product, ['name' => 'Update Stock Variation']);
-        $stock     = $this->createStockEntry($product, $variation, [
+        $stock = $this->createStockEntry($product, $variation, [
             'quantity' => 20,
             'local_selling_price' => 100,
             'foreign_selling_price' => 130,
@@ -55,7 +54,7 @@ class SalesApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('stock_entries', ['id' => $stock->id, 'quantity' => 15]);
 
         // Increase by 2 (5 -> 7) => stock 13
-        $this->putJson('/api/sales/'.$saleId, $this->salePayload($variation, [
+        $this->putJson('/api/sales/' . $saleId, $this->salePayload($variation, [
             'is_paid' => false,
             'paid_amount' => 700,
             'items' => [['product_variation_id' => $variation->id, 'quantity' => 7]],
@@ -64,7 +63,7 @@ class SalesApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('stock_entries', ['id' => $stock->id, 'quantity' => 13]);
 
         // Decrease by 3 (7 -> 4) => stock 16
-        $this->putJson('/api/sales/'.$saleId, $this->salePayload($variation, [
+        $this->putJson('/api/sales/' . $saleId, $this->salePayload($variation, [
             'is_paid' => false,
             'paid_amount' => 0,
             'items' => [['product_variation_id' => $variation->id, 'quantity' => 4]],
@@ -73,13 +72,13 @@ class SalesApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('stock_entries', ['id' => $stock->id, 'quantity' => 16]);
     }
 
-    public function test_sale_destroy_restores_inventory_stock(): void
+    public function testSaleDestroyRestoresInventoryStock(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.delete']);
 
-        $product   = $this->createProduct(['name' => 'Delete Stock Product']);
+        $product = $this->createProduct(['name' => 'Delete Stock Product']);
         $variation = $this->createVariation($product, ['name' => 'Delete Stock Variation']);
-        $stock     = $this->createStockEntry($product, $variation, [
+        $stock = $this->createStockEntry($product, $variation, [
             'quantity' => 10,
             'local_selling_price' => 100,
             'foreign_selling_price' => 130,
@@ -96,17 +95,17 @@ class SalesApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('stock_entries', ['id' => $stock->id, 'quantity' => 6]);
 
         // Destroy sale should restore sold quantity back to stock
-        $this->deleteJson('/api/sales/'.$saleId)->assertOk();
+        $this->deleteJson('/api/sales/' . $saleId)->assertOk();
 
         // Stock restored: 6 + 4 = 10
         $this->assertDatabaseHas('stock_entries', ['id' => $stock->id, 'quantity' => 10]);
     }
 
-    public function test_sale_create_returns_422_when_stock_insufficient(): void
+    public function testSaleCreateReturns422WhenStockInsufficient(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create']);
 
-        $product   = $this->createProduct(['name' => 'Low Stock Product']);
+        $product = $this->createProduct(['name' => 'Low Stock Product']);
         $variation = $this->createVariation($product, ['name' => 'Low Stock Variation']);
         $this->createStockEntry($product, $variation, [
             'quantity' => 2,
@@ -121,7 +120,7 @@ class SalesApiTest extends ApiRouteTestCase
         ]))->assertStatus(422);
     }
 
-    public function test_sales_meta_route_returns_variations_and_members(): void
+    public function testSalesMetaRouteReturnsVariationsAndMembers(): void
     {
         $this->actingAsUser(['sales.process']);
 
@@ -137,7 +136,7 @@ class SalesApiTest extends ApiRouteTestCase
             ->assertJsonStructure(['variations', 'members', 'accounts']);
     }
 
-    public function test_sale_create_pay_now_sets_account_and_paid_fields(): void
+    public function testSaleCreatePayNowSetsAccountAndPaidFields(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create']);
 
@@ -178,7 +177,7 @@ class SalesApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_sale_create_save_sets_unpaid_fields(): void
+    public function testSaleCreateSaveSetsUnpaidFields(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create']);
 
@@ -209,7 +208,7 @@ class SalesApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_sales_meta_variations_are_sorted_by_recent_sales_count_desc(): void
+    public function testSalesMetaVariationsAreSortedByRecentSalesCountDesc(): void
     {
         $this->actingAsUser(['sales.process']);
 
@@ -276,16 +275,16 @@ class SalesApiTest extends ApiRouteTestCase
 
         $this->assertSame(
             [$topVariation->id, $middleVariation->id, $zeroVariation->id],
-            collect($response->json('variations'))->pluck('id')->all()
+            collect($response->json('variations'))->pluck('id')->all(),
         );
     }
 
-    public function test_sales_member_wallet_route_returns_member_balance(): void
+    public function testSalesMemberWalletRouteReturnsMemberBalance(): void
     {
         $this->actingAsUser(['sales.create']);
         $member = $this->createMember(null, ['current_balance' => 450.50]);
 
-        $response = $this->getJson('/api/sales/member-wallet/'.$member->id);
+        $response = $this->getJson('/api/sales/member-wallet/' . $member->id);
 
         $response
             ->assertOk()
@@ -293,7 +292,7 @@ class SalesApiTest extends ApiRouteTestCase
             ->assertJsonPath('data.current_balance', 450.5);
     }
 
-    public function test_sales_index_can_filter_outstanding_and_paid(): void
+    public function testSalesIndexCanFilterOutstandingAndPaid(): void
     {
         $this->actingAsUser(['sales.process']);
 
@@ -322,7 +321,7 @@ class SalesApiTest extends ApiRouteTestCase
             ->assertJsonMissing(['id' => $outstandingSale->id]);
     }
 
-    public function test_outstanding_sale_can_be_marked_as_paid_with_account(): void
+    public function testOutstandingSaleCanBeMarkedAsPaidWithAccount(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.edit']);
 
@@ -341,7 +340,7 @@ class SalesApiTest extends ApiRouteTestCase
             'paid_amount' => 0,
         ]))->assertCreated()->json('data.id');
 
-        $this->postJson('/api/sales/'.$saleId.'/mark-as-paid', [
+        $this->postJson('/api/sales/' . $saleId . '/mark-as-paid', [
             'account_id' => $account->id,
         ])
             ->assertOk()
@@ -366,7 +365,7 @@ class SalesApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_paid_sale_updates_company_account_balance(): void
+    public function testPaidSaleUpdatesCompanyAccountBalance(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'accounts.manage']);
 
@@ -396,12 +395,12 @@ class SalesApiTest extends ApiRouteTestCase
             'amount' => 125,
         ]);
 
-        $this->getJson('/api/accounts/'.$account->id)
+        $this->getJson('/api/accounts/' . $account->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 625);
     }
 
-    public function test_paid_sale_cannot_be_marked_as_paid_again(): void
+    public function testPaidSaleCannotBeMarkedAsPaidAgain(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.edit']);
 
@@ -421,14 +420,14 @@ class SalesApiTest extends ApiRouteTestCase
             'paid_amount' => 0,
         ]))->assertCreated()->json('data.id');
 
-        $this->postJson('/api/sales/'.$saleId.'/mark-as-paid', [
+        $this->postJson('/api/sales/' . $saleId . '/mark-as-paid', [
             'account_id' => $account->id,
         ])
             ->assertStatus(422)
             ->assertSeeText('Sale is already paid.');
     }
 
-    public function test_sales_routes_cover_index_store_show_update_and_destroy(): void
+    public function testSalesRoutesCoverIndexStoreShowUpdateAndDestroy(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.edit', 'sales.delete']);
 
@@ -469,7 +468,7 @@ class SalesApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonFragment(['id' => $saleId]);
 
-        $this->getJson('/api/sales/'.$saleId)
+        $this->getJson('/api/sales/' . $saleId)
             ->assertOk()
             ->assertJsonPath('data.id', $saleId)
             ->assertJsonPath('data.items.0.product_variation_id', $variation->id);
@@ -483,16 +482,16 @@ class SalesApiTest extends ApiRouteTestCase
             ],
         ]);
 
-        $this->putJson('/api/sales/'.$saleId, $updatePayload)
+        $this->putJson('/api/sales/' . $saleId, $updatePayload)
             ->assertOk()
             ->assertJsonPath('message', 'Sale updated successfully.');
 
-        $this->deleteJson('/api/sales/'.$saleId)
+        $this->deleteJson('/api/sales/' . $saleId)
             ->assertOk()
             ->assertJsonPath('message', 'Sale deleted successfully.');
     }
 
-    public function test_sales_create_route_requires_create_permission(): void
+    public function testSalesCreateRouteRequiresCreatePermission(): void
     {
         $this->actingAsUser(['sales.process']);
 
@@ -504,7 +503,7 @@ class SalesApiTest extends ApiRouteTestCase
             ->assertForbidden();
     }
 
-    public function test_sales_update_route_requires_edit_permission(): void
+    public function testSalesUpdateRouteRequiresEditPermission(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create']);
 
@@ -516,12 +515,12 @@ class SalesApiTest extends ApiRouteTestCase
             ->assertCreated()
             ->json('data.id');
 
-        $this->putJson('/api/sales/'.$saleId, $this->salePayload($variation, [
+        $this->putJson('/api/sales/' . $saleId, $this->salePayload($variation, [
             'items' => [['product_variation_id' => $variation->id, 'quantity' => 2]],
         ]))->assertForbidden();
     }
 
-    public function test_sales_delete_route_requires_delete_permission(): void
+    public function testSalesDeleteRouteRequiresDeletePermission(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create']);
 
@@ -533,11 +532,11 @@ class SalesApiTest extends ApiRouteTestCase
             ->assertCreated()
             ->json('data.id');
 
-        $this->deleteJson('/api/sales/'.$saleId)
+        $this->deleteJson('/api/sales/' . $saleId)
             ->assertForbidden();
     }
 
-    public function test_paid_sale_cannot_be_updated(): void
+    public function testPaidSaleCannotBeUpdated(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.edit']);
 
@@ -557,7 +556,7 @@ class SalesApiTest extends ApiRouteTestCase
             'paid_amount' => 0,
         ]))->assertCreated()->json('data.id');
 
-        $this->putJson('/api/sales/'.$saleId, $this->salePayload($variation, [
+        $this->putJson('/api/sales/' . $saleId, $this->salePayload($variation, [
             'customer_name' => 'Should Not Update',
             'items' => [['product_variation_id' => $variation->id, 'quantity' => 2]],
         ]))
@@ -570,7 +569,7 @@ class SalesApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_paid_sale_cannot_be_deleted(): void
+    public function testPaidSaleCannotBeDeleted(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.delete']);
 
@@ -590,7 +589,7 @@ class SalesApiTest extends ApiRouteTestCase
             'paid_amount' => 0,
         ]))->assertCreated()->json('data.id');
 
-        $this->deleteJson('/api/sales/'.$saleId)
+        $this->deleteJson('/api/sales/' . $saleId)
             ->assertStatus(422)
             ->assertSeeText('Paid sales cannot be edited or deleted.');
 

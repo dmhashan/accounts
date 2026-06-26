@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 class RolesApiTest extends ApiRouteTestCase
 {
-    public function test_roles_index_route_returns_paginated_roles(): void
+    public function testRolesIndexRouteReturnsPaginatedRoles(): void
     {
         $this->actingAsUser(['roles.view']);
         $this->createRole('manager');
@@ -16,7 +16,7 @@ class RolesApiTest extends ApiRouteTestCase
             ->assertJsonStructure(['data', 'meta', 'permissions']);
     }
 
-    public function test_roles_store_route_creates_role(): void
+    public function testRolesStoreRouteCreatesRole(): void
     {
         $this->actingAsUser(['roles.permissions']);
 
@@ -36,14 +36,14 @@ class RolesApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_roles_show_route_returns_role_and_permissions(): void
+    public function testRolesShowRouteReturnsRoleAndPermissions(): void
     {
         $this->actingAsUser(['roles.view']);
         $role = $this->createRole('support-staff');
         $permission = $this->createPermission('users.view', 'users');
         $role->permissions()->sync([$permission->id]);
 
-        $response = $this->getJson('/api/roles/'.$role->id);
+        $response = $this->getJson('/api/roles/' . $role->id);
 
         $response
             ->assertOk()
@@ -51,12 +51,12 @@ class RolesApiTest extends ApiRouteTestCase
             ->assertJsonStructure(['role', 'permissions']);
     }
 
-    public function test_roles_update_route_updates_role(): void
+    public function testRolesUpdateRouteUpdatesRole(): void
     {
         $this->actingAsUser(['roles.permissions']);
         $role = $this->createRole('front-desk', [], true);
 
-        $response = $this->putJson('/api/roles/'.$role->id, [
+        $response = $this->putJson('/api/roles/' . $role->id, [
             'name' => 'Front Desk Updated',
             'slug' => 'front-desk-updated',
             'description' => 'Updated role details',
@@ -73,14 +73,14 @@ class RolesApiTest extends ApiRouteTestCase
         ]);
     }
 
-    public function test_roles_update_permissions_route_syncs_permissions(): void
+    public function testRolesUpdatePermissionsRouteSyncsPermissions(): void
     {
         $this->actingAsUser(['roles.permissions']);
         $role = $this->createRole('operations', [], true);
         $permissionA = $this->createPermission('inventory.manage', 'inventory');
         $permissionB = $this->createPermission('sales.process', 'sales');
 
-        $response = $this->patchJson('/api/roles/'.$role->id.'/permissions', [
+        $response = $this->patchJson('/api/roles/' . $role->id . '/permissions', [
             'permissions' => [$permissionA->id, $permissionB->id],
         ]);
 

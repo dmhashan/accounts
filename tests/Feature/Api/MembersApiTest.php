@@ -147,7 +147,6 @@ class MembersApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'Member created successfully.');
 
         $this->assertDatabaseHas('members', [
-            'tenant_id' => $this->tenant->id,
             'email' => 'member-store@example.com',
             'username' => 'member-store',
         ]);
@@ -216,7 +215,6 @@ class MembersApiTest extends ApiRouteTestCase
 
         $this->assertSame(1, $count);
         $this->assertDatabaseHas('member_notifications', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'member_birthday',
             'body' => 'Happy Birthday Asha Fernando! Wishing you a strong, healthy and joyful year ahead from everyone at Test Gym. Keep moving, keep growing!',
@@ -239,14 +237,12 @@ class MembersApiTest extends ApiRouteTestCase
 
         foreach (['2025-06-09', '2025-12-15', '2026-06-08'] as $date) {
             MemberAttendance::create([
-                'tenant_id' => $this->tenant->id,
                 'member_id' => $member->id,
                 'attended_date' => $date,
             ]);
         }
 
         MemberAttendance::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'attended_date' => '2025-06-08',
         ]);
@@ -256,7 +252,6 @@ class MembersApiTest extends ApiRouteTestCase
 
         $this->assertSame(1, $count);
         $this->assertDatabaseHas('member_notifications', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'member_join_anniversary',
             'body' => 'Happy fitness anniversary Kamal Silva! You showed up for 2 training days at Test Gym in the last year. That consistency matters. Keep pushing forward!',

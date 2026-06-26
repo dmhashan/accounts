@@ -31,14 +31,13 @@ class KonaMangallayaVoucherSeeder extends Seeder
             Voucher::firstOrCreate(
                 ['uuid' => $data['uuid']],
                 [
-                    'tenant_id'  => $tenant->id,
-                    'name'       => $data['name'],
-                    'amount'     => $data['amount'],
-                    'status'     => 'active',
+                    'name' => $data['name'],
+                    'amount' => $data['amount'],
+                    'status' => 'active',
                     'valid_from' => null,
                     'valid_until' => null,
                     'created_by' => null,
-                ]
+                ],
             );
         }
     }

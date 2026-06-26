@@ -11,9 +11,7 @@ use Illuminate\Http\Request;
 
 class AppContextApiController extends Controller
 {
-    public function __construct(private readonly AppContextService $appContextService)
-    {
-    }
+    public function __construct(private readonly AppContextService $appContextService) {}
 
     public function show(Request $request): JsonResponse
     {

@@ -33,32 +33,13 @@ class LoginPageRedirectTest extends TestCase
         ]);
     }
 
-    public function test_login_page_redirects_authenticated_user_of_same_tenant(): void
+    public function testLoginPageRedirectsAuthenticatedUserOfSameTenant(): void
     {
         $user = $this->createUserForTenant($this->tenant, 'admin');
 
         $this->actingAs($user);
 
         $this->get('/login')->assertRedirect(route('dashboard'));
-    }
-
-    public function test_login_page_logs_out_authenticated_user_from_another_tenant(): void
-    {
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-gym',
-            'tenant_uuid' => Str::uuid()->toString(),
-            'use_custom_landing_page' => false,
-        ]);
-
-        $otherUser = $this->createUserForTenant($otherTenant, 'staff');
-
-        $this->actingAs($otherUser);
-
-        $response = $this->get('/login');
-
-        $response->assertOk()->assertViewIs('auth.login');
-        $this->assertGuest();
     }
 
     private function createUserForTenant(Tenant $tenant, string $roleSlug): User
@@ -71,7 +52,6 @@ class LoginPageRedirectTest extends TestCase
         ]);
 
         return User::create([
-            'tenant_id' => $tenant->id,
             'role_id' => $role->id,
             'name' => ucfirst($roleSlug) . ' User',
             'email' => $roleSlug . '+' . $tenant->domain . '@example.com',

@@ -37,7 +37,6 @@ class LegacySyncCommandsTest extends ApiRouteTestCase
 
         $this->assertSame(0, $exitCode);
         $attendance = MemberAttendance::sole();
-        $this->assertSame($this->tenant->id, $attendance->tenant_id);
         $this->assertSame($member->id, $attendance->member_id);
         $this->assertSame('attendance-uuid-1', $attendance->legacy_uuid);
         Http::assertSentCount(1);
@@ -71,7 +70,6 @@ class LegacySyncCommandsTest extends ApiRouteTestCase
 
         $this->assertSame(0, $exitCode);
         $payment = MemberPayment::sole();
-        $this->assertSame($this->tenant->id, $payment->tenant_id);
         $this->assertSame($member->id, $payment->member_id);
         $this->assertSame($account->id, $payment->company_account_id);
         $this->assertSame('payment-uuid-1', $payment->legacy_uuid);
@@ -119,7 +117,6 @@ class LegacySyncCommandsTest extends ApiRouteTestCase
 
         $this->assertSame(0, $exitCode);
         $member = Member::where('email', 'legacy.member@example.com')->firstOrFail();
-        $this->assertSame($this->tenant->id, $member->tenant_id);
         $this->assertSame('Legacy', $member->first_name);
         $this->assertSame('Member', $member->last_name);
         $this->assertSame('female', $member->gender);

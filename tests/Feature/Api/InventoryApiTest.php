@@ -7,7 +7,7 @@ use App\Models\ProductVariation;
 
 class InventoryApiTest extends ApiRouteTestCase
 {
-    public function test_inventory_meta_route_returns_products_and_variations(): void
+    public function testInventoryMetaRouteReturnsProductsAndVariations(): void
     {
         $this->actingAsUser(['inventory.manage']);
         $product = $this->createProduct();
@@ -20,7 +20,7 @@ class InventoryApiTest extends ApiRouteTestCase
             ->assertJsonStructure(['products', 'variations']);
     }
 
-    public function test_inventory_product_routes_cover_list_show_create_update_and_delete(): void
+    public function testInventoryProductRoutesCoverListShowCreateUpdateAndDelete(): void
     {
         $this->actingAsUser(['inventory.manage']);
 
@@ -31,7 +31,7 @@ class InventoryApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonStructure(['data', 'meta']);
 
-        $this->getJson('/api/inventory/products/'.$existingProduct->id)
+        $this->getJson('/api/inventory/products/' . $existingProduct->id)
             ->assertOk()
             ->assertJsonPath('data.id', $existingProduct->id);
 
@@ -51,19 +51,19 @@ class InventoryApiTest extends ApiRouteTestCase
         $storedProduct = Product::findOrFail($productId);
         $storedVariationId = ProductVariation::where('product_id', $storedProduct->id)->value('id');
 
-        $this->putJson('/api/inventory/products/'.$storedProduct->id, [
+        $this->putJson('/api/inventory/products/' . $storedProduct->id, [
             'name' => 'Protein Powder Updated',
             'variations' => [
                 ['id' => $storedVariationId, 'name' => 'Medium'],
             ],
         ])->assertOk()->assertJsonPath('message', 'Product updated successfully.');
 
-        $this->deleteJson('/api/inventory/products/'.$storedProduct->id)
+        $this->deleteJson('/api/inventory/products/' . $storedProduct->id)
             ->assertOk()
             ->assertJsonPath('message', 'Product deleted successfully.');
     }
 
-    public function test_inventory_variation_routes_cover_list_create_update_and_delete(): void
+    public function testInventoryVariationRoutesCoverListCreateUpdateAndDelete(): void
     {
         $this->actingAsUser(['inventory.manage']);
 
@@ -85,17 +85,17 @@ class InventoryApiTest extends ApiRouteTestCase
 
         $createdVariationId = (int) $storeResponse->json('data.id');
 
-        $this->putJson('/api/inventory/variations/'.$createdVariationId, [
+        $this->putJson('/api/inventory/variations/' . $createdVariationId, [
             'product_id' => $product->id,
             'name' => 'Flavor C',
         ])->assertOk()->assertJsonPath('message', 'Variation updated successfully.');
 
-        $this->deleteJson('/api/inventory/variations/'.$existingVariation->id)
+        $this->deleteJson('/api/inventory/variations/' . $existingVariation->id)
             ->assertOk()
             ->assertJsonPath('message', 'Variation deleted successfully.');
     }
 
-    public function test_inventory_stock_routes_cover_list_show_create_update_and_delete(): void
+    public function testInventoryStockRoutesCoverListShowCreateUpdateAndDelete(): void
     {
         $this->actingAsUser(['inventory.manage', 'inventory.stock']);
 
@@ -107,7 +107,7 @@ class InventoryApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonStructure(['data', 'meta']);
 
-        $this->getJson('/api/inventory/stock/'.$existingStock->id)
+        $this->getJson('/api/inventory/stock/' . $existingStock->id)
             ->assertOk()
             ->assertJsonPath('data.id', $existingStock->id);
 
@@ -128,7 +128,7 @@ class InventoryApiTest extends ApiRouteTestCase
 
         $createdStockId = (int) $storeResponse->json('data.id');
 
-        $this->putJson('/api/inventory/stock/'.$createdStockId, [
+        $this->putJson('/api/inventory/stock/' . $createdStockId, [
             'product_id' => $product->id,
             'product_variation_id' => $variation->id,
             'quantity' => 10,
@@ -139,7 +139,7 @@ class InventoryApiTest extends ApiRouteTestCase
             'foreign_selling_price' => 190,
         ])->assertOk()->assertJsonPath('message', 'Stock updated successfully.');
 
-        $this->deleteJson('/api/inventory/stock/'.$createdStockId)
+        $this->deleteJson('/api/inventory/stock/' . $createdStockId)
             ->assertOk()
             ->assertJsonPath('message', 'Stock entry deleted successfully.');
     }

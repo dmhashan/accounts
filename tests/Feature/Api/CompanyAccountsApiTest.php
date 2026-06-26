@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 class CompanyAccountsApiTest extends ApiRouteTestCase
 {
-    public function test_accounts_meta_and_account_routes_cover_list_show_create_update_and_delete(): void
+    public function testAccountsMetaAndAccountRoutesCoverListShowCreateUpdateAndDelete(): void
     {
         $this->actingAsUser(['accounts.manage']);
 
@@ -21,7 +21,7 @@ class CompanyAccountsApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonStructure(['data', 'meta']);
 
-        $this->getJson('/api/accounts/'.$existingAccount->id)
+        $this->getJson('/api/accounts/' . $existingAccount->id)
             ->assertOk()
             ->assertJsonPath('data.id', $existingAccount->id)
             ->assertJsonPath('data.current_balance', 500);
@@ -38,22 +38,22 @@ class CompanyAccountsApiTest extends ApiRouteTestCase
 
         $accountId = (int) $storeResponse->json('data.id');
 
-        $this->putJson('/api/accounts/'.$accountId, [
+        $this->putJson('/api/accounts/' . $accountId, [
             'name' => 'Cash Drawer Updated',
             'opening_balance' => 225.75,
             'description' => 'Updated cash drawer',
         ])->assertOk()->assertJsonPath('message', 'Account updated successfully.');
 
-        $this->getJson('/api/accounts/'.$accountId)
+        $this->getJson('/api/accounts/' . $accountId)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 225.75);
 
-        $this->deleteJson('/api/accounts/'.$accountId)
+        $this->deleteJson('/api/accounts/' . $accountId)
             ->assertOk()
             ->assertJsonPath('message', 'Account deleted successfully.');
     }
 
-    public function test_transfer_routes_cover_list_show_create_update_delete_and_balance_changes(): void
+    public function testTransferRoutesCoverListShowCreateUpdateDeleteAndBalanceChanges(): void
     {
         $this->actingAsUser(['accounts.manage']);
 
@@ -85,20 +85,20 @@ class CompanyAccountsApiTest extends ApiRouteTestCase
 
         $transferId = (int) $storeResponse->json('data.id');
 
-        $this->getJson('/api/accounts/transfers/'.$transferId)
+        $this->getJson('/api/accounts/transfers/' . $transferId)
             ->assertOk()
             ->assertJsonPath('data.id', $transferId)
             ->assertJsonPath('data.amount', 150);
 
-        $this->getJson('/api/accounts/'.$sourceAccount->id)
+        $this->getJson('/api/accounts/' . $sourceAccount->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 350);
 
-        $this->getJson('/api/accounts/'.$destinationAccount->id)
+        $this->getJson('/api/accounts/' . $destinationAccount->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 250);
 
-        $this->putJson('/api/accounts/transfers/'.$transferId, [
+        $this->putJson('/api/accounts/transfers/' . $transferId, [
             'source_account_id' => $sourceAccount->id,
             'destination_account_id' => $destinationAccount->id,
             'amount' => 90,
@@ -107,28 +107,28 @@ class CompanyAccountsApiTest extends ApiRouteTestCase
             'notes' => 'Adjusted transfer',
         ])->assertOk()->assertJsonPath('message', 'Transfer updated successfully.');
 
-        $this->getJson('/api/accounts/'.$sourceAccount->id)
+        $this->getJson('/api/accounts/' . $sourceAccount->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 410);
 
-        $this->getJson('/api/accounts/'.$destinationAccount->id)
+        $this->getJson('/api/accounts/' . $destinationAccount->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 190);
 
-        $this->deleteJson('/api/accounts/transfers/'.$transferId)
+        $this->deleteJson('/api/accounts/transfers/' . $transferId)
             ->assertOk()
             ->assertJsonPath('message', 'Transfer deleted successfully.');
 
-        $this->getJson('/api/accounts/'.$sourceAccount->id)
+        $this->getJson('/api/accounts/' . $sourceAccount->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 500);
 
-        $this->getJson('/api/accounts/'.$destinationAccount->id)
+        $this->getJson('/api/accounts/' . $destinationAccount->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 100);
     }
 
-    public function test_transfer_creation_requires_sufficient_balance(): void
+    public function testTransferCreationRequiresSufficientBalance(): void
     {
         $this->actingAsUser(['accounts.manage']);
 
@@ -147,7 +147,7 @@ class CompanyAccountsApiTest extends ApiRouteTestCase
         ])->assertStatus(422)->assertJsonPath('message', 'Insufficient balance in source account.');
     }
 
-    public function test_account_cannot_be_deleted_when_transfer_history_exists(): void
+    public function testAccountCannotBeDeletedWhenTransferHistoryExists(): void
     {
         $this->actingAsUser(['accounts.manage']);
 
@@ -156,7 +156,7 @@ class CompanyAccountsApiTest extends ApiRouteTestCase
 
         $this->createCompanyAccountTransfer($sourceAccount, $destinationAccount, ['amount' => 75]);
 
-        $this->deleteJson('/api/accounts/'.$sourceAccount->id)
+        $this->deleteJson('/api/accounts/' . $sourceAccount->id)
             ->assertStatus(422)
             ->assertJsonPath('message', 'Account cannot be deleted because transaction history exists.');
     }

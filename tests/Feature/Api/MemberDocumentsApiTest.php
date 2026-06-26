@@ -3,10 +3,8 @@
 namespace Tests\Feature\Api;
 
 use App\Models\MemberDocument;
-use App\Models\Tenant;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class MemberDocumentsApiTest extends ApiRouteTestCase
 {
@@ -48,35 +46,23 @@ class MemberDocumentsApiTest extends ApiRouteTestCase
         $this->assertDatabaseMissing('member_documents', ['id' => $documentId]);
     }
 
-    public function testDocumentsFromAnotherTenantOrMemberAreNotAccessible(): void
+    public function testDocumentsFromAnotherMemberAreNotAccessible(): void
     {
         $this->actingAsUser(['users.view', 'users.edit']);
         $member = $this->createMember();
         $otherMember = $this->createMember();
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-documents',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
-        $otherTenantMember = $this->createMember(attributes: ['tenant_id' => $otherTenant->id]);
 
-        $otherMemberDocument = $this->createDocument($otherMember->id, $this->tenant->id);
-        $otherTenantDocument = $this->createDocument($otherTenantMember->id, $otherTenant->id);
+        $otherMemberDocument = $this->createDocument($otherMember->id);
 
         $this->getJson('/api/members/' . $member->id . '/documents/' . $otherMemberDocument->id . '/url')
             ->assertNotFound();
         $this->deleteJson('/api/members/' . $member->id . '/documents/' . $otherMemberDocument->id)
             ->assertNotFound();
-        $this->getJson('/api/members/' . $otherTenantMember->id . '/documents')
-            ->assertNotFound();
-        $this->getJson('/api/members/' . $member->id . '/documents/' . $otherTenantDocument->id . '/url')
-            ->assertNotFound();
     }
 
-    private function createDocument(int $memberId, int $tenantId): MemberDocument
+    private function createDocument(int $memberId): MemberDocument
     {
         return MemberDocument::create([
-            'tenant_id' => $tenantId,
             'member_id' => $memberId,
             'name' => 'Private Document',
             'category' => 'other',

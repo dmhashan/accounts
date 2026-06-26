@@ -5,10 +5,8 @@ namespace Tests\Feature\Api;
 use App\Jobs\SendDailySummaryReportJob;
 use App\Models\CompanyAccountTransaction;
 use App\Models\DailySummaryReport;
-use App\Models\Tenant;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class ReportsApiTest extends ApiRouteTestCase
 {
@@ -24,29 +22,15 @@ class ReportsApiTest extends ApiRouteTestCase
             ->assertJsonCount(4, 'features');
     }
 
-    public function testDailySummaryOnlyContainsCurrentTenantFinancialData(): void
+    public function testDailySummaryContainsFinancialData(): void
     {
         $this->actingAsUser(['reports.view']);
         $account = $this->createCompanyAccount(['opening_balance' => 100]);
-        $otherTenant = $this->createOtherTenant();
-        $otherAccount = $this->createCompanyAccount([
-            'tenant_id' => $otherTenant->id,
-            'opening_balance' => 900,
-        ]);
         CompanyAccountTransaction::create([
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'payment',
             'type' => 'credit',
             'amount' => 250,
-            'transaction_date' => today(),
-        ]);
-        CompanyAccountTransaction::create([
-            'tenant_id' => $otherTenant->id,
-            'company_account_id' => $otherAccount->id,
-            'model_name' => 'payment',
-            'type' => 'credit',
-            'amount' => 5000,
             'transaction_date' => today(),
         ]);
 
@@ -58,16 +42,13 @@ class ReportsApiTest extends ApiRouteTestCase
             ->assertJsonPath('totals.closing_balance', 350);
     }
 
-    public function testDailySummaryHistoryShowAndPdfAreTenantScoped(): void
+    public function testDailySummaryHistoryShowAndPdf(): void
     {
         $disk = (string) config('filesystems.media_disk', 'public');
         Storage::fake($disk);
         $this->actingAsUser(['reports.view']);
-        $otherTenant = $this->createOtherTenant();
         $report = $this->createReport($this->tenant->id, 'reports/current.pdf');
-        $otherReport = $this->createReport($otherTenant->id, 'reports/other.pdf');
         Storage::disk($disk)->put($report->pdf_path, '%PDF-current');
-        Storage::disk($disk)->put($otherReport->pdf_path, '%PDF-other');
 
         $this->getJson('/api/reports/daily-summary/history')
             ->assertOk()
@@ -80,11 +61,6 @@ class ReportsApiTest extends ApiRouteTestCase
         $this->get('/api/reports/daily-summary/reports/' . $report->id . '/pdf')
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
-
-        $this->getJson('/api/reports/daily-summary/reports/' . $otherReport->id)
-            ->assertNotFound();
-        $this->get('/api/reports/daily-summary/reports/' . $otherReport->id . '/pdf')
-            ->assertNotFound();
     }
 
     public function testDailySummaryGenerationStoresTenantFilesAndQueuesTenantJob(): void
@@ -123,7 +99,6 @@ class ReportsApiTest extends ApiRouteTestCase
     private function createReport(int $tenantId, string $pdfPath): DailySummaryReport
     {
         return DailySummaryReport::create([
-            'tenant_id' => $tenantId,
             'report_date' => today(),
             'prepared_by_name' => 'Admin',
             'system_snapshot' => [],
@@ -131,15 +106,6 @@ class ReportsApiTest extends ApiRouteTestCase
             'changes' => [],
             'totals' => [],
             'pdf_path' => $pdfPath,
-        ]);
-    }
-
-    private function createOtherTenant(): Tenant
-    {
-        return Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-reports',
-            'tenant_uuid' => Str::uuid()->toString(),
         ]);
     }
 

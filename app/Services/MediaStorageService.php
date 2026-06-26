@@ -36,7 +36,7 @@ class MediaStorageService
      */
     private function prefixedPath(string $path): string
     {
-        $env        = app()->environment();
+        $env = app()->environment();
         $tenantUuid = app('tenant')->tenant_uuid;
 
         return $env . '/' . $tenantUuid . '/' . ltrim($path, '/');
@@ -88,6 +88,7 @@ class MediaStorageService
 
         // If the disk has a base URL (public bucket or local public disk), use it.
         $baseUrl = config("filesystems.disks.{$this->diskName()}.url");
+
         if ($baseUrl) {
             return $disk->url($path);
         }

@@ -4,28 +4,20 @@ namespace Tests\Feature\Console;
 
 use App\Jobs\SendMemberNotificationJob;
 use App\Models\MemberNotification;
-use App\Models\Tenant;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Str;
 use Tests\Feature\Api\ApiRouteTestCase;
 
 class AutomatedNotificationCommandsTest extends ApiRouteTestCase
 {
-    public function testMilestoneCommandQueuesEligibleMembersAcrossAllTenants(): void
+    public function testMilestoneCommandQueuesEligibleMembersForTheCurrentDatabase(): void
     {
         Queue::fake();
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-milestones',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
         $today = today();
         $member = $this->createMember(attributes: [
             'date_of_birth' => $today->copy()->subYears(25)->toDateString(),
         ]);
         $otherMember = $this->createMember(attributes: [
-            'tenant_id' => $otherTenant->id,
             'date_of_birth' => $today->copy()->subYears(30)->toDateString(),
         ]);
 
@@ -39,7 +31,7 @@ class AutomatedNotificationCommandsTest extends ApiRouteTestCase
         );
         Queue::assertPushed(
             SendMemberNotificationJob::class,
-            fn (SendMemberNotificationJob $job) => $this->readPrivate($job, 'tenantId') === $otherTenant->id
+            fn (SendMemberNotificationJob $job) => $this->readPrivate($job, 'tenantId') === $this->tenant->id
                 && $this->readPrivate($job, 'memberId') === $otherMember->id,
         );
     }
@@ -52,7 +44,6 @@ class AutomatedNotificationCommandsTest extends ApiRouteTestCase
             'date_of_birth' => $today->copy()->subYears(25)->toDateString(),
         ]);
         MemberNotification::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'type' => 'member_birthday',
             'title' => 'Happy Birthday',

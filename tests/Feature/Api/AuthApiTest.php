@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 class AuthApiTest extends ApiRouteTestCase
 {
-    public function test_login_route_authenticates_user(): void
+    public function testLoginRouteAuthenticatesUser(): void
     {
         $user = $this->createUser();
 
@@ -20,7 +20,7 @@ class AuthApiTest extends ApiRouteTestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_logout_route_logs_out_authenticated_user(): void
+    public function testLogoutRouteLogsOutAuthenticatedUser(): void
     {
         $user = $this->actingAsUser();
 
@@ -33,7 +33,7 @@ class AuthApiTest extends ApiRouteTestCase
         $this->assertGuest();
     }
 
-    public function test_refresh_route_returns_unauthorized_for_guest(): void
+    public function testRefreshRouteReturnsUnauthorizedForGuest(): void
     {
         $response = $this->postJson('/api/auth/refresh');
 
@@ -42,7 +42,7 @@ class AuthApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'Unauthenticated.');
     }
 
-    public function test_refresh_route_returns_ok_for_authenticated_user(): void
+    public function testRefreshRouteReturnsOkForAuthenticatedUser(): void
     {
         $this->actingAsUser();
 

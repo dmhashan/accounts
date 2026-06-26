@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 class ProfileApiTest extends ApiRouteTestCase
 {
-    public function test_profile_route_returns_profile_data_for_authorized_user(): void
+    public function testProfileRouteReturnsProfileDataForAuthorizedUser(): void
     {
         $user = $this->actingAsUser(['member.profile.view']);
         $member = $this->createMember($user);

@@ -13,6 +13,6 @@ Route::middleware(['auth', 'permission:events.manage'])->group(function () {
     Route::post('/events/{event}/registrations', [EventApiController::class, 'adminRegister']);
     Route::put('/events/{event}/registrations/{registration}', [EventApiController::class, 'updateRegistration']);
     Route::delete('/events/{event}/registrations/{registration}', [EventApiController::class, 'destroyRegistration']);
-    Route::post('/events/{event}/registrations/{registration}/mark-paid',        [EventApiController::class, 'markRegistrationPaid']);
-    Route::post('/events/{event}/registrations/{registration}/mark-attendance',  [EventApiController::class, 'markAttendance']);
+    Route::post('/events/{event}/registrations/{registration}/mark-paid', [EventApiController::class, 'markRegistrationPaid']);
+    Route::post('/events/{event}/registrations/{registration}/mark-attendance', [EventApiController::class, 'markAttendance']);
 });

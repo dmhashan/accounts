@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Http\Request;
 
 class RoleController extends Controller
@@ -11,6 +11,7 @@ class RoleController extends Controller
     public function index()
     {
         $roles = Role::withCount('users', 'permissions')->get();
+
         return view('roles.index', compact('roles'));
     }
 
@@ -18,7 +19,7 @@ class RoleController extends Controller
     {
         $role->load('permissions');
         $allPermissions = Permission::all()->groupBy('feature');
-        
+
         return view('roles.show', compact('role', 'allPermissions'));
     }
 
@@ -41,4 +42,3 @@ class RoleController extends Controller
             ->with('success', 'Permissions updated successfully.');
     }
 }
-

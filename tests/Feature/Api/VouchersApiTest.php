@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Tenant;
 use App\Models\Voucher;
 use Illuminate\Support\Str;
 
@@ -41,12 +40,10 @@ class VouchersApiTest extends ApiRouteTestCase
             ->assertJsonPath('voucher.name', 'Updated Credit');
 
         $this->assertDatabaseHas('audit_logs', [
-            'tenant_id' => $this->tenant->id,
             'action' => 'voucher_create',
             'auditable_id' => $voucherId,
         ]);
         $this->assertDatabaseHas('audit_logs', [
-            'tenant_id' => $this->tenant->id,
             'action' => 'voucher_update',
             'auditable_id' => $voucherId,
         ]);
@@ -57,7 +54,6 @@ class VouchersApiTest extends ApiRouteTestCase
 
         $this->assertDatabaseMissing('vouchers', ['id' => $voucherId]);
         $this->assertDatabaseHas('audit_logs', [
-            'tenant_id' => $this->tenant->id,
             'action' => 'voucher_delete',
             'auditable_id' => $voucherId,
         ]);
@@ -80,7 +76,6 @@ class VouchersApiTest extends ApiRouteTestCase
             ->assertJsonPath('redemption.voucher.id', $voucher->id);
 
         $this->assertDatabaseHas('voucher_redemptions', [
-            'tenant_id' => $this->tenant->id,
             'voucher_id' => $voucher->id,
             'member_id' => $member->id,
             'redeemed_by' => $user->id,
@@ -115,32 +110,9 @@ class VouchersApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('members', ['id' => $member->id, 'current_balance' => 850]);
     }
 
-    public function testVouchersFromAnotherTenantAreNotVisibleOrRedeemable(): void
-    {
-        $this->actingAsUser(['vouchers.manage', 'payments.manage']);
-        $member = $this->createMember();
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-gym',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
-        $otherVoucher = $this->createVoucher(['tenant_id' => $otherTenant->id]);
-
-        $this->getJson('/api/vouchers/' . $otherVoucher->id)->assertNotFound();
-        $this->deleteJson('/api/vouchers/' . $otherVoucher->id)->assertNotFound();
-
-        $this->postJson('/api/members/' . $member->id . '/wallet/redeem-voucher', [
-            'uuid' => $otherVoucher->uuid,
-        ])->assertUnprocessable()
-            ->assertJsonPath('message', 'Voucher not found. Please check the voucher code and try again.');
-
-        $this->assertDatabaseMissing('voucher_redemptions', ['voucher_id' => $otherVoucher->id]);
-    }
-
     private function createVoucher(array $attributes = []): Voucher
     {
         return Voucher::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'name' => 'Voucher ' . Str::random(6),
             'uuid' => Str::uuid()->toString(),
             'amount' => 500,

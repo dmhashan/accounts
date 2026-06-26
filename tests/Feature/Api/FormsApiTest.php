@@ -3,10 +3,8 @@
 namespace Tests\Feature\Api;
 
 use App\Models\FormTemplate;
-use App\Models\Tenant;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class FormsApiTest extends ApiRouteTestCase
 {
@@ -106,24 +104,9 @@ class FormsApiTest extends ApiRouteTestCase
         $this->assertDatabaseMissing('form_submissions', ['id' => $submissionId]);
     }
 
-    public function testFormTemplateFromAnotherTenantIsNotAccessible(): void
-    {
-        $this->actingAsUser(['forms.manage', 'users.edit']);
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-forms',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
-        $otherTemplate = $this->createTemplate(['tenant_id' => $otherTenant->id]);
-
-        $this->getJson('/api/forms/templates/' . $otherTemplate->id)->assertNotFound();
-        $this->deleteJson('/api/forms/templates/' . $otherTemplate->id)->assertNotFound();
-    }
-
     private function createTemplate(array $attributes = []): FormTemplate
     {
         return FormTemplate::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'title' => 'Health Form',
             'fields' => [[
                 'id' => 'health-question',

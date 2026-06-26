@@ -63,6 +63,10 @@ class MemberDocumentApiController extends Controller
         $tenantId = app('tenant')->id;
         $this->memberService->ensureTenantMember($member, $tenantId);
 
+        if ($document->member_id !== $member->id) {
+            abort(404);
+        }
+
         return response()->json([
             'url' => $this->documentService->url($document),
         ]);

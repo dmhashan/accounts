@@ -237,8 +237,7 @@ class RulesFormTemplateSeeder extends Seeder
         ];
 
         foreach (Tenant::all() as $tenant) {
-            $existing = FormTemplate::where('tenant_id', $tenant->id)
-                ->where('title', $data['title'])
+            $existing = FormTemplate::where('title', $data['title'])
                 ->first();
 
             if ($existing) {

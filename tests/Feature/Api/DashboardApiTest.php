@@ -35,7 +35,6 @@ class DashboardApiTest extends ApiRouteTestCase
 
         $account = $this->createCompanyAccount();
         CompanyAccountTransaction::create([
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'sale',
             'reference_id' => $todaySale->id,
@@ -79,7 +78,6 @@ class DashboardApiTest extends ApiRouteTestCase
 
         $account = $this->createCompanyAccount();
         CompanyAccountTransaction::create([
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'payment',
             'type' => 'payment',
@@ -87,7 +85,6 @@ class DashboardApiTest extends ApiRouteTestCase
             'transaction_date' => now()->subDays(3)->toDateString(),
         ]);
         CompanyAccountTransaction::create([
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'expense',
             'type' => 'expense',
@@ -123,7 +120,6 @@ class DashboardApiTest extends ApiRouteTestCase
 
         foreach ([$memberA, $memberA, $memberB] as $index => $member) {
             BiometricAccessEvent::create([
-                'tenant_id' => $this->tenant->id,
                 'member_id' => $member->id,
                 'biometric_member_id' => $member->biometric_member_id,
                 'employee_no' => $member->biometric_member_id,
@@ -136,7 +132,6 @@ class DashboardApiTest extends ApiRouteTestCase
 
         foreach ([10, 11] as $minute) {
             BiometricAccessEvent::create([
-                'tenant_id' => $this->tenant->id,
                 'member_id' => $memberExpired->id,
                 'biometric_member_id' => $memberExpired->biometric_member_id,
                 'employee_no' => $memberExpired->biometric_member_id,
@@ -149,7 +144,6 @@ class DashboardApiTest extends ApiRouteTestCase
         }
 
         BiometricAccessEvent::create([
-            'tenant_id' => $this->tenant->id,
             'employee_no' => 'UNKNOWN-1',
             'person_name' => 'Unknown Member',
             'auth_method' => 'face',
@@ -247,7 +241,6 @@ class DashboardApiTest extends ApiRouteTestCase
 
         $account = $this->createCompanyAccount();
         CompanyAccountTransaction::create([
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'payment',
             'type' => 'payment',
@@ -255,7 +248,6 @@ class DashboardApiTest extends ApiRouteTestCase
             'transaction_date' => now()->subDays(2)->toDateString(),
         ]);
         CompanyAccountTransaction::create([
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'expense',
             'type' => 'expense',

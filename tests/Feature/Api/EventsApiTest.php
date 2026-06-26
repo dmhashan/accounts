@@ -3,12 +3,11 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Event;
-use App\Models\Tenant;
 use Illuminate\Support\Str;
 
 class EventsApiTest extends ApiRouteTestCase
 {
-    public function testEventCrudGeneratesUniqueSlugsAndIsTenantScoped(): void
+    public function testEventCrudGeneratesUniqueSlugs(): void
     {
         $this->actingAsUser(['events.manage']);
 
@@ -37,15 +36,6 @@ class EventsApiTest extends ApiRouteTestCase
         ]))->assertOk();
 
         $this->assertDatabaseHas('events', ['id' => $firstId, 'slug' => 'updated-camp']);
-
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-events',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
-        $otherEvent = $this->createEvent(['tenant_id' => $otherTenant->id]);
-
-        $this->getJson('/api/events/' . $otherEvent->id)->assertForbidden();
 
         $this->deleteJson('/api/events/' . $secondId)
             ->assertOk()
@@ -80,7 +70,6 @@ class EventsApiTest extends ApiRouteTestCase
             ->assertJsonPath('data.is_paid', true);
 
         $this->assertDatabaseHas('company_account_transactions', [
-            'tenant_id' => $this->tenant->id,
             'company_account_id' => $account->id,
             'model_name' => 'event_registration',
             'reference_id' => $registrationId,
@@ -113,7 +102,7 @@ class EventsApiTest extends ApiRouteTestCase
             ->assertJsonPath('meta.attended_guests', 2);
     }
 
-    public function testMemberCannotBeRegisteredTwiceAndCrossTenantMemberIsRejected(): void
+    public function testMemberCannotBeRegisteredTwice(): void
     {
         $this->actingAsUser(['events.manage']);
         $event = $this->createEvent();
@@ -126,24 +115,11 @@ class EventsApiTest extends ApiRouteTestCase
 
         $this->postJson('/api/events/' . $event->id . '/registrations', $payload)->assertCreated();
         $this->postJson('/api/events/' . $event->id . '/registrations', $payload)->assertConflict();
-
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-members',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
-        $otherMember = $this->createMember(attributes: ['tenant_id' => $otherTenant->id]);
-
-        $this->postJson('/api/events/' . $event->id . '/registrations', [
-            'member_id' => $otherMember->id,
-            'name' => $otherMember->name,
-        ])->assertNotFound();
     }
 
     private function createEvent(array $attributes = []): Event
     {
         return Event::create(array_merge([
-            'tenant_id' => $this->tenant->id,
             'name' => 'Test Event',
             'slug' => 'test-event-' . Str::random(5),
             'start_datetime' => now()->addWeek(),

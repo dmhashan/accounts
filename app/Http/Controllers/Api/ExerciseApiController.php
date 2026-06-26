@@ -12,9 +12,7 @@ use Illuminate\Http\Request;
 
 class ExerciseApiController extends Controller
 {
-    public function __construct(private readonly WorkoutProgramService $workoutProgramService)
-    {
-    }
+    public function __construct(private readonly WorkoutProgramService $workoutProgramService) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -22,7 +20,7 @@ class ExerciseApiController extends Controller
 
         return $this->success(
             'Exercises fetched successfully.',
-            $this->workoutProgramService->exercises(app('tenant')->id, $perPage)
+            $this->workoutProgramService->exercises(app('tenant')->id, $perPage),
         );
     }
 
@@ -39,7 +37,7 @@ class ExerciseApiController extends Controller
     {
         return $this->success(
             'Exercise fetched successfully.',
-            $this->workoutProgramService->showExercise($exercise, app('tenant')->id)
+            $this->workoutProgramService->showExercise($exercise, app('tenant')->id),
         );
     }
 

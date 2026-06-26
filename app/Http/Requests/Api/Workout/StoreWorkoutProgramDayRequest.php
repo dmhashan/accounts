@@ -25,7 +25,7 @@ class StoreWorkoutProgramDayRequest extends FormRequest
                 'min:1',
                 'max:7',
                 Rule::unique('workout_program_days', 'day_number')->where(
-                    fn ($query) => $query->where('program_id', $program->id)
+                    fn ($query) => $query->where('program_id', $program->id),
                 ),
             ],
             'title' => ['required', 'string', 'max:255'],

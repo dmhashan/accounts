@@ -93,7 +93,6 @@ class WorkoutSystemSeeder extends Seeder
                 foreach ($exercises as $name => $variations) {
 
                     $id = DB::table('exercises')->insertGetId([
-                        'tenant_id' => $tenantId,
                         'name' => $name,
                         'created_at' => now(),
                         'updated_at' => now(),

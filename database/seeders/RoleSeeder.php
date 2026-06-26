@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
@@ -20,7 +20,7 @@ class RoleSeeder extends Seeder
                 'name' => 'Admin',
                 'description' => 'Administrator with full access to all features',
                 'is_editable' => false,
-            ]
+            ],
         );
 
         // Create Member role (uneditable)
@@ -30,7 +30,7 @@ class RoleSeeder extends Seeder
                 'name' => 'Member',
                 'description' => 'Regular member with limited access',
                 'is_editable' => false,
-            ]
+            ],
         );
 
         // Assign admin + accounting + inventory + sales + vouchers permissions to Admin role

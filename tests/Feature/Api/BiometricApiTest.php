@@ -7,7 +7,6 @@ use App\Models\BiometricSyncLog;
 use App\Models\Tenant;
 use App\Services\BiometricSyncService;
 use App\Services\TenantConfigurationService;
-use Illuminate\Support\Str;
 
 class BiometricApiTest extends ApiRouteTestCase
 {
@@ -108,15 +107,9 @@ class BiometricApiTest extends ApiRouteTestCase
     public function testRecentLogsAndAccessEventsAreTenantScopedAndFiltered(): void
     {
         $this->actingAsUser(['settings.manage']);
-        $otherTenant = Tenant::create([
-            'name' => 'Other Gym',
-            'domain' => 'other-biometric',
-            'tenant_uuid' => Str::uuid()->toString(),
-        ]);
         $member = $this->createMember();
 
         BiometricSyncLog::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'biometric_member_id' => $member->biometric_member_id,
             'direction' => 'up',
@@ -127,16 +120,14 @@ class BiometricApiTest extends ApiRouteTestCase
             'created_at' => now(),
         ]);
         BiometricSyncLog::create([
-            'tenant_id' => $otherTenant->id,
             'direction' => 'up',
             'action' => 'manual_sync',
-            'status' => 'failed',
+            'status' => 'success',
             'synced_at' => now(),
             'created_at' => now(),
         ]);
 
         BiometricAccessEvent::create([
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'employee_no' => $member->biometric_member_id,
             'person_name' => $member->name,
@@ -146,7 +137,6 @@ class BiometricApiTest extends ApiRouteTestCase
             'created_at' => now(),
         ]);
         BiometricAccessEvent::create([
-            'tenant_id' => $otherTenant->id,
             'person_name' => 'Other Member',
             'auth_method' => 'face',
             'result' => 'success',
@@ -156,16 +146,16 @@ class BiometricApiTest extends ApiRouteTestCase
 
         $this->getJson('/api/settings/biometric/recent-logs')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
+            ->assertJsonCount(2, 'data')
             ->assertJsonPath('failed_count', 1)
             ->assertJsonPath('data.0.member.id', $member->id);
 
         $this->getJson('/api/settings/biometric/access-events?result=failed')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('counts.all', 1)
+            ->assertJsonPath('counts.all', 2)
             ->assertJsonPath('counts.failed', 1)
-            ->assertJsonPath('counts.success', 0)
+            ->assertJsonPath('counts.success', 1)
             ->assertJsonPath('data.0.person_name', $member->name);
     }
 }

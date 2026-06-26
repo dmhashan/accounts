@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 class HealthApiTest extends ApiRouteTestCase
 {
-    public function test_health_route_returns_ok_response(): void
+    public function testHealthRouteReturnsOkResponse(): void
     {
         $response = $this->getJson('/api/health');
 

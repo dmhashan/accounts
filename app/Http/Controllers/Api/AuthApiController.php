@@ -9,9 +9,7 @@ use Illuminate\Http\Request;
 
 class AuthApiController extends Controller
 {
-    public function __construct(private readonly AuthSessionService $authSessionService)
-    {
-    }
+    public function __construct(private readonly AuthSessionService $authSessionService) {}
 
     public function login(Request $request): JsonResponse
     {

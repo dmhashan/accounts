@@ -83,7 +83,6 @@ class PublicProfileApiTest extends ApiRouteTestCase
         ]);
 
         $event = Event::create([
-            'tenant_id' => $this->tenant->id,
             'name' => 'Public Event',
             'slug' => 'public-event',
             'start_datetime' => now()->addWeek(),
@@ -110,7 +109,6 @@ class PublicProfileApiTest extends ApiRouteTestCase
             ])->assertConflict();
 
         $notification = BulkNotification::create([
-            'tenant_id' => $this->tenant->id,
             'created_by' => $this->createUser()->id,
             'name' => 'Member Notice',
             'message' => 'Hello member.',
@@ -142,7 +140,6 @@ class PublicProfileApiTest extends ApiRouteTestCase
             ->assertJsonPath('ok', true);
 
         $this->assertDatabaseHas('member_activity_logs', [
-            'tenant_id' => $this->tenant->id,
             'member_id' => $member->id,
             'session_id' => 'session-public-1',
             'device_type' => 'mobile',
