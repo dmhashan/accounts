@@ -192,27 +192,19 @@ class SaleProcessingService
 
         foreach ($itemsPayload as $item) {
             $variation = $variations->get($item['product_variation_id']);
+            $quantity = (int) $item['quantity'];
 
-            $available = StockEntry::query()
-                ->where('product_variation_id', $variation->id)
-                ->where(function ($query) use ($today) {
-                    $query->whereDate('expiry_date', '>=', $today)
-                        ->orWhereNull('expiry_date');
-                })
-                ->sum('display_quantity');
+            $stockEntries = $this->saleableStockEntries($variation->id, $today)
+                ->lockForUpdate()
+                ->get();
 
-            if ($item['quantity'] > $available) {
+            $available = (int) $stockEntries->sum('display_quantity');
+
+            if ($quantity > $available) {
                 abort(422, 'Insufficient display stock for ' . $variation->product->name . ' - ' . $variation->name);
             }
 
-            $priceEntry = StockEntry::query()
-                ->where('product_variation_id', $variation->id)
-                ->where(function ($query) use ($today) {
-                    $query->whereDate('expiry_date', '>=', $today)
-                        ->orWhereNull('expiry_date');
-                })
-                ->orderBy('expiry_date')
-                ->first();
+            $priceEntry = $stockEntries->first();
 
             if (!$priceEntry) {
                 abort(422, 'No valid stock for ' . $variation->product->name . ' - ' . $variation->name);
@@ -222,19 +214,59 @@ class SaleProcessingService
                 ? $priceEntry->local_selling_price
                 : $priceEntry->foreign_selling_price;
 
-            $subtotal = $unitPrice * $item['quantity'];
+            $costTotal = $this->costTotalForQuantity($stockEntries, $quantity);
+            $unitCost = $quantity > 0 ? $costTotal / $quantity : 0;
+            $subtotal = $unitPrice * $quantity;
             $total += $subtotal;
 
             $saleItems[] = [
                 'product_id' => $variation->product_id,
                 'product_variation_id' => $variation->id,
-                'quantity' => $item['quantity'],
+                'quantity' => $quantity,
                 'unit_price' => $unitPrice,
+                'unit_cost' => round($unitCost, 4),
                 'subtotal' => $subtotal,
+                'cost_total' => round($costTotal, 2),
             ];
         }
 
         return [$saleItems, $total, $itemsPayload];
+    }
+
+    private function saleableStockEntries(int $variationId, string $today)
+    {
+        return StockEntry::query()
+            ->where('product_variation_id', $variationId)
+            ->where('display_quantity', '>', 0)
+            ->where(function ($query) use ($today) {
+                $query->whereDate('expiry_date', '>=', $today)
+                    ->orWhereNull('expiry_date');
+            })
+            ->orderBy('expiry_date')
+            ->orderBy('id');
+    }
+
+    private function costTotalForQuantity($stockEntries, int $quantity): float
+    {
+        $remaining = $quantity;
+        $costTotal = 0.0;
+
+        foreach ($stockEntries as $entry) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $deduct = min((int) $entry->display_quantity, $remaining);
+
+            if ($deduct <= 0) {
+                continue;
+            }
+
+            $costTotal += $deduct * (float) $entry->purchasing_price;
+            $remaining -= $deduct;
+        }
+
+        return $costTotal;
     }
 
     private function resolveMember(array $validated, int $tenantId): ?Member
@@ -323,13 +355,7 @@ class SaleProcessingService
         foreach ($itemsPayload as $item) {
             $remaining = $item['quantity'];
 
-            $entries = StockEntry::query()
-                ->where('product_variation_id', $item['product_variation_id'])
-                ->where(function ($query) use ($today) {
-                    $query->whereDate('expiry_date', '>=', $today)
-                        ->orWhereNull('expiry_date');
-                })
-                ->orderBy('expiry_date')
+            $entries = $this->saleableStockEntries((int) $item['product_variation_id'], $today)
                 ->lockForUpdate()
                 ->get();
 

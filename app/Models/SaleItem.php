@@ -13,7 +13,16 @@ class SaleItem extends Model
         'product_variation_id',
         'quantity',
         'unit_price',
+        'unit_cost',
         'subtotal',
+        'cost_total',
+    ];
+
+    protected $casts = [
+        'unit_price' => 'decimal:2',
+        'unit_cost' => 'decimal:4',
+        'subtotal' => 'decimal:2',
+        'cost_total' => 'decimal:2',
     ];
 
     public function sale(): BelongsTo

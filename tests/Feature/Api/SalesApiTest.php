@@ -32,6 +32,39 @@ class SalesApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('stock_entries', ['id' => $stock->id, 'quantity' => 7]);
     }
 
+    public function testSaleCreateStoresActualCostFromConsumedStockBatches(): void
+    {
+        $this->actingAsUser(['sales.process', 'sales.create']);
+
+        $product = $this->createProduct(['name' => 'Cost Product']);
+        $variation = $this->createVariation($product, ['name' => 'Cost Variation']);
+        $this->createStockEntry($product, $variation, [
+            'quantity' => 1,
+            'display_quantity' => 1,
+            'expiry_date' => now()->addDays(5)->toDateString(),
+            'purchasing_price' => 20,
+            'local_selling_price' => 50,
+        ]);
+        $this->createStockEntry($product, $variation, [
+            'quantity' => 4,
+            'display_quantity' => 4,
+            'expiry_date' => now()->addDays(10)->toDateString(),
+            'purchasing_price' => 30,
+            'local_selling_price' => 60,
+        ]);
+
+        $saleId = (int) $this->postJson('/api/sales', $this->salePayload($variation, [
+            'paid_amount' => 150,
+            'items' => [['product_variation_id' => $variation->id, 'quantity' => 3]],
+        ]))->assertCreated()->json('data.id');
+
+        $item = SaleItem::query()->where('sale_id', $saleId)->firstOrFail();
+
+        $this->assertSame(150.0, (float) $item->subtotal);
+        $this->assertEqualsWithDelta(80.0, (float) $item->cost_total, 0.001);
+        $this->assertEqualsWithDelta(26.6667, (float) $item->unit_cost, 0.0001);
+    }
+
     public function testSaleUpdateAdjustsInventoryForIncreaseAndDecrease(): void
     {
         $this->actingAsUser(['sales.process', 'sales.create', 'sales.edit']);

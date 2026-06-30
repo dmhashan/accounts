@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DailySummaryReport;
 use App\Services\DailySummaryReportService;
 use App\Services\DailySummaryService;
+use App\Services\RealProfitReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +16,7 @@ class ReportApiController extends Controller
     public function __construct(
         private readonly DailySummaryService $dailySummary,
         private readonly DailySummaryReportService $reportService,
+        private readonly RealProfitReportService $realProfitReport,
     ) {}
 
     public function overview(): JsonResponse
@@ -38,6 +40,17 @@ class ReportApiController extends Controller
 
         return response()->json(
             $this->dailySummary->build(app('tenant')->id, $validated['date'] ?? null),
+        );
+    }
+
+    public function realProfit(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+        ]);
+
+        return response()->json(
+            $this->realProfitReport->build(app('tenant')->id, $validated['month'] ?? null),
         );
     }
 
