@@ -20,6 +20,7 @@ import {
     ClipboardList,
     CalendarDays,
     Ticket,
+    BriefcaseBusiness,
 } from 'lucide-vue-next';
 import { useAppContext } from './useAppContext';
 
@@ -45,6 +46,7 @@ const ICONS = {
     reconciliation: ClipboardCheck,
     vouchers:      Ticket,
     forms:         ClipboardList,
+    employees:     BriefcaseBusiness,
 };
 
 export function useNavigation() {
@@ -97,6 +99,15 @@ export function useNavigation() {
                 { label: 'Payment Plans', path: '/payments/plans' },
             ],
         });
+
+        if (context.permissions?.employeesManage || context.permissions?.employeePaySheetsManage) {
+            items.push({
+                label: 'Employees',
+                shortLabel: 'Staff',
+                path: '/employees',
+                icon: ICONS.employees,
+            });
+        }
 
         if (context.permissions?.reports) items.push({
             label: 'Reports', shortLabel: 'Reports', path: '/reports', icon: ICONS.reports,

@@ -59,6 +59,8 @@ class AppContextService
                 'stats' => $user->hasPermission('sales.process'),
                 'workout' => $user->hasPermission('workouts.manage'),
                 'paymentsManage' => $user->hasPermission('payments.manage'),
+                'employeesManage' => $user->hasPermission('employees.manage'),
+                'employeePaySheetsManage' => $user->hasPermission('employee_pay_sheets.manage'),
                 'notifications' => $user->hasPermission('notifications.send'),
                 'events' => $user->hasPermission('events.manage'),
                 'activity' => $user->hasPermission('activity.view'),

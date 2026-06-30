@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransaction;
 use App\Models\CompanyAccountTransfer;
+use App\Models\EmployeePaySheetRun;
 use App\Models\Expense;
 use App\Models\MemberPayment;
 use App\Models\Sale;
@@ -116,6 +117,7 @@ class CompanyAccountService
         $expenseIds = $items->where('model_name', 'expense')->pluck('reference_id')->filter()->unique()->values();
         $paymentIds = $items->where('model_name', 'payment')->pluck('reference_id')->filter()->unique()->values();
         $topupIds = $items->where('model_name', 'wallet_topup')->pluck('reference_id')->filter()->unique()->values();
+        $paySheetRunIds = $items->where('model_name', 'employee_pay_sheet')->pluck('reference_id')->filter()->unique()->values();
 
         // Load related records in bulk
         $sales = $saleIds->isNotEmpty()
@@ -136,9 +138,12 @@ class CompanyAccountService
                 ->get(['id', 'member_id', 'reference_number'])
                 ->keyBy('id')
             : collect();
+        $paySheetRuns = $paySheetRunIds->isNotEmpty()
+            ? EmployeePaySheetRun::whereIn('id', $paySheetRunIds)->get(['id', 'period_start', 'period_end'])->keyBy('id')
+            : collect();
 
         return [
-            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments, $topups) {
+            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments, $topups, $paySheetRuns) {
                 $sourceReference = null;
                 $customer = null;
                 $memberId = null;
@@ -167,6 +172,13 @@ class CompanyAccountService
                         $m = $topup->member;
                         $customer = $m->biometric_member_id;
                     }
+                } elseif ($tx->model_name === 'employee_pay_sheet' && $tx->reference_id) {
+                    $paySheetRun = $paySheetRuns->get($tx->reference_id);
+
+                    if ($paySheetRun) {
+                        $sourceReference = $paySheetRun->period_start?->toDateString() . ' to ' . $paySheetRun->period_end?->toDateString();
+                    }
+                    $customer = 'Employee Pay Sheet';
                 }
 
                 return [

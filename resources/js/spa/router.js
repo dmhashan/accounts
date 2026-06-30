@@ -39,6 +39,9 @@ const WorkoutProgramAssignmentEditPage = () => import('./pages/WorkoutProgramAss
 const DietPage = () => import('./pages/DietPage.vue');
 const PaymentsPage = () => import('./pages/PaymentsPage.vue');
 const PaymentFormPage = () => import('./pages/PaymentFormPage.vue');
+const EmployeeManagementPage = () => import('./pages/EmployeeManagementPage.vue');
+const EmployeeFormPage = () => import('./pages/EmployeeFormPage.vue');
+const EmployeeViewPage = () => import('./pages/EmployeeViewPage.vue');
 const AttendancePage = () => import('./pages/AttendancePage.vue');
 const NotificationsPage = () => import('./pages/NotificationsPage.vue');
 const NotificationFormPage = () => import('./pages/NotificationFormPage.vue');
@@ -150,6 +153,10 @@ const routes = [
     { path: '/payments/new', component: PaymentFormPage, meta: { title: 'New Payment' } },
     { path: '/payments/:id', component: PaymentViewPage, meta: { title: 'Payment' } },
     { path: '/payments/:id/edit', component: PaymentFormPage, meta: { title: 'Edit Payment' } },
+    { path: '/employees', component: EmployeeManagementPage, meta: { title: 'Employees' } },
+    { path: '/employees/new', component: EmployeeFormPage, meta: { title: 'New Employee' } },
+    { path: '/employees/:id(\\d+)', component: EmployeeViewPage, meta: { title: 'Employee Profile' } },
+    { path: '/employees/:id(\\d+)/edit', component: EmployeeFormPage, meta: { title: 'Edit Employee' } },
     { path: '/wallet-topups/:id', component: WalletTopupViewPage, meta: { title: 'Wallet Top-up' } },
     { path: '/attendance', component: AttendancePage, meta: { title: 'Attendance' } },
     { path: '/notifications', component: NotificationsPage, meta: { title: 'Notifications' } },
