@@ -13,6 +13,7 @@ class EmployeePaySheetRun extends Model
         'period_end',
         'status',
         'company_account_id',
+        'expense_id',
         'generated_by',
         'paid_by',
         'generated_at',
@@ -42,6 +43,11 @@ class EmployeePaySheetRun extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(CompanyAccount::class, 'company_account_id');
+    }
+
+    public function expense(): BelongsTo
+    {
+        return $this->belongsTo(Expense::class);
     }
 
     public function generator(): BelongsTo

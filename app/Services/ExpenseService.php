@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransaction;
+use App\Models\EmployeePaySheetRun;
 use App\Models\Expense;
 use App\Models\ExpenseDocument;
 use Illuminate\Http\UploadedFile;
@@ -80,6 +81,7 @@ class ExpenseService
                 abort(404);
             }
 
+            $this->ensureExpenseIsNotPaySheetPayment($lockedExpense);
             $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
 
             $lockedExpense->update([
@@ -104,6 +106,8 @@ class ExpenseService
         if (!$lockedExpense) {
             abort(404);
         }
+
+        $this->ensureExpenseIsNotPaySheetPayment($lockedExpense);
 
         // Delete the associated transaction before deleting the expense
         CompanyAccountTransaction::where('model_name', 'expense')
@@ -159,6 +163,17 @@ class ExpenseService
 
         if (!$exists) {
             abort(422, 'Invalid account selection.');
+        }
+    }
+
+    private function ensureExpenseIsNotPaySheetPayment(Expense $expense): void
+    {
+        $linked = EmployeePaySheetRun::query()
+            ->where('expense_id', $expense->id)
+            ->exists();
+
+        if ($linked) {
+            abort(422, 'This expense is linked to a paid employee pay sheet and cannot be edited or deleted.');
         }
     }
 

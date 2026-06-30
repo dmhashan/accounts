@@ -136,7 +136,7 @@ class EmployeePaySheetApiController extends Controller
         $run = $this->paySheetService->markPaid($employeePaySheetRun, $validated, $request->user()?->id);
 
         return response()->json([
-            'message' => 'Employee Pay Sheet marked as paid.',
+            'message' => 'Employee Pay Sheet paid and expense recorded.',
             'data' => ['id' => $run->id],
         ]);
     }

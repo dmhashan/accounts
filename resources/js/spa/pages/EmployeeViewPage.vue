@@ -487,15 +487,35 @@
                       <td class="px-5 py-4 text-right text-sm font-semibold text-primary-600 dark:text-primary-400">
                         {{ money(item.net_pay) }}
                       </td>
-                      <td class="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          class="inline-flex items-center gap-2 rounded-lg border border-secondary-200 px-3 py-1.5 text-xs font-semibold text-secondary-600 hover:bg-secondary-50 dark:border-secondary-700 dark:text-secondary-300 dark:hover:bg-secondary-800"
-                          @click="showPaySheet(item.id)"
-                        >
-                          <Eye class="h-3.5 w-3.5" />
-                          Show
-                        </button>
+                      <td class="px-5 py-4">
+                        <div class="flex justify-end gap-2">
+                          <button
+                            v-if="item.status !== 'paid'"
+                            type="button"
+                            class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                            :disabled="paySheetPaying"
+                            @click="openPaySheetPaymentModal(item)"
+                          >
+                            <CreditCard class="h-3.5 w-3.5" />
+                            Pay now
+                          </button>
+                          <RouterLink
+                            v-else-if="item.expense_id"
+                            :to="`/expenses/${item.expense_id}`"
+                            class="inline-flex items-center gap-2 rounded-lg border border-secondary-200 px-3 py-1.5 text-xs font-semibold text-secondary-600 hover:bg-secondary-50 dark:border-secondary-700 dark:text-secondary-300 dark:hover:bg-secondary-800"
+                          >
+                            <FileText class="h-3.5 w-3.5" />
+                            Expense
+                          </RouterLink>
+                          <button
+                            type="button"
+                            class="inline-flex items-center gap-2 rounded-lg border border-secondary-200 px-3 py-1.5 text-xs font-semibold text-secondary-600 hover:bg-secondary-50 dark:border-secondary-700 dark:text-secondary-300 dark:hover:bg-secondary-800"
+                            @click="showPaySheet(item.id)"
+                          >
+                            <Eye class="h-3.5 w-3.5" />
+                            Show
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     <tr v-if="paySheets.length === 0">
@@ -912,6 +932,92 @@
       </div>
     </div>
 
+    <div v-if="paySheetPaymentModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50" @click="closePaySheetPaymentModal" />
+      <form class="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-secondary-900" @submit.prevent="paySelectedPaySheet">
+        <div class="flex items-start justify-between gap-3 border-b border-secondary-200 p-5 dark:border-secondary-700">
+          <div>
+            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
+              Pay Employee Pay Sheet
+            </h3>
+            <p class="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400">
+              {{ paySheetPayTarget ? `${paySheetPayTarget.period_start} to ${paySheetPayTarget.period_end}` : '—' }}
+            </p>
+          </div>
+          <button type="button" class="text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePaySheetPaymentModal">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+
+        <div class="space-y-4 p-5">
+          <p v-if="fieldError(paySheetPayFormErrors, 'form')" class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300">
+            {{ fieldError(paySheetPayFormErrors, 'form') }}
+          </p>
+
+          <InfoTile label="Payment total" :value="money(paySheetPaymentAmount)" />
+
+          <div>
+            <label class="mb-1 block text-xs font-semibold text-secondary-500 dark:text-secondary-400">Account</label>
+            <select
+              v-model="paySheetPayForm.company_account_id"
+              required
+              class="w-full rounded-xl border border-secondary-300 bg-white px-3 py-2 text-sm text-secondary-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-secondary-700 dark:bg-secondary-900 dark:text-white"
+            >
+              <option value="">
+                Select account
+              </option>
+              <option v-for="account in companyAccounts" :key="account.id" :value="String(account.id)">
+                {{ account.name }}
+              </option>
+            </select>
+            <p v-if="fieldError(paySheetPayFormErrors, 'company_account_id')" class="mt-1 text-xs font-medium text-red-600 dark:text-red-300">
+              {{ fieldError(paySheetPayFormErrors, 'company_account_id') }}
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-xs font-semibold text-secondary-500 dark:text-secondary-400">Paid date</label>
+              <input
+                v-model="paySheetPayForm.paid_at"
+                type="date"
+                class="w-full rounded-xl border border-secondary-300 bg-white px-3 py-2 text-sm text-secondary-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-secondary-700 dark:bg-secondary-900 dark:text-white"
+              />
+              <p v-if="fieldError(paySheetPayFormErrors, 'paid_at')" class="mt-1 text-xs font-medium text-red-600 dark:text-red-300">
+                {{ fieldError(paySheetPayFormErrors, 'paid_at') }}
+              </p>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-semibold text-secondary-500 dark:text-secondary-400">Reference</label>
+              <input
+                v-model="paySheetPayForm.reference_number"
+                type="text"
+                maxlength="255"
+                class="w-full rounded-xl border border-secondary-300 bg-white px-3 py-2 text-sm text-secondary-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-secondary-700 dark:bg-secondary-900 dark:text-white"
+              />
+              <p v-if="fieldError(paySheetPayFormErrors, 'reference_number')" class="mt-1 text-xs font-medium text-red-600 dark:text-red-300">
+                {{ fieldError(paySheetPayFormErrors, 'reference_number') }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2 border-t border-secondary-200 p-5 sm:flex-row sm:items-center sm:justify-end dark:border-secondary-700">
+          <button type="button" class="rounded-xl border border-secondary-300 px-4 py-2 text-sm font-semibold text-secondary-700 dark:border-secondary-700 dark:text-secondary-200" @click="closePaySheetPaymentModal">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+            :disabled="paySheetPaying || !paySheetPayForm.company_account_id"
+          >
+            <CreditCard class="h-4 w-4" />
+            {{ paySheetPaying ? 'Paying...' : 'Pay now' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
     <div v-if="paySheetDetailOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/50" @click="closePaySheetDetail" />
       <div class="relative z-10 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-secondary-900">
@@ -1079,7 +1185,7 @@
 <script setup>
 import { computed, defineComponent, h, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Banknote, CalendarCheck2, Download, Eye, FileText, HandCoins, Pencil, Plus, RefreshCw, Trash2, Upload, X } from 'lucide-vue-next';
+import { Banknote, CalendarCheck2, CreditCard, Download, Eye, FileText, HandCoins, Pencil, Plus, RefreshCw, Trash2, Upload, X } from 'lucide-vue-next';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppPagination from '../components/AppPagination.vue';
@@ -1149,6 +1255,11 @@ const paySheetGenerateModalOpen = ref(false);
 const paySheetDetailOpen = ref(false);
 const paySheetDetailLoading = ref(false);
 const selectedPaySheetDetail = ref(null);
+const paySheetPaymentModalOpen = ref(false);
+const paySheetPaying = ref(false);
+const paySheetPayTarget = ref(null);
+const paySheetPayFormErrors = ref({});
+const paySheetPayForm = ref(defaultPaySheetPayForm());
 const paySheetMeta = ref({ accounts: [] });
 const paySheetMetaLoaded = ref(false);
 const paySheetMetaLoading = ref(false);
@@ -1195,6 +1306,7 @@ const attendanceMap = computed(() => Object.fromEntries(attendanceRecords.value.
 const selectedPaySheet = computed(() => paySheets.value.find((item) => item.period_start?.slice(0, 7) === paySheetMonth.value) || null);
 const selectedPaySheetPdfUrl = computed(() => selectedPaySheetDetail.value ? `/api/employees/${route.params.id}/pay-sheets/${selectedPaySheetDetail.value.id}/pdf` : '#');
 const selectedPaySheetLocked = computed(() => selectedPaySheet.value?.status === 'paid');
+const paySheetPaymentAmount = computed(() => Number(paySheetPayTarget.value?.run_total_net ?? paySheetPayTarget.value?.net_pay ?? 0));
 const paySheetAdjustmentSummary = computed(() => ({
     earnings: paySheetAdjustments.value
         .filter((adjustment) => adjustment.type === 'earning')
@@ -1347,6 +1459,7 @@ async function loadPaySheetMeta() {
         paySheetMeta.value = await apiRequest('/api/employee-pay-sheets/meta');
         paySheetMetaLoaded.value = true;
         setDefaultSalaryAdvanceAccount();
+        setDefaultPaySheetPaymentAccount();
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load employee pay sheet settings.';
     } finally {
@@ -1411,6 +1524,53 @@ async function generateSelectedPaySheet() {
         errorMessage.value = error?.response?.data?.message || 'Failed to generate employee pay sheet.';
     } finally {
         paySheetGenerating.value = false;
+    }
+}
+
+async function openPaySheetPaymentModal(item) {
+    await loadPaySheetMeta();
+    paySheetPayTarget.value = item;
+    paySheetPayFormErrors.value = {};
+    paySheetPayForm.value = defaultPaySheetPayForm(
+        item.company_account_id ? String(item.company_account_id) : defaultPaySheetPaymentAccountId(),
+    );
+    paySheetPaymentModalOpen.value = true;
+}
+
+function closePaySheetPaymentModal() {
+    if (paySheetPaying.value) return;
+
+    paySheetPaymentModalOpen.value = false;
+    paySheetPayTarget.value = null;
+    paySheetPayFormErrors.value = {};
+}
+
+async function paySelectedPaySheet() {
+    if (!paySheetPayTarget.value?.employee_pay_sheet_run_id || !paySheetPayForm.value.company_account_id) return;
+
+    paySheetPaying.value = true;
+    errorMessage.value = '';
+    paySheetActionMessage.value = '';
+    paySheetPayFormErrors.value = {};
+
+    try {
+        const response = await apiRequest(`/api/employee-pay-sheets/${paySheetPayTarget.value.employee_pay_sheet_run_id}/mark-paid`, {
+            method: 'post',
+            data: {
+                company_account_id: paySheetPayForm.value.company_account_id,
+                paid_at: paySheetPayForm.value.paid_at,
+                reference_number: paySheetPayForm.value.reference_number,
+            },
+        });
+
+        paySheetActionMessage.value = response.message || 'Employee Pay Sheet paid and expense created.';
+        paySheetPaymentModalOpen.value = false;
+        paySheetPayTarget.value = null;
+        await loadPaySheets(paySheetPagination.value.current_page || 1);
+    } catch (error) {
+        paySheetPayFormErrors.value = formErrors(error, 'Failed to pay employee pay sheet.');
+    } finally {
+        paySheetPaying.value = false;
     }
 }
 
@@ -1610,6 +1770,14 @@ function salaryAdvancePayload() {
     };
 }
 
+function defaultPaySheetPayForm(accountId = '') {
+    return {
+        company_account_id: accountId ? String(accountId) : '',
+        paid_at: today(),
+        reference_number: '',
+    };
+}
+
 function defaultSalaryAdvanceForm(accountId = '', monthValue = salaryAdvanceMonth.value) {
     return {
         month: monthValue,
@@ -1630,9 +1798,19 @@ function defaultSalaryAdvanceAccountId() {
     return companyAccounts.value[0]?.id ? String(companyAccounts.value[0].id) : '';
 }
 
+function defaultPaySheetPaymentAccountId() {
+    return companyAccounts.value[0]?.id ? String(companyAccounts.value[0].id) : '';
+}
+
 function setDefaultSalaryAdvanceAccount() {
     if (!salaryAdvanceForm.value.company_account_id && companyAccounts.value.length) {
         salaryAdvanceForm.value.company_account_id = defaultSalaryAdvanceAccountId();
+    }
+}
+
+function setDefaultPaySheetPaymentAccount() {
+    if (!paySheetPayForm.value.company_account_id && companyAccounts.value.length) {
+        paySheetPayForm.value.company_account_id = defaultPaySheetPaymentAccountId();
     }
 }
 

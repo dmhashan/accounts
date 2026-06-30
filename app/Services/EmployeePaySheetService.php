@@ -53,7 +53,7 @@ class EmployeePaySheetService
     public function runs(int $perPage): array
     {
         $runs = EmployeePaySheetRun::query()
-            ->with(['account:id,name', 'generator:id,name', 'paidBy:id,name'])
+            ->with(['account:id,name', 'expense:id', 'generator:id,name', 'paidBy:id,name'])
             ->withCount('items')
             ->orderByDesc('period_end')
             ->orderByDesc('created_at')
@@ -74,6 +74,7 @@ class EmployeePaySheetService
     {
         $run->load([
             'account:id,name',
+            'expense:id',
             'generator:id,name',
             'paidBy:id,name',
             'items' => fn ($query) => $query->orderBy('employee_name'),
@@ -470,6 +471,7 @@ class EmployeePaySheetService
 
         return DB::transaction(function () use ($run, $validated, $paidBy) {
             $lockedRun = EmployeePaySheetRun::query()
+                ->with('expense')
                 ->lockForUpdate()
                 ->find($run->id);
 
@@ -477,30 +479,46 @@ class EmployeePaySheetService
                 abort(404);
             }
 
+            if ($lockedRun->status === 'paid') {
+                abort(422, 'This employee pay sheet is already marked as paid.');
+            }
+
+            if ((float) $lockedRun->total_net <= 0) {
+                abort(422, 'Employee Pay Sheet net pay must be greater than zero before payment.');
+            }
+
+            $paidAt = filled($validated['paid_at'] ?? null) ? Carbon::parse($validated['paid_at']) : now();
+            $referenceNumber = filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null;
+            $expensePayload = $this->paySheetExpensePayload(
+                $lockedRun,
+                (int) $validated['company_account_id'],
+                $paidAt->toDateString(),
+                $referenceNumber,
+            );
+
+            if ($lockedRun->expense) {
+                $expense = $lockedRun->expense;
+                $lockedRun->update(['expense_id' => null]);
+                $this->expenses->updateExpense($expense, app('tenant')->id, $expensePayload, [], $paidBy);
+                $expense->refresh();
+            } else {
+                $expense = $this->expenses->storeExpense(app('tenant')->id, $expensePayload, [], $paidBy);
+            }
+
             $lockedRun->update([
                 'status' => 'paid',
                 'company_account_id' => $validated['company_account_id'],
+                'expense_id' => $expense->id,
                 'paid_by' => $paidBy,
-                'paid_at' => filled($validated['paid_at'] ?? null) ? Carbon::parse($validated['paid_at']) : now(),
-                'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
+                'paid_at' => $paidAt,
+                'reference_number' => $referenceNumber,
             ]);
 
-            CompanyAccountTransaction::updateOrCreate(
-                [
-                    'model_name' => 'employee_pay_sheet',
-                    'reference_id' => $lockedRun->id,
-                ],
-                [
-                    'company_account_id' => $lockedRun->company_account_id,
-                    'type' => 'employee_pay_sheet',
-                    'amount' => -(float) $lockedRun->total_net,
-                    'transaction_date' => $lockedRun->paid_at->toDateString(),
-                    'reference_number' => $lockedRun->reference_number,
-                    'notes' => 'Employee Pay Sheet: ' . $lockedRun->period_start->toDateString() . ' to ' . $lockedRun->period_end->toDateString(),
-                ],
-            );
+            CompanyAccountTransaction::where('model_name', 'employee_pay_sheet')
+                ->where('reference_id', $lockedRun->id)
+                ->delete();
 
-            return $lockedRun->fresh(['account:id,name', 'generator:id,name', 'paidBy:id,name'])->loadCount('items');
+            return $lockedRun->fresh(['account:id,name', 'expense:id', 'generator:id,name', 'paidBy:id,name'])->loadCount('items');
         });
     }
 
@@ -510,11 +528,20 @@ class EmployeePaySheetService
             abort(422, 'Paid employee pay sheets cannot be deleted.');
         }
 
-        CompanyAccountTransaction::where('model_name', 'employee_pay_sheet')
-            ->where('reference_id', $run->id)
-            ->delete();
+        DB::transaction(function () use ($run) {
+            CompanyAccountTransaction::where('model_name', 'employee_pay_sheet')
+                ->where('reference_id', $run->id)
+                ->delete();
 
-        $run->delete();
+            $expense = $run->expense;
+
+            if ($expense) {
+                $run->update(['expense_id' => null]);
+                $this->expenses->destroyExpense($expense, app('tenant')->id);
+            }
+
+            $run->delete();
+        });
     }
 
     private function attendanceCounts($records): array
@@ -820,6 +847,18 @@ class EmployeePaySheetService
         ];
     }
 
+    private function paySheetExpensePayload(EmployeePaySheetRun $run, int $accountId, string $expenseDate, ?string $referenceNumber): array
+    {
+        return [
+            'company_account_id' => $accountId,
+            'category' => 'Staff Salaries',
+            'amount' => round((float) $run->total_net, 2),
+            'expense_date' => $expenseDate,
+            'reference_number' => $referenceNumber,
+            'notes' => 'Employee Pay Sheet: ' . $run->period_start->toDateString() . ' to ' . $run->period_end->toDateString(),
+        ];
+    }
+
     private function serializeAdjustment(EmployeePaySheetAdjustment $adjustment): array
     {
         $category = self::ADJUSTMENT_CATEGORIES[$adjustment->category] ?? [
@@ -923,6 +962,7 @@ class EmployeePaySheetService
             'status' => $run->status,
             'company_account_id' => $run->company_account_id,
             'account_name' => $run->account?->name,
+            'expense_id' => $run->expense_id,
             'items_count' => $run->items_count ?? $run->items()->count(),
             'total_gross' => round((float) $run->total_gross, 2),
             'total_deductions' => round((float) $run->total_deductions, 2),
@@ -972,6 +1012,9 @@ class EmployeePaySheetService
             'period_end' => $run?->period_end?->toDateString(),
             'status' => $run?->status,
             'account_name' => $run?->account?->name,
+            'company_account_id' => $run?->company_account_id,
+            'expense_id' => $run?->expense_id,
+            'run_total_net' => round((float) ($run?->total_net ?? $item->net_pay), 2),
             'reference_number' => $run?->reference_number,
             'generated_at' => optional($run?->generated_at)->format('Y-m-d H:i'),
             'paid_at' => optional($run?->paid_at)->format('Y-m-d H:i'),
