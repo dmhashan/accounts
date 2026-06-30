@@ -285,6 +285,124 @@
             </button>
           </div>
         </div>
+
+        <!-- Body measurements card -->
+        <div class="app-surface rounded-2xl overflow-hidden mt-4">
+          <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <Ruler class="w-5 h-5 text-primary-500 flex-shrink-0" :stroke-width="2" />
+              <div>
+                <h2 class="text-base font-semibold" style="color: var(--text-strong)">
+                  Body Measurements
+                </h2>
+                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                  Configure optional transformation tracker fields
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+              :disabled="submitting"
+              @click="addMeasurementField"
+            >
+              <Plus class="h-3.5 w-3.5" />
+              <span>Add Field</span>
+            </button>
+          </div>
+
+          <div class="divide-y divide-secondary-100 dark:divide-secondary-800">
+            <div
+              v-for="(field, index) in bodyMeasurementFields"
+              :key="field.key"
+              class="px-4 md:px-6 py-4 grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)_7rem_auto] gap-3 md:items-end"
+            >
+              <div class="flex items-center justify-between md:block">
+                <span class="md:hidden text-xs font-medium text-secondary-700 dark:text-secondary-300">Enabled</span>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="field.enabled"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                  :class="field.enabled ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                  @click="field.enabled = !field.enabled"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                    :class="field.enabled ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+
+              <AppFormField label="Label">
+                <AppFormInput
+                  v-model.trim="field.label"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Measurement label"
+                />
+              </AppFormField>
+
+              <AppFormField label="Order">
+                <AppFormInput
+                  v-model.number="field.sort_order"
+                  type="number"
+                  min="0"
+                  max="999"
+                  step="1"
+                />
+              </AppFormField>
+
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 disabled:opacity-40"
+                  :disabled="index === 0"
+                  title="Move up"
+                  @click="moveMeasurementField(index, -1)"
+                >
+                  <ChevronUp class="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 disabled:opacity-40"
+                  :disabled="index === bodyMeasurementFields.length - 1"
+                  title="Move down"
+                  @click="moveMeasurementField(index, 1)"
+                >
+                  <ChevronDown class="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40"
+                  :disabled="field.built_in"
+                  title="Remove custom field"
+                  @click="removeMeasurementField(index)"
+                >
+                  <Trash2 class="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-4 md:px-6 py-4 border-t border-secondary-200/70 dark:border-secondary-700/70 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div v-if="saveError" class="flex-1 text-sm text-red-600 dark:text-red-400">
+              {{ saveError }}
+            </div>
+            <div v-else-if="successMessage" class="flex-1 text-sm text-green-600 dark:text-green-400">
+              {{ successMessage }}
+            </div>
+            <div v-else class="flex-1" />
+            <button
+              type="button"
+              class="w-full sm:w-auto px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              :disabled="submitting"
+              @click="save"
+            >
+              {{ submitting ? 'Saving…' : 'Save Configuration' }}
+            </button>
+          </div>
+        </div>
       </template>
     </div>
   </section>
@@ -292,7 +410,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { Bell, BellRing, Mail, MessageSquare } from 'lucide-vue-next';
+import { Bell, BellRing, ChevronDown, ChevronUp, Mail, MessageSquare, Plus, Ruler, Trash2 } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -319,7 +437,10 @@ const form = ref({
     'notifications.sms.api_key': '',
     'notifications.sms.sender_id': '',
     'general.member_notifications': '{}',
+    'body_measurements.fields': '[]',
 });
+
+const bodyMeasurementFields = ref([]);
 
 const memberReachableConfig = ref({
     member_login_url: '',
@@ -342,6 +463,7 @@ async function load() {
                 form.value[key] = data[key];
             }
         });
+        bodyMeasurementFields.value = parseBodyMeasurementFields(form.value['body_measurements.fields']);
         memberReachableConfig.value = parseMemberReachableConfig(form.value['general.member_notifications']);
     } catch {
         loadError.value = 'Failed to load configuration.';
@@ -356,6 +478,7 @@ async function save() {
     successMessage.value = '';
     try {
         form.value['general.member_notifications'] = serializeMemberNotificationConfig();
+        form.value['body_measurements.fields'] = serializeBodyMeasurementFields();
         await apiRequest('/api/settings/configuration', { method: 'PUT', data: form.value });
         successMessage.value = 'Configuration saved successfully.';
         setTimeout(() => { successMessage.value = ''; }, 3000);
@@ -364,6 +487,66 @@ async function save() {
     } finally {
         submitting.value = false;
     }
+}
+
+function parseBodyMeasurementFields(raw) {
+    try {
+        const fields = JSON.parse(raw || '[]');
+
+        if (!Array.isArray(fields)) return [];
+
+        return fields.map((field, index) => ({
+            key: field.key || `custom_field_${index + 1}`,
+            label: field.label || 'Measurement',
+            enabled: field.enabled !== false,
+            sort_order: Number(field.sort_order ?? ((index + 1) * 10)),
+            built_in: Boolean(field.built_in),
+        }));
+    } catch {
+        return [];
+    }
+}
+
+function serializeBodyMeasurementFields() {
+    return JSON.stringify(bodyMeasurementFields.value.map((field, index) => ({
+        key: field.key || `custom_field_${index + 1}`,
+        label: field.label || 'Measurement',
+        enabled: Boolean(field.enabled),
+        sort_order: Number(field.sort_order ?? ((index + 1) * 10)),
+        built_in: Boolean(field.built_in),
+    })));
+}
+
+function addMeasurementField() {
+    const next = bodyMeasurementFields.value.length + 1;
+    bodyMeasurementFields.value.push({
+        key: `custom_field_${Date.now()}`,
+        label: 'Custom Field',
+        enabled: true,
+        sort_order: next * 10,
+        built_in: false,
+    });
+}
+
+function moveMeasurementField(index, direction) {
+    const target = index + direction;
+
+    if (target < 0 || target >= bodyMeasurementFields.value.length) return;
+
+    const fields = [...bodyMeasurementFields.value];
+    [fields[index], fields[target]] = [fields[target], fields[index]];
+    bodyMeasurementFields.value = fields.map((field, fieldIndex) => ({
+        ...field,
+        sort_order: (fieldIndex + 1) * 10,
+    }));
+}
+
+function removeMeasurementField(index) {
+    const field = bodyMeasurementFields.value[index];
+
+    if (!field || field.built_in) return;
+
+    bodyMeasurementFields.value.splice(index, 1);
 }
 
 function parseMemberReachableConfig(raw) {

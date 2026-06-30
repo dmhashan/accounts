@@ -43,6 +43,7 @@ class ConfigurationApiController extends Controller
             'general\.color_theme' => ['sometimes', 'in:crimson,ocean,forest,violet,sunset,slate'],
             'general\.color_mode' => ['sometimes', 'in:system,light,dark'],
             'general\.member_notifications' => ['sometimes', 'nullable', 'json'],
+            'body_measurements\.fields' => ['sometimes', 'nullable', 'json'],
 
             'notifications.inapp.enabled' => ['sometimes', 'in:0,1'],
             'notifications.email.enabled' => ['sometimes', 'in:0,1'],

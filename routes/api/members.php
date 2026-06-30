@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BiometricApiController;
 use App\Http\Controllers\Api\MemberApiController;
+use App\Http\Controllers\Api\MemberBodyMeasurementApiController;
 use App\Http\Controllers\Api\MemberDocumentApiController;
 use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\PaymentPlanApiController;
@@ -24,6 +25,12 @@ Route::middleware(['auth', 'permission:users.view'])->group(function () {
     Route::post('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
     Route::put('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
     Route::delete('/members/{member}/avatar', [MemberApiController::class, 'deleteAvatar'])->middleware('permission:users.edit');
+
+    // Member body measurements — view requires users.view; changes require users.edit
+    Route::get('/members/{member}/body-measurements', [MemberBodyMeasurementApiController::class, 'index']);
+    Route::post('/members/{member}/body-measurements', [MemberBodyMeasurementApiController::class, 'store'])->middleware('permission:users.edit');
+    Route::put('/members/{member}/body-measurements/{bodyMeasurement}', [MemberBodyMeasurementApiController::class, 'update'])->middleware('permission:users.edit');
+    Route::delete('/members/{member}/body-measurements/{bodyMeasurement}', [MemberBodyMeasurementApiController::class, 'destroy'])->middleware('permission:users.edit');
 
     // Payment plans (read-only) — needed for member create/edit form
     Route::get('/members/form/payment-plans', [PaymentPlanApiController::class, 'index']);

@@ -29,27 +29,35 @@
           />
 
           <!-- Tabs -->
-          <div class="border-b border-secondary-200 dark:border-secondary-700 mx-4">
-            <nav class="-mb-px flex" aria-label="Member tabs">
+          <div class="border-b border-secondary-200 dark:border-secondary-700 mx-4 overflow-hidden">
+            <nav class="-mb-px flex gap-1 overflow-x-auto overscroll-x-contain pb-px" aria-label="Member tabs">
               <button
                 v-for="tab in tabs"
                 :key="tab.id"
                 type="button"
-                class="flex-1 sm:flex-none flex items-center justify-center sm:justify-start gap-1.5 px-2 sm:px-0 sm:mr-6 pb-3 text-sm font-medium border-b-2 transition-colors"
+                class="inline-flex min-w-10 shrink-0 items-center justify-center gap-1.5 px-3 lg:mr-5 lg:px-0 pb-3 pt-1 text-sm font-medium border-b-2 transition-colors"
                 :class="activeTab === tab.id
                   ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
                   : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
                 :title="tab.label"
+                :aria-current="activeTab === tab.id ? 'page' : undefined"
                 @click="switchTab(tab.id)"
               >
                 <component :is="tab.icon" class="w-4 h-4 shrink-0" />
-                <span class="hidden sm:inline whitespace-nowrap">{{ tab.label }}</span>
+                <span class="hidden lg:inline whitespace-nowrap">{{ tab.label }}</span>
               </button>
             </nav>
           </div>
 
           <!-- Tab content -->
           <MemberOverviewTab v-if="activeTab === 'overview'" :member="member" />
+
+          <MemberBodyMeasurementsTab
+            v-if="activeTab === 'measurements'"
+            ref="measurementsTabRef"
+            :member-id="member.id"
+            :can-manage="permissions.edit"
+          />
 
           <MemberWalletTab
             v-if="activeTab === 'wallet'"
@@ -128,12 +136,13 @@
 <script setup>
 import { nextTick, onMounted, ref } from 'vue';
 import AppConfirmModal from '../components/AppConfirmModal.vue';
-import { Banknote, CalendarDays, Cpu, Dumbbell, FileText, ShoppingBag, UserRound, Wallet } from 'lucide-vue-next';
+import { Banknote, CalendarDays, Cpu, Dumbbell, FileText, Ruler, ShoppingBag, UserRound, Wallet } from 'lucide-vue-next';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import MemberHeroCard from '../components/member/MemberHeroCard.vue';
 import MemberOverviewTab from '../components/member/MemberOverviewTab.vue';
 import MemberWalletTab from '../components/member/MemberWalletTab.vue';
+import MemberBodyMeasurementsTab from '../components/member/MemberBodyMeasurementsTab.vue';
 import MemberPaymentsTab from '../components/member/MemberPaymentsTab.vue';
 import MemberSalesTab from '../components/member/MemberSalesTab.vue';
 import MemberWorkoutsTab from '../components/member/MemberWorkoutsTab.vue';
@@ -153,19 +162,21 @@ const permissions = ref({ edit: false, delete: false });
 
 // ── Tabs ──
 const tabs = [
-    { id: 'overview',  label: 'Overview',  icon: UserRound },
-    { id: 'wallet',    label: 'Wallet',    icon: Wallet },
-    { id: 'payments',  label: 'Payments',  icon: Banknote },
-    { id: 'sales',     label: 'Sales',     icon: ShoppingBag },
-    { id: 'workouts',  label: 'Workouts',  icon: Dumbbell },
-    { id: 'documents', label: 'Documents', icon: FileText },
-    { id: 'calendar',  label: 'Calendar',  icon: CalendarDays },
-    { id: 'biometric', label: 'Biometric', icon: Cpu },
+    { id: 'overview',     label: 'Overview',     icon: UserRound },
+    { id: 'measurements', label: 'Body Measurements', icon: Ruler },
+    { id: 'wallet',       label: 'Wallet',       icon: Wallet },
+    { id: 'payments',     label: 'Payments',     icon: Banknote },
+    { id: 'sales',        label: 'Sales',        icon: ShoppingBag },
+    { id: 'workouts',     label: 'Workouts',     icon: Dumbbell },
+    { id: 'documents',    label: 'Documents',    icon: FileText },
+    { id: 'calendar',     label: 'Calendar',     icon: CalendarDays },
+    { id: 'biometric',    label: 'Biometric',    icon: Cpu },
 ];
 const activeTab = ref('overview');
 
 // Tab component refs for lazy load triggering
 const walletTabRef = ref(null);
+const measurementsTabRef = ref(null);
 const paymentsTabRef = ref(null);
 const salesTabRef = ref(null);
 const workoutsTabRef = ref(null);
@@ -176,6 +187,7 @@ async function switchTab(id) {
     activeTab.value = id;
     await nextTick(); // wait for v-if to mount the component before calling exposed methods
     if (!member.value) return;
+    if (id === 'measurements') measurementsTabRef.value?.loadMeasurements(1);
     if (id === 'wallet') walletTabRef.value?.loadWalletData();
     if (id === 'payments') paymentsTabRef.value?.loadMemberPayments(1);
     if (id === 'sales') salesTabRef.value?.loadMemberSales(1);
