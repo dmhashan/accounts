@@ -42,6 +42,34 @@ class LoginPageRedirectTest extends TestCase
         $this->get('/login')->assertRedirect(route('dashboard'));
     }
 
+    public function testLoginPostRejectsInactiveUser(): void
+    {
+        $user = $this->createUserForTenant($this->tenant, 'admin');
+        $user->update(['is_active' => false]);
+
+        $response = $this->post('/login', [
+            'login' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertSessionHas('error', 'Invalid username/email or password for this tenant.');
+        $this->assertGuest();
+    }
+
+    public function testInactiveAuthenticatedUserIsLoggedOutFromProtectedWebRoutes(): void
+    {
+        $user = $this->createUserForTenant($this->tenant, 'admin');
+        $user->update(['is_active' => false]);
+
+        $this->actingAs($user);
+
+        $this->get('/dashboard')
+            ->assertRedirect(route('login.form'))
+            ->assertSessionHas('error', 'Your account is deactivated. Please contact an administrator.');
+
+        $this->assertGuest();
+    }
+
     private function createUserForTenant(Tenant $tenant, string $roleSlug): User
     {
         $role = Role::create([

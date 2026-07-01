@@ -28,6 +28,7 @@ class User extends Authenticatable
         'social_provider_id',
         'avatar',
         'password',
+        'is_active',
     ];
 
     /**
@@ -50,6 +51,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 

@@ -40,6 +40,7 @@ class UserService
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'is_active' => (bool) $user->is_active,
                 'role' => $user->role instanceof Role ? [
                     'id' => $user->role->id,
                     'name' => $user->role->name,
@@ -56,6 +57,7 @@ class UserService
                     'is_verified' => $user->member->is_verified,
                 ] : null,
                 'canDelete' => $currentUser->id !== $user->id,
+                'canDeactivate' => $currentUser->id !== $user->id,
             ]),
             'meta' => [
                 'current_page' => $users->currentPage(),
@@ -78,6 +80,7 @@ class UserService
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role_id' => $validated['role_id'],
+            'is_active' => true,
         ]);
 
         $user->load('role:id,name,slug');
@@ -85,7 +88,7 @@ class UserService
         return $user;
     }
 
-    public function show(User $user): array
+    public function show(User $user, ?User $currentUser = null): array
     {
         $user->loadMissing([
             'role:id,name,slug',
@@ -96,6 +99,7 @@ class UserService
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'is_active' => (bool) $user->is_active,
             'role_id' => $user->role_id,
             'role' => $user->role instanceof Role ? [
                 'id' => $user->role->id,
@@ -112,6 +116,8 @@ class UserService
                 'is_active' => $user->member->is_active,
                 'is_verified' => $user->member->is_verified,
             ] : null,
+            'canDelete' => $currentUser ? $currentUser->id !== $user->id : true,
+            'canDeactivate' => $currentUser ? $currentUser->id !== $user->id : true,
         ];
     }
 
@@ -122,12 +128,19 @@ class UserService
             'email' => $validated['email'],
             'role_id' => $validated['role_id'],
         ]);
+    }
 
-        if (!empty($validated['password'])) {
-            $user->update([
-                'password' => Hash::make($validated['password']),
-            ]);
+    public function setActive(User $targetUser, User $actor, bool $isActive): bool
+    {
+        if ($actor->id === $targetUser->id && !$isActive) {
+            return false;
         }
+
+        $targetUser->update([
+            'is_active' => $isActive,
+        ]);
+
+        return true;
     }
 
     public function destroy(User $targetUser, User $actor): bool

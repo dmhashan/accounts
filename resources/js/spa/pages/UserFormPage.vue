@@ -30,12 +30,12 @@
           </AppFormField>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AppFormField label="Password" :required="!isEdit" :optional="isEdit">
-            <AppFormInput v-model="form.password" type="password" :required="!isEdit" />
+        <div v-if="!isEdit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AppFormField label="Password" required>
+            <AppFormInput v-model="form.password" type="password" required />
           </AppFormField>
-          <AppFormField label="Confirm Password" :required="!isEdit" :optional="isEdit">
-            <AppFormInput v-model="form.password_confirmation" type="password" :required="!isEdit" />
+          <AppFormField label="Confirm Password" required>
+            <AppFormInput v-model="form.password_confirmation" type="password" required />
           </AppFormField>
         </div>
 
@@ -95,9 +95,12 @@ async function submit() {
             name: form.value.name,
             email: form.value.email,
             role_id: Number(form.value.role_id),
-            password: form.value.password || undefined,
-            password_confirmation: form.value.password_confirmation || undefined,
         };
+
+        if (!isEdit.value) {
+            payload.password = form.value.password;
+            payload.password_confirmation = form.value.password_confirmation;
+        }
 
         if (isEdit.value) {
             await apiRequest(`/api/users/${route.params.id}`, { method: 'put', data: payload });

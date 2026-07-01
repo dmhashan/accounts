@@ -6,7 +6,6 @@ use App\Models\Role;
 use App\Models\User;
 use App\Rules\UniqueTenantEmail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -40,8 +39,9 @@ class UserController extends Controller
         User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
             'role_id' => $validated['role_id'],
+            'is_active' => true,
         ]);
 
         return redirect()->route('users.index')
@@ -70,16 +70,6 @@ class UserController extends Controller
             'email' => $validated['email'],
             'role_id' => $validated['role_id'],
         ]);
-
-        if ($request->filled('password')) {
-            $request->validate([
-                'password' => 'required|string|min:8|confirmed',
-            ]);
-
-            $user->update([
-                'password' => Hash::make($request->password),
-            ]);
-        }
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');

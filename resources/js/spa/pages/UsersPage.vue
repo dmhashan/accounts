@@ -62,6 +62,13 @@
                     {{ user.role?.name || 'No Role' }}
                   </span>
                 </div>
+
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-secondary-500 dark:text-secondary-400">Status</span>
+                  <span class="px-2.5 py-1 text-xs font-semibold rounded-full" :class="statusBadgeClass(user)">
+                    {{ user.is_active ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
               </article>
 
               <div v-if="users.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
@@ -81,6 +88,9 @@
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                       Role
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Status
                     </th>
                   </tr>
                 </thead>
@@ -110,10 +120,15 @@
                         {{ user.role?.name || 'No Role' }}
                       </span>
                     </td>
+                    <td class="px-6 py-4">
+                      <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full" :class="statusBadgeClass(user)">
+                        {{ user.is_active ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
                   </tr>
 
                   <tr v-if="users.length === 0">
-                    <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    <td colspan="4" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
                       No users found.
                     </td>
                   </tr>
@@ -166,6 +181,12 @@ function initials(name = '') {
         .slice(0, 2)
         .map((part) => part.charAt(0).toUpperCase())
         .join('') || 'U';
+}
+
+function statusBadgeClass(user) {
+    return user?.is_active
+        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
 }
 
 async function loadUsers(page = 1) {

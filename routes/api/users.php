@@ -9,5 +9,7 @@ Route::middleware(['auth', 'permission:users.view'])->group(function () {
     Route::get('/users/{user}', [UserApiController::class, 'show']);
     Route::post('/users', [UserApiController::class, 'store'])->middleware('permission:users.create');
     Route::put('/users/{user}', [UserApiController::class, 'update'])->middleware('permission:users.edit');
+    Route::patch('/users/{user}/status', [UserApiController::class, 'updateStatus'])->middleware('permission:users.edit');
+    Route::post('/users/{user}/password-reset', [UserApiController::class, 'sendPasswordReset'])->middleware('permission:users.edit');
     Route::delete('/users/{user}', [UserApiController::class, 'destroy'])->middleware('permission:users.delete');
 });

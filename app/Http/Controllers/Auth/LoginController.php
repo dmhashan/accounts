@@ -32,6 +32,7 @@ class LoginController extends Controller
         $attemptData = [
             'password' => $credentials['password'],
             $isEmail ? 'email' : 'username' => $login,
+            'is_active' => true,
         ];
 
         if (Auth::attempt($attemptData)) {

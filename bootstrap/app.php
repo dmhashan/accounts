@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             App\Http\Middleware\InitializeTenantConnection::class,
         ]);
 
+        $middleware->web(append: [
+            App\Http\Middleware\EnsureActiveUser::class,
+        ]);
+
         $middleware->prependToPriorityList(
             Illuminate\Cookie\Middleware\EncryptCookies::class,
             App\Http\Middleware\InitializeTenantConnection::class,

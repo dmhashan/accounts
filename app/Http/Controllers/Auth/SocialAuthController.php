@@ -45,6 +45,11 @@ class SocialAuthController extends Controller
                 ->with('error', 'No account found for this SSO email in this tenant.');
         }
 
+        if (!$user->is_active) {
+            return redirect()->route('login.form')
+                ->with('error', 'Your account is deactivated. Please contact an administrator.');
+        }
+
         $updates = [
             'social_provider' => $provider,
             'social_provider_id' => $socialUser->getId(),

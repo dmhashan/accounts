@@ -4,14 +4,18 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PasswordResetService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class ForgotPasswordController extends Controller
 {
+    public function __construct(
+        private readonly PasswordResetService $passwordResetService,
+    ) {}
+
     public function showLinkRequestForm()
     {
         return view('auth.forgot-password');
@@ -31,27 +35,10 @@ class ForgotPasswordController extends Controller
             return back()->withErrors(['email' => 'We could not find a user with that email address.']);
         }
 
-        // Delete old tokens for this email
-        DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->delete();
-
-        // Create new token
-        $token = Str::random(64);
-
-        DB::table('password_reset_tokens')->insert([
-            'email' => $request->email,
-            'token' => Hash::make($token),
-            'created_at' => Carbon::now(),
-        ]);
-
-        // In production, send email with reset link
-        // For now, we'll show the token on screen (development only)
-        $resetLink = route('password.reset', ['token' => $token, 'email' => $request->email]);
+        $resetLink = $this->passwordResetService->sendResetLink($user, app('tenant'));
 
         // Only expose reset link in non-production environments
         if (app()->environment('production')) {
-            // TODO: dispatch email
             return back()->with('success', 'Password reset link has been sent to your email address.');
         }
 

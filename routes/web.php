@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Middleware\IdentifyTenant;
 use App\Services\Tenancy\TenantDatabaseManager;
@@ -39,6 +40,14 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     Route::get('/auth/{provider}/callback', [App\Http\Controllers\Auth\SocialAuthController::class, 'callback'])
         ->whereIn('provider', ['google', 'apple'])
         ->name('auth.social.callback');
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])
+        ->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])
+        ->name('password.reset');
+    Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])
+        ->name('password.update');
 
     // Registration routes
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register.form');

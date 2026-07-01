@@ -20,6 +20,24 @@ class AuthApiTest extends ApiRouteTestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function testLoginRouteRejectsInactiveUser(): void
+    {
+        $user = $this->createUser([], [
+            'is_active' => false,
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'login' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Invalid username/email or password for this tenant.');
+
+        $this->assertGuest();
+    }
+
     public function testLogoutRouteLogsOutAuthenticatedUser(): void
     {
         $user = $this->actingAsUser();
@@ -51,5 +69,21 @@ class AuthApiTest extends ApiRouteTestCase
         $response
             ->assertOk()
             ->assertJsonPath('message', 'Session refreshed successfully.');
+    }
+
+    public function testInactiveAuthenticatedUserCannotAccessProtectedApiRoutes(): void
+    {
+        $user = $this->actingAsUser(attributes: [
+            'is_active' => false,
+        ]);
+
+        $response = $this->getJson('/api/profile');
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Your account is deactivated. Please contact an administrator.');
+
+        $this->assertGuest();
+        $this->assertFalse($user->fresh()->is_active);
     }
 }

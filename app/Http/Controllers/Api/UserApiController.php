@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Rules\UniqueTenantEmail;
+use App\Services\PasswordResetService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,10 @@ use Illuminate\Validation\Rule;
 
 class UserApiController extends Controller
 {
-    public function __construct(private readonly UserService $userService) {}
+    public function __construct(
+        private readonly UserService $userService,
+        private readonly PasswordResetService $passwordResetService,
+    ) {}
 
     public function meta(): JsonResponse
     {
@@ -54,12 +58,12 @@ class UserApiController extends Controller
         ], 201);
     }
 
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
         $this->userService->ensureTenantUser($user, app('tenant')->id);
 
         return response()->json([
-            'data' => $this->userService->show($user),
+            'data' => $this->userService->show($user, $request->user()),
         ]);
     }
 
@@ -74,13 +78,47 @@ class UserApiController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', new UniqueTenantEmail($tenant->id, $user->id)],
             'role_id' => ['required', Rule::exists('roles', 'id')],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
         $this->userService->update($user, $validated);
 
         return response()->json([
             'message' => 'User updated successfully.',
+        ]);
+    }
+
+    public function sendPasswordReset(User $user): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $this->userService->ensureTenantUser($user, $tenant->id);
+        $this->passwordResetService->sendResetLink($user, $tenant);
+
+        return response()->json([
+            'message' => 'Password reset link has been sent to ' . $user->email . '.',
+        ]);
+    }
+
+    public function updateStatus(Request $request, User $user): JsonResponse
+    {
+        $this->userService->ensureTenantUser($user, app('tenant')->id);
+
+        $validated = $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $isActive = (bool) $validated['is_active'];
+
+        if (!$this->userService->setActive($user, $request->user(), $isActive)) {
+            return response()->json([
+                'message' => 'You cannot deactivate yourself.',
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => $isActive ? 'User activated successfully.' : 'User deactivated successfully.',
+            'data' => $this->userService->show($user->fresh(), $request->user()),
         ]);
     }
 

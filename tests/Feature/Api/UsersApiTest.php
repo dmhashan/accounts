@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Api;
 
+use App\Mail\PasswordResetLinkMail;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+
 class UsersApiTest extends ApiRouteTestCase
 {
     public function testUsersMetaRouteReturnsRolesPayload(): void
@@ -42,9 +46,12 @@ class UsersApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonPath('data.id', $targetUser->id)
             ->assertJsonPath('data.email', $targetUser->email)
+            ->assertJsonPath('data.is_active', true)
             ->assertJsonPath('data.role.id', $targetUser->role_id)
             ->assertJsonPath('data.member.id', $targetMember->id)
-            ->assertJsonPath('data.member.member_id', $targetMember->biometric_member_id);
+            ->assertJsonPath('data.member.member_id', $targetMember->biometric_member_id)
+            ->assertJsonPath('data.canDelete', true)
+            ->assertJsonPath('data.canDeactivate', true);
     }
 
     public function testUsersStoreRouteCreatesUser(): void
@@ -77,6 +84,7 @@ class UsersApiTest extends ApiRouteTestCase
             'name' => 'Before Update',
             'email' => 'before-update@example.com',
         ]);
+        $originalPassword = $targetUser->password;
         $newRole = $this->createRole('updated-role');
 
         $response = $this->putJson('/api/users/' . $targetUser->id, [
@@ -97,6 +105,82 @@ class UsersApiTest extends ApiRouteTestCase
             'email' => 'after-update@example.com',
             'role_id' => $newRole->id,
         ]);
+
+        $targetUser->refresh();
+        $this->assertSame($originalPassword, $targetUser->password);
+        $this->assertFalse(Hash::check('newpassword123', $targetUser->password));
+    }
+
+    public function testUsersPasswordResetRouteSendsResetEmail(): void
+    {
+        Mail::fake();
+        $this->actingAsUser(['users.view', 'users.edit']);
+        $targetUser = $this->createUser([], [
+            'name' => 'Reset Recipient',
+            'email' => 'reset-recipient@example.com',
+        ]);
+
+        $response = $this->postJson('/api/users/' . $targetUser->id . '/password-reset');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'Password reset link has been sent to reset-recipient@example.com.');
+
+        $this->assertDatabaseHas('password_reset_tokens', [
+            'email' => 'reset-recipient@example.com',
+        ]);
+
+        Mail::assertSent(
+            PasswordResetLinkMail::class,
+            fn (PasswordResetLinkMail $mail) => $mail->hasTo('reset-recipient@example.com')
+                && $mail->tenantName === $this->tenant->name
+                && $mail->recipientName === 'Reset Recipient'
+                && str_contains($mail->resetUrl, '/reset-password/')
+                && str_contains($mail->resetUrl, 'email=reset-recipient%40example.com'),
+        );
+    }
+
+    public function testUsersStatusRouteDeactivatesAndReactivatesUser(): void
+    {
+        $this->actingAsUser(['users.view', 'users.edit']);
+        $targetUser = $this->createUser();
+
+        $deactivateResponse = $this->patchJson('/api/users/' . $targetUser->id . '/status', [
+            'is_active' => false,
+        ]);
+
+        $deactivateResponse
+            ->assertOk()
+            ->assertJsonPath('message', 'User deactivated successfully.')
+            ->assertJsonPath('data.is_active', false);
+
+        $this->assertFalse($targetUser->fresh()->is_active);
+
+        $activateResponse = $this->patchJson('/api/users/' . $targetUser->id . '/status', [
+            'is_active' => true,
+        ]);
+
+        $activateResponse
+            ->assertOk()
+            ->assertJsonPath('message', 'User activated successfully.')
+            ->assertJsonPath('data.is_active', true);
+
+        $this->assertTrue($targetUser->fresh()->is_active);
+    }
+
+    public function testUsersStatusRouteCannotDeactivateCurrentUser(): void
+    {
+        $currentUser = $this->actingAsUser(['users.view', 'users.edit']);
+
+        $response = $this->patchJson('/api/users/' . $currentUser->id . '/status', [
+            'is_active' => false,
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'You cannot deactivate yourself.');
+
+        $this->assertTrue($currentUser->fresh()->is_active);
     }
 
     public function testUsersDestroyRouteDeletesUser(): void

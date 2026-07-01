@@ -14,6 +14,7 @@ class AuthSessionService
         return Auth::attempt([
             'password' => $password,
             $isEmail ? 'email' : 'username' => $login,
+            'is_active' => true,
         ]);
     }
 
