@@ -15,14 +15,16 @@ class RealProfitReportService
         $start = $this->resolveMonth($month);
         $end = $start->copy()->endOfMonth();
 
-        $membershipPayments = $this->membershipPayments($start, $end);
+        $payments = $this->payments($start, $end);
         $sales = $this->salesMargin($start, $end);
         $expenses = $this->expenses($start, $end);
 
-        $membershipIncome = $this->roundMoney($membershipPayments['rows']->sum('amount'));
+        $membershipIncome = $this->roundMoney($payments['membership_rows']->sum('amount'));
+        $otherPaymentIncome = $this->roundMoney($payments['other_rows']->sum('amount'));
+        $totalPaymentIncome = $this->roundMoney($membershipIncome + $otherPaymentIncome);
         $expenseTotal = $this->roundMoney($expenses['rows']->sum('amount'));
         $salesProfit = $this->roundMoney($sales['summary']['profit']);
-        $realProfit = $this->roundMoney($membershipIncome + $salesProfit - $expenseTotal);
+        $realProfit = $this->roundMoney($totalPaymentIncome + $salesProfit - $expenseTotal);
 
         return [
             'month' => $start->format('Y-m'),
@@ -31,7 +33,11 @@ class RealProfitReportService
             'end_date' => $end->toDateString(),
             'summary' => [
                 'membership_income' => $membershipIncome,
-                'membership_count' => $membershipPayments['rows']->count(),
+                'membership_count' => $payments['membership_rows']->count(),
+                'other_payment_income' => $otherPaymentIncome,
+                'other_payment_count' => $payments['other_rows']->count(),
+                'total_payment_income' => $totalPaymentIncome,
+                'payment_count' => $payments['rows']->count(),
                 'sales_revenue' => $this->roundMoney($sales['summary']['revenue']),
                 'sales_cost' => $this->roundMoney($sales['summary']['cost']),
                 'sales_profit' => $salesProfit,
@@ -44,7 +50,8 @@ class RealProfitReportService
                 'estimated_cost_items' => $sales['summary']['estimated_cost_items'],
                 'missing_cost_items' => $sales['summary']['missing_cost_items'],
             ],
-            'membership_payments' => $membershipPayments['data'],
+            'membership_payments' => $payments['membership_data'],
+            'other_payments' => $payments['other_data'],
             'sales_items' => $sales['items'],
             'sales_by_product' => $sales['by_product'],
             'expenses' => $expenses['data'],
@@ -52,11 +59,10 @@ class RealProfitReportService
         ];
     }
 
-    private function membershipPayments(Carbon $start, Carbon $end): array
+    private function payments(Carbon $start, Carbon $end): array
     {
         $rows = MemberPayment::query()
             ->whereBetween('payment_date', [$start->toDateString(), $end->toDateString()])
-            ->whereHas('membership')
             ->with([
                 'member:id,first_name,last_name,name,phone_number',
                 'account:id,name',
@@ -66,21 +72,20 @@ class RealProfitReportService
             ->orderByDesc('id')
             ->get();
 
+        $membershipRows = $rows
+            ->filter(fn (MemberPayment $payment) => $payment->membership !== null)
+            ->values();
+
+        $otherRows = $rows
+            ->filter(fn (MemberPayment $payment) => $payment->membership === null)
+            ->values();
+
         return [
             'rows' => $rows,
-            'data' => $rows->map(fn (MemberPayment $payment) => [
-                'id' => (int) $payment->id,
-                'member_name' => $this->memberName($payment),
-                'member_phone' => $payment->member?->phone_number,
-                'payment_plan_name' => $payment->membership?->plan?->name,
-                'payment_method' => $payment->payment_method ?? 'cash',
-                'account_name' => $payment->account?->name,
-                'amount' => $this->roundMoney((float) $payment->amount),
-                'payment_date' => $payment->payment_date?->toDateString(),
-                'start_date' => $payment->membership?->start_date?->toDateString(),
-                'end_date' => $payment->membership?->end_date?->toDateString(),
-                'reference_number' => $payment->reference_number,
-            ])->values()->all(),
+            'membership_rows' => $membershipRows,
+            'other_rows' => $otherRows,
+            'membership_data' => $membershipRows->map(fn (MemberPayment $payment) => $this->serializePayment($payment, 'membership'))->all(),
+            'other_data' => $otherRows->map(fn (MemberPayment $payment) => $this->serializePayment($payment, 'other'))->all(),
         ];
     }
 
@@ -287,6 +292,25 @@ class RealProfitReportService
         $name = trim((string) ($item->sale?->customer_name ?? ''));
 
         return $name !== '' ? $name : 'Walk-in';
+    }
+
+    private function serializePayment(MemberPayment $payment, string $type): array
+    {
+        return [
+            'id' => (int) $payment->id,
+            'payment_type' => $type,
+            'member_name' => $this->memberName($payment),
+            'member_phone' => $payment->member?->phone_number,
+            'payment_plan_name' => $payment->membership?->plan?->name,
+            'payment_method' => $payment->payment_method ?? 'cash',
+            'account_name' => $payment->account?->name,
+            'amount' => $this->roundMoney((float) $payment->amount),
+            'payment_date' => $payment->payment_date?->toDateString(),
+            'start_date' => $payment->membership?->start_date?->toDateString(),
+            'end_date' => $payment->membership?->end_date?->toDateString(),
+            'reference_number' => $payment->reference_number,
+            'notes' => $payment->notes,
+        ];
     }
 
     private function marginPercent(float $profit, float $revenue): float

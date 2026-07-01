@@ -33,7 +33,7 @@
           {{ report.month_label }} · {{ report.start_date }} to {{ report.end_date }}
         </p>
 
-        <div class="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div class="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-5">
           <article class="app-surface rounded-2xl p-4 ring-1 ring-primary-200 dark:ring-primary-900/40">
             <div class="flex items-center gap-2 text-xs text-secondary-500 dark:text-secondary-400">
               <TrendingUp class="h-4 w-4 text-primary-600 dark:text-primary-300" :stroke-width="2" />
@@ -54,6 +54,19 @@
             </p>
             <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
               {{ formatNumber(report.summary.membership_count) }} payments
+            </p>
+          </article>
+
+          <article class="app-surface rounded-2xl p-4">
+            <div class="flex items-center gap-2 text-xs text-secondary-500 dark:text-secondary-400">
+              <Banknote class="h-4 w-4 text-teal-600 dark:text-teal-300" :stroke-width="2" />
+              Other Payments
+            </div>
+            <p class="mt-2 text-lg font-semibold text-teal-700 dark:text-teal-400 md:text-xl">
+              +{{ formatMoney(report.summary.other_payment_income) }}
+            </p>
+            <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+              {{ formatNumber(report.summary.other_payment_count) }} payments
             </p>
           </article>
 
@@ -90,6 +103,8 @@
           </p>
           <div class="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-secondary-900 dark:text-white">
             <span>Membership {{ formatMoney(report.summary.membership_income) }}</span>
+            <span class="text-secondary-400">+</span>
+            <span>Other Payments {{ formatMoney(report.summary.other_payment_income) }}</span>
             <span class="text-secondary-400">+</span>
             <span>Sales Profit {{ formatMoney(report.summary.sales_profit) }}</span>
             <span class="text-secondary-400">-</span>
@@ -344,6 +359,85 @@
 
         <ReportPanel
           class="mt-4"
+          title="Other Payments"
+          :empty="report.other_payments.length === 0"
+          empty-text="No other payments found for this month."
+        >
+          <template #mobile>
+            <article v-for="payment in report.other_payments" :key="payment.id" class="space-y-2 px-4 py-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-secondary-900 dark:text-white">
+                    {{ payment.member_name }}
+                  </p>
+                  <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                    {{ payment.payment_date }}<span v-if="payment.reference_number"> · {{ payment.reference_number }}</span>
+                  </p>
+                </div>
+                <p class="shrink-0 text-sm font-semibold text-teal-700 dark:text-teal-400">
+                  +{{ formatMoney(payment.amount) }}
+                </p>
+              </div>
+              <p class="text-xs text-secondary-600 dark:text-secondary-300">
+                {{ paymentMethodLabel(payment.payment_method) }}<span v-if="payment.account_name"> · {{ payment.account_name }}</span>
+              </p>
+              <p v-if="payment.notes" class="text-xs text-secondary-500 dark:text-secondary-400">
+                {{ payment.notes }}
+              </p>
+            </article>
+          </template>
+          <template #desktop>
+            <table class="w-full min-w-[760px]">
+              <thead class="border-b border-secondary-200 bg-secondary-50 dark:border-secondary-700 dark:bg-background-dark">
+                <tr>
+                  <th class="px-3 py-2 text-left text-xs font-medium uppercase text-secondary-500 dark:text-secondary-400">
+                    Date
+                  </th>
+                  <th class="px-3 py-2 text-left text-xs font-medium uppercase text-secondary-500 dark:text-secondary-400">
+                    Member
+                  </th>
+                  <th class="px-3 py-2 text-left text-xs font-medium uppercase text-secondary-500 dark:text-secondary-400">
+                    Method
+                  </th>
+                  <th class="px-3 py-2 text-left text-xs font-medium uppercase text-secondary-500 dark:text-secondary-400">
+                    Reference
+                  </th>
+                  <th class="px-3 py-2 text-left text-xs font-medium uppercase text-secondary-500 dark:text-secondary-400">
+                    Notes
+                  </th>
+                  <th class="px-3 py-2 text-right text-xs font-medium uppercase text-secondary-500 dark:text-secondary-400">
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                <tr v-for="payment in report.other_payments" :key="payment.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                  <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ payment.payment_date }}
+                  </td>
+                  <td class="px-3 py-2 text-sm font-medium text-secondary-900 dark:text-white">
+                    {{ payment.member_name }}
+                  </td>
+                  <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ paymentMethodLabel(payment.payment_method) }}
+                  </td>
+                  <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ payment.reference_number || '-' }}
+                  </td>
+                  <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ payment.notes || '-' }}
+                  </td>
+                  <td class="px-3 py-2 text-right text-sm font-semibold text-teal-700 dark:text-teal-400">
+                    +{{ formatMoney(payment.amount) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+        </ReportPanel>
+
+        <ReportPanel
+          class="mt-4"
           title="Sales Item Cost Detail"
           :empty="report.sales_items.length === 0"
           empty-text="No sale items found for this month."
@@ -445,7 +539,7 @@
 
 <script setup>
 import { computed, defineComponent, h, onMounted, ref } from 'vue';
-import { AlertTriangle, ReceiptText, RefreshCw, ShoppingBag, TrendingUp, WalletCards } from 'lucide-vue-next';
+import { AlertTriangle, Banknote, ReceiptText, RefreshCw, ShoppingBag, TrendingUp, WalletCards } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -498,6 +592,10 @@ function defaultReport() {
         summary: {
             membership_income: 0,
             membership_count: 0,
+            other_payment_income: 0,
+            other_payment_count: 0,
+            total_payment_income: 0,
+            payment_count: 0,
             sales_revenue: 0,
             sales_cost: 0,
             sales_profit: 0,
@@ -511,6 +609,7 @@ function defaultReport() {
             missing_cost_items: 0,
         },
         membership_payments: [],
+        other_payments: [],
         sales_items: [],
         sales_by_product: [],
         expenses: [],

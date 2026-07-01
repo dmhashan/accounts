@@ -46,7 +46,7 @@ class ReportsApiTest extends ApiRouteTestCase
             ->assertJsonPath('totals.closing_balance', 350);
     }
 
-    public function testRealProfitReportCombinesMembershipSalesMarginAndExpenses(): void
+    public function testRealProfitReportCombinesMembershipOtherPaymentsSalesMarginAndExpenses(): void
     {
         $this->travelTo(Carbon::parse('2026-06-15 10:00:00'));
 
@@ -77,6 +77,8 @@ class ReportsApiTest extends ApiRouteTestCase
                 'payment_method' => 'cash',
                 'amount' => 500,
                 'payment_date' => '2026-06-06',
+                'reference_number' => 'OTHER-001',
+                'notes' => 'Locker rental',
             ]);
 
             $product = $this->createProduct(['name' => 'Protein Bar']);
@@ -120,19 +122,26 @@ class ReportsApiTest extends ApiRouteTestCase
                 ->assertJsonPath('month', '2026-06')
                 ->assertJsonPath('summary.membership_income', 1200)
                 ->assertJsonPath('summary.membership_count', 1)
+                ->assertJsonPath('summary.other_payment_income', 500)
+                ->assertJsonPath('summary.other_payment_count', 1)
+                ->assertJsonPath('summary.total_payment_income', 1700)
+                ->assertJsonPath('summary.payment_count', 2)
                 ->assertJsonPath('summary.sales_revenue', 200)
                 ->assertJsonPath('summary.sales_cost', 120)
                 ->assertJsonPath('summary.sales_profit', 80)
                 ->assertJsonPath('summary.expenses', 300)
-                ->assertJsonPath('summary.real_profit', 980)
+                ->assertJsonPath('summary.real_profit', 1480)
                 ->assertJsonPath('summary.estimated_cost_items', 0)
                 ->assertJsonPath('summary.missing_cost_items', 0)
                 ->assertJsonPath('sales_items.0.cost_source', 'exact')
                 ->assertJsonPath('sales_by_product.0.product_name', 'Protein Bar')
+                ->assertJsonPath('other_payments.0.reference_number', 'OTHER-001')
+                ->assertJsonPath('other_payments.0.notes', 'Locker rental')
                 ->assertJsonCount(1, 'membership_payments')
+                ->assertJsonCount(1, 'other_payments')
                 ->assertJsonCount(1, 'expenses');
 
-            $this->assertEqualsWithDelta(980.0, (float) $response->json('summary.real_profit'), 0.001);
+            $this->assertEqualsWithDelta(1480.0, (float) $response->json('summary.real_profit'), 0.001);
         } finally {
             $this->travelBack();
         }
