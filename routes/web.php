@@ -74,15 +74,11 @@ Route::middleware([IdentifyTenant::class])->group(function () {
 
     // User Management routes (requires authentication and permissions)
     Route::middleware(['auth'])->group(function () {
-        // Member-specific routes (Workout, Diet, Payments, Attendance)
+        // Member-specific routes (Workout, Payments)
         Route::get('/workout-schedule', [App\Http\Controllers\WorkoutScheduleController::class, 'index'])
             ->name('workout-schedule.index');
-        Route::get('/diet-plan', [App\Http\Controllers\DietPlanController::class, 'index'])
-            ->name('diet-plan.index');
         Route::get('/payments', [App\Http\Controllers\PaymentController::class, 'index'])
             ->name('payments.index');
-        Route::get('/attendance', [App\Http\Controllers\AttendanceController::class, 'index'])
-            ->name('attendance.index');
 
         // Settings route
         Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])

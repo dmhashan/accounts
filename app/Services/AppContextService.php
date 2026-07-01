@@ -101,8 +101,6 @@ class AppContextService
                 'workoutExercises' => $this->hasAnyPermission($user, ['workouts.exercises', 'workouts.manage']),
                 'workoutAssignments' => $this->hasAnyPermission($user, ['workouts.assignments', 'workouts.manage']),
 
-                'diet' => $this->hasAnyPermission($user, ['member.diet.view']),
-                'attendance' => $this->hasAnyPermission($user, ['member.attendance.view']),
                 'notifications' => $this->hasAnyPermission($user, ['notifications.send']),
                 'events' => $this->hasAnyPermission($user, ['events.manage']),
                 'activity' => $this->hasAnyPermission($user, ['activity.view']),
@@ -111,7 +109,6 @@ class AppContextService
                 'reconciliationManage' => $this->hasAnyPermission($user, ['reconciliation.manage']),
                 'vouchersManage' => $this->hasAnyPermission($user, ['vouchers.manage']),
                 'formsManage' => $this->hasAnyPermission($user, ['forms.manage']),
-                'profile' => $this->hasAnyPermission($user, ['member.profile.view']) || $user->hasRole('member'),
             ],
         ];
     }

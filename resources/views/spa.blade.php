@@ -50,11 +50,8 @@
                 'inventoryStock' => route('inventory.stock.index'),
                 'sales' => route('sales.index'),
                 'salesCreate' => route('sales.create'),
-                'profile' => $memberPortalUrl,
                 'workout' => route('workout-schedule.index'),
-                'diet' => route('diet-plan.index'),
                 'payments' => route('payments.index'),
-                'attendance' => route('attendance.index'),
                 'logout' => route('logout'),
             ],
         ];

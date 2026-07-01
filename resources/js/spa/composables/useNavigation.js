@@ -8,11 +8,8 @@ import {
     ShoppingBag,
     FileText,
     Settings,
-    CircleUserRound,
     Dumbbell,
-    Salad,
     WalletCards,
-    CalendarCheck2,
     ReceiptText,
     BellRing,
     Activity,
@@ -35,11 +32,8 @@ const ICONS = {
     sales:         ShoppingBag,
     reports:       FileText,
     settings:      Settings,
-    profile:       CircleUserRound,
     workout:       Dumbbell,
-    diet:          Salad,
     payments:      WalletCards,
-    attendance:    CalendarCheck2,
     notifications: BellRing,
     events:        CalendarDays,
     activity:      Activity,
@@ -178,8 +172,6 @@ export function useNavigation() {
             });
         }
 
-        if (context.permissions?.diet)           items.push({ label: 'Diet',      shortLabel: 'Diet',     path: '/diet',      icon: ICONS.diet });
-        if (context.permissions?.attendance)     items.push({ label: 'Attendance',    shortLabel: 'Attend',  path: '/attendance',    icon: ICONS.attendance });
         if (context.permissions?.notifications)  items.push({ label: 'Notifications', shortLabel: 'Notify',   path: '/notifications', icon: ICONS.notifications });
         if (context.permissions?.events)          items.push({ label: 'Events',        shortLabel: 'Events',   path: '/events',        icon: ICONS.events });
         if (context.permissions?.activity)               items.push({ label: 'Activity Logs',  shortLabel: 'Activity',      path: '/activity',        icon: ICONS.activity });
@@ -189,7 +181,6 @@ export function useNavigation() {
             items.push({ label: 'Vouchers', shortLabel: 'Vouchers', path: '/vouchers', icon: ICONS.vouchers });
         if (context.permissions?.formsManage)
             items.push({ label: 'Forms', shortLabel: 'Forms', path: '/forms', icon: ICONS.forms });
-        if (context.permissions?.profile)                 items.push({ label: 'Profile',        shortLabel: 'Profile',       path: '/profile',         icon: ICONS.profile });
 
         return items;
     });

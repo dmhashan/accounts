@@ -109,18 +109,6 @@ class SidebarPermissionCatalog
                 ],
             ],
             [
-                'label' => 'Diet',
-                'permissions' => [
-                    ['name' => 'Diet', 'slug' => 'member.diet.view', 'description' => 'View the Diet sidebar item.'],
-                ],
-            ],
-            [
-                'label' => 'Attendance',
-                'permissions' => [
-                    ['name' => 'Attendance', 'slug' => 'member.attendance.view', 'description' => 'View the Attendance sidebar item.'],
-                ],
-            ],
-            [
                 'label' => 'Notifications',
                 'permissions' => [
                     ['name' => 'Notifications', 'slug' => 'notifications.send', 'description' => 'View and send bulk notifications.'],
@@ -158,9 +146,8 @@ class SidebarPermissionCatalog
                 ],
             ],
             [
-                'label' => 'Profile',
+                'label' => 'Member Portal',
                 'permissions' => [
-                    ['name' => 'Profile', 'slug' => 'member.profile.view', 'description' => 'View the member profile sidebar item.'],
                     ['name' => 'Workout Schedule', 'slug' => 'member.workout.view', 'description' => 'View the member workout schedule sidebar item.'],
                     ['name' => 'Member Payments', 'slug' => 'member.payments.view', 'description' => 'View the member payments sidebar item.'],
                 ],
@@ -212,11 +199,8 @@ class SidebarPermissionCatalog
     public static function memberRolePermissionSlugs(): array
     {
         return [
-            'member.profile.view',
             'member.workout.view',
             'member.payments.view',
-            'member.diet.view',
-            'member.attendance.view',
         ];
     }
 }

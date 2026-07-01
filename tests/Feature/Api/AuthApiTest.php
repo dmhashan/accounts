@@ -77,7 +77,7 @@ class AuthApiTest extends ApiRouteTestCase
             'is_active' => false,
         ]);
 
-        $response = $this->getJson('/api/profile');
+        $response = $this->getJson('/api/app/context');
 
         $response
             ->assertForbidden()

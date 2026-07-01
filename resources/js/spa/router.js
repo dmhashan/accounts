@@ -30,19 +30,16 @@ const GeneralSettingsPage = () => import('./pages/GeneralSettingsPage.vue');
 const LegacyToolsPage = () => import('./pages/LegacyToolsPage.vue');
 const ConfigurationPage = () => import('./pages/ConfigurationPage.vue');
 const BiometricSettingsPage = () => import('./pages/BiometricSettingsPage.vue');
-const ProfilePage = () => import('./pages/ProfilePage.vue');
 const WorkoutPage = () => import('./pages/WorkoutPage.vue');
 const WorkoutExerciseFormPage = () => import('./pages/WorkoutExerciseFormPage.vue');
 const WorkoutProgramFormPage = () => import('./pages/WorkoutProgramFormPage.vue');
 const WorkoutProgramAssignmentFormPage = () => import('./pages/WorkoutProgramAssignmentFormPage.vue');
 const WorkoutProgramAssignmentEditPage = () => import('./pages/WorkoutProgramAssignmentEditPage.vue');
-const DietPage = () => import('./pages/DietPage.vue');
 const PaymentsPage = () => import('./pages/PaymentsPage.vue');
 const PaymentFormPage = () => import('./pages/PaymentFormPage.vue');
 const EmployeeManagementPage = () => import('./pages/EmployeeManagementPage.vue');
 const EmployeeFormPage = () => import('./pages/EmployeeFormPage.vue');
 const EmployeeViewPage = () => import('./pages/EmployeeViewPage.vue');
-const AttendancePage = () => import('./pages/AttendancePage.vue');
 const NotificationsPage = () => import('./pages/NotificationsPage.vue');
 const NotificationFormPage = () => import('./pages/NotificationFormPage.vue');
 const NotificationViewPage = () => import('./pages/NotificationViewPage.vue');
@@ -134,7 +131,6 @@ const routes = [
     { path: '/settings/legacy-tools', component: LegacyToolsPage, meta: { title: 'Manual Commands' } },
     { path: '/settings/configuration', component: ConfigurationPage, meta: { title: 'Configuration' } },
     { path: '/settings/biometric', component: BiometricSettingsPage, meta: { title: 'Biometric Device' } },
-    { path: '/profile', component: ProfilePage, meta: { title: 'My Profile' } },
     { path: '/workout', component: WorkoutPage, meta: { title: 'Workout' } },
     { path: '/workout/exercises', component: WorkoutPage, meta: { title: 'Exercises' } },
     { path: '/workout/exercises/new', component: WorkoutExerciseFormPage, meta: { title: 'New Exercise' } },
@@ -147,7 +143,6 @@ const routes = [
     { path: '/workout/assignments/new', component: WorkoutProgramAssignmentFormPage, meta: { title: 'Assign Workout Program' } },
     { path: '/workout/assignments/:id', component: WorkoutAssignmentViewPage, meta: { title: 'Assignment' } },
     { path: '/workout/assignments/:id/edit', component: WorkoutProgramAssignmentEditPage, meta: { title: 'Edit Assignment' } },
-    { path: '/diet', component: DietPage, meta: { title: 'Diet' } },
     { path: '/payments', component: PaymentsPage, meta: { title: 'Payments' } },
     { path: '/payments/plans', component: PaymentsPage, meta: { title: 'Payment Plans' } },
     { path: '/payments/new', component: PaymentFormPage, meta: { title: 'New Payment' } },
@@ -158,7 +153,6 @@ const routes = [
     { path: '/employees/:id(\\d+)', component: EmployeeViewPage, meta: { title: 'Employee Profile' } },
     { path: '/employees/:id(\\d+)/edit', component: EmployeeFormPage, meta: { title: 'Edit Employee' } },
     { path: '/wallet-topups/:id', component: WalletTopupViewPage, meta: { title: 'Wallet Top-up' } },
-    { path: '/attendance', component: AttendancePage, meta: { title: 'Attendance' } },
     { path: '/notifications', component: NotificationsPage, meta: { title: 'Notifications' } },
     { path: '/notifications/new', component: NotificationFormPage, meta: { title: 'New Notification' } },
     { path: '/notifications/:id', component: NotificationViewPage, meta: { title: 'Notification' } },
