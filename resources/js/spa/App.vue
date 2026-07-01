@@ -104,7 +104,7 @@ function showAssistiveFeedback(type, message) {
 }
 
 async function refreshBiometricConnection() {
-  if (!appContext.permissions?.settings) {
+  if (!appContext.permissions?.settingsBiometric) {
     biometricConnected.value = false;
     doorKeepUnlocked.value = false;
     return;

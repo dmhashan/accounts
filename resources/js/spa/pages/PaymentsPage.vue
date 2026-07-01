@@ -2,7 +2,7 @@
   <section class="app-page-frame">
     <AppPageHeader>
       <template #cta-slot>
-        <template v-if="canManage && activeTab === 'payments'">
+        <template v-if="canManagePayments && activeTab === 'payments'">
           <button
             type="button"
             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors"
@@ -21,7 +21,7 @@
           </button>
         </template>
         <button
-          v-if="canManage && activeTab === 'plans'"
+          v-if="canManagePlans && activeTab === 'plans'"
           type="button"
           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors"
           @click="openPlanModal()"
@@ -190,7 +190,7 @@
                     >
                       {{ plan.member_count }} member{{ plan.member_count !== 1 ? 's' : '' }}
                     </button>
-                    <div v-if="canManage" class="flex gap-2">
+                    <div v-if="canManagePlans" class="flex gap-2">
                       <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="openPlanModal(plan)">
                         Edit
                       </button>
@@ -230,7 +230,7 @@
                     <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                       Price
                     </th>
-                    <th v-if="canManage" class="px-6 py-3" />
+                    <th v-if="canManagePlans" class="px-6 py-3" />
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
@@ -259,7 +259,7 @@
                     <td class="px-6 py-4 text-sm font-semibold text-right text-primary-600 dark:text-primary-400">
                       {{ money(plan.price) }}
                     </td>
-                    <td v-if="canManage" class="px-6 py-4 text-right">
+                    <td v-if="canManagePlans" class="px-6 py-4 text-right">
                       <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline mr-3" @click="openPlanModal(plan)">
                         Edit
                       </button>
@@ -465,7 +465,8 @@ const context = useAppContext();
 const router = useRouter();
 const route = useRoute();
 
-const canManage = computed(() => Boolean(context.permissions?.paymentsManage));
+const canManagePayments = computed(() => Boolean(context.permissions?.paymentsManage));
+const canManagePlans = computed(() => Boolean(context.permissions?.paymentPlansManage));
 
 // ── Tab state ──────────────────────────────────────────────
 const activeTab = computed(() => route.path === '/payments/plans' ? 'plans' : 'payments');
@@ -481,6 +482,8 @@ function money(value) {
 }
 
 async function loadPayments(page = 1) {
+    if (!canManagePayments.value) return;
+
     loading.value = true;
     errorMessage.value = '';
     try {
@@ -500,6 +503,8 @@ const plansError = ref('');
 const plans = ref([]);
 
 async function loadPlans() {
+    if (!canManagePlans.value) return;
+
     plansLoading.value = true;
     plansError.value = '';
     try {
@@ -621,7 +626,7 @@ const metaAccounts = ref([]);
 const metaPlans = ref([]);
 
 async function loadMeta() {
-    if (metaLoaded.value) return;
+    if (metaLoaded.value || !canManagePayments.value) return;
     try {
         const response = await apiRequest('/api/payments/meta');
         metaMembers.value = response.members || [];
@@ -646,7 +651,7 @@ function openMembershipModal() {
 }
 
 function openMembershipModalFromRoute() {
-    if (!canManage.value || activeTab.value !== 'payments' || route.query.action !== 'membership') {
+    if (!canManagePayments.value || activeTab.value !== 'payments' || route.query.action !== 'membership') {
         return;
     }
 

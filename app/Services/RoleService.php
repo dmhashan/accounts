@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\SidebarPermissionCatalog;
 
 class RoleService
 {
@@ -51,11 +52,36 @@ class RoleService
     public function show(Role $role): array
     {
         $role->load('permissions:id,name,slug,feature,description');
-        $allPermissions = Permission::query()
-            ->orderBy('feature')
-            ->orderBy('name')
+        $permissionsBySlug = Permission::query()
             ->get(['id', 'name', 'slug', 'feature', 'description'])
+            ->keyBy('slug');
+
+        $allPermissions = [];
+        $catalogSlugs = SidebarPermissionCatalog::slugs();
+
+        foreach (SidebarPermissionCatalog::groups() as $group) {
+            $items = collect($group['permissions'])
+                ->map(fn (array $permission) => $permissionsBySlug->get($permission['slug']))
+                ->filter()
+                ->values()
+                ->all();
+
+            if ($items !== []) {
+                $allPermissions[$group['label']] = $items;
+            }
+        }
+
+        $extraPermissions = $permissionsBySlug
+            ->reject(fn (Permission $permission) => in_array($permission->slug, $catalogSlugs, true))
+            ->sortBy([
+                ['feature', 'asc'],
+                ['name', 'asc'],
+            ])
             ->groupBy('feature');
+
+        foreach ($extraPermissions as $feature => $permissions) {
+            $allPermissions[$feature] = $permissions->values()->all();
+        }
 
         return [
             'role' => [

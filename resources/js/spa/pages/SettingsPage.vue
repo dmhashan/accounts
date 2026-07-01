@@ -242,6 +242,8 @@ function statusBadgeClass(user) {
 }
 
 async function loadUsers(page = 1) {
+    if (!context.permissions?.users) return;
+
     loading.value = true;
     errorMessage.value = '';
     try {
@@ -276,6 +278,8 @@ function pluralize(count, noun) {
 }
 
 async function loadRoles(page = 1) {
+    if (!context.permissions?.roles) return;
+
     loading.value = true;
     errorMessage.value = '';
     try {
@@ -307,8 +311,8 @@ function triggerSearch(page = 1) {
 }
 
 onMounted(() => {
-    loadUsers();
-    loadRoles();
+    if (context.permissions?.users) loadUsers();
+    if (context.permissions?.roles) loadRoles();
 });
 
 watch(

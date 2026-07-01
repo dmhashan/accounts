@@ -4,11 +4,11 @@ use App\Http\Controllers\Api\ExerciseApiController;
 use App\Http\Controllers\Api\WorkoutProgramApiController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/exercises', [ExerciseApiController::class, 'index'])->middleware(['auth', 'permission:workouts.manage']);
-Route::post('/exercises', [ExerciseApiController::class, 'store'])->middleware(['auth', 'permission:workouts.manage']);
-Route::get('/exercises/{exercise}', [ExerciseApiController::class, 'show'])->middleware(['auth', 'permission:workouts.manage']);
-Route::put('/exercises/{exercise}', [ExerciseApiController::class, 'update'])->middleware(['auth', 'permission:workouts.manage']);
-Route::delete('/exercises/{exercise}', [ExerciseApiController::class, 'destroy'])->middleware(['auth', 'permission:workouts.manage']);
+Route::get('/exercises', [ExerciseApiController::class, 'index'])->middleware(['auth', 'permission:workouts.exercises,workouts.manage']);
+Route::post('/exercises', [ExerciseApiController::class, 'store'])->middleware(['auth', 'permission:workouts.exercises,workouts.manage']);
+Route::get('/exercises/{exercise}', [ExerciseApiController::class, 'show'])->middleware(['auth', 'permission:workouts.exercises,workouts.manage']);
+Route::put('/exercises/{exercise}', [ExerciseApiController::class, 'update'])->middleware(['auth', 'permission:workouts.exercises,workouts.manage']);
+Route::delete('/exercises/{exercise}', [ExerciseApiController::class, 'destroy'])->middleware(['auth', 'permission:workouts.exercises,workouts.manage']);
 
 Route::get('/workout-programs', [WorkoutProgramApiController::class, 'index'])->middleware(['auth', 'permission:workouts.manage']);
 Route::post('/workout-programs', [WorkoutProgramApiController::class, 'store'])->middleware(['auth', 'permission:workouts.manage']);
@@ -29,8 +29,8 @@ Route::post('/workout-programs/{program}/extras', [WorkoutProgramApiController::
 Route::put('/workout-program-extras/{extra}', [WorkoutProgramApiController::class, 'updateExtra'])->middleware(['auth', 'permission:workouts.manage']);
 Route::delete('/workout-program-extras/{extra}', [WorkoutProgramApiController::class, 'destroyExtra'])->middleware(['auth', 'permission:workouts.manage']);
 
-Route::get('/workout-program-assignments', [WorkoutProgramApiController::class, 'assignmentIndex'])->middleware(['auth', 'permission:workouts.manage']);
-Route::get('/workout-program-assignment-members', [WorkoutProgramApiController::class, 'assignmentMembers'])->middleware(['auth', 'permission:workouts.manage']);
-Route::post('/workout-program-assignments', [WorkoutProgramApiController::class, 'assignmentStore'])->middleware(['auth', 'permission:workouts.manage']);
-Route::put('/workout-program-assignments/{assignment}', [WorkoutProgramApiController::class, 'assignmentUpdate'])->middleware(['auth', 'permission:workouts.manage']);
-Route::delete('/workout-program-assignments/{assignment}', [WorkoutProgramApiController::class, 'assignmentDestroy'])->middleware(['auth', 'permission:workouts.manage']);
+Route::get('/workout-program-assignments', [WorkoutProgramApiController::class, 'assignmentIndex'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);
+Route::get('/workout-program-assignment-members', [WorkoutProgramApiController::class, 'assignmentMembers'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);
+Route::post('/workout-program-assignments', [WorkoutProgramApiController::class, 'assignmentStore'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);
+Route::put('/workout-program-assignments/{assignment}', [WorkoutProgramApiController::class, 'assignmentUpdate'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);
+Route::delete('/workout-program-assignments/{assignment}', [WorkoutProgramApiController::class, 'assignmentDestroy'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);

@@ -3,7 +3,7 @@
     <AppPageHeader show-back :title="employee?.name || 'Employee Profile'">
       <template #cta-slot>
         <AppHeaderAction
-          v-if="employee"
+          v-if="employee && canManageEmployees"
           :to="`/employees/${employee.id}/edit`"
           :icon="Pencil"
           label="Edit"
@@ -236,7 +236,7 @@
                   <div class="mb-2 flex items-center justify-between gap-2">
                     <span class="text-sm font-semibold text-secondary-900 dark:text-white">{{ cell.day }}</span>
                     <button
-                      v-if="attendanceMap[cell.date]?.id"
+                      v-if="canManageEmployees && attendanceMap[cell.date]?.id"
                       type="button"
                       title="Clear"
                       class="inline-flex h-6 w-6 items-center justify-center rounded-lg text-secondary-400 hover:bg-secondary-100 hover:text-red-500 dark:hover:bg-secondary-800"
@@ -251,7 +251,7 @@
                     :value="attendanceMap[cell.date]?.status || 'present'"
                     class="w-full rounded-lg border px-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-950"
                     :class="attendanceSelectClass(attendanceMap[cell.date]?.status || 'present')"
-                    :disabled="savingAttendanceDate === cell.date"
+                    :disabled="!canManageEmployees || savingAttendanceDate === cell.date"
                     @change="setAttendance(cell.date, $event.target.value)"
                   >
                     <option v-for="status in attendanceStatuses" :key="status.value" :value="status.value">
@@ -1286,6 +1286,7 @@ const salaryAdvanceFormErrors = ref({});
 const salaryAdvanceForm = ref(defaultSalaryAdvanceForm());
 
 const canManagePaySheets = computed(() => Boolean(context.permissions?.employeePaySheetsManage));
+const canManageEmployees = computed(() => Boolean(context.permissions?.employeesManage));
 const documentCategories = computed(() => meta.value.document_categories || []);
 const attendanceStatuses = computed(() => meta.value.attendance_statuses || []);
 const companyAccounts = computed(() => paySheetMeta.value.accounts || []);

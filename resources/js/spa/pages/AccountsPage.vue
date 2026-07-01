@@ -370,9 +370,11 @@ import AppPagination from '../components/AppPagination.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 
 const route = useRoute();
 const router = useRouter();
+const context = useAppContext();
 
 const activeTab = ref(route.path === '/accounts/transfers' ? 'transfers' : route.path === '/accounts/transactions' ? 'transactions' : 'accounts');
 const accounts = ref([]);
@@ -396,12 +398,16 @@ const tabCta = computed(() => {
     }
 
     if (activeTab.value === 'transfers') {
+        if (!context.permissions?.accountsTransfers) return null;
+
         return {
             to: '/accounts/transfers/new',
             icon: ArrowRightLeft,
             label: 'New Transfer',
         };
     }
+
+    if (!context.permissions?.accountsManage) return null;
 
     return {
         to: '/accounts/new',
@@ -493,6 +499,8 @@ function triggerActiveSearch() {
 
 
 async function loadAccounts(page = 1) {
+    if (!context.permissions?.accountsManage) return;
+
     loadingAccounts.value = true;
 
     try {
@@ -512,6 +520,8 @@ async function loadAccounts(page = 1) {
 }
 
 async function loadTransfers(page = 1) {
+    if (!context.permissions?.accountsTransfers) return;
+
     loadingTransfers.value = true;
 
     try {
@@ -531,6 +541,8 @@ async function loadTransfers(page = 1) {
 }
 
 async function loadTransactions(page = 1) {
+    if (!context.permissions?.accountsTransactions) return;
+
     loadingTransactions.value = true;
 
     try {
@@ -551,9 +563,14 @@ async function loadTransactions(page = 1) {
 
 async function loadAll() {
     errorMessage.value = '';
+    const requests = [];
+
+    if (context.permissions?.accountsManage) requests.push(loadAccounts());
+    if (context.permissions?.accountsTransfers) requests.push(loadTransfers());
+    if (context.permissions?.accountsTransactions) requests.push(loadTransactions());
 
     try {
-        await Promise.all([loadAccounts(), loadTransfers(), loadTransactions()]);
+        await Promise.all(requests);
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load account data.';
     }

@@ -40,35 +40,90 @@ class AppContextService
                 'member_portal_url' => $this->memberPortalUrl->urlForTenant($tenant),
             ],
             'permissions' => [
-                'dashboard' => $user->hasPermission('dashboard.view'),
-                'users' => $user->hasPermission('users.view'),
-                'members' => $user->hasPermission('users.view'),
-                'membersCreate' => $user->hasPermission('users.create'),
-                'roles' => $user->hasPermission('roles.view'),
-                'settings' => $user->hasPermission('settings.manage'),
-                'reports' => $user->hasPermission('reports.view'),
-                'inventory' => $user->hasPermission('inventory.manage'),
-                'inventoryStock' => $user->hasPermission('inventory.stock'),
-                'inventoryDisplay' => $user->hasPermission('inventory.display'),
-                'accounts' => $user->hasPermission('accounts.manage'),
-                'expenses' => $user->hasPermission('accounts.manage'),
-                'sales' => $user->hasPermission('sales.process'),
-                'salesCreate' => $user->hasPermission('sales.create'),
-                'salesEdit' => $user->hasPermission('sales.edit'),
-                'salesDelete' => $user->hasPermission('sales.delete'),
-                'stats' => $user->hasPermission('sales.process'),
-                'workout' => $user->hasPermission('workouts.manage'),
-                'paymentsManage' => $user->hasPermission('payments.manage'),
-                'employeesManage' => $user->hasPermission('employees.manage'),
-                'employeePaySheetsManage' => $user->hasPermission('employee_pay_sheets.manage'),
-                'notifications' => $user->hasPermission('notifications.send'),
-                'events' => $user->hasPermission('events.manage'),
-                'activity' => $user->hasPermission('activity.view'),
-                'reconciliationPerform' => $user->hasPermission('reconciliation.perform'),
-                'reconciliationManage' => $user->hasPermission('reconciliation.manage'),
-                'vouchersManage' => $user->hasPermission('vouchers.manage'),
-                'formsManage' => $user->hasPermission('forms.manage'),
+                'dashboard' => $this->hasAnyPermission($user, ['dashboard.view']),
+
+                'members' => $this->hasAnyPermission($user, ['members.view', 'members.temp.view', 'users.view']),
+                'membersList' => $this->hasAnyPermission($user, ['members.view', 'users.view']),
+                'membersTemp' => $this->hasAnyPermission($user, ['members.temp.view', 'users.view']),
+                'membersCreate' => $this->hasAnyPermission($user, ['members.create', 'users.create']),
+                'membersEdit' => $this->hasAnyPermission($user, ['members.edit', 'users.edit']),
+                'membersDelete' => $this->hasAnyPermission($user, ['members.delete', 'users.delete']),
+
+                'inventory' => $this->hasAnyPermission($user, ['inventory.manage', 'inventory.stock', 'inventory.display', 'inventory.audit']),
+                'inventoryProducts' => $this->hasAnyPermission($user, ['inventory.manage']),
+                'inventoryStock' => $this->hasAnyPermission($user, ['inventory.stock']),
+                'inventoryDisplay' => $this->hasAnyPermission($user, ['inventory.display']),
+                'inventoryAudit' => $this->hasAnyPermission($user, ['inventory.audit', 'inventory.stock', 'inventory.display']),
+
+                'accounts' => $this->hasAnyPermission($user, ['accounts.manage', 'accounts.transfers', 'accounts.transactions']),
+                'accountsManage' => $this->hasAnyPermission($user, ['accounts.manage']),
+                'accountsTransfers' => $this->hasAnyPermission($user, ['accounts.transfers', 'accounts.manage']),
+                'accountsTransactions' => $this->hasAnyPermission($user, ['accounts.transactions', 'accounts.manage']),
+                'expenses' => $this->hasAnyPermission($user, ['expenses.manage', 'accounts.manage']),
+
+                'sales' => $this->hasAnyPermission($user, ['sales.process', 'sales.paid.view']),
+                'salesOutstanding' => $this->hasAnyPermission($user, ['sales.process']),
+                'salesPaid' => $this->hasAnyPermission($user, ['sales.paid.view', 'sales.process']),
+                'salesCreate' => $this->hasAnyPermission($user, ['sales.create']),
+                'salesEdit' => $this->hasAnyPermission($user, ['sales.edit']),
+                'salesDelete' => $this->hasAnyPermission($user, ['sales.delete']),
+                'stats' => $this->hasAnyPermission($user, ['reports.view', 'sales.process', 'accounts.transactions', 'accounts.manage']),
+
+                'payments' => $this->hasAnyPermission($user, ['payments.manage', 'payment_plans.manage', 'member.payments.view']),
+                'paymentsManage' => $this->hasAnyPermission($user, ['payments.manage']),
+                'paymentPlansManage' => $this->hasAnyPermission($user, ['payment_plans.manage', 'payments.manage']),
+
+                'employeesManage' => $this->hasAnyPermission($user, ['employees.manage']),
+                'employeePaySheetsManage' => $this->hasAnyPermission($user, ['employee_pay_sheets.manage']),
+
+                'reports' => $this->hasAnyPermission($user, ['reports.daily_summary', 'reports.real_profit', 'reports.view', 'reports.customers', 'reports.products']),
+                'reportsDailySummary' => $this->hasAnyPermission($user, ['reports.daily_summary', 'reports.view']),
+                'reportsRealProfit' => $this->hasAnyPermission($user, ['reports.real_profit', 'reports.view']),
+                'reportsStatistics' => $this->hasAnyPermission($user, ['reports.view']),
+                'reportsCustomers' => $this->hasAnyPermission($user, ['reports.customers', 'reports.view']),
+                'reportsProducts' => $this->hasAnyPermission($user, ['reports.products', 'reports.view']),
+
+                'settings' => $this->hasAnyPermission($user, ['settings.manage', 'settings.configuration', 'settings.biometric', 'settings.legacy_tools']),
+                'settingsGeneral' => $this->hasAnyPermission($user, ['settings.manage']),
+                'settingsConfiguration' => $this->hasAnyPermission($user, ['settings.configuration', 'settings.manage']),
+                'settingsBiometric' => $this->hasAnyPermission($user, ['settings.biometric', 'settings.manage']),
+                'settingsLegacyTools' => $this->hasAnyPermission($user, ['settings.legacy_tools', 'settings.manage']),
+                'users' => $this->hasAnyPermission($user, ['users.view']),
+                'usersCreate' => $this->hasAnyPermission($user, ['users.create']),
+                'usersEdit' => $this->hasAnyPermission($user, ['users.edit']),
+                'usersDelete' => $this->hasAnyPermission($user, ['users.delete']),
+                'roles' => $this->hasAnyPermission($user, ['roles.view']),
+                'rolesManagePermissions' => $this->hasAnyPermission($user, ['roles.permissions']),
+
+                'workout' => $this->hasAnyPermission($user, ['workouts.manage', 'workouts.exercises', 'workouts.assignments']),
+                'memberWorkout' => $this->hasAnyPermission($user, ['member.workout.view']),
+                'workoutPrograms' => $this->hasAnyPermission($user, ['workouts.manage']),
+                'workoutExercises' => $this->hasAnyPermission($user, ['workouts.exercises', 'workouts.manage']),
+                'workoutAssignments' => $this->hasAnyPermission($user, ['workouts.assignments', 'workouts.manage']),
+
+                'diet' => $this->hasAnyPermission($user, ['member.diet.view']),
+                'attendance' => $this->hasAnyPermission($user, ['member.attendance.view']),
+                'notifications' => $this->hasAnyPermission($user, ['notifications.send']),
+                'events' => $this->hasAnyPermission($user, ['events.manage']),
+                'activity' => $this->hasAnyPermission($user, ['activity.view']),
+                'reconciliation' => $this->hasAnyPermission($user, ['reconciliation.perform', 'reconciliation.manage']),
+                'reconciliationPerform' => $this->hasAnyPermission($user, ['reconciliation.perform']),
+                'reconciliationManage' => $this->hasAnyPermission($user, ['reconciliation.manage']),
+                'vouchersManage' => $this->hasAnyPermission($user, ['vouchers.manage']),
+                'formsManage' => $this->hasAnyPermission($user, ['forms.manage']),
+                'profile' => $this->hasAnyPermission($user, ['member.profile.view']) || $user->hasRole('member'),
             ],
         ];
+    }
+
+    private function hasAnyPermission(User $user, array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($user->hasPermission($permission)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -92,7 +92,7 @@ Route::middleware([IdentifyTenant::class])->group(function () {
 
         // Reports route
         Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])
-            ->middleware('permission:reports.view')
+            ->middleware('permission:reports.view,reports.daily_summary,reports.real_profit,reports.customers,reports.products')
             ->name('reports.index');
 
         // Inventory routes
@@ -116,7 +116,7 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         });
 
         // Sales routes
-        Route::prefix('sales')->name('sales.')->middleware('permission:sales.process')->group(function () {
+        Route::prefix('sales')->name('sales.')->middleware('permission:sales.process,sales.paid.view')->group(function () {
             Route::get('/', [App\Http\Controllers\SaleController::class, 'index'])
                 ->name('index');
             Route::get('/create', [App\Http\Controllers\SaleController::class, 'create'])

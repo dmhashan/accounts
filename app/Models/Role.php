@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SidebarPermissionCatalog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -31,6 +32,10 @@ class Role extends Model
 
     public function hasPermission(string $permissionSlug): bool
     {
+        if (in_array($this->slug, SidebarPermissionCatalog::adminRoleSlugs(), true)) {
+            return true;
+        }
+
         return $this->permissions()->where('slug', $permissionSlug)->exists();
     }
 

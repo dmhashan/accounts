@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Support\SidebarPermissionCatalog;
 use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
@@ -13,6 +14,17 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
+        foreach (SidebarPermissionCatalog::permissions() as $permission) {
+            Permission::updateOrCreate(
+                ['slug' => $permission['slug']],
+                [
+                    'name' => $permission['name'],
+                    'feature' => $permission['feature'],
+                    'description' => $permission['description'],
+                ],
+            );
+        }
+
         // Create Admin role (uneditable)
         $admin = Role::firstOrCreate(
             ['slug' => 'admin'],
@@ -33,21 +45,12 @@ class RoleSeeder extends Seeder
             ],
         );
 
-        // Assign operational permissions to Admin role.
-        $adminPermissions = Permission::whereIn('feature', [
-            'Admin Features',
-            'Accounting',
-            'Inventory',
-            'Sales',
-            'Payments',
-            'Employees',
-            'Employee Pay Sheet',
-            'Vouchers',
-        ])->pluck('id');
+        // Admin always receives every configured permission.
+        $adminPermissions = Permission::query()->pluck('id');
         $admin->permissions()->sync($adminPermissions);
 
         // Assign only member features to Member role
-        $memberPermissions = Permission::where('feature', 'Member Features')->pluck('id');
+        $memberPermissions = Permission::whereIn('slug', SidebarPermissionCatalog::memberRolePermissionSlugs())->pluck('id');
         $member->permissions()->sync($memberPermissions);
     }
 }

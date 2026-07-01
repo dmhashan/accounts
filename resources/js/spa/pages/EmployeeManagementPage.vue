@@ -3,6 +3,7 @@
     <AppPageHeader>
       <template #cta-slot>
         <AppHeaderAction
+          v-if="context.permissions?.employeesManage"
           to="/employees/new"
           :icon="UserRoundPlus"
           label="Add Employee"
@@ -168,8 +169,10 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 
 const router = useRouter();
+const context = useAppContext();
 
 const meta = ref({ employee_statuses: [] });
 const errorMessage = ref('');

@@ -3,21 +3,21 @@
     <AppPageHeader title="Workout Manager">
       <template #cta-slot>
         <RouterLink
-          v-if="activeTab === 'exercises'"
+          v-if="activeTab === 'exercises' && context.permissions?.workoutExercises"
           to="/workout/exercises/new"
           class="inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold"
         >
           Add Exercise
         </RouterLink>
         <RouterLink
-          v-else-if="activeTab === 'programs'"
+          v-else-if="activeTab === 'programs' && context.permissions?.workoutPrograms"
           to="/workout/programs/new"
           class="inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold"
         >
           Add Program
         </RouterLink>
         <RouterLink
-          v-else-if="activeTab === 'assignments'"
+          v-else-if="activeTab === 'assignments' && context.permissions?.workoutAssignments"
           to="/workout/assignments/new"
           class="inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold"
         >
@@ -279,9 +279,11 @@ import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 
 const route = useRoute();
 const router = useRouter();
+const context = useAppContext();
 const validTabs = ['exercises', 'programs', 'assignments'];
 
 const activeTab = ref(route.path === '/workout/exercises' ? 'exercises' : route.path === '/workout/assignments' ? 'assignments' : 'programs');
@@ -315,16 +317,22 @@ const filteredPrograms = computed(() => {
 });
 
 async function loadExercises() {
+    if (!context.permissions?.workoutExercises) return;
+
     const response = await apiRequest('/api/exercises', { params: { per_page: 100 } });
     exercises.value = response?.data?.data || [];
 }
 
 async function loadPrograms() {
+    if (!context.permissions?.workoutPrograms) return;
+
     const response = await apiRequest('/api/workout-programs', { params: { per_page: 100 } });
     programs.value = response?.data?.data || [];
 }
 
 async function loadAssignments() {
+    if (!context.permissions?.workoutAssignments) return;
+
     const response = await apiRequest('/api/workout-program-assignments', { params: { per_page: 100 } });
     assignments.value = response?.data?.data || [];
 }
@@ -332,9 +340,14 @@ async function loadAssignments() {
 async function loadAll() {
     loading.value = true;
     errorMessage.value = '';
+    const requests = [];
+
+    if (context.permissions?.workoutExercises) requests.push(loadExercises());
+    if (context.permissions?.workoutPrograms) requests.push(loadPrograms());
+    if (context.permissions?.workoutAssignments) requests.push(loadAssignments());
 
     try {
-        await Promise.all([loadExercises(), loadPrograms(), loadAssignments()]);
+        await Promise.all(requests);
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load workout data.';
     } finally {

@@ -4,20 +4,21 @@ use App\Http\Controllers\Api\EmployeeApiController;
 use App\Http\Controllers\Api\EmployeePaySheetApiController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'permission:employees.manage'])->group(function () {
+Route::middleware(['auth', 'permission:employees.manage,employee_pay_sheets.manage'])->group(function () {
     Route::get('/employees/meta', [EmployeeApiController::class, 'meta']);
     Route::get('/employees', [EmployeeApiController::class, 'index']);
-    Route::post('/employees', [EmployeeApiController::class, 'store']);
     Route::get('/employees/{employee}', [EmployeeApiController::class, 'show']);
-    Route::put('/employees/{employee}', [EmployeeApiController::class, 'update']);
-    Route::delete('/employees/{employee}', [EmployeeApiController::class, 'destroy']);
-
     Route::get('/employees/{employee}/documents', [EmployeeApiController::class, 'documents']);
     Route::get('/employees/{employee}/documents/{document}/url', [EmployeeApiController::class, 'documentUrl']);
+    Route::get('/employees/{employee}/attendance', [EmployeeApiController::class, 'attendance']);
+});
+
+Route::middleware(['auth', 'permission:employees.manage'])->group(function () {
+    Route::post('/employees', [EmployeeApiController::class, 'store']);
+    Route::put('/employees/{employee}', [EmployeeApiController::class, 'update']);
+    Route::delete('/employees/{employee}', [EmployeeApiController::class, 'destroy']);
     Route::post('/employees/{employee}/documents', [EmployeeApiController::class, 'storeDocument']);
     Route::delete('/employees/{employee}/documents/{document}', [EmployeeApiController::class, 'destroyDocument']);
-
-    Route::get('/employees/{employee}/attendance', [EmployeeApiController::class, 'attendance']);
     Route::post('/employees/{employee}/attendance', [EmployeeApiController::class, 'storeAttendance']);
     Route::delete('/employees/{employee}/attendance/{attendance}', [EmployeeApiController::class, 'destroyAttendance']);
 });

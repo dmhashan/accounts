@@ -132,8 +132,8 @@ class MemberApiController extends Controller
         return response()->json([
             'data' => $this->memberService->show($member),
             'permissions' => [
-                'edit' => $request->user()->hasPermission('users.edit'),
-                'delete' => $request->user()->hasPermission('users.delete'),
+                'edit' => $request->user()->hasPermission('members.edit') || $request->user()->hasPermission('users.edit'),
+                'delete' => $request->user()->hasPermission('members.delete') || $request->user()->hasPermission('users.delete'),
             ],
         ]);
     }

@@ -11,26 +11,26 @@ use App\Http\Controllers\Api\WalletApiController;
 use App\Http\Controllers\Api\WorkoutProgramApiController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'permission:users.view'])->group(function () {
+Route::middleware(['auth', 'permission:members.view,members.temp.view,users.view'])->group(function () {
     Route::get('/members/meta', [MemberApiController::class, 'meta']);
     Route::get('/members', [MemberApiController::class, 'index']);
     Route::get('/members/export/google-contacts', [MemberApiController::class, 'exportGoogleContacts']);
     Route::get('/members/{member}', [MemberApiController::class, 'show']);
-    Route::post('/members', [MemberApiController::class, 'store'])->middleware('permission:users.create');
-    Route::post('/members/temp', [MemberApiController::class, 'storeTemp'])->middleware('permission:users.create');
-    Route::put('/members/{member}', [MemberApiController::class, 'update'])->middleware('permission:users.edit');
-    Route::patch('/members/{member}/toggle-status', [MemberApiController::class, 'toggleStatus'])->middleware('permission:users.edit');
-    Route::patch('/members/{member}/toggle-verification', [MemberApiController::class, 'toggleVerification'])->middleware('permission:users.edit');
-    Route::delete('/members/{member}', [MemberApiController::class, 'destroy'])->middleware('permission:users.delete');
-    Route::post('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
-    Route::put('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:users.edit');
-    Route::delete('/members/{member}/avatar', [MemberApiController::class, 'deleteAvatar'])->middleware('permission:users.edit');
+    Route::post('/members', [MemberApiController::class, 'store'])->middleware('permission:members.create,users.create');
+    Route::post('/members/temp', [MemberApiController::class, 'storeTemp'])->middleware('permission:members.create,users.create');
+    Route::put('/members/{member}', [MemberApiController::class, 'update'])->middleware('permission:members.edit,users.edit');
+    Route::patch('/members/{member}/toggle-status', [MemberApiController::class, 'toggleStatus'])->middleware('permission:members.edit,users.edit');
+    Route::patch('/members/{member}/toggle-verification', [MemberApiController::class, 'toggleVerification'])->middleware('permission:members.edit,users.edit');
+    Route::delete('/members/{member}', [MemberApiController::class, 'destroy'])->middleware('permission:members.delete,users.delete');
+    Route::post('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:members.edit,users.edit');
+    Route::put('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:members.edit,users.edit');
+    Route::delete('/members/{member}/avatar', [MemberApiController::class, 'deleteAvatar'])->middleware('permission:members.edit,users.edit');
 
     // Member body measurements — view requires users.view; changes require users.edit
     Route::get('/members/{member}/body-measurements', [MemberBodyMeasurementApiController::class, 'index']);
-    Route::post('/members/{member}/body-measurements', [MemberBodyMeasurementApiController::class, 'store'])->middleware('permission:users.edit');
-    Route::put('/members/{member}/body-measurements/{bodyMeasurement}', [MemberBodyMeasurementApiController::class, 'update'])->middleware('permission:users.edit');
-    Route::delete('/members/{member}/body-measurements/{bodyMeasurement}', [MemberBodyMeasurementApiController::class, 'destroy'])->middleware('permission:users.edit');
+    Route::post('/members/{member}/body-measurements', [MemberBodyMeasurementApiController::class, 'store'])->middleware('permission:members.edit,users.edit');
+    Route::put('/members/{member}/body-measurements/{bodyMeasurement}', [MemberBodyMeasurementApiController::class, 'update'])->middleware('permission:members.edit,users.edit');
+    Route::delete('/members/{member}/body-measurements/{bodyMeasurement}', [MemberBodyMeasurementApiController::class, 'destroy'])->middleware('permission:members.edit,users.edit');
 
     // Payment plans (read-only) — needed for member create/edit form
     Route::get('/members/form/payment-plans', [PaymentPlanApiController::class, 'index']);
@@ -38,8 +38,8 @@ Route::middleware(['auth', 'permission:users.view'])->group(function () {
     // Member documents — view requires users.view; upload/delete requires users.edit
     Route::get('/members/{member}/documents', [MemberDocumentApiController::class, 'index']);
     Route::get('/members/{member}/documents/{document}/url', [MemberDocumentApiController::class, 'url']);
-    Route::post('/members/{member}/documents', [MemberDocumentApiController::class, 'store'])->middleware('permission:users.edit');
-    Route::delete('/members/{member}/documents/{document}', [MemberDocumentApiController::class, 'destroy'])->middleware('permission:users.edit');
+    Route::post('/members/{member}/documents', [MemberDocumentApiController::class, 'store'])->middleware('permission:members.edit,users.edit');
+    Route::delete('/members/{member}/documents/{document}', [MemberDocumentApiController::class, 'destroy'])->middleware('permission:members.edit,users.edit');
 });
 
 // Member-scoped payments (requires payments.manage)
@@ -52,13 +52,13 @@ Route::middleware(['auth', 'permission:sales.process'])->group(function () {
     Route::get('/members/{member}/sales', [SaleApiController::class, 'memberSales']);
 });
 
-// Member-scoped workout assignments (requires workouts.manage)
-Route::middleware(['auth', 'permission:workouts.manage'])->group(function () {
+// Member-scoped workout assignments
+Route::middleware(['auth', 'permission:workouts.assignments,workouts.manage'])->group(function () {
     Route::get('/members/{member}/workouts', [WorkoutProgramApiController::class, 'memberAssignments']);
 });
 
 // Member attendance history (requires users.view)
-Route::middleware(['auth', 'permission:users.view'])->group(function () {
+Route::middleware(['auth', 'permission:members.view,users.view'])->group(function () {
     Route::get('/members/{member}/attendance', [MemberApiController::class, 'attendance']);
 });
 
@@ -71,8 +71,8 @@ Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
     Route::get('/members/{member}/wallet/transactions', [WalletApiController::class, 'transactions']);
 });
 
-// Biometric device sync per-member (requires users.edit)
-Route::middleware(['auth', 'permission:users.edit'])->group(function () {
+// Biometric device sync per-member (requires member edit permission)
+Route::middleware(['auth', 'permission:members.edit,users.edit'])->group(function () {
     Route::post('/members/{member}/biometric-assign-id', [BiometricApiController::class, 'assignMemberId']);
     Route::post('/members/{member}/biometric-sync', [BiometricApiController::class, 'syncMember']);
     Route::post('/members/{member}/biometric-setup-fingerprint', [BiometricApiController::class, 'setupFingerprint']);

@@ -497,6 +497,8 @@ const displayErrors = ref({});
 
 const tabCta = computed(() => {
     if (activeTab.value === 'stock') {
+        if (!context.permissions?.inventoryStock) return null;
+
         return {
             to: '/inventory/stock/new',
             icon: PackageSearch,
@@ -507,6 +509,8 @@ const tabCta = computed(() => {
     if (activeTab.value === 'display' || activeTab.value === 'audit') {
         return null;
     }
+
+    if (!context.permissions?.inventoryProducts) return null;
 
     return {
         to: '/inventory/products/new',
@@ -587,10 +591,17 @@ function triggerActiveSearch() {
         return;
     }
 
+    if (activeTab.value === 'audit') {
+        loadAuditLogs();
+        return;
+    }
+
     loadStock(1);
 }
 
 async function loadProducts(page = 1) {
+    if (!context.permissions?.inventoryProducts) return;
+
     loadingProducts.value = true;
 
     try {
@@ -610,6 +621,8 @@ async function loadProducts(page = 1) {
 }
 
 async function loadStock(page = 1) {
+    if (!context.permissions?.inventoryStock) return;
+
     loadingStock.value = true;
 
     try {
@@ -629,6 +642,8 @@ async function loadStock(page = 1) {
 }
 
 async function loadDisplay(page = 1) {
+    if (!context.permissions?.inventoryDisplay) return;
+
     loadingDisplay.value = true;
 
     try {
@@ -653,6 +668,8 @@ async function loadDisplay(page = 1) {
 }
 
 async function loadAuditLogs() {
+    if (!context.permissions?.inventoryAudit) return;
+
     loadingAudit.value = true;
 
     try {
@@ -668,11 +685,11 @@ async function loadAuditLogs() {
 async function loadAll() {
     errorMessage.value = '';
 
-    const requests = [loadProducts(), loadStock()];
+    const requests = [];
 
-    if (context.permissions?.inventoryDisplay) {
-        requests.push(loadDisplay());
-    }
+    if (context.permissions?.inventoryProducts) requests.push(loadProducts());
+    if (context.permissions?.inventoryStock) requests.push(loadStock());
+    if (context.permissions?.inventoryDisplay) requests.push(loadDisplay());
 
     try {
         await Promise.all(requests);

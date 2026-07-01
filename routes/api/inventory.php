@@ -38,5 +38,5 @@ Route::prefix('/inventory')->middleware('auth')->group(function () {
 
     // Audit logs — requires inventory.stock or inventory.display (either is enough)
     Route::get('/audit-logs', [InventoryApiController::class, 'auditLogs'])
-        ->middleware('permission:inventory.stock,inventory.display');
+        ->middleware('permission:inventory.audit,inventory.stock,inventory.display');
 });

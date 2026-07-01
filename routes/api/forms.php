@@ -20,8 +20,8 @@ Route::middleware(['auth', 'permission:forms.manage'])->group(function () {
     Route::delete('/forms/submissions/{submission}', [FormBuilderApiController::class, 'destroySubmission']);
 });
 
-// Submit a form for a member (requires users.edit permission - staff filling on behalf)
-Route::middleware(['auth', 'permission:users.edit'])->group(function () {
+// Submit a form for a member (staff filling on behalf)
+Route::middleware(['auth', 'permission:members.edit,users.edit'])->group(function () {
     Route::post('/forms/templates/{template}/members/{member}/submit', [FormBuilderApiController::class, 'submitForm']);
     Route::get('/members/{member}/form-submissions', [FormBuilderApiController::class, 'memberSubmissions']);
 });

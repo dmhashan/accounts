@@ -68,9 +68,9 @@ class MemberService
                 'total' => $members->total(),
             ],
             'permissions' => [
-                'create' => $currentUser->hasPermission('users.create'),
-                'edit' => $currentUser->hasPermission('users.edit'),
-                'delete' => $currentUser->hasPermission('users.delete'),
+                'create' => $currentUser->hasPermission('members.create') || $currentUser->hasPermission('users.create'),
+                'edit' => $currentUser->hasPermission('members.edit') || $currentUser->hasPermission('users.edit'),
+                'delete' => $currentUser->hasPermission('members.delete') || $currentUser->hasPermission('users.delete'),
             ],
         ];
     }

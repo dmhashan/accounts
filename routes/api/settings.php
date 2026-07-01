@@ -10,13 +10,20 @@ Route::middleware(['auth', 'permission:settings.manage'])->group(function () {
     Route::put('/settings/general', [SettingsApiController::class, 'updateGeneral']);
     Route::post('/settings/general/logo', [SettingsApiController::class, 'uploadLogo']);
     Route::delete('/settings/general/logo', [SettingsApiController::class, 'deleteLogo']);
+});
+
+Route::middleware(['auth', 'permission:settings.legacy_tools,settings.manage'])->group(function () {
     Route::post('/settings/legacy-tools/run', [SettingsApiController::class, 'runLegacyTool']);
     Route::get('/settings/legacy-tools/logs', [SettingsApiController::class, 'legacyToolLogs']);
+});
 
+Route::middleware(['auth', 'permission:settings.configuration,settings.manage'])->group(function () {
     Route::get('/settings/configuration', [ConfigurationApiController::class, 'index']);
     Route::get('/settings/configuration/format-options', [ConfigurationApiController::class, 'formatOptions']);
     Route::put('/settings/configuration', [ConfigurationApiController::class, 'update']);
+});
 
+Route::middleware(['auth', 'permission:settings.biometric,settings.manage'])->group(function () {
     // Biometric device
     Route::post('/settings/biometric/test-connection', [BiometricApiController::class, 'testConnection']);
     Route::post('/settings/biometric/sync-all', [BiometricApiController::class, 'syncAllMembers']);
