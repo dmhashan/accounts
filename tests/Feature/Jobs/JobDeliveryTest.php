@@ -7,9 +7,11 @@ use App\Jobs\SendBulkNotificationJob;
 use App\Jobs\SendDailySummaryReportJob;
 use App\Jobs\SendFormSubmissionEmailJob;
 use App\Jobs\SendMemberNotificationJob;
+use App\Jobs\SendRealProfitReportJob;
 use App\Mail\DailySummaryReportMail;
 use App\Mail\FormSubmissionMail;
 use App\Mail\MemberNotificationMail;
+use App\Mail\RealProfitReportMail;
 use App\Models\BulkNotification;
 use App\Models\BulkNotificationRecipient;
 use App\Models\CommandRunLog;
@@ -17,6 +19,7 @@ use App\Models\DailySummaryReport;
 use App\Models\FormSubmission;
 use App\Models\FormTemplate;
 use App\Models\MemberNotification;
+use App\Services\RealProfitReportService;
 use App\Services\SmsService;
 use App\Services\TenantConfigurationService;
 use App\Services\TenantMailService;
@@ -137,6 +140,7 @@ class JobDeliveryTest extends ApiRouteTestCase
         $mailService = app(TenantMailService::class);
         (new SendFormSubmissionEmailJob($this->tenant->id, $submission->id))->handle($mailService);
         (new SendDailySummaryReportJob($this->tenant->id, $report->id))->handle($mailService);
+        (new SendRealProfitReportJob($this->tenant->id, today()->format('Y-m')))->handle($mailService, app(RealProfitReportService::class));
 
         Mail::assertSent(
             FormSubmissionMail::class,
@@ -147,6 +151,11 @@ class JobDeliveryTest extends ApiRouteTestCase
             DailySummaryReportMail::class,
             fn (DailySummaryReportMail $mail) => $mail->tenantName === $this->tenant->name
                 && $mail->changeCount === 1,
+        );
+        Mail::assertSent(
+            RealProfitReportMail::class,
+            fn (RealProfitReportMail $mail) => $mail->tenantName === $this->tenant->name
+                && $mail->monthLabel === today()->format('F Y'),
         );
     }
 
@@ -187,6 +196,7 @@ class JobDeliveryTest extends ApiRouteTestCase
         (new SendBulkNotificationJob(999999))->handle($sms, $mail, $config);
         (new SendFormSubmissionEmailJob($this->tenant->id, 999999))->handle($mail);
         (new SendDailySummaryReportJob($this->tenant->id, 999999))->handle($mail);
+        (new SendRealProfitReportJob(999999, today()->format('Y-m')))->handle($mail, app(RealProfitReportService::class));
 
         $this->assertSame(0, MemberNotification::count());
         Mail::assertNothingSent();

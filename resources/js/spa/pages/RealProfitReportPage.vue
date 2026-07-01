@@ -2,26 +2,50 @@
   <section class="app-page-frame">
     <AppPageHeader title="Real Profit">
       <template #extra-slot>
-        <form class="flex flex-wrap items-end gap-3" @submit.prevent="loadReport">
-          <AppFormField label="Month" class="w-full sm:w-56">
-            <AppFormInput v-model="selectedMonth" type="month" required />
-          </AppFormField>
+        <div class="flex flex-wrap items-end gap-3">
+          <form class="flex flex-wrap items-end gap-3" @submit.prevent="loadReport">
+            <AppFormField label="Month" class="w-full sm:w-56">
+              <AppFormInput v-model="selectedMonth" type="month" required />
+            </AppFormField>
+
+            <button
+              type="submit"
+              :disabled="loading"
+              class="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-700 px-4 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin' : ''" :stroke-width="2" />
+              {{ loading ? 'Loading...' : 'Apply' }}
+            </button>
+          </form>
+
+          <a
+            :href="downloadUrl"
+            class="inline-flex h-12 items-center justify-center gap-2 rounded-2xl app-surface-soft px-4 text-sm font-semibold text-secondary-700 transition-colors hover:brightness-105 dark:text-secondary-200"
+          >
+            <Download class="h-4 w-4" :stroke-width="2" />
+            Download
+          </a>
 
           <button
-            type="submit"
-            :disabled="loading"
-            class="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-700 px-4 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            :disabled="emailing"
+            class="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-primary-300 px-4 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-primary-700 dark:text-primary-300 dark:hover:bg-primary-900/20"
+            @click="emailReport"
           >
-            <RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin' : ''" :stroke-width="2" />
-            {{ loading ? 'Loading...' : 'Apply' }}
+            <Mail class="h-4 w-4" :stroke-width="2" />
+            {{ emailing ? 'Sending...' : 'Email Admins' }}
           </button>
-        </form>
+        </div>
       </template>
     </AppPageHeader>
 
     <div class="app-page-scroll">
       <div v-if="error" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
         {{ error }}
+      </div>
+
+      <div v-if="emailMessage" class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+        {{ emailMessage }}
       </div>
 
       <div v-if="loading && !loaded" class="app-surface rounded-2xl p-5 text-sm text-secondary-500 dark:text-secondary-400">
@@ -539,7 +563,7 @@
 
 <script setup>
 import { computed, defineComponent, h, onMounted, ref } from 'vue';
-import { AlertTriangle, Banknote, ReceiptText, RefreshCw, ShoppingBag, TrendingUp, WalletCards } from 'lucide-vue-next';
+import { AlertTriangle, Banknote, Download, Mail, ReceiptText, RefreshCw, ShoppingBag, TrendingUp, WalletCards } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -569,13 +593,16 @@ const ReportPanel = defineComponent({
 const selectedMonth = ref(toMonthInputValue());
 const loading = ref(false);
 const loaded = ref(false);
+const emailing = ref(false);
 const error = ref('');
+const emailMessage = ref('');
 const report = ref(defaultReport());
 
 const numberFormatter = new Intl.NumberFormat();
 const moneyFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const hasCostWarnings = computed(() => Number(report.value.summary.estimated_cost_items || 0) > 0 || Number(report.value.summary.missing_cost_items || 0) > 0);
+const downloadUrl = computed(() => `/api/reports/real-profit/pdf?month=${encodeURIComponent(selectedMonth.value)}`);
 const salesMarginPercent = computed(() => {
     const revenue = Number(report.value.summary.sales_revenue || 0);
     if (Math.abs(revenue) < 0.00001) return 0;
@@ -620,6 +647,7 @@ function defaultReport() {
 async function loadReport() {
     loading.value = true;
     error.value = '';
+    emailMessage.value = '';
 
     try {
         const response = await apiRequest('/api/reports/real-profit', {
@@ -632,6 +660,24 @@ async function loadReport() {
         error.value = err?.response?.data?.message || 'Failed to load real profit report.';
     } finally {
         loading.value = false;
+    }
+}
+
+async function emailReport() {
+    emailing.value = true;
+    error.value = '';
+    emailMessage.value = '';
+
+    try {
+        const response = await apiRequest('/api/reports/real-profit/email', {
+            method: 'post',
+            data: { month: selectedMonth.value },
+        });
+        emailMessage.value = response?.message || 'Real profit report email queued for administrators.';
+    } catch (err) {
+        error.value = err?.response?.data?.message || 'Failed to email real profit report.';
+    } finally {
+        emailing.value = false;
     }
 }
 

@@ -5,6 +5,7 @@ namespace Tests\Feature\Services;
 use App\Mail\DailySummaryReportMail;
 use App\Mail\FormSubmissionMail;
 use App\Mail\MemberNotificationMail;
+use App\Mail\RealProfitReportMail;
 use App\Services\SmsService;
 use App\Services\TenantConfigurationService;
 use App\Services\TenantMailService;
@@ -107,5 +108,10 @@ class DeliveryServicesTest extends ApiRouteTestCase
         $this->assertSame('Daily Summary Report — 09 Jun 2026', $reportMail->envelope()->subject);
         $this->assertSame('emails.daily-summary-report', $reportMail->content()->view);
         $this->assertCount(1, $reportMail->attachments());
+
+        $realProfitMail = new RealProfitReportMail('Gym', 'June 2026', ['real_profit' => 100], '%PDF', 'real-profit.pdf');
+        $this->assertSame('Real Profit Report - June 2026', $realProfitMail->envelope()->subject);
+        $this->assertSame('emails.real-profit-report', $realProfitMail->content()->view);
+        $this->assertCount(1, $realProfitMail->attachments());
     }
 }

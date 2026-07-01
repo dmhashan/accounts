@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Jobs\SendDailySummaryReportJob;
+use App\Jobs\SendRealProfitReportJob;
 use App\Models\CompanyAccountTransaction;
 use App\Models\DailySummaryReport;
 use App\Models\Expense;
@@ -145,6 +146,37 @@ class ReportsApiTest extends ApiRouteTestCase
         } finally {
             $this->travelBack();
         }
+    }
+
+    public function testRealProfitReportPdfDownloadsForSelectedMonth(): void
+    {
+        $this->actingAsUser(['reports.view']);
+
+        $response = $this->get('/api/reports/real-profit/pdf?month=2026-06')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringContainsString(
+            'filename="real-profit-2026-06.pdf"',
+            (string) $response->headers->get('Content-Disposition'),
+        );
+        $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
+    public function testRealProfitReportEmailQueuesAdminDeliveryJob(): void
+    {
+        Queue::fake();
+        $this->actingAsUser(['reports.view']);
+
+        $this->postJson('/api/reports/real-profit/email', ['month' => '2026-06'])
+            ->assertAccepted()
+            ->assertJsonPath('message', 'Real profit report email queued for administrators.');
+
+        Queue::assertPushed(
+            SendRealProfitReportJob::class,
+            fn (SendRealProfitReportJob $job) => $this->readPrivate($job, 'tenantId') === $this->tenant->id
+                && $this->readPrivate($job, 'month') === '2026-06',
+        );
     }
 
     public function testDailySummaryHistoryShowAndPdf(): void

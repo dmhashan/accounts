@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendRealProfitReportJob;
 use App\Models\DailySummaryReport;
 use App\Services\DailySummaryReportService;
 use App\Services\DailySummaryService;
@@ -52,6 +53,33 @@ class ReportApiController extends Controller
         return response()->json(
             $this->realProfitReport->build(app('tenant')->id, $validated['month'] ?? null),
         );
+    }
+
+    public function downloadRealProfitPdf(Request $request): Response
+    {
+        $validated = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+        ]);
+
+        $pdf = $this->realProfitReport->pdf(app('tenant')->id, $validated['month'] ?? null, app('tenant'));
+
+        return response($pdf['contents'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $pdf['filename'] . '"',
+        ]);
+    }
+
+    public function emailRealProfit(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+        ]);
+
+        SendRealProfitReportJob::dispatch(app('tenant')->id, $validated['month'] ?? null);
+
+        return response()->json([
+            'message' => 'Real profit report email queued for administrators.',
+        ], 202);
     }
 
     // ── Signed report generation ────────────────────────────────────

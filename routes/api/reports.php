@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/reports/overview', [ReportApiController::class, 'overview'])->middleware(['auth', 'permission:reports.view']);
 Route::get('/reports/real-profit', [ReportApiController::class, 'realProfit'])->middleware(['auth', 'permission:reports.view']);
+Route::get('/reports/real-profit/pdf', [ReportApiController::class, 'downloadRealProfitPdf'])->middleware(['auth', 'permission:reports.view']);
+Route::post('/reports/real-profit/email', [ReportApiController::class, 'emailRealProfit'])->middleware(['auth', 'permission:reports.view']);
 Route::get('/reports/daily-summary', [ReportApiController::class, 'dailySummary'])->middleware(['auth', 'permission:reports.view']);
 Route::post('/reports/daily-summary/generate', [ReportApiController::class, 'generateDailySummary'])->middleware(['auth', 'permission:reports.view']);
 Route::get('/reports/daily-summary/history', [ReportApiController::class, 'dailySummaryHistory'])->middleware(['auth', 'permission:reports.view']);

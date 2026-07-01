@@ -6,7 +6,12 @@ use App\Models\Expense;
 use App\Models\MemberPayment;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
+use App\Models\Tenant;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
+use Mpdf\Mpdf;
 
 class RealProfitReportService
 {
@@ -56,6 +61,18 @@ class RealProfitReportService
             'sales_by_product' => $sales['by_product'],
             'expenses' => $expenses['data'],
             'expenses_by_category' => $expenses['by_category'],
+        ];
+    }
+
+    public function pdf(int $tenantId, ?string $month, ?Tenant $tenant = null): array
+    {
+        $report = $this->build($tenantId, $month);
+        $tenant ??= app()->bound('tenant') ? app('tenant') : Tenant::find($tenantId);
+
+        return [
+            'report' => $report,
+            'filename' => 'real-profit-' . $report['month'] . '.pdf',
+            'contents' => $this->renderPdf($report, $tenant),
         ];
     }
 
@@ -311,6 +328,64 @@ class RealProfitReportService
             'reference_number' => $payment->reference_number,
             'notes' => $payment->notes,
         ];
+    }
+
+    private function renderPdf(array $report, ?Tenant $tenant): string
+    {
+        $html = view('pdfs.real-profit', [
+            'report' => $report,
+            'tenantName' => $tenant?->name ?? '',
+            'tenantAddress' => $tenant?->address ?? '',
+            'tenantEmail' => $tenant?->email ?? '',
+            'tenantPhone' => $tenant?->phone ?? '',
+            'tenantLogo' => $this->imageToDataUri($tenant?->logo_path),
+            'generatedAt' => now()->format('d M Y, H:i'),
+        ])->render();
+
+        $defaultFontDirs = (new ConfigVariables)->getDefaults()['fontDir'];
+        $defaultFontData = (new FontVariables)->getDefaults()['fontdata'];
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'fontDir' => array_merge($defaultFontDirs, [storage_path('fonts')]),
+            'fontdata' => $defaultFontData,
+            'default_font' => 'dejavusans',
+            'tempDir' => storage_path('app/mpdf-tmp'),
+        ]);
+
+        $mpdf->WriteHTML($html);
+
+        return $mpdf->Output('', 'S');
+    }
+
+    private function imageToDataUri(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        try {
+            $disk = config('filesystems.media_disk', 'public');
+            $content = Storage::disk($disk)->get($path);
+
+            if (!$content) {
+                return null;
+            }
+
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $mimeMap = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'webp' => 'image/webp',
+                'svg' => 'image/svg+xml',
+            ];
+
+            return 'data:' . ($mimeMap[$ext] ?? 'image/png') . ';base64,' . base64_encode($content);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function marginPercent(float $profit, float $revenue): float
