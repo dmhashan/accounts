@@ -89,6 +89,7 @@ class PaymentApiController extends Controller
     {
         return [
             'member_id' => ['nullable', 'integer', 'exists:members,id'],
+            'payment_method_id' => ['nullable', 'integer', 'exists:payment_methods,id'],
             'company_account_id' => ['nullable', 'integer', 'exists:company_accounts,id'],
             'payment_plan_id' => ['nullable', 'integer', 'exists:payment_plans,id'],
             'payment_method' => ['nullable', 'string', 'in:cash,member_wallet'],

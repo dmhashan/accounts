@@ -16,6 +16,7 @@ class Sale extends Model
         'customer_name',
         'customer_member_id',
         'account_id',
+        'payment_method_id',
         'customer_type',
         'payment_method',
         'reference_number',
@@ -37,6 +38,11 @@ class Sale extends Model
         return $this->belongsTo(CompanyAccount::class, 'account_id');
     }
 
+    public function paymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);
@@ -45,5 +51,11 @@ class Sale extends Model
     public function accountTransaction(): HasOne
     {
         return $this->hasOne(CompanyAccountTransaction::class);
+    }
+
+    public function settlement(): HasOne
+    {
+        return $this->hasOne(PaymentSettlement::class, 'source_id')
+            ->where('source_type', 'sale');
     }
 }

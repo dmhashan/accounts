@@ -42,7 +42,7 @@
           </p>
           <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
             {{ formatDate(payment.payment_date) }}
-            <span v-if="payment.account_name" class="ml-1 opacity-70">&bull; {{ payment.account_name }}</span>
+            <span v-if="payment.payment_method_name || payment.account_name" class="ml-1 opacity-70">&bull; {{ payment.payment_method_name || payment.account_name }}</span>
           </p>
           <p v-if="payment.reference_number" class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">
             Ref: {{ payment.reference_number }}
@@ -55,7 +55,7 @@
               ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800'
               : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'"
           >
-            {{ payment.payment_method === 'member_wallet' ? 'Wallet' : 'Cash' }}
+            {{ payment.payment_method === 'member_wallet' ? 'Wallet' : (payment.payment_method_name || 'Method') }}
           </span>
         </div>
       </RouterLink>
@@ -90,6 +90,7 @@
     <div v-if="memModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
       <PaymentMembershipForm
         :accounts="metaAccounts"
+        :payment-methods="metaPaymentMethods"
         :plans="metaPlans"
         :member-id="Number(memberId)"
         :saving="memModalSaving"
@@ -105,6 +106,7 @@
     <div v-if="otherModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
       <PaymentOtherForm
         :accounts="metaAccounts"
+        :payment-methods="metaPaymentMethods"
         :plans="metaPlans"
         :member-id="Number(memberId)"
         :saving="otherModalSaving"
@@ -153,6 +155,7 @@ async function loadMemberPayments(page = 1) {
 // ── Meta ──────────────────────────────────────────────────
 const metaLoaded = ref(false);
 const metaAccounts = ref([]);
+const metaPaymentMethods = ref([]);
 const metaPlans = ref([]);
 
 async function loadMeta() {
@@ -160,6 +163,7 @@ async function loadMeta() {
     try {
         const response = await apiRequest('/api/payments/meta');
         metaAccounts.value = response.accounts || [];
+        metaPaymentMethods.value = response.payment_methods || [];
         metaPlans.value = (response.plans || []).filter((p) => p.is_active !== false);
         metaLoaded.value = true;
     } catch { /* silent */ }

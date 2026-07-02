@@ -56,10 +56,13 @@
           </div>
           <div>
             <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
-              Account
+              Payment Method
             </p>
             <p class="font-medium text-secondary-800 dark:text-secondary-200">
-              {{ payment.account_name || '—' }}
+              {{ payment.payment_method_name || payment.account_name || '—' }}
+            </p>
+            <p v-if="payment.account_name" class="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400">
+              {{ payment.account_name }}
             </p>
           </div>
           <div>
@@ -92,6 +95,22 @@
             </p>
             <p class="font-medium text-secondary-800 dark:text-secondary-200">
               {{ payment.end_date || '—' }}
+            </p>
+          </div>
+          <div v-if="payment.settlement_status">
+            <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+              Settlement
+            </p>
+            <p class="font-medium text-secondary-800 dark:text-secondary-200">
+              {{ payment.settlement_status }}
+            </p>
+          </div>
+          <div v-if="payment.settlement_deduction_amount !== null && payment.settlement_deduction_amount !== undefined">
+            <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+              Fee / Net
+            </p>
+            <p class="font-medium text-secondary-800 dark:text-secondary-200">
+              {{ money(payment.settlement_deduction_amount) }} / {{ money(payment.settlement_net_amount) }}
             </p>
           </div>
         </div>

@@ -76,7 +76,7 @@ class SaleApiController extends Controller
         $status = $request->string('status')->toString();
 
         $sales = Sale::query()
-            ->with(['items.product', 'items.variation'])
+            ->with(['items.product', 'items.variation', 'paymentMethod:id,name', 'settlement'])
             ->when($status === 'outstanding', fn ($query) => $query->where('is_paid', false))
             ->when($status === 'paid', fn ($query) => $query->where('is_paid', true))
             ->orderBy('created_at', 'desc')
@@ -88,12 +88,15 @@ class SaleApiController extends Controller
                 'customer_name' => $sale->customer_name,
                 'customer_type' => $sale->customer_type,
                 'payment_method' => $sale->payment_method,
+                'payment_method_id' => $sale->payment_method_id,
+                'payment_method_name' => $sale->paymentMethod?->name ?? $sale->payment_method,
                 'reference_number' => $sale->reference_number,
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,
                 'balance' => (float) $sale->balance,
                 'is_paid' => (bool) $sale->is_paid,
                 'account_id' => $sale->account_id,
+                'settlement_status' => $sale->settlement?->status,
                 'created_at' => optional($sale->created_at)->format('d M Y, H:i'),
                 'items' => $sale->items->map(fn (SaleItem $item) => [
                     'product_name' => $item->product?->name,
@@ -137,12 +140,15 @@ class SaleApiController extends Controller
                 'customer_member_id' => $sale->customer_member_id,
                 'customer_type' => $sale->customer_type,
                 'payment_method' => $sale->payment_method,
+                'payment_method_id' => $sale->payment_method_id,
+                'payment_method_name' => $sale->paymentMethod?->name ?? $sale->payment_method,
                 'reference_number' => $sale->reference_number,
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,
                 'balance' => (float) $sale->balance,
                 'is_paid' => (bool) $sale->is_paid,
                 'account_id' => $sale->account_id,
+                'settlement_status' => $sale->settlement?->status,
                 'created_at' => optional($sale->created_at)->toDateString(),
                 'items' => $items->map(function (SaleItem $item) {
                     return [
@@ -177,9 +183,10 @@ class SaleApiController extends Controller
         $this->ensureSaleBelongsToTenant($sale);
 
         $validated = $request->validate([
-            'payment_method' => ['nullable', 'string', 'in:cash,bank,card,member_wallet'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'payment_method_id' => ['nullable', 'integer', 'exists:payment_methods,id'],
             'account_id' => [
-                \Illuminate\Validation\Rule::requiredIf(fn () => ($request->input('payment_method') ?? 'cash') !== 'member_wallet'),
+                \Illuminate\Validation\Rule::requiredIf(fn () => ($request->input('payment_method') ?? 'cash') !== 'member_wallet' && !$request->filled('payment_method_id')),
                 'nullable',
                 'integer',
                 'exists:company_accounts,id',
@@ -194,6 +201,7 @@ class SaleApiController extends Controller
                 'id' => $sale->id,
                 'is_paid' => (bool) $sale->is_paid,
                 'account_id' => $sale->account_id,
+                'payment_method_id' => $sale->payment_method_id,
             ],
         ]);
     }
@@ -215,7 +223,8 @@ class SaleApiController extends Controller
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_member_id' => ['nullable', 'exists:members,id'],
             'customer_type' => ['required', 'in:local,foreign'],
-            'payment_method' => ['required', 'in:cash,bank,card,member_wallet'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'payment_method_id' => ['nullable', 'integer', 'exists:payment_methods,id'],
             'reference_number' => ['nullable', 'string', 'max:255'],
             'paid_amount' => ['required', 'numeric', 'min:0'],
             'account_id' => ['nullable', 'integer', 'exists:company_accounts,id'],

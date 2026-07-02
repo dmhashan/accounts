@@ -145,6 +145,7 @@ const routes = [
     { path: '/workout/assignments/:id/edit', component: WorkoutProgramAssignmentEditPage, meta: { title: 'Edit Assignment' } },
     { path: '/payments', component: PaymentsPage, meta: { title: 'Payments' } },
     { path: '/payments/plans', component: PaymentsPage, meta: { title: 'Payment Plans' } },
+    { path: '/payments/methods', component: PaymentsPage, meta: { title: 'Payment Methods' } },
     { path: '/payments/new', component: PaymentFormPage, meta: { title: 'New Payment' } },
     { path: '/payments/:id', component: PaymentViewPage, meta: { title: 'Payment' } },
     { path: '/payments/:id/edit', component: PaymentFormPage, meta: { title: 'Edit Payment' } },

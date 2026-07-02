@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\CompanyAccount;
-use App\Models\CompanyAccountTransaction;
 use App\Models\Member;
 use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
@@ -15,6 +14,8 @@ class PaymentService
     public function __construct(
         private readonly BiometricSyncService $biometric,
         private readonly AutomatedMemberNotificationService $notifications,
+        private readonly PaymentMethodService $paymentMethods,
+        private readonly PaymentSettlementService $settlements,
     ) {}
 
     public function meta(int $tenantId): array
@@ -63,6 +64,7 @@ class PaymentService
                     2,
                 ),
             ])->values(),
+            'payment_methods' => $this->paymentMethods->activeMethods($tenantId),
             'plans' => $plans->map(fn (PaymentPlan $p) => [
                 'id' => $p->id,
                 'name' => $p->name,
@@ -153,7 +155,7 @@ class PaymentService
     {
         $payments = MemberPayment::query()
             ->where('member_id', $memberId)
-            ->with(['account:id,name', 'membership.plan:id,name'])
+            ->with(['account:id,name', 'paymentMethod:id,name', 'settlement', 'membership.plan:id,name'])
             ->orderBy('payment_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -175,6 +177,8 @@ class PaymentService
             ->with([
                 'member:id,first_name,last_name,name,phone_number',
                 'account:id,name',
+                'paymentMethod:id,name',
+                'settlement',
                 'membership.plan:id,name',
             ])
             ->orderBy('payment_date', 'desc')
@@ -198,6 +202,8 @@ class PaymentService
             ->with([
                 'member:id,first_name,last_name,name,phone_number',
                 'account:id,name',
+                'paymentMethod:id,name',
+                'settlement',
                 'membership.plan:id,name',
             ])
             ->find($payment->id);
@@ -217,6 +223,8 @@ class PaymentService
             if (!empty($validated['member_id'])) {
                 $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
             }
+
+            $paymentMethod = null;
 
             if ($isWalletPayment) {
                 if (empty($validated['member_id'])) {
@@ -238,14 +246,15 @@ class PaymentService
                 ]);
                 $accountId = null;
             } else {
-                $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
-                $accountId = $validated['company_account_id'];
+                $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
+                $accountId = $paymentMethod->company_account_id;
             }
 
             $payment = MemberPayment::create([
                 'member_id' => $validated['member_id'] ?? null,
                 'company_account_id' => $accountId,
-                'payment_method' => $isWalletPayment ? 'member_wallet' : 'cash',
+                'payment_method_id' => $paymentMethod?->id,
+                'payment_method' => $isWalletPayment ? 'member_wallet' : $paymentMethod->name,
                 'amount' => $validated['amount'],
                 'payment_date' => $validated['payment_date'],
                 'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
@@ -255,7 +264,7 @@ class PaymentService
             $this->syncMembership($payment, $tenantId, $validated);
 
             if (!$isWalletPayment) {
-                $this->syncTransaction($payment, $tenantId);
+                $this->settlements->syncForPayment($payment->fresh(['member']), $paymentMethod);
             }
 
             return $payment;
@@ -288,11 +297,13 @@ class PaymentService
             if (!empty($validated['member_id'])) {
                 $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
             }
-            $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
+            $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
 
             $lockedPayment->update([
                 'member_id' => $validated['member_id'] ?? null,
-                'company_account_id' => $validated['company_account_id'],
+                'company_account_id' => $paymentMethod->company_account_id,
+                'payment_method_id' => $paymentMethod->id,
+                'payment_method' => $paymentMethod->name,
                 'amount' => $validated['amount'],
                 'payment_date' => $validated['payment_date'],
                 'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
@@ -300,7 +311,7 @@ class PaymentService
             ]);
 
             $this->syncMembership($lockedPayment, $tenantId, $validated);
-            $this->syncTransaction($lockedPayment, $tenantId);
+            $this->settlements->syncForPayment($lockedPayment->fresh(['member']), $paymentMethod);
         });
 
         $newMemberId = !empty($validated['member_id']) ? (int) $validated['member_id'] : null;
@@ -334,10 +345,7 @@ class PaymentService
             }
         }
 
-        // Delete the associated transaction before deleting the payment
-        CompanyAccountTransaction::where('model_name', 'payment')
-            ->where('reference_id', $lockedPayment->id)
-            ->delete();
+        $this->settlements->deleteForSource('payment', $lockedPayment->id);
 
         $lockedPayment->delete();
 
@@ -386,29 +394,6 @@ class PaymentService
         }
     }
 
-    private function syncTransaction(MemberPayment $payment, int $tenantId): void
-    {
-        $member = $payment->member;
-        $memberName = $member
-            ? trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?: 'Member')
-            : 'Member';
-
-        CompanyAccountTransaction::updateOrCreate(
-            [
-                'model_name' => 'payment',
-                'reference_id' => $payment->id,
-            ],
-            [
-                'company_account_id' => $payment->company_account_id,
-                'type' => 'payment',
-                'amount' => (float) $payment->amount,
-                'transaction_date' => $payment->payment_date->toDateString(),
-                'reference_number' => $payment->reference_number,
-                'notes' => filled($payment->notes) ? $payment->notes : 'Payment: ' . $memberName,
-            ],
-        );
-    }
-
     private function ensureMemberBelongsToTenant(int $memberId, int $tenantId): void
     {
         $exists = Member::query()
@@ -445,9 +430,15 @@ class PaymentService
             'member_phone' => $member?->phone_number,
             'company_account_id' => $payment->company_account_id,
             'account_name' => $payment->account?->name,
+            'payment_method_id' => $payment->payment_method_id,
+            'payment_method_name' => $payment->paymentMethod?->name ?? $payment->payment_method,
             'payment_plan_id' => $payment->membership?->payment_plan_id,
             'payment_plan_name' => $payment->membership?->plan?->name,
             'payment_method' => $payment->payment_method ?? 'cash',
+            'settlement_status' => $payment->settlement?->status,
+            'settlement_gross_amount' => $payment->settlement ? round((float) $payment->settlement->gross_amount, 2) : null,
+            'settlement_deduction_amount' => $payment->settlement ? round((float) $payment->settlement->deduction_amount, 2) : null,
+            'settlement_net_amount' => $payment->settlement ? round((float) $payment->settlement->net_amount, 2) : null,
             'amount' => round((float) $payment->amount, 2),
             'payment_date' => $payment->payment_date?->toDateString(),
             'start_date' => $payment->membership?->start_date?->toDateString(),

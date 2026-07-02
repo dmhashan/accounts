@@ -9,6 +9,8 @@ use App\Models\DailySummaryReport;
 use App\Models\Expense;
 use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
+use App\Models\PaymentMethod;
+use App\Models\PaymentSettlement;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -54,6 +56,15 @@ class ReportsApiTest extends ApiRouteTestCase
         try {
             $this->actingAsUser(['reports.view', 'sales.process', 'sales.create']);
             $account = $this->createCompanyAccount(['name' => 'Cash']);
+            $method = PaymentMethod::create([
+                'name' => 'Card',
+                'company_account_id' => $account->id,
+                'deduction_type' => 'percentage',
+                'deduction_value' => 3,
+                'record_deduction_as_expense' => true,
+                'requires_reconciliation' => false,
+                'is_active' => true,
+            ]);
             $member = $this->createMember();
             $plan = $this->createPaymentPlan(['name' => 'Monthly', 'price' => 1200]);
 
@@ -72,14 +83,29 @@ class ReportsApiTest extends ApiRouteTestCase
                 'end_date' => '2026-07-04',
             ]);
 
-            MemberPayment::create([
+            $otherPayment = MemberPayment::create([
                 'member_id' => $member->id,
                 'company_account_id' => $account->id,
+                'payment_method_id' => $method->id,
                 'payment_method' => 'cash',
                 'amount' => 500,
                 'payment_date' => '2026-06-06',
                 'reference_number' => 'OTHER-001',
                 'notes' => 'Locker rental',
+            ]);
+
+            PaymentSettlement::create([
+                'payment_method_id' => $method->id,
+                'company_account_id' => $account->id,
+                'source_type' => 'payment',
+                'source_id' => $otherPayment->id,
+                'payment_method_name' => $method->name,
+                'gross_amount' => 500,
+                'deduction_amount' => 15,
+                'net_amount' => 485,
+                'record_deduction_as_expense' => true,
+                'status' => PaymentSettlement::STATUS_CONFIRMED,
+                'payment_date' => '2026-06-06',
             ]);
 
             $product = $this->createProduct(['name' => 'Protein Bar']);
@@ -131,7 +157,9 @@ class ReportsApiTest extends ApiRouteTestCase
                 ->assertJsonPath('summary.sales_cost', 120)
                 ->assertJsonPath('summary.sales_profit', 80)
                 ->assertJsonPath('summary.expenses', 300)
-                ->assertJsonPath('summary.real_profit', 1480)
+                ->assertJsonPath('summary.payment_deductions', 15)
+                ->assertJsonPath('summary.payment_deduction_count', 1)
+                ->assertJsonPath('summary.real_profit', 1465)
                 ->assertJsonPath('summary.estimated_cost_items', 0)
                 ->assertJsonPath('summary.missing_cost_items', 0)
                 ->assertJsonPath('sales_items.0.cost_source', 'exact')
@@ -142,7 +170,7 @@ class ReportsApiTest extends ApiRouteTestCase
                 ->assertJsonCount(1, 'other_payments')
                 ->assertJsonCount(1, 'expenses');
 
-            $this->assertEqualsWithDelta(1480.0, (float) $response->json('summary.real_profit'), 0.001);
+            $this->assertEqualsWithDelta(1465.0, (float) $response->json('summary.real_profit'), 0.001);
         } finally {
             $this->travelBack();
         }

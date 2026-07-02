@@ -29,6 +29,15 @@
           <component :is="Tag" class="w-4 h-4" />
           New Plan
         </button>
+        <button
+          v-if="canManagePaymentMethods && activeTab === 'methods'"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors"
+          @click="openMethodModal()"
+        >
+          <component :is="CreditCard" class="w-4 h-4" />
+          New Method
+        </button>
       </template>
     </AppPageHeader>
 
@@ -59,7 +68,7 @@
                       {{ payment.member_name }}
                     </p>
                     <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                      {{ payment.payment_date }} &bull; {{ payment.account_name }}
+                      {{ payment.payment_date }} &bull; {{ payment.payment_method_name || payment.account_name }}
                       <span v-if="payment.payment_plan_name"> &bull; {{ payment.payment_plan_name }}</span>
                     </p>
                     <p class="text-sm font-bold text-primary-600 dark:text-primary-400">
@@ -89,7 +98,7 @@
                       Date
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
-                      Account
+                      Method
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                       Plan
@@ -121,7 +130,10 @@
                       {{ payment.payment_date }}
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
-                      {{ payment.account_name }}
+                      {{ payment.payment_method_name || payment.account_name }}
+                      <p v-if="payment.payment_method_name && payment.account_name" class="text-xs text-secondary-500 dark:text-secondary-400">
+                        {{ payment.account_name }}
+                      </p>
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
                       {{ payment.payment_plan_name || '—' }}
@@ -281,6 +293,249 @@
       </div>
     </div>
 
+    <!-- Payment methods tab -->
+    <div v-if="activeTab === 'methods'" class="min-h-0 flex flex-1 flex-col">
+      <div class="app-page-scroll">
+        <div v-if="methodsError" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+          {{ methodsError }}
+        </div>
+
+        <div class="app-surface rounded-2xl overflow-hidden">
+          <div v-if="methodsLoading" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+            Loading payment methods...
+          </div>
+
+          <template v-else>
+            <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+              <article v-for="method in paymentMethods" :key="method.id" class="p-4 space-y-2">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">
+                      {{ method.name }}
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                      {{ method.account_name || '-' }}
+                    </p>
+                  </div>
+                  <span
+                    class="shrink-0 text-xs px-2 py-0.5 rounded-full font-medium"
+                    :class="method.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-secondary-100 dark:bg-secondary-800 text-secondary-500'"
+                  >{{ method.is_active ? 'Active' : 'Inactive' }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-secondary-600 dark:text-secondary-300">
+                  <div>Deductions: {{ deductionLabel(method) }}</div>
+                  <div>Reconciliation: {{ method.requires_reconciliation ? 'On' : 'Off' }}</div>
+                  <div class="col-span-2">
+                    Profit fee: {{ method.record_deduction_as_expense ? 'On' : 'Off' }}
+                  </div>
+                </div>
+                <div class="flex gap-3">
+                  <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="openMethodModal(method)">
+                    Edit
+                  </button>
+                  <button type="button" class="text-xs text-red-500 hover:underline" @click="deleteMethod(method)">
+                    Delete
+                  </button>
+                </div>
+              </article>
+              <div v-if="paymentMethods.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+                No payment methods defined yet.
+              </div>
+            </div>
+
+            <div class="hidden md:block app-table-scroll">
+              <table class="w-full">
+                <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Method
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Account
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Deductions
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Reconciliation
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Status
+                    </th>
+                    <th class="px-6 py-3" />
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                  <tr v-for="method in paymentMethods" :key="method.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+                    <td class="px-6 py-4 text-sm font-semibold text-secondary-900 dark:text-white">
+                      {{ method.name }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                      {{ method.account_name || '-' }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                      {{ deductionLabel(method) }}
+                      <span v-if="method.deduction_type !== 'none' && method.record_deduction_as_expense" class="ml-2 text-xs text-secondary-500 dark:text-secondary-400">
+                        Profit fee
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                      {{ method.requires_reconciliation ? 'On' : 'Off' }}
+                    </td>
+                    <td class="px-6 py-4">
+                      <span
+                        class="inline-block text-xs px-2 py-0.5 rounded-full font-medium"
+                        :class="method.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-secondary-100 dark:bg-secondary-800 text-secondary-500'"
+                      >{{ method.is_active ? 'Active' : 'Inactive' }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <button type="button" class="text-xs text-primary-600 dark:text-primary-400 hover:underline mr-3" @click="openMethodModal(method)">
+                        Edit
+                      </button>
+                      <button type="button" class="text-xs text-red-500 hover:underline" @click="deleteMethod(method)">
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="paymentMethods.length === 0">
+                    <td colspan="6" class="px-6 py-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                      No payment methods defined yet.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </div>
+
+        <AppPagination
+          v-if="methodsPagination.last_page > 1"
+          :current-page="methodsPagination.current_page"
+          :last-page="methodsPagination.last_page"
+          class="mt-4"
+          @page-change="loadPaymentMethods"
+        />
+      </div>
+    </div>
+
+    <!-- Plan create/edit modal -->
+    <Teleport to="body">
+      <div v-if="methodModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div class="bg-white dark:bg-secondary-900 rounded-2xl shadow-xl w-full max-w-lg">
+          <div class="flex items-center justify-between p-5 border-b border-secondary-200 dark:border-secondary-700">
+            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
+              {{ methodForm.id ? 'Edit Payment Method' : 'Create Payment Method' }}
+            </h3>
+            <button type="button" class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200" @click="closeMethodModal">
+              <component :is="X" class="w-5 h-5" />
+            </button>
+          </div>
+
+          <form class="p-5 space-y-4" @submit.prevent="saveMethod">
+            <div v-if="methodModalError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+              {{ methodModalError }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Method Name</label>
+                <input
+                  v-model="methodForm.name"
+                  type="text"
+                  required
+                  maxlength="255"
+                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
+                <select
+                  v-model="methodForm.company_account_id"
+                  required
+                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="" disabled>
+                    Select account
+                  </option>
+                  <option v-for="account in metaAccounts" :key="account.id" :value="String(account.id)">
+                    {{ account.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Deductions</label>
+                <select
+                  v-model="methodForm.deduction_type"
+                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="none">
+                    No
+                  </option>
+                  <option value="fixed">
+                    Fixed Rate
+                  </option>
+                  <option value="percentage">
+                    Percentage Base
+                  </option>
+                </select>
+              </div>
+
+              <div v-if="methodForm.deduction_type === 'fixed'">
+                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Fixed Rate</label>
+                <input
+                  v-model="methodForm.deduction_value"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div v-else-if="methodForm.deduction_type === 'percentage'">
+                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Percentage</label>
+                <input
+                  v-model="methodForm.deduction_value"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  required
+                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
+                  <input v-model="methodForm.record_deduction_as_expense" type="checkbox" class="rounded" />
+                  Profit Fee
+                </label>
+                <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
+                  <input v-model="methodForm.requires_reconciliation" type="checkbox" class="rounded" />
+                  Reconciliation
+                </label>
+                <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
+                  <input v-model="methodForm.is_active" type="checkbox" class="rounded" />
+                  Active
+                </label>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300" @click="closeMethodModal">
+                Cancel
+              </button>
+              <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50" :disabled="methodSaving">
+                {{ methodSaving ? 'Saving...' : (methodForm.id ? 'Update Method' : 'Create Method') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Plan create/edit modal -->
     <Teleport to="body">
       <div v-if="planModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -421,6 +676,7 @@
       <div v-if="memModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
         <PaymentMembershipForm
           :accounts="metaAccounts"
+          :payment-methods="metaPaymentMethods"
           :plans="metaPlans"
           :members="metaMembers"
           :saving="memModalSaving"
@@ -436,6 +692,7 @@
       <div v-if="otherModalOpen" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
         <PaymentOtherForm
           :accounts="metaAccounts"
+          :payment-methods="metaPaymentMethods"
           :plans="metaPlans"
           :members="metaMembers"
           :saving="otherModalSaving"
@@ -467,9 +724,14 @@ const route = useRoute();
 
 const canManagePayments = computed(() => Boolean(context.permissions?.paymentsManage));
 const canManagePlans = computed(() => Boolean(context.permissions?.paymentPlansManage));
+const canManagePaymentMethods = computed(() => Boolean(context.permissions?.paymentMethodsManage));
 
 // ── Tab state ──────────────────────────────────────────────
-const activeTab = computed(() => route.path === '/payments/plans' ? 'plans' : 'payments');
+const activeTab = computed(() => {
+    if (route.path === '/payments/plans') return 'plans';
+    if (route.path === '/payments/methods') return 'methods';
+    return 'payments';
+});
 
 // ── Payments ──────────────────────────────────────────────
 const loading = ref(false);
@@ -514,6 +776,131 @@ async function loadPlans() {
         plansError.value = 'Failed to load plans.';
     } finally {
         plansLoading.value = false;
+    }
+}
+
+// ── Payment Methods ──────────────────────────────────────
+const methodsLoading = ref(false);
+const methodsError = ref('');
+const paymentMethods = ref([]);
+const methodsPagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
+const methodModalOpen = ref(false);
+const methodModalError = ref('');
+const methodSaving = ref(false);
+
+const methodForm = ref({
+    id: null,
+    name: '',
+    company_account_id: '',
+    deduction_type: 'none',
+    deduction_value: '',
+    record_deduction_as_expense: true,
+    requires_reconciliation: false,
+    is_active: true,
+});
+
+async function loadPaymentMethods(page = 1) {
+    if (!canManagePaymentMethods.value) return;
+
+    methodsLoading.value = true;
+    methodsError.value = '';
+    try {
+        const response = await apiRequest('/api/payment-methods', { params: { page, per_page: 20 } });
+        paymentMethods.value = response.data || [];
+        methodsPagination.value = response.meta || { current_page: 1, last_page: 1, per_page: 20, total: 0 };
+    } catch {
+        methodsError.value = 'Failed to load payment methods.';
+    } finally {
+        methodsLoading.value = false;
+    }
+}
+
+async function openMethodModal(method = null) {
+    methodModalError.value = '';
+    methodSaving.value = false;
+    await loadMeta();
+
+    if (method) {
+        methodForm.value = {
+            id: method.id,
+            name: method.name,
+            company_account_id: method.company_account_id ? String(method.company_account_id) : '',
+            deduction_type: method.deduction_type || 'none',
+            deduction_value: method.deduction_value !== null && method.deduction_value !== undefined ? String(method.deduction_value) : '',
+            record_deduction_as_expense: Boolean(method.record_deduction_as_expense),
+            requires_reconciliation: Boolean(method.requires_reconciliation),
+            is_active: Boolean(method.is_active),
+        };
+    } else {
+        methodForm.value = {
+            id: null,
+            name: '',
+            company_account_id: metaAccounts.value[0]?.id ? String(metaAccounts.value[0].id) : '',
+            deduction_type: 'none',
+            deduction_value: '',
+            record_deduction_as_expense: true,
+            requires_reconciliation: false,
+            is_active: true,
+        };
+    }
+
+    methodModalOpen.value = true;
+}
+
+function closeMethodModal() {
+    methodModalOpen.value = false;
+}
+
+function deductionLabel(method) {
+    if (method.deduction_type === 'fixed') return `Fixed ${money(method.deduction_value)}`;
+    if (method.deduction_type === 'percentage') return `${Number(method.deduction_value || 0)}%`;
+    return 'No';
+}
+
+async function saveMethod() {
+    if (!methodForm.value.name || !methodForm.value.company_account_id) return;
+
+    methodSaving.value = true;
+    methodModalError.value = '';
+    try {
+        const payload = {
+            name: methodForm.value.name,
+            company_account_id: Number(methodForm.value.company_account_id),
+            deduction_type: methodForm.value.deduction_type,
+            deduction_value: methodForm.value.deduction_type === 'none' ? null : methodForm.value.deduction_value,
+            record_deduction_as_expense: methodForm.value.deduction_type !== 'none' && methodForm.value.record_deduction_as_expense,
+            requires_reconciliation: methodForm.value.requires_reconciliation,
+            is_active: methodForm.value.is_active,
+        };
+
+        if (methodForm.value.id) {
+            await apiRequest(`/api/payment-methods/${methodForm.value.id}`, { method: 'put', data: payload });
+        } else {
+            await apiRequest('/api/payment-methods', { method: 'post', data: payload });
+        }
+
+        metaLoaded.value = false;
+        closeMethodModal();
+        await Promise.all([loadPaymentMethods(methodsPagination.value.current_page || 1), loadMeta()]);
+    } catch (err) {
+        methodModalError.value = err?.response?.data?.message || 'Failed to save payment method.';
+    } finally {
+        methodSaving.value = false;
+    }
+}
+
+async function deleteMethod(method) {
+    if (!confirm(`Delete payment method "${method.name}"?`)) return;
+    methodsError.value = '';
+    try {
+        const response = await apiRequest(`/api/payment-methods/${method.id}`, { method: 'delete' });
+        metaLoaded.value = false;
+        await Promise.all([loadPaymentMethods(methodsPagination.value.current_page || 1), loadMeta()]);
+        if (response?.message && response.message.includes('archived')) {
+            methodsError.value = response.message;
+        }
+    } catch (err) {
+        methodsError.value = err?.response?.data?.message || 'Failed to delete payment method.';
     }
 }
 
@@ -623,14 +1010,16 @@ async function forceDeletePlan() {
 const metaLoaded = ref(false);
 const metaMembers = ref([]);
 const metaAccounts = ref([]);
+const metaPaymentMethods = ref([]);
 const metaPlans = ref([]);
 
 async function loadMeta() {
-    if (metaLoaded.value || !canManagePayments.value) return;
+    if (metaLoaded.value || (!canManagePayments.value && !canManagePaymentMethods.value)) return;
     try {
-        const response = await apiRequest('/api/payments/meta');
+        const response = await apiRequest(canManagePayments.value ? '/api/payments/meta' : '/api/payment-methods/meta');
         metaMembers.value = response.members || [];
         metaAccounts.value = response.accounts || [];
+        metaPaymentMethods.value = response.payment_methods || [];
         metaPlans.value = (response.plans || []).filter(p => p.is_active !== false);
         metaLoaded.value = true;
     } catch {
@@ -711,9 +1100,22 @@ async function submitOtherPayment(payload) {
 onMounted(() => {
     loadPayments();
     loadPlans();
+    loadPaymentMethods();
     loadMeta();
     openMembershipModalFromRoute();
 });
+
+watch(
+    () => methodForm.value.deduction_type,
+    (type) => {
+        if (type === 'none') {
+            methodForm.value.deduction_value = '';
+            methodForm.value.record_deduction_as_expense = false;
+        } else if (!methodForm.value.record_deduction_as_expense) {
+            methodForm.value.record_deduction_as_expense = true;
+        }
+    },
+);
 
 watch(
     () => [route.path, route.query.action, route.query.open],

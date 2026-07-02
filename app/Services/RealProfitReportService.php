@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Expense;
 use App\Models\MemberPayment;
+use App\Models\PaymentSettlement;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
 use App\Models\Tenant;
@@ -23,13 +24,15 @@ class RealProfitReportService
         $payments = $this->payments($start, $end);
         $sales = $this->salesMargin($start, $end);
         $expenses = $this->expenses($start, $end);
+        $paymentDeductions = $this->paymentDeductions($start, $end);
 
         $membershipIncome = $this->roundMoney($payments['membership_rows']->sum('amount'));
         $otherPaymentIncome = $this->roundMoney($payments['other_rows']->sum('amount'));
         $totalPaymentIncome = $this->roundMoney($membershipIncome + $otherPaymentIncome);
         $expenseTotal = $this->roundMoney($expenses['rows']->sum('amount'));
+        $paymentDeductionTotal = $this->roundMoney($paymentDeductions['rows']->sum('deduction_amount'));
         $salesProfit = $this->roundMoney($sales['summary']['profit']);
-        $realProfit = $this->roundMoney($totalPaymentIncome + $salesProfit - $expenseTotal);
+        $realProfit = $this->roundMoney($totalPaymentIncome + $salesProfit - $expenseTotal - $paymentDeductionTotal);
 
         return [
             'month' => $start->format('Y-m'),
@@ -51,6 +54,8 @@ class RealProfitReportService
                 'sales_item_lines' => $sales['summary']['lines'],
                 'expenses' => $expenseTotal,
                 'expense_count' => $expenses['rows']->count(),
+                'payment_deductions' => $paymentDeductionTotal,
+                'payment_deduction_count' => $paymentDeductions['rows']->count(),
                 'real_profit' => $realProfit,
                 'estimated_cost_items' => $sales['summary']['estimated_cost_items'],
                 'missing_cost_items' => $sales['summary']['missing_cost_items'],
@@ -61,6 +66,7 @@ class RealProfitReportService
             'sales_by_product' => $sales['by_product'],
             'expenses' => $expenses['data'],
             'expenses_by_category' => $expenses['by_category'],
+            'payment_deductions' => $paymentDeductions['data'],
         ];
     }
 
@@ -212,6 +218,35 @@ class RealProfitReportService
             ],
             'items' => $rows->all(),
             'by_product' => $byProduct,
+        ];
+    }
+
+    private function paymentDeductions(Carbon $start, Carbon $end): array
+    {
+        $rows = PaymentSettlement::query()
+            ->where('record_deduction_as_expense', true)
+            ->where('deduction_amount', '>', 0)
+            ->where('status', '!=', PaymentSettlement::STATUS_CANCELLED)
+            ->whereBetween('payment_date', [$start->toDateString(), $end->toDateString()])
+            ->with(['paymentMethod:id,name', 'account:id,name'])
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return [
+            'rows' => $rows,
+            'data' => $rows->map(fn (PaymentSettlement $settlement) => [
+                'id' => (int) $settlement->id,
+                'payment_date' => $settlement->payment_date?->toDateString(),
+                'payment_method_name' => $settlement->payment_method_name,
+                'account_name' => $settlement->account?->name,
+                'source_type' => $settlement->source_type,
+                'source_id' => (int) $settlement->source_id,
+                'gross_amount' => $this->roundMoney((float) $settlement->gross_amount),
+                'deduction_amount' => $this->roundMoney((float) $settlement->deduction_amount),
+                'net_amount' => $this->roundMoney((float) $settlement->net_amount),
+                'status' => $settlement->status,
+            ])->all(),
         ];
     }
 

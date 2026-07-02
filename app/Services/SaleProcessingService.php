@@ -3,9 +3,8 @@
 namespace App\Services;
 
 use App\Jobs\SendMemberNotificationJob;
-use App\Models\CompanyAccount;
-use App\Models\CompanyAccountTransaction;
 use App\Models\Member;
+use App\Models\PaymentMethod;
 use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -18,6 +17,8 @@ class SaleProcessingService
     public function __construct(
         private readonly AuditService $auditService,
         private readonly MemberPortalUrlService $memberPortalUrl,
+        private readonly PaymentMethodService $paymentMethods,
+        private readonly PaymentSettlementService $settlements,
     ) {}
 
     public function create(int $tenantId, array $validated): Sale
@@ -27,14 +28,15 @@ class SaleProcessingService
         $sale = DB::transaction(function () use ($tenantId, $validated, $today) {
             [$saleItems, $total, $itemsPayload] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
             $member = $this->resolveMember($validated, $tenantId);
-            [$paidAmount, $balance, $isPaid, $accountId] = $this->resolvePayment($validated, $member, $total, $tenantId);
+            [$paidAmount, $balance, $isPaid, $accountId, $paymentMethod] = $this->resolvePayment($validated, $member, $total, $tenantId);
 
             $sale = Sale::create([
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_member_id' => $member?->id,
                 'account_id' => $accountId,
+                'payment_method_id' => $paymentMethod?->id,
                 'customer_type' => $validated['customer_type'],
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => $paymentMethod?->name ?? ($validated['payment_method'] ?? 'cash'),
                 'reference_number' => $validated['reference_number'] ?? null,
                 'total_amount' => $total,
                 'paid_amount' => $paidAmount,
@@ -44,7 +46,7 @@ class SaleProcessingService
 
             $this->replaceSaleItems($sale, $saleItems);
             $this->deductStock($itemsPayload, $tenantId, $today);
-            $this->recordAccountTransactionForSale($sale, $tenantId);
+            $this->recordAccountTransactionForSale($sale, $tenantId, null, $paymentMethod);
 
             return $sale;
         });
@@ -70,14 +72,15 @@ class SaleProcessingService
 
             [$saleItems, $total, $itemsPayload] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
             $member = $this->resolveMember($validated, $tenantId);
-            [$paidAmount, $balance, $isPaid, $accountId] = $this->resolvePayment($validated, $member, $total, $tenantId);
+            [$paidAmount, $balance, $isPaid, $accountId, $paymentMethod] = $this->resolvePayment($validated, $member, $total, $tenantId);
 
             $sale->update([
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_member_id' => $member?->id,
                 'account_id' => $accountId,
+                'payment_method_id' => $paymentMethod?->id,
                 'customer_type' => $validated['customer_type'],
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => $paymentMethod?->name ?? ($validated['payment_method'] ?? 'cash'),
                 'reference_number' => $validated['reference_number'] ?? null,
                 'total_amount' => $total,
                 'paid_amount' => $paidAmount,
@@ -146,22 +149,25 @@ class SaleProcessingService
 
                 $lockedSale->update([
                     'account_id' => null,
+                    'payment_method_id' => null,
                     'payment_method' => 'member_wallet',
                     'is_paid' => true,
                     'paid_amount' => (float) $lockedSale->total_amount,
                     'balance' => 0,
                 ]);
             } else {
-                $accountId = $this->resolveAccountId($validated, $tenantId);
+                $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
 
                 $lockedSale->update([
-                    'account_id' => $accountId,
+                    'account_id' => $paymentMethod->company_account_id,
+                    'payment_method_id' => $paymentMethod->id,
+                    'payment_method' => $paymentMethod->name,
                     'is_paid' => true,
                     'paid_amount' => (float) $lockedSale->total_amount,
                     'balance' => 0,
                 ]);
 
-                $this->recordAccountTransactionForSale($lockedSale, $tenantId, Carbon::today()->toDateString());
+                $this->recordAccountTransactionForSale($lockedSale->fresh(), $tenantId, Carbon::today()->toDateString(), $paymentMethod);
             }
 
             return $lockedSale->fresh();
@@ -295,18 +301,18 @@ class SaleProcessingService
                 $isPaid = (bool) ($validated['is_paid'] ?? false);
 
                 if ($isPaid) {
-                    $accountId = $this->resolveAccountId($validated, $tenantId);
+                    $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
 
-                    return [$total, 0, true, $accountId];
+                    return [$total, 0, true, $paymentMethod->company_account_id, $paymentMethod];
                 }
 
-                return [0, 0 - $total, false, null];
+                return [0, 0 - $total, false, null, null];
             }
 
             $paidAmount = (float) ($validated['paid_amount'] ?? 0);
             $isPaid = $paidAmount + 0.00001 >= $total;
 
-            return [$paidAmount, $paidAmount - $total, $isPaid, null];
+            return [$paidAmount, $paidAmount - $total, $isPaid, null, null];
         }
 
         if (!$member) {
@@ -321,23 +327,7 @@ class SaleProcessingService
             'current_balance' => (float) $member->current_balance - $total,
         ]);
 
-        return [$total, 0, true, null];
-    }
-
-    private function resolveAccountId(array $validated, int $tenantId): int
-    {
-        if (empty($validated['account_id'])) {
-            abort(422, 'Please select a company account for paid sales.');
-        }
-
-        $account = CompanyAccount::query()
-            ->find((int) $validated['account_id']);
-
-        if (!$account) {
-            abort(422, 'Invalid company account selection.');
-        }
-
-        return (int) $account->id;
+        return [$total, 0, true, null, null];
     }
 
     private function replaceSaleItems(Sale $sale, array $saleItems): void
@@ -458,26 +448,19 @@ class SaleProcessingService
         }
     }
 
-    private function recordAccountTransactionForSale(Sale $sale, int $tenantId, ?string $transactionDate = null): void
+    private function recordAccountTransactionForSale(Sale $sale, int $tenantId, ?string $transactionDate = null, ?PaymentMethod $method = null): void
     {
         if (!$sale->is_paid || !$sale->account_id) {
             return;
         }
 
-        CompanyAccountTransaction::updateOrCreate(
-            [
-                'model_name' => 'sale',
-                'reference_id' => $sale->id,
-            ],
-            [
-                'company_account_id' => $sale->account_id,
-                'type' => 'sale_payment',
-                'amount' => (float) $sale->total_amount,
-                'transaction_date' => $transactionDate ?? optional($sale->created_at)->toDateString() ?? Carbon::today()->toDateString(),
-                'reference_number' => $sale->reference_number,
-                'notes' => 'Sale payment for sale #' . $sale->id,
-            ],
-        );
+        $method ??= $sale->paymentMethod;
+
+        if (!$method) {
+            $method = $this->paymentMethods->resolveLegacyAccountMethod((int) $sale->account_id);
+        }
+
+        $this->settlements->syncForSale($sale, $method, $transactionDate);
     }
 
     private function sendSalePaidNotification(Sale $sale): void

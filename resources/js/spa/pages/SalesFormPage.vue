@@ -202,15 +202,15 @@
 
         <div class="mt-4">
           <AppFormField label="Company Account">
-            <AppCompanyAccountSelect
+            <AppPaymentMethodSelect
               v-model="selectedPayNowAccountId"
-              :accounts="companyAccounts"
+              :methods="paymentMethods"
               :member-id="selectedMember?.id ?? undefined"
               :amount="totalAmount"
             />
           </AppFormField>
-          <p v-if="companyAccounts.length === 0 && !selectedMember" class="mt-2 text-sm text-red-600 dark:text-red-400">
-            No company account found. Add one before using Pay Now.
+          <p v-if="paymentMethods.length === 0 && !selectedMember" class="mt-2 text-sm text-red-600 dark:text-red-400">
+            No payment method found. Add one before using Pay Now.
           </p>
         </div>
 
@@ -309,7 +309,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
-import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
+import AppPaymentMethodSelect from '../components/forms/AppPaymentMethodSelect.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -327,6 +327,7 @@ const activeCartKey = ref(null);
 const cartListRef = ref(null);
 const cartItemRefs = ref({});
 const companyAccounts = ref([]);
+const paymentMethods = ref([]);
 const payNowModalOpen = ref(false);
 const selectedPayNowAccountId = ref(null);
 const saleLocked = ref(false);
@@ -352,12 +353,6 @@ const form = ref({
     paid_amount: 0,
     items: [],
 });
-
-const paymentMethods = [
-    { value: 'cash', label: 'Cash' },
-    { value: 'bank', label: 'Bank' },
-    { value: 'card', label: 'Card' },
-];
 
 const selectedMember = computed(() => {
     if (!form.value.customer_member_id) {
@@ -548,9 +543,10 @@ async function loadMeta() {
         variationOptions.value = response.variations || [];
         members.value = response.members || [];
         companyAccounts.value = response.accounts || [];
+        paymentMethods.value = response.payment_methods || [];
 
-        if (companyAccounts.value.length > 0 && !selectedPayNowAccountId.value) {
-            selectedPayNowAccountId.value = companyAccounts.value[0].id;
+        if (paymentMethods.value.length > 0 && !selectedPayNowAccountId.value) {
+            selectedPayNowAccountId.value = paymentMethods.value[0].id;
         }
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to load sale metadata.';
@@ -575,7 +571,7 @@ async function loadSale() {
         form.value.payment_method = saleData.payment_method;
         form.value.reference_number = saleData.reference_number || '';
         form.value.paid_amount = saleData.paid_amount;
-        selectedPayNowAccountId.value = saleData.account_id || selectedPayNowAccountId.value;
+        selectedPayNowAccountId.value = saleData.payment_method_id || saleData.account_id || selectedPayNowAccountId.value;
         saleLocked.value = Boolean(saleData.is_paid);
 
         if (saleLocked.value) {
@@ -619,11 +615,12 @@ async function submitSale(mode = 'update') {
             customer_name: resolvedCustomerName,
             customer_member_id: selectedMember.value?.id || null,
             customer_type: form.value.customer_type,
-            payment_method: isPayNowMode ? (isWalletPayment ? 'member_wallet' : form.value.payment_method) : form.value.payment_method,
+            payment_method: isPayNowMode && isWalletPayment ? 'member_wallet' : form.value.payment_method,
+            payment_method_id: isEdit.value || !isPayNowMode || isWalletPayment ? undefined : Number(selectedPayNowAccountId.value),
             reference_number: showReferenceField.value ? (form.value.reference_number || null) : null,
             paid_amount: paidAmount,
             is_paid: isEdit.value ? undefined : isPayNowMode,
-            account_id: isEdit.value ? undefined : (isPayNowMode && !isWalletPayment ? Number(selectedPayNowAccountId.value) : null),
+            account_id: null,
             items: form.value.items
                 .filter((item) => item.product_variation_id && Number(item.quantity) > 0)
                 .map((item) => ({
@@ -652,7 +649,8 @@ async function submitSale(mode = 'update') {
         const capturedTotal = totalAmount.value;
         const capturedCustomerName = selectedMember.value?.label || form.value.customer_name || null;
         const capturedCustomerType = form.value.customer_type;
-        const capturedPaymentMethodLabel = paymentMethods.find((m) => m.value === form.value.payment_method)?.label || form.value.payment_method;
+        const selectedPaymentMethod = paymentMethods.value.find((method) => method.id === selectedPayNowAccountId.value);
+        const capturedPaymentMethodLabel = isWalletPayment ? 'Member Wallet' : (selectedPaymentMethod?.name || form.value.payment_method);
         const capturedIsPaid = mode === 'pay_now';
 
         if (isEdit.value) {
@@ -699,8 +697,8 @@ function handleFormSubmit() {
 
 function openPayNowModal() {
     if (submitDisabled.value) return;
-    if (!selectedPayNowAccountId.value && companyAccounts.value.length > 0) {
-        selectedPayNowAccountId.value = companyAccounts.value[0].id;
+    if (!selectedPayNowAccountId.value && paymentMethods.value.length > 0) {
+        selectedPayNowAccountId.value = paymentMethods.value[0].id;
     }
     payNowModalOpen.value = true;
 }
@@ -726,7 +724,7 @@ function resetForNewSale() {
         paid_amount: 0,
         items: [],
     };
-    selectedPayNowAccountId.value = companyAccounts.value[0]?.id ?? null;
+    selectedPayNowAccountId.value = paymentMethods.value[0]?.id ?? null;
     productSearch.value = '';
     errorMessage.value = '';
 }

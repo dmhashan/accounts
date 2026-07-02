@@ -30,9 +30,9 @@
 
       <div>
         <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Method <span class="text-red-500">*</span></label>
-        <AppCompanyAccountSelect
+        <AppPaymentMethodSelect
           v-model="accountValue"
-          :accounts="accounts"
+          :methods="paymentMethods"
           :member-id="effectiveMemberId ?? undefined"
           :amount="parseFloat(form.amount) || 0"
         />
@@ -139,13 +139,14 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { X } from 'lucide-vue-next';
-import AppCompanyAccountSelect from './AppCompanyAccountSelect.vue';
+import AppPaymentMethodSelect from './AppPaymentMethodSelect.vue';
 import AppSearchableDropdown from './AppSearchableDropdown.vue';
 import AppFormDateInput from './AppFormDateInput.vue';
 import { formatPlanDuration, calcPlanEndDate } from '../../composables/usePlanDuration.js';
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
+    paymentMethods: { type: Array, default: () => [] },
     plans: { type: Array, default: () => [] },
     members: { type: Array, default: () => [] },
     memberId: { type: [Number, String], default: null },
@@ -169,10 +170,10 @@ const accountValue = ref(null);
 const effectiveMemberId = computed(() => props.memberId ? Number(props.memberId) : (form.value.member_id ?? null));
 const selectedPlan = computed(() => props.plans.find(p => p.id === form.value.plan_id) || null);
 
-// Set first account when accounts become available
-watch(() => props.accounts, (accs) => {
-    if (!accountValue.value && accs.length > 0) {
-        accountValue.value = accs[0].id;
+// Set first payment method when methods become available
+watch(() => props.paymentMethods, (methods) => {
+    if (!accountValue.value && methods.length > 0) {
+        accountValue.value = methods[0].id;
     }
 }, { immediate: true });
 
@@ -195,8 +196,8 @@ function submit() {
     const isWallet = accountValue.value === 'member_wallet';
     emit('submit', {
         member_id: effectiveMemberId.value || null,
-        company_account_id: isWallet ? null : accountValue.value,
-        payment_method: isWallet ? 'member_wallet' : 'cash',
+        payment_method_id: isWallet ? null : accountValue.value,
+        payment_method: isWallet ? 'member_wallet' : null,
         payment_plan_id: form.value.plan_id || null,
         amount: parseFloat(form.value.amount),
         payment_date: form.value.payment_date,

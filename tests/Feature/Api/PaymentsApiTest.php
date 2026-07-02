@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\CompanyAccount;
 use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
+use App\Models\PaymentSettlement;
 use App\Services\AutomatedMemberNotificationService;
 use App\Services\BiometricSyncService;
 use App\Services\TenantConfigurationService;
@@ -290,6 +291,79 @@ class PaymentsApiTest extends ApiRouteTestCase
 
         $this->assertSame('4000.00', (string) $member->fresh()->current_balance);
         $this->assertDatabaseCount('payment_memberships', 1);
+    }
+
+    public function testPaymentMethodWithReconciliationCreatesPendingSettlementUntilConfirmed(): void
+    {
+        $this->actingAsUser(['payments.manage', 'accounts.manage']);
+        $member = $this->createMember();
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
+        $account = $this->createAccount(['name' => 'Bank Account']);
+
+        $methodId = (int) $this->postJson('/api/payment-methods', [
+            'name' => 'Card Payment',
+            'company_account_id' => $account->id,
+            'deduction_type' => 'percentage',
+            'deduction_value' => 3,
+            'record_deduction_as_expense' => true,
+            'requires_reconciliation' => true,
+            'is_active' => true,
+        ])->assertCreated()->json('data.id');
+
+        $paymentId = (int) $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_method_id' => $methodId,
+            'payment_plan_id' => $plan->id,
+            'amount' => 1000,
+            'payment_date' => '2026-06-03',
+            'start_date' => '2026-06-03',
+        ])->assertCreated()->json('data.id');
+
+        $this->assertDatabaseHas('payment_settlements', [
+            'source_type' => 'payment',
+            'source_id' => $paymentId,
+            'payment_method_id' => $methodId,
+            'company_account_id' => $account->id,
+            'gross_amount' => 1000,
+            'deduction_amount' => 30,
+            'net_amount' => 970,
+            'status' => PaymentSettlement::STATUS_PENDING,
+        ]);
+
+        $this->assertDatabaseMissing('company_account_transactions', [
+            'model_name' => 'payment',
+            'reference_id' => $paymentId,
+        ]);
+
+        $settlementId = PaymentSettlement::query()
+            ->where('source_type', 'payment')
+            ->where('source_id', $paymentId)
+            ->value('id');
+
+        $this->postJson('/api/accounts/payment-settlements/' . $settlementId . '/confirm', [
+            'transaction_date' => '2026-06-05',
+            'confirmation_reference' => 'BANK-123',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('company_account_transactions', [
+            'model_name' => 'payment',
+            'reference_id' => $paymentId,
+            'company_account_id' => $account->id,
+            'type' => 'payment',
+            'amount' => 1000,
+        ]);
+
+        $this->assertDatabaseHas('company_account_transactions', [
+            'model_name' => 'payment_deduction',
+            'reference_id' => $settlementId,
+            'company_account_id' => $account->id,
+            'type' => 'payment_deduction',
+            'amount' => -30,
+        ]);
+
+        $this->getJson('/api/accounts/' . $account->id)
+            ->assertOk()
+            ->assertJsonPath('data.current_balance', 970);
     }
 
     public function testMembershipPaymentSendsReceiptNotification(): void

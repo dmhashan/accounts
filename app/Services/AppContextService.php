@@ -69,9 +69,10 @@ class AppContextService
                 'salesDelete' => $this->hasAnyPermission($user, ['sales.delete']),
                 'stats' => $this->hasAnyPermission($user, ['reports.view', 'sales.process', 'accounts.transactions', 'accounts.manage']),
 
-                'payments' => $this->hasAnyPermission($user, ['payments.manage', 'payment_plans.manage', 'member.payments.view']),
+                'payments' => $this->hasAnyPermission($user, ['payments.manage', 'payment_plans.manage', 'payment_methods.manage', 'member.payments.view']),
                 'paymentsManage' => $this->hasAnyPermission($user, ['payments.manage']),
                 'paymentPlansManage' => $this->hasAnyPermission($user, ['payment_plans.manage', 'payments.manage']),
+                'paymentMethodsManage' => $this->hasAnyPermission($user, ['payment_methods.manage', 'payments.manage']),
 
                 'employeesManage' => $this->hasAnyPermission($user, ['employees.manage']),
                 'employeePaySheetsManage' => $this->hasAnyPermission($user, ['employee_pay_sheets.manage']),

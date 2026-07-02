@@ -102,10 +102,11 @@ export function useNavigation() {
             });
         }
 
-        if (context.permissions?.paymentsManage || context.permissions?.paymentPlansManage) {
+        if (context.permissions?.paymentsManage || context.permissions?.paymentPlansManage || context.permissions?.paymentMethodsManage) {
             const children = [];
             if (context.permissions?.paymentsManage) children.push({ label: 'Payments', path: '/payments' });
             if (context.permissions?.paymentPlansManage) children.push({ label: 'Payment Plans', path: '/payments/plans' });
+            if (context.permissions?.paymentMethodsManage) children.push({ label: 'Payment Methods', path: '/payments/methods' });
             items.push({
                 label: 'Payments',
                 shortLabel: 'Payments',

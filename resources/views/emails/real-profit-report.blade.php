@@ -23,6 +23,7 @@
         <div><strong style="color:#111827;">Other payments:</strong> {{ $money($summary['other_payment_income'] ?? 0) }}</div>
         <div><strong style="color:#111827;">Sales profit:</strong> {{ $money($summary['sales_profit'] ?? 0) }}</div>
         <div><strong style="color:#111827;">Expenses:</strong> {{ $money($summary['expenses'] ?? 0) }}</div>
+        <div><strong style="color:#111827;">Payment fees:</strong> {{ $money($summary['payment_deductions'] ?? 0) }}</div>
         <div style="margin-top:10px;">
             @if($realProfit >= 0)
                 <span class="success">Real profit: +{{ $money($realProfit) }}</span>

@@ -33,10 +33,10 @@
             </p>
           </div>
 
-          <AppFormField label="Account" required>
-            <AppCompanyAccountSelect
+          <AppFormField label="Payment Method" required>
+            <AppPaymentMethodSelect
               v-model="selectedAccountValue"
-              :accounts="accounts"
+              :methods="paymentMethods"
               :member-id="form.member_id ?? undefined"
               :amount="parseFloat(form.amount) || 0"
             />
@@ -120,7 +120,7 @@ import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
-import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
+import AppPaymentMethodSelect from '../components/forms/AppPaymentMethodSelect.vue';
 import { formatPlanDuration, calcPlanEndDate } from '../composables/usePlanDuration.js';
 
 const route = useRoute();
@@ -131,6 +131,7 @@ const submitting = ref(false);
 const errorMessage = ref('');
 const members = ref([]);
 const accounts = ref([]);
+const paymentMethods = ref([]);
 const plans = ref([]);
 // Combined account selector: holds account ID (number) or 'member_wallet'
 const selectedAccountValue = ref(null);
@@ -191,7 +192,7 @@ async function onMemberSelect(memberId) {
     }
     // Reset account selection on member change
     if (selectedAccountValue.value === 'member_wallet') {
-        selectedAccountValue.value = accounts.value[0]?.id ?? null;
+        selectedAccountValue.value = paymentMethods.value[0]?.id ?? null;
     }
 }
 
@@ -199,9 +200,10 @@ async function loadMeta() {
     const response = await apiRequest('/api/payments/meta');
     members.value = response.members || [];
     accounts.value = response.accounts || [];
+    paymentMethods.value = response.payment_methods || [];
     plans.value = (response.plans || []).filter(p => p.is_active !== false);
-    if (!isEdit.value && accounts.value.length > 0) {
-        selectedAccountValue.value = accounts.value[0].id;
+    if (!isEdit.value && paymentMethods.value.length > 0) {
+        selectedAccountValue.value = paymentMethods.value[0].id;
     }
 }
 
@@ -221,7 +223,9 @@ async function loadPayment() {
             reference_number: payment.reference_number || '',
             notes: payment.notes || '',
         };
-        selectedAccountValue.value = payment.company_account_id ?? null;
+        selectedAccountValue.value = payment.payment_method === 'member_wallet'
+            ? 'member_wallet'
+            : (payment.payment_method_id ?? payment.company_account_id ?? null);
 }
 
 async function submit() {
@@ -232,8 +236,8 @@ async function submit() {
         const isWallet = selectedAccountValue.value === 'member_wallet';
         const payload = {
             member_id: form.value.member_id,
-            company_account_id: isWallet ? null : selectedAccountValue.value,
-            payment_method: isWallet ? 'member_wallet' : 'cash',
+            payment_method_id: isWallet ? null : selectedAccountValue.value,
+            payment_method: isWallet ? 'member_wallet' : null,
             payment_plan_id: form.value.payment_plan_id || null,
             amount: form.value.amount,
             payment_date: form.value.payment_date,

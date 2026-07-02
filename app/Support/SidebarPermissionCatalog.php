@@ -66,6 +66,7 @@ class SidebarPermissionCatalog
                 'permissions' => [
                     ['name' => 'Payments', 'slug' => 'payments.manage', 'description' => 'View and manage member payments and wallet top-ups.'],
                     ['name' => 'Payment Plans', 'slug' => 'payment_plans.manage', 'description' => 'View and manage payment plans.'],
+                    ['name' => 'Payment Methods', 'slug' => 'payment_methods.manage', 'description' => 'View and manage payment methods and settlement rules.'],
                 ],
             ],
             [

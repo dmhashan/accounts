@@ -53,7 +53,7 @@
               Pay Outstanding Sale
             </h3>
             <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
-              Select the company account that received payment for sale #{{ sale.id }}.
+              Select the payment method used for sale #{{ sale.id }}.
             </p>
           </div>
           <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNow">
@@ -67,10 +67,10 @@
             <p>Customer: <span class="font-semibold">{{ sale.customer_name || 'Walk-in' }}</span></p>
           </div>
 
-          <AppFormField label="Company Account">
-            <AppCompanyAccountSelect
+          <AppFormField label="Payment Method">
+            <AppPaymentMethodSelect
               v-model="selectedAccountId"
-              :accounts="companyAccounts"
+              :methods="paymentMethods"
               :member-id="sale.customer_member_id ?? undefined"
               :amount="Number(sale.total_amount || 0)"
             />
@@ -102,7 +102,7 @@ import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
-import AppCompanyAccountSelect from '../components/forms/AppCompanyAccountSelect.vue';
+import AppPaymentMethodSelect from '../components/forms/AppPaymentMethodSelect.vue';
 import SaleInvoicePreviewCard from '../components/SaleInvoicePreviewCard.vue';
 
 const route = useRoute();
@@ -116,6 +116,7 @@ const deleting = ref(false);
 const payNowOpen = ref(false);
 const payNowLoading = ref(false);
 const companyAccounts = ref([]);
+const paymentMethods = ref([]);
 const selectedAccountId = ref(null);
 const permissions = ref({
     edit: Boolean(context.permissions?.salesEdit),
@@ -144,7 +145,7 @@ async function confirmPayNow() {
             method: 'post',
             data: isWallet
                 ? { payment_method: 'member_wallet' }
-                : { account_id: Number(selectedAccountId.value) },
+                : { payment_method_id: Number(selectedAccountId.value) },
         });
         payNowOpen.value = false;
         await load();
@@ -172,8 +173,9 @@ async function loadMeta() {
     try {
         const response = await apiRequest('/api/sales/meta');
         companyAccounts.value = response.accounts || [];
-        if (companyAccounts.value.length > 0) {
-            selectedAccountId.value = companyAccounts.value[0].id;
+        paymentMethods.value = response.payment_methods || [];
+        if (paymentMethods.value.length > 0) {
+            selectedAccountId.value = paymentMethods.value[0].id;
         }
     } catch {
         // non-critical

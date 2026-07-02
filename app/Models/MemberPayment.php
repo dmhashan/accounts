@@ -11,6 +11,7 @@ class MemberPayment extends Model
     protected $fillable = [
         'member_id',
         'company_account_id',
+        'payment_method_id',
         'payment_method',
         'amount',
         'payment_date',
@@ -38,6 +39,11 @@ class MemberPayment extends Model
         return $this->belongsTo(CompanyAccount::class, 'company_account_id');
     }
 
+    public function paymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class);
+    }
+
     public function membership(): HasOne
     {
         return $this->hasOne(PaymentMembership::class);
@@ -47,5 +53,11 @@ class MemberPayment extends Model
     {
         return $this->hasOne(CompanyAccountTransaction::class, 'reference_id')
             ->where('model_name', 'payment');
+    }
+
+    public function settlement(): HasOne
+    {
+        return $this->hasOne(PaymentSettlement::class, 'source_id')
+            ->where('source_type', 'payment');
     }
 }

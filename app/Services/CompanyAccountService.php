@@ -8,6 +8,7 @@ use App\Models\CompanyAccountTransfer;
 use App\Models\EmployeePaySheetRun;
 use App\Models\Expense;
 use App\Models\MemberPayment;
+use App\Models\PaymentSettlement;
 use App\Models\Sale;
 use App\Models\WalletTopup;
 use Illuminate\Database\Eloquent\Builder;
@@ -116,6 +117,7 @@ class CompanyAccountService
         $saleIds = $items->where('model_name', 'sale')->pluck('reference_id')->filter()->unique()->values();
         $expenseIds = $items->where('model_name', 'expense')->pluck('reference_id')->filter()->unique()->values();
         $paymentIds = $items->where('model_name', 'payment')->pluck('reference_id')->filter()->unique()->values();
+        $deductionSettlementIds = $items->where('model_name', 'payment_deduction')->pluck('reference_id')->filter()->unique()->values();
         $topupIds = $items->where('model_name', 'wallet_topup')->pluck('reference_id')->filter()->unique()->values();
         $paySheetRunIds = $items->where('model_name', 'employee_pay_sheet')->pluck('reference_id')->filter()->unique()->values();
 
@@ -132,6 +134,11 @@ class CompanyAccountService
                 ->get(['id', 'member_id'])
                 ->keyBy('id')
             : collect();
+        $deductionSettlements = $deductionSettlementIds->isNotEmpty()
+            ? PaymentSettlement::whereIn('id', $deductionSettlementIds)
+                ->get(['id', 'source_type', 'source_id', 'payment_method_name', 'deduction_amount'])
+                ->keyBy('id')
+            : collect();
         $topups = $topupIds->isNotEmpty()
             ? WalletTopup::whereIn('id', $topupIds)
                 ->with('member:id,biometric_member_id,first_name,last_name,name')
@@ -143,7 +150,7 @@ class CompanyAccountService
             : collect();
 
         return [
-            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments, $topups, $paySheetRuns) {
+            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments, $deductionSettlements, $topups, $paySheetRuns) {
                 $sourceReference = null;
                 $customer = null;
                 $memberId = null;
@@ -162,6 +169,13 @@ class CompanyAccountService
                         $m = $payment->member;
                         $customer = trim(($m->first_name ?? '') . ' ' . ($m->last_name ?? '')) ?: ($m->name ?? null);
                         $memberId = $m->id;
+                    }
+                } elseif ($tx->model_name === 'payment_deduction' && $tx->reference_id) {
+                    $settlement = $deductionSettlements->get($tx->reference_id);
+
+                    if ($settlement) {
+                        $sourceReference = ucfirst($settlement->source_type) . ' #' . $settlement->source_id;
+                        $customer = $settlement->payment_method_name;
                     }
                 } elseif ($tx->model_name === 'wallet_topup' && $tx->reference_id) {
                     $topup = $topups->get($tx->reference_id);
@@ -194,6 +208,12 @@ class CompanyAccountService
                     'account_name' => $tx->account?->name,
                     'source_reference' => $sourceReference,
                     'customer' => $customer,
+                    'settlement_source_type' => $tx->model_name === 'payment_deduction'
+                        ? $deductionSettlements->get($tx->reference_id)?->source_type
+                        : null,
+                    'settlement_source_id' => $tx->model_name === 'payment_deduction'
+                        ? $deductionSettlements->get($tx->reference_id)?->source_id
+                        : null,
                 ];
             }),
             'meta' => [

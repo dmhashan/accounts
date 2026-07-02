@@ -97,6 +97,12 @@
                     <div class="value neg">-{{ $money($summary['expenses'] ?? 0) }}</div>
                 </div>
             </td>
+            <td class="card-td">
+                <div class="card">
+                    <div class="label">Payment Fees</div>
+                    <div class="value neg">-{{ $money($summary['payment_deductions'] ?? 0) }}</div>
+                </div>
+            </td>
         </tr>
     </table>
 
@@ -105,6 +111,7 @@
         + Other Payments {{ $money($summary['other_payment_income'] ?? 0) }}
         + Sales Profit {{ $money($summary['sales_profit'] ?? 0) }}
         - Expenses {{ $money($summary['expenses'] ?? 0) }}
+        - Payment Fees {{ $money($summary['payment_deductions'] ?? 0) }}
         = <span class="{{ $profitClass($summary['real_profit'] ?? 0) }}">{{ $signed($summary['real_profit'] ?? 0) }}</span>
     </div>
 

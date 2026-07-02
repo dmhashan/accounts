@@ -49,7 +49,7 @@ return new class extends Migration
             'inventory.manage' => ['inventory.audit'],
             'accounts.manage' => ['accounts.transfers', 'accounts.transactions', 'expenses.manage'],
             'sales.process' => ['sales.paid.view'],
-            'payments.manage' => ['payment_plans.manage'],
+            'payments.manage' => ['payment_plans.manage', 'payment_methods.manage'],
             'reports.view' => ['reports.daily_summary', 'reports.real_profit', 'reports.customers', 'reports.products'],
             'settings.manage' => ['settings.configuration', 'settings.biometric', 'settings.legacy_tools'],
             'workouts.manage' => ['workouts.exercises', 'workouts.assignments'],

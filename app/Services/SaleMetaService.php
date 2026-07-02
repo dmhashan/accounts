@@ -11,6 +11,10 @@ use Illuminate\Support\Carbon;
 
 class SaleMetaService
 {
+    public function __construct(
+        private readonly PaymentMethodService $paymentMethods,
+    ) {}
+
     public function build(int $tenantId): array
     {
         $today = Carbon::today()->toDateString();
@@ -119,6 +123,7 @@ class SaleMetaService
                     2,
                 ),
             ])->values(),
+            'payment_methods' => $this->paymentMethods->activeMethods($tenantId),
         ];
     }
 }

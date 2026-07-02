@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\PaymentMethod;
+use App\Models\PaymentSettlement;
 use App\Models\SaleItem;
 
 class SalesApiTest extends ApiRouteTestCase
@@ -207,6 +209,62 @@ class SalesApiTest extends ApiRouteTestCase
             'company_account_id' => $account->id,
             'type' => 'sale_payment',
             'amount' => 300,
+        ]);
+    }
+
+    public function testSalePayNowWithReconciledPaymentMethodWaitsForConfirmation(): void
+    {
+        $this->actingAsUser(['sales.process', 'sales.create', 'accounts.manage']);
+
+        $product = $this->createProduct(['name' => 'Card Sale Product']);
+        $variation = $this->createVariation($product, ['name' => 'Card Sale Variation']);
+        $this->createStockEntry($product, $variation, [
+            'quantity' => 20,
+            'local_selling_price' => 100,
+            'foreign_selling_price' => 130,
+        ]);
+
+        $account = $this->createCompanyAccount(['name' => 'Settlement Bank']);
+        $method = PaymentMethod::create([
+            'name' => 'Card Settlement',
+            'company_account_id' => $account->id,
+            'deduction_type' => 'percentage',
+            'deduction_value' => 3,
+            'record_deduction_as_expense' => true,
+            'requires_reconciliation' => true,
+            'is_active' => true,
+        ]);
+
+        $saleId = (int) $this->postJson('/api/sales', $this->salePayload($variation, [
+            'is_paid' => true,
+            'payment_method_id' => $method->id,
+            'account_id' => null,
+            'paid_amount' => 0,
+            'items' => [
+                ['product_variation_id' => $variation->id, 'quantity' => 3],
+            ],
+        ]))->assertCreated()->json('data.id');
+
+        $this->assertDatabaseHas('sales', [
+            'id' => $saleId,
+            'account_id' => $account->id,
+            'payment_method_id' => $method->id,
+            'is_paid' => true,
+            'paid_amount' => 300,
+        ]);
+
+        $this->assertDatabaseHas('payment_settlements', [
+            'source_type' => 'sale',
+            'source_id' => $saleId,
+            'gross_amount' => 300,
+            'deduction_amount' => 9,
+            'net_amount' => 291,
+            'status' => PaymentSettlement::STATUS_PENDING,
+        ]);
+
+        $this->assertDatabaseMissing('company_account_transactions', [
+            'model_name' => 'sale',
+            'reference_id' => $saleId,
         ]);
     }
 

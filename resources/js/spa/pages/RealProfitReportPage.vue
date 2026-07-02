@@ -57,7 +57,7 @@
           {{ report.month_label }} · {{ report.start_date }} to {{ report.end_date }}
         </p>
 
-        <div class="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <div class="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-6">
           <article class="app-surface rounded-2xl p-4 ring-1 ring-primary-200 dark:ring-primary-900/40">
             <div class="flex items-center gap-2 text-xs text-secondary-500 dark:text-secondary-400">
               <TrendingUp class="h-4 w-4 text-primary-600 dark:text-primary-300" :stroke-width="2" />
@@ -119,6 +119,19 @@
               {{ formatNumber(report.summary.expense_count) }} entries
             </p>
           </article>
+
+          <article class="app-surface rounded-2xl p-4">
+            <div class="flex items-center gap-2 text-xs text-secondary-500 dark:text-secondary-400">
+              <ReceiptText class="h-4 w-4 text-orange-600 dark:text-orange-300" :stroke-width="2" />
+              Payment Fees
+            </div>
+            <p class="mt-2 text-lg font-semibold text-orange-700 dark:text-orange-400 md:text-xl">
+              -{{ formatMoney(report.summary.payment_deductions) }}
+            </p>
+            <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+              {{ formatNumber(report.summary.payment_deduction_count) }} deductions
+            </p>
+          </article>
         </div>
 
         <article class="app-surface mb-4 rounded-2xl p-4">
@@ -133,6 +146,8 @@
             <span>Sales Profit {{ formatMoney(report.summary.sales_profit) }}</span>
             <span class="text-secondary-400">-</span>
             <span>Expenses {{ formatMoney(report.summary.expenses) }}</span>
+            <span class="text-secondary-400">-</span>
+            <span>Payment Fees {{ formatMoney(report.summary.payment_deductions) }}</span>
             <span class="text-secondary-400">=</span>
             <span :class="profitClass(report.summary.real_profit)">{{ formatSignedMoney(report.summary.real_profit) }}</span>
           </div>
@@ -631,6 +646,8 @@ function defaultReport() {
             sales_item_lines: 0,
             expenses: 0,
             expense_count: 0,
+            payment_deductions: 0,
+            payment_deduction_count: 0,
             real_profit: 0,
             estimated_cost_items: 0,
             missing_cost_items: 0,
@@ -641,6 +658,7 @@ function defaultReport() {
         sales_by_product: [],
         expenses: [],
         expenses_by_category: [],
+        payment_deductions: [],
     };
 }
 
