@@ -98,7 +98,7 @@
         </div>
 
         <div class="mt-5 flex items-center justify-end gap-2">
-          <RouterLink to="/payments" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
+          <RouterLink to="/accounting/payments" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
             Cancel
           </RouterLink>
           <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm disabled:opacity-50" :disabled="submitDisabled">
@@ -253,7 +253,7 @@ async function submit() {
             await apiRequest('/api/payments', { method: 'post', data: payload });
         }
 
-        router.push('/payments');
+        router.push('/accounting/payments');
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to save payment.';
     } finally {

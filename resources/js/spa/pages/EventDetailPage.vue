@@ -3,13 +3,13 @@
     <AppPageHeader show-back>
       <template #cta-slot>
         <RouterLink
-          :to="`/events/${route.params.id}/registrations`"
+          :to="`/settings/events/${route.params.id}/registrations`"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:hover:bg-secondary-600 text-secondary-800 dark:text-secondary-100 text-sm font-semibold rounded-xl transition-colors"
         >
           Registrations
         </RouterLink>
         <RouterLink
-          :to="`/events/${route.params.id}/edit`"
+          :to="`/settings/events/${route.params.id}/edit`"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
         >
           Edit Event
@@ -175,7 +175,7 @@ async function deleteEvent() {
     deleteConfirming.value = true;
     try {
         await apiRequest(`/api/events/${route.params.id}`, { method: 'DELETE' });
-        router.push('/events');
+        router.push('/settings/events');
     } catch (e) {
         alert(e?.response?.data?.message || e?.message || 'Failed to delete event.');
     } finally {

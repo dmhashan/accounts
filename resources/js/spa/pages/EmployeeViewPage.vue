@@ -501,7 +501,7 @@
                           </button>
                           <RouterLink
                             v-else-if="item.expense_id"
-                            :to="`/expenses/${item.expense_id}`"
+                            :to="`/accounting/expenses/${item.expense_id}`"
                             class="inline-flex items-center gap-2 rounded-lg border border-secondary-200 px-3 py-1.5 text-xs font-semibold text-secondary-600 hover:bg-secondary-50 dark:border-secondary-700 dark:text-secondary-300 dark:hover:bg-secondary-800"
                           >
                             <FileText class="h-3.5 w-3.5" />

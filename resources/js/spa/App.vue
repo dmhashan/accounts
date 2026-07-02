@@ -232,7 +232,7 @@ const assistiveActions = computed(() => {
       icon: WalletCards,
       color: 'blue',
       handler: () => router.push({
-        path: '/payments',
+        path: '/accounting/payments',
         query: { action: 'membership', open: Date.now() },
       }),
     });

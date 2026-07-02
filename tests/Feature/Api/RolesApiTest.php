@@ -49,6 +49,25 @@ class RolesApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonPath('role.id', $role->id)
             ->assertJsonStructure(['role', 'permissions']);
+
+        $permissionGroups = $response->json('permissions');
+
+        $this->assertArrayHasKey('Accounting', $permissionGroups);
+        $this->assertArrayHasKey('Settings', $permissionGroups);
+        $this->assertArrayNotHasKey('Accounts', $permissionGroups);
+        $this->assertArrayNotHasKey('Payments', $permissionGroups);
+        $this->assertArrayNotHasKey('Notifications', $permissionGroups);
+        $this->assertSame(
+            ['payments.manage', 'expenses.manage', 'accounts.transfers', 'accounts.transactions'],
+            collect($permissionGroups['Accounting'])->pluck('slug')->all(),
+        );
+        $this->assertContains('accounts.manage', collect($permissionGroups['Settings'])->pluck('slug')->all());
+        $this->assertContains('payment_plans.manage', collect($permissionGroups['Settings'])->pluck('slug')->all());
+        $this->assertContains('payment_methods.manage', collect($permissionGroups['Settings'])->pluck('slug')->all());
+        $this->assertContains('notifications.send', collect($permissionGroups['Settings'])->pluck('slug')->all());
+        $this->assertContains('events.manage', collect($permissionGroups['Settings'])->pluck('slug')->all());
+        $this->assertContains('vouchers.manage', collect($permissionGroups['Settings'])->pluck('slug')->all());
+        $this->assertContains('forms.manage', collect($permissionGroups['Settings'])->pluck('slug')->all());
     }
 
     public function testRolesUpdateRouteUpdatesRole(): void

@@ -3,7 +3,7 @@
     <AppPageHeader show-back>
       <template #cta-slot>
         <RouterLink
-          :to="`/expenses/${route.params.id}/edit`"
+          :to="`/accounting/expenses/${route.params.id}/edit`"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
         >
           Edit Expense
@@ -88,7 +88,7 @@
             </h2>
           </div>
           <RouterLink
-            :to="`/expenses/${route.params.id}/edit`"
+            :to="`/accounting/expenses/${route.params.id}/edit`"
             class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-700 px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800"
           >
             Add
@@ -168,7 +168,7 @@ async function deleteExpense() {
     deleting.value = true;
     try {
         await apiRequest(`/api/accounts/expenses/${route.params.id}`, { method: 'DELETE' });
-        router.push('/expenses');
+        router.push('/accounting/expenses');
     } catch (e) {
         alert(e?.response?.data?.message || 'Failed to delete expense.');
     } finally {

@@ -133,7 +133,7 @@ const initials = computed(() => {
 });
 
 function isChildActive(child) {
-    return route.path === child.path;
+    return route.path === child.path || (child.activePrefix && route.path.startsWith(child.activePrefix + '/'));
 }
 
 function isActive(path) {

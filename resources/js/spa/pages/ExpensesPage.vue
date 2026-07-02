@@ -2,7 +2,7 @@
   <section class="app-page-frame">
     <AppPageHeader>
       <template #cta-slot>
-        <AppHeaderAction :to="'/expenses/new'" :icon="ReceiptText" label="Record Expense" />
+        <AppHeaderAction :to="'/accounting/expenses/new'" :icon="ReceiptText" label="Record Expense" />
       </template>
 
       <template #extra-slot>
@@ -27,7 +27,7 @@
               v-for="expense in expenses"
               :key="expense.id"
               class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
-              @click="router.push('/expenses/' + expense.id)"
+              @click="router.push('/accounting/expenses/' + expense.id)"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -97,7 +97,7 @@
                   v-for="expense in expenses"
                   :key="expense.id"
                   class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer align-top"
-                  @click="router.push('/expenses/' + expense.id)"
+                  @click="router.push('/accounting/expenses/' + expense.id)"
                 >
                   <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
                     {{ expense.expense_date || '-' }}

@@ -300,7 +300,7 @@ class PaymentSettlementService
         } elseif ($settlement->source_type === 'payment') {
             $payment = $sourceDetails['payments']->get($settlement->source_id);
             $sourceLabel = 'Payment #' . $settlement->source_id;
-            $sourcePath = '/payments/' . $settlement->source_id;
+            $sourcePath = '/accounting/payments/' . $settlement->source_id;
 
             if ($payment?->member) {
                 $m = $payment->member;

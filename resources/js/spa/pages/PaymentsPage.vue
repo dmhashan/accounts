@@ -60,7 +60,7 @@
                 v-for="payment in payments"
                 :key="payment.id"
                 class="p-4 space-y-1 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
-                @click="router.push('/payments/' + payment.id)"
+                @click="router.push('/accounting/payments/' + payment.id)"
               >
                 <div class="flex justify-between items-start gap-3">
                   <div class="flex-1 min-w-0">
@@ -116,7 +116,7 @@
                     v-for="payment in payments"
                     :key="payment.id"
                     class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 cursor-pointer"
-                    @click="router.push('/payments/' + payment.id)"
+                    @click="router.push('/accounting/payments/' + payment.id)"
                   >
                     <td class="px-6 py-4">
                       <p class="text-sm font-semibold text-secondary-900 dark:text-white">
@@ -728,8 +728,8 @@ const canManagePaymentMethods = computed(() => Boolean(context.permissions?.paym
 
 // ── Tab state ──────────────────────────────────────────────
 const activeTab = computed(() => {
-    if (route.path === '/payments/plans') return 'plans';
-    if (route.path === '/payments/methods') return 'methods';
+    if (route.path === '/settings/payments-plans') return 'plans';
+    if (route.path === '/settings/payments-methods') return 'methods';
     return 'payments';
 });
 
@@ -1045,7 +1045,7 @@ function openMembershipModalFromRoute() {
     }
 
     openMembershipModal();
-    router.replace({ path: '/payments', query: {} }).catch(() => {});
+    router.replace({ path: '/accounting/payments', query: {} }).catch(() => {});
 }
 
 function closeMembershipModal() {

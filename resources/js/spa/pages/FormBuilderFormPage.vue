@@ -403,7 +403,7 @@
 
         <!-- Save -->
         <div class="flex items-center justify-end gap-3">
-          <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="router.push('/forms')">
+          <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="router.push('/settings/forms')">
             Cancel
           </button>
           <button
@@ -824,7 +824,7 @@ async function save() {
             await apiRequest('/api/forms/templates', { method: 'post', data: payload });
         }
 
-        router.push('/forms');
+        router.push('/settings/forms');
     } catch (err) {
         errorMessage.value = err?.response?.data?.message ?? 'Failed to save form template.';
     } finally {

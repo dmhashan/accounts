@@ -172,7 +172,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 pb-6">
-          <RouterLink to="/events" class="px-4 py-2 text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white transition-colors">
+          <RouterLink to="/settings/events" class="px-4 py-2 text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white transition-colors">
             Cancel
           </RouterLink>
           <button
@@ -284,7 +284,7 @@ async function submit() {
         } else {
             await apiRequest('/api/events', { method: 'post', data: payload });
         }
-        router.push('/events');
+        router.push('/settings/events');
     } catch (e) {
         errorMessage.value = e?.response?.data?.message || Object.values(e?.response?.data?.errors || {})[0]?.[0] || 'Failed to save event.';
     } finally {

@@ -9,14 +9,8 @@ import {
     FileText,
     Settings,
     Dumbbell,
-    WalletCards,
-    ReceiptText,
-    BellRing,
     Activity,
     ClipboardCheck,
-    ClipboardList,
-    CalendarDays,
-    Ticket,
     BriefcaseBusiness,
 } from 'lucide-vue-next';
 import { useAppContext } from './useAppContext';
@@ -27,19 +21,13 @@ const ICONS = {
     members:       Users,
     roles:         ShieldCheck,
     inventory:     Package,
-    accounts:      CreditCard,
-    expenses:      ReceiptText,
+    accounting:    CreditCard,
     sales:         ShoppingBag,
     reports:       FileText,
     settings:      Settings,
     workout:       Dumbbell,
-    payments:      WalletCards,
-    notifications: BellRing,
-    events:        CalendarDays,
     activity:      Activity,
     reconciliation: ClipboardCheck,
-    vouchers:      Ticket,
-    forms:         ClipboardList,
     employees:     BriefcaseBusiness,
 };
 
@@ -73,21 +61,20 @@ export function useNavigation() {
             items.push({ label: 'Inventory', shortLabel: 'Stock', path: '/inventory', icon: ICONS.inventory, children: invChildren });
         }
 
-        if (context.permissions?.accounts) {
+        if (context.permissions?.paymentsManage || context.permissions?.expenses || context.permissions?.accountsTransfers || context.permissions?.accountsTransactions) {
             const children = [];
-            if (context.permissions?.accountsManage) children.push({ label: 'Accounts', path: '/accounts' });
-            if (context.permissions?.accountsTransfers) children.push({ label: 'Transfers', path: '/accounts/transfers' });
-            if (context.permissions?.accountsTransactions) children.push({ label: 'Transactions', path: '/accounts/transactions' });
+            if (context.permissions?.paymentsManage) children.push({ label: 'Payments', path: '/accounting/payments', activePrefix: '/accounting/payments' });
+            if (context.permissions?.expenses) children.push({ label: 'Expenses', path: '/accounting/expenses', activePrefix: '/accounting/expenses' });
+            if (context.permissions?.accountsTransfers) children.push({ label: 'Transfers', path: '/accounting/transfers', activePrefix: '/accounting/transfers' });
+            if (context.permissions?.accountsTransactions) children.push({ label: 'Transactions', path: '/accounting/transactions' });
             items.push({
-                label: 'Accounts',
-                shortLabel: 'Accounts',
-                path: '/accounts',
-                icon: ICONS.accounts,
+                label: 'Accounting',
+                shortLabel: 'Accounting',
+                path: '/accounting',
+                icon: ICONS.accounting,
                 children,
             });
         }
-
-        if (context.permissions?.expenses)       items.push({ label: 'Expenses',  shortLabel: 'Expenses', path: '/expenses',  icon: ICONS.expenses });
 
         if (context.permissions?.sales) {
             const children = [];
@@ -102,30 +89,12 @@ export function useNavigation() {
             });
         }
 
-        if (context.permissions?.paymentsManage || context.permissions?.paymentPlansManage || context.permissions?.paymentMethodsManage) {
-            const children = [];
-            if (context.permissions?.paymentsManage) children.push({ label: 'Payments', path: '/payments' });
-            if (context.permissions?.paymentPlansManage) children.push({ label: 'Payment Plans', path: '/payments/plans' });
-            if (context.permissions?.paymentMethodsManage) children.push({ label: 'Payment Methods', path: '/payments/methods' });
-            items.push({
-                label: 'Payments',
-                shortLabel: 'Payments',
-                path: '/payments',
-                icon: ICONS.payments,
-                children,
-            });
-        }
-
         if (context.permissions?.employeesManage || context.permissions?.employeePaySheetsManage) {
-            const employeeChildren = [];
-            if (context.permissions?.employeesManage) employeeChildren.push({ label: 'Employees', path: '/employees' });
-            if (context.permissions?.employeePaySheetsManage) employeeChildren.push({ label: 'Pay Sheets', path: '/employees' });
             items.push({
                 label: 'Employees',
                 shortLabel: 'Staff',
                 path: '/employees',
                 icon: ICONS.employees,
-                children: employeeChildren.length > 1 ? employeeChildren : undefined,
             });
         }
 
@@ -145,11 +114,29 @@ export function useNavigation() {
             });
         }
 
-        if (context.permissions?.settings || context.permissions?.users || context.permissions?.roles) {
+        if (
+            context.permissions?.settings ||
+            context.permissions?.users ||
+            context.permissions?.roles ||
+            context.permissions?.accountsManage ||
+            context.permissions?.paymentPlansManage ||
+            context.permissions?.paymentMethodsManage ||
+            context.permissions?.notifications ||
+            context.permissions?.events ||
+            context.permissions?.vouchersManage ||
+            context.permissions?.formsManage
+        ) {
             const settingsChildren = [];
             if (context.permissions?.settingsGeneral) settingsChildren.push({ label: 'General', path: '/settings/general' });
             if (context.permissions?.users) settingsChildren.push({ label: 'Users', path: '/settings/users' });
             if (context.permissions?.roles) settingsChildren.push({ label: 'Roles', path: '/settings/roles' });
+            if (context.permissions?.accountsManage) settingsChildren.push({ label: 'Accounts', path: '/settings/accounts', activePrefix: '/settings/accounts' });
+            if (context.permissions?.paymentPlansManage) settingsChildren.push({ label: 'Payment Plans', path: '/settings/payments-plans' });
+            if (context.permissions?.paymentMethodsManage) settingsChildren.push({ label: 'Payment Methods', path: '/settings/payments-methods' });
+            if (context.permissions?.notifications) settingsChildren.push({ label: 'Notifications', path: '/settings/notifications', activePrefix: '/settings/notifications' });
+            if (context.permissions?.events) settingsChildren.push({ label: 'Events', path: '/settings/events', activePrefix: '/settings/events' });
+            if (context.permissions?.vouchersManage) settingsChildren.push({ label: 'Vouchers', path: '/settings/vouchers', activePrefix: '/settings/vouchers' });
+            if (context.permissions?.formsManage) settingsChildren.push({ label: 'Forms', path: '/settings/forms', activePrefix: '/settings/forms' });
             if (context.permissions?.settingsConfiguration) settingsChildren.push({ label: 'Configuration', path: '/settings/configuration' });
             if (context.permissions?.settingsBiometric) settingsChildren.push({ label: 'Biometric', path: '/settings/biometric' });
             if (context.permissions?.settingsLegacyTools) settingsChildren.push({ label: 'Manual Commands', path: '/settings/legacy-tools' });
@@ -173,15 +160,8 @@ export function useNavigation() {
             });
         }
 
-        if (context.permissions?.notifications)  items.push({ label: 'Notifications', shortLabel: 'Notify',   path: '/notifications', icon: ICONS.notifications });
-        if (context.permissions?.events)          items.push({ label: 'Events',        shortLabel: 'Events',   path: '/events',        icon: ICONS.events });
         if (context.permissions?.activity)               items.push({ label: 'Activity Logs',  shortLabel: 'Activity',      path: '/activity',        icon: ICONS.activity });
         if (context.permissions?.reconciliation) items.push({ label: 'Reconciliation', shortLabel: 'Recon', path: '/reconciliation', icon: ICONS.reconciliation });
-        // TODO: temparary hide because of requirement not finalized
-        if (context.permissions?.vouchersManage)
-            items.push({ label: 'Vouchers', shortLabel: 'Vouchers', path: '/vouchers', icon: ICONS.vouchers });
-        if (context.permissions?.formsManage)
-            items.push({ label: 'Forms', shortLabel: 'Forms', path: '/forms', icon: ICONS.forms });
 
         return items;
     });

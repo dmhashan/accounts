@@ -38,17 +38,12 @@ class SidebarPermissionCatalog
                 ],
             ],
             [
-                'label' => 'Accounts',
+                'label' => 'Accounting',
                 'permissions' => [
-                    ['name' => 'Accounts', 'slug' => 'accounts.manage', 'description' => 'View and manage company accounts.'],
+                    ['name' => 'Payments', 'slug' => 'payments.manage', 'description' => 'View and manage member payments and wallet top-ups.'],
+                    ['name' => 'Expenses', 'slug' => 'expenses.manage', 'description' => 'View and manage expenses.'],
                     ['name' => 'Transfers', 'slug' => 'accounts.transfers', 'description' => 'View and manage account transfers.'],
                     ['name' => 'Transactions', 'slug' => 'accounts.transactions', 'description' => 'View account transaction history.'],
-                ],
-            ],
-            [
-                'label' => 'Expenses',
-                'permissions' => [
-                    ['name' => 'Expenses', 'slug' => 'expenses.manage', 'description' => 'View and manage expenses.'],
                 ],
             ],
             [
@@ -59,14 +54,6 @@ class SidebarPermissionCatalog
                     ['name' => 'Create Sales', 'slug' => 'sales.create', 'description' => 'Create new sales.'],
                     ['name' => 'Edit Sales', 'slug' => 'sales.edit', 'description' => 'Edit existing sales and mark sales as paid.'],
                     ['name' => 'Delete Sales', 'slug' => 'sales.delete', 'description' => 'Delete sales.'],
-                ],
-            ],
-            [
-                'label' => 'Payments',
-                'permissions' => [
-                    ['name' => 'Payments', 'slug' => 'payments.manage', 'description' => 'View and manage member payments and wallet top-ups.'],
-                    ['name' => 'Payment Plans', 'slug' => 'payment_plans.manage', 'description' => 'View and manage payment plans.'],
-                    ['name' => 'Payment Methods', 'slug' => 'payment_methods.manage', 'description' => 'View and manage payment methods and settlement rules.'],
                 ],
             ],
             [
@@ -96,6 +83,13 @@ class SidebarPermissionCatalog
                     ['name' => 'Delete Users', 'slug' => 'users.delete', 'description' => 'Delete users.'],
                     ['name' => 'Roles', 'slug' => 'roles.view', 'description' => 'View the Roles settings subitem and role list.'],
                     ['name' => 'Manage Role Permissions', 'slug' => 'roles.permissions', 'description' => 'Create roles and update configurable role permissions.'],
+                    ['name' => 'Accounts', 'slug' => 'accounts.manage', 'description' => 'View and manage company accounts from Settings.'],
+                    ['name' => 'Payment Plans', 'slug' => 'payment_plans.manage', 'description' => 'View and manage payment plans from Settings.'],
+                    ['name' => 'Payment Methods', 'slug' => 'payment_methods.manage', 'description' => 'View and manage payment methods and settlement rules from Settings.'],
+                    ['name' => 'Notifications', 'slug' => 'notifications.send', 'description' => 'View and send bulk notifications from Settings.'],
+                    ['name' => 'Events', 'slug' => 'events.manage', 'description' => 'View and manage events and registrations from Settings.'],
+                    ['name' => 'Vouchers', 'slug' => 'vouchers.manage', 'description' => 'View and manage vouchers from Settings.'],
+                    ['name' => 'Forms', 'slug' => 'forms.manage', 'description' => 'View and manage form templates and submissions from Settings.'],
                     ['name' => 'Configuration', 'slug' => 'settings.configuration', 'description' => 'View and update advanced configuration settings.'],
                     ['name' => 'Biometric', 'slug' => 'settings.biometric', 'description' => 'Manage biometric device settings and actions.'],
                     ['name' => 'Manual Commands', 'slug' => 'settings.legacy_tools', 'description' => 'Run manual import and maintenance commands.'],
@@ -110,18 +104,6 @@ class SidebarPermissionCatalog
                 ],
             ],
             [
-                'label' => 'Notifications',
-                'permissions' => [
-                    ['name' => 'Notifications', 'slug' => 'notifications.send', 'description' => 'View and send bulk notifications.'],
-                ],
-            ],
-            [
-                'label' => 'Events',
-                'permissions' => [
-                    ['name' => 'Events', 'slug' => 'events.manage', 'description' => 'View and manage events and registrations.'],
-                ],
-            ],
-            [
                 'label' => 'Activity Logs',
                 'permissions' => [
                     ['name' => 'Activity Logs', 'slug' => 'activity.view', 'description' => 'View member activity logs.'],
@@ -132,18 +114,6 @@ class SidebarPermissionCatalog
                 'permissions' => [
                     ['name' => 'Perform Reconciliation', 'slug' => 'reconciliation.perform', 'description' => 'Open and close daily reconciliation sessions.'],
                     ['name' => 'Manage Reconciliation', 'slug' => 'reconciliation.manage', 'description' => 'Configure reconciliation and view all reconciliation history.'],
-                ],
-            ],
-            [
-                'label' => 'Vouchers',
-                'permissions' => [
-                    ['name' => 'Vouchers', 'slug' => 'vouchers.manage', 'description' => 'View and manage vouchers.'],
-                ],
-            ],
-            [
-                'label' => 'Forms',
-                'permissions' => [
-                    ['name' => 'Forms', 'slug' => 'forms.manage', 'description' => 'View and manage form templates and submissions.'],
                 ],
             ],
             [

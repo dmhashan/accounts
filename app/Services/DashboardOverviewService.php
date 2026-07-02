@@ -496,8 +496,8 @@ class DashboardOverviewService
 
         return match ($transaction->model_name) {
             'sale' => '/sales/' . $transaction->reference_id,
-            'expense' => '/expenses/' . $transaction->reference_id,
-            'payment' => '/payments/' . $transaction->reference_id,
+            'expense' => '/accounting/expenses/' . $transaction->reference_id,
+            'payment' => '/accounting/payments/' . $transaction->reference_id,
             'wallet_topup' => '/wallet-topups/' . $transaction->reference_id,
             default => null,
         };

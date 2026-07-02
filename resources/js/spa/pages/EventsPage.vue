@@ -2,7 +2,7 @@
   <section class="app-page-frame">
     <AppPageHeader>
       <template #cta-slot>
-        <AppHeaderAction to="/events/new" :icon="CalendarPlus" label="New Event" />
+        <AppHeaderAction to="/settings/events/new" :icon="CalendarPlus" label="New Event" />
       </template>
       <template #extra-slot>
         <AppSearchField
@@ -38,7 +38,7 @@
                 v-for="ev in events"
                 :key="ev.id"
                 class="p-4 space-y-2 cursor-pointer"
-                @click="router.push(`/events/${ev.id}`)"
+                @click="router.push(`/settings/events/${ev.id}`)"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0 flex-1">
@@ -67,7 +67,7 @@
                     </p>
                   </div>
                   <div class="flex gap-2 shrink-0 text-sm" @click.stop>
-                    <RouterLink :to="`/events/${ev.id}/registrations`" class="text-emerald-600 dark:text-emerald-400">
+                    <RouterLink :to="`/settings/events/${ev.id}/registrations`" class="text-emerald-600 dark:text-emerald-400">
                       Registrations
                     </RouterLink>
                   </div>
@@ -107,7 +107,7 @@
                   v-for="ev in events"
                   :key="ev.id"
                   class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors cursor-pointer"
-                  @click="router.push(`/events/${ev.id}`)"
+                  @click="router.push(`/settings/events/${ev.id}`)"
                 >
                   <td class="px-4 py-3 font-medium text-secondary-900 dark:text-white">
                     {{ ev.name }}
@@ -134,7 +134,7 @@
                     </span>
                   </td>
                   <td class="px-4 py-3 text-right whitespace-nowrap" @click.stop>
-                    <RouterLink :to="`/events/${ev.id}/registrations`" class="text-emerald-600 dark:text-emerald-400 hover:underline">
+                    <RouterLink :to="`/settings/events/${ev.id}/registrations`" class="text-emerald-600 dark:text-emerald-400 hover:underline">
                       Registrations
                     </RouterLink>
                   </td>

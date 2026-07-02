@@ -3,7 +3,7 @@
     <AppPageHeader show-back>
       <template #cta-slot>
         <AppHeaderAction
-          :to="{ path: '/accounts', query: { tab: 'transfers' } }"
+          to="/accounting/transfers"
           :icon="ArrowRightLeft"
           label="Transfers"
           variant="secondary"
@@ -83,7 +83,7 @@
         </div>
 
         <div class="mt-5 flex items-center justify-end gap-2">
-          <RouterLink :to="{ path: '/accounts', query: { tab: 'transfers' } }" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">
+          <RouterLink to="/accounting/transfers" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">
             Cancel
           </RouterLink>
           <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
@@ -195,7 +195,7 @@ async function submit() {
             });
         }
 
-        router.push({ path: '/accounts', query: { tab: 'transfers' } });
+        router.push('/accounting/transfers');
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to save transfer.';
     } finally {

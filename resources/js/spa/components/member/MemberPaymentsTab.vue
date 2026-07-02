@@ -33,7 +33,7 @@
       <RouterLink
         v-for="payment in memberPayments"
         :key="payment.id"
-        :to="`/payments/${payment.id}`"
+        :to="`/accounting/payments/${payment.id}`"
         class="flex items-center justify-between px-5 py-3 gap-3 hover:bg-secondary-50 dark:hover:bg-secondary-800/50 transition-colors"
       >
         <div class="min-w-0">

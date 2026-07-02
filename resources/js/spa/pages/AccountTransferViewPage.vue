@@ -3,7 +3,7 @@
     <AppPageHeader show-back>
       <template #cta-slot>
         <RouterLink
-          :to="`/accounts/transfers/${route.params.id}/edit`"
+          :to="`/accounting/transfers/${route.params.id}/edit`"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
         >
           Edit Transfer
@@ -109,7 +109,7 @@ async function deleteTransfer() {
     deleting.value = true;
     try {
         await apiRequest(`/api/accounts/transfers/${route.params.id}`, { method: 'DELETE' });
-        router.push('/accounts/transfers');
+        router.push('/accounting/transfers');
     } catch (e) {
         alert(e?.response?.data?.message || 'Failed to delete transfer.');
     } finally {

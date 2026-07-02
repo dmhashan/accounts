@@ -28,7 +28,7 @@
         </div>
 
         <div class="mt-5 flex items-center justify-end gap-2">
-          <RouterLink to="/accounts" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">
+          <RouterLink to="/settings/accounts" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">
             Cancel
           </RouterLink>
           <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
@@ -99,7 +99,7 @@ async function submit() {
             });
         }
 
-        router.push('/accounts');
+        router.push('/settings/accounts');
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to save account.';
     } finally {

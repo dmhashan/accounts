@@ -4,7 +4,7 @@
       <template #cta-slot>
         <RouterLink
           v-if="canManage"
-          :to="`/payments/${route.params.id}/edit`"
+          :to="`/accounting/payments/${route.params.id}/edit`"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
         >
           Edit Payment
@@ -155,7 +155,7 @@ async function deletePayment() {
     deleting.value = true;
     try {
         await apiRequest(`/api/payments/${route.params.id}`, { method: 'DELETE' });
-        router.push('/payments');
+        router.push('/accounting/payments');
     } catch (e) {
         alert(e?.response?.data?.message || 'Failed to delete payment.');
     } finally {

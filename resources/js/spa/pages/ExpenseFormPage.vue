@@ -133,7 +133,7 @@
         </div>
 
         <div class="mt-5 flex items-center justify-end gap-2">
-          <RouterLink :to="{ path: '/accounts', query: { tab: 'expenses' } }" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
+          <RouterLink to="/accounting/expenses" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
             Cancel
           </RouterLink>
           <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
@@ -295,7 +295,7 @@ async function submit() {
             });
         }
 
-        router.push('/expenses');
+        router.push('/accounting/expenses');
     } catch (error) {
         errorMessage.value = error?.response?.data?.message || 'Failed to save expense.';
     } finally {

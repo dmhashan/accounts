@@ -2,7 +2,7 @@
   <section class="app-page-frame">
     <AppPageHeader>
       <template #cta-slot>
-        <AppHeaderAction :icon="Plus" label="New Form" @click="router.push('/forms/new')" />
+        <AppHeaderAction :icon="Plus" label="New Form" @click="router.push('/settings/forms/new')" />
       </template>
       <template #extra-slot>
         <AppSearchField
@@ -39,7 +39,7 @@
                 v-for="t in filtered"
                 :key="t.id"
                 class="p-4 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
-                @click="router.push('/forms/' + t.id + '/submissions')"
+                @click="router.push('/settings/forms/' + t.id + '/submissions')"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0 flex-1">
@@ -99,7 +99,7 @@
                     v-for="t in filtered"
                     :key="t.id"
                     class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors cursor-pointer"
-                    @click="router.push('/forms/' + t.id + '/submissions')"
+                    @click="router.push('/settings/forms/' + t.id + '/submissions')"
                   >
                     <td class="app-table-td font-semibold text-secondary-900 dark:text-white">
                       {{ t.title }}
@@ -129,14 +129,14 @@
                         <button
                           type="button"
                           class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40 border border-primary-200 dark:border-primary-800/50 transition-colors"
-                          @click.stop="router.push('/forms/' + t.id + '/edit')"
+                          @click.stop="router.push('/settings/forms/' + t.id + '/edit')"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary-50 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 border border-secondary-200 dark:border-secondary-700 transition-colors"
-                          @click.stop="router.push('/forms/' + t.id + '/submissions')"
+                          @click.stop="router.push('/settings/forms/' + t.id + '/submissions')"
                         >
                           Submissions
                         </button>

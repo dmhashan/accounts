@@ -3,7 +3,7 @@
     <AppPageHeader show-back>
       <template #cta-slot>
         <RouterLink
-          :to="`/accounts/${route.params.id}/edit`"
+          :to="`/settings/accounts/${route.params.id}/edit`"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors"
         >
           Edit Account
@@ -249,7 +249,7 @@ async function deleteAccount() {
     deleting.value = true;
     try {
         await apiRequest(`/api/accounts/${route.params.id}`, { method: 'DELETE' });
-        router.push('/accounts');
+        router.push('/settings/accounts');
     } catch (e) {
         alert(e?.response?.data?.message || 'Failed to delete account.');
     } finally {

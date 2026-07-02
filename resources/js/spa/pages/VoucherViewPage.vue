@@ -292,7 +292,7 @@ async function deleteVoucher() {
     errorMessage.value = '';
     try {
         await apiRequest(`/api/vouchers/${route.params.id}`, { method: 'delete' });
-        router.push('/vouchers');
+        router.push('/settings/vouchers');
     } catch (err) {
         errorMessage.value = err?.response?.data?.message || 'Failed to delete voucher.';
         deleting.value = false;

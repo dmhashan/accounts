@@ -32,7 +32,7 @@
               v-for="account in filteredAccounts"
               :key="account.id"
               class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
-              @click="router.push('/accounts/' + account.id)"
+              @click="router.push('/settings/accounts/' + account.id)"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -83,7 +83,7 @@
                   v-for="account in filteredAccounts"
                   :key="account.id"
                   class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top cursor-pointer"
-                  @click="router.push('/accounts/' + account.id)"
+                  @click="router.push('/settings/accounts/' + account.id)"
                 >
                   <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white">
                     {{ account.name }}
@@ -127,7 +127,7 @@
               v-for="transfer in filteredTransfers"
               :key="transfer.id"
               class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
-              @click="router.push('/accounts/transfers/' + transfer.id)"
+              @click="router.push('/accounting/transfers/' + transfer.id)"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -191,7 +191,7 @@
                   v-for="transfer in filteredTransfers"
                   :key="transfer.id"
                   class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top cursor-pointer"
-                  @click="router.push('/accounts/transfers/' + transfer.id)"
+                  @click="router.push('/accounting/transfers/' + transfer.id)"
                 >
                   <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
                     {{ transfer.transfer_date || '-' }}
@@ -376,7 +376,7 @@ const route = useRoute();
 const router = useRouter();
 const context = useAppContext();
 
-const activeTab = ref(route.path === '/accounts/transfers' ? 'transfers' : route.path === '/accounts/transactions' ? 'transactions' : 'accounts');
+const activeTab = ref(route.path === '/accounting/transfers' ? 'transfers' : route.path === '/accounting/transactions' ? 'transactions' : 'accounts');
 const accounts = ref([]);
 const transfers = ref([]);
 const transactions = ref([]);
@@ -401,7 +401,7 @@ const tabCta = computed(() => {
         if (!context.permissions?.accountsTransfers) return null;
 
         return {
-            to: '/accounts/transfers/new',
+            to: '/accounting/transfers/new',
             icon: ArrowRightLeft,
             label: 'New Transfer',
         };
@@ -410,7 +410,7 @@ const tabCta = computed(() => {
     if (!context.permissions?.accountsManage) return null;
 
     return {
-        to: '/accounts/new',
+        to: '/settings/accounts/new',
         icon: Landmark,
         label: 'Add Account',
     };
@@ -469,10 +469,10 @@ function formatType(type) {
 
 function sourceRecordPath(tx) {
     if (tx.model_name === 'sale') return `/sales/${tx.reference_id}`;
-    if (tx.model_name === 'expense') return `/expenses/${tx.reference_id}`;
-    if (tx.model_name === 'payment') return `/payments/${tx.reference_id}`;
+    if (tx.model_name === 'expense') return `/accounting/expenses/${tx.reference_id}`;
+    if (tx.model_name === 'payment') return `/accounting/payments/${tx.reference_id}`;
     if (tx.model_name === 'payment_deduction' && tx.settlement_source_type === 'sale') return `/sales/${tx.settlement_source_id}`;
-    if (tx.model_name === 'payment_deduction' && tx.settlement_source_type === 'payment') return `/payments/${tx.settlement_source_id}`;
+    if (tx.model_name === 'payment_deduction' && tx.settlement_source_type === 'payment') return `/accounting/payments/${tx.settlement_source_id}`;
     if (tx.model_name === 'wallet_topup' && tx.reference_id) return `/wallet-topups/${tx.reference_id}`;
     return '#';
 }
@@ -610,7 +610,7 @@ function handleTransactionLimitChange(limit) {
 watch(
     () => route.path,
     (path) => {
-        const newTab = path === '/accounts/transfers' ? 'transfers' : path === '/accounts/transactions' ? 'transactions' : 'accounts';
+        const newTab = path === '/accounting/transfers' ? 'transfers' : path === '/accounting/transactions' ? 'transactions' : 'accounts';
         if (activeTab.value !== newTab) activeTab.value = newTab;
     }
 );

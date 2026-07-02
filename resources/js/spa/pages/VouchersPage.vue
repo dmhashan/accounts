@@ -71,7 +71,7 @@
                 v-for="v in vouchers"
                 :key="v.id"
                 class="p-4 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
-                @click="router.push('/vouchers/' + v.id)"
+                @click="router.push('/settings/vouchers/' + v.id)"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0 flex-1">
@@ -129,7 +129,7 @@
                     v-for="v in vouchers"
                     :key="v.id"
                     class="app-table-row cursor-pointer"
-                    @click="router.push('/vouchers/' + v.id)"
+                    @click="router.push('/settings/vouchers/' + v.id)"
                   >
                     <td class="app-table-td font-semibold">
                       {{ v.name }}

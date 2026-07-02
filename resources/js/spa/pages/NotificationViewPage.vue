@@ -2,7 +2,7 @@
   <section class="app-page-frame">
     <AppPageHeader show-back :title="notification?.name || 'Notification'">
       <template v-if="notification?.status === 'draft'" #cta-slot>
-        <RouterLink :to="`/notifications/${notification.id}/edit`" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors">
+        <RouterLink :to="`/settings/notifications/${notification.id}/edit`" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors">
           Edit Draft
         </RouterLink>
         <button
@@ -252,7 +252,7 @@ async function confirmRemoveNotification() {
     errorMessage.value = '';
     try {
         await apiRequest(`/api/notifications/${route.params.id}`, { method: 'delete' });
-        router.push('/notifications');
+        router.push('/settings/notifications');
     } catch (e) {
         errorMessage.value = e?.response?.data?.message || 'Failed to delete notification.';
     } finally {

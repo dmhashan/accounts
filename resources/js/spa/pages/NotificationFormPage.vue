@@ -131,7 +131,7 @@
 
           <!-- Actions -->
           <div class="flex flex-col sm:flex-row items-center justify-end gap-2 pb-4">
-            <RouterLink to="/notifications" class="w-full sm:w-auto text-center px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
+            <RouterLink to="/settings/notifications" class="w-full sm:w-auto text-center px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300">
               Cancel
             </RouterLink>
             <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm disabled:opacity-50 transition-colors" :disabled="submitting">
@@ -271,10 +271,10 @@ async function save() {
 
         if (isEdit.value) {
             await apiRequest(`/api/notifications/${route.params.id}`, { method: 'PUT', data: body });
-            router.push(`/notifications/${route.params.id}`);
+            router.push(`/settings/notifications/${route.params.id}`);
         } else {
             const created = await apiRequest('/api/notifications', { method: 'POST', data: body });
-            router.push(`/notifications/${created.id}`);
+            router.push(`/settings/notifications/${created.id}`);
         }
     } catch (e) {
         errorMessage.value = e?.message || 'Failed to save notification.';

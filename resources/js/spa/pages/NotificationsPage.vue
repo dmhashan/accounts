@@ -2,7 +2,7 @@
   <section class="app-page-frame">
     <AppPageHeader>
       <template #cta-slot>
-        <AppHeaderAction to="/notifications/new" :icon="BellPlus" label="New Notification" />
+        <AppHeaderAction to="/settings/notifications/new" :icon="BellPlus" label="New Notification" />
       </template>
       <template #extra-slot>
         <AppSearchField
@@ -38,7 +38,7 @@
                 v-for="n in notifications"
                 :key="n.id"
                 class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
-                @click="router.push('/notifications/' + n.id)"
+                @click="router.push('/settings/notifications/' + n.id)"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0 flex-1">
@@ -91,7 +91,7 @@
                   v-for="n in notifications"
                   :key="n.id"
                   class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors cursor-pointer"
-                  @click="router.push('/notifications/' + n.id)"
+                  @click="router.push('/settings/notifications/' + n.id)"
                 >
                   <td class="px-4 py-3 font-medium text-secondary-900 dark:text-white">
                     {{ n.name }}

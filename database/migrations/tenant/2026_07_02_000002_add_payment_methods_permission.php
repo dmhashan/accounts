@@ -18,8 +18,8 @@ return new class extends Migration
             ['slug' => 'payment_methods.manage'],
             [
                 'name' => 'Payment Methods',
-                'feature' => 'Payments',
-                'description' => 'View and manage payment methods and settlement rules.',
+                'feature' => 'Settings',
+                'description' => 'View and manage payment methods and settlement rules from Settings.',
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
             ],
