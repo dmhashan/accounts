@@ -35,6 +35,8 @@ Route::middleware(['auth', 'permission:settings.biometric,settings.manage'])->gr
     Route::get('/settings/biometric/recent-logs', [BiometricApiController::class, 'recentLogs']);
     Route::get('/settings/biometric/access-events', [BiometricApiController::class, 'accessEvents']);
     Route::post('/settings/biometric/access-events/sync', [BiometricApiController::class, 'syncAccessEvents']);
+    Route::get('/settings/biometric/queue-status', [BiometricApiController::class, 'queueStatus']);
+    Route::post('/settings/biometric/failed-jobs/{failedJob}/retry', [BiometricApiController::class, 'retryFailedJob']);
 
     // Biometric real-time webhook management
     Route::post('/settings/biometric/webhook/generate-token', [BiometricApiController::class, 'generateWebhookToken']);

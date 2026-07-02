@@ -39,6 +39,13 @@
             >
               <component :is="tab.icon" class="w-4 h-4" :stroke-width="2" />
               {{ tab.label }}
+              <span
+                v-if="tabBadge(tab.id)"
+                class="ml-0.5 inline-flex min-w-5 justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                :class="activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'"
+              >
+                {{ tabBadge(tab.id) }}
+              </span>
             </button>
           </div>
           <p v-if="form['biometric.enabled'] !== '1'" class="mt-2 px-1 text-xs text-secondary-500 dark:text-secondary-400">
@@ -811,6 +818,168 @@
           </template>
         </div>
 
+        <!-- ── Card 6: Failed Queue Jobs ── -->
+        <div v-if="form['biometric.enabled'] === '1' && activeTab === 'jobs'" class="app-surface rounded-2xl overflow-hidden mb-4">
+          <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center gap-3">
+            <AlertTriangle class="w-5 h-5 text-red-500 flex-shrink-0" :stroke-width="2" />
+            <div>
+              <h2 class="text-base font-semibold" style="color: var(--text-strong)">
+                Failed Queue Jobs
+              </h2>
+              <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                Biometric queue: {{ queueName }}
+              </p>
+            </div>
+            <span v-if="queueFailedCount > 0" class="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">
+              {{ queueFailedCount }} failed
+            </span>
+            <button type="button" class="ml-auto text-xs text-primary-600 dark:text-primary-400 hover:underline" @click="() => loadQueueStatus(1)">
+              Refresh
+            </button>
+          </div>
+
+          <p v-if="queueStatusMessage" class="px-4 md:px-6 pt-3 text-xs font-medium text-primary-600 dark:text-primary-400">
+            {{ queueStatusMessage }}
+          </p>
+          <p v-if="queueStatusError" class="px-4 md:px-6 pt-3 text-xs font-medium text-red-600 dark:text-red-400">
+            {{ queueStatusError }}
+          </p>
+
+          <div class="px-4 md:px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50/40 dark:bg-secondary-800/20">
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Pending jobs
+              </p>
+              <p class="mt-1 text-2xl font-semibold" style="color: var(--text-strong)">
+                {{ queuePendingCount }}
+              </p>
+            </div>
+            <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 bg-secondary-50/40 dark:bg-secondary-800/20">
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Failed jobs
+              </p>
+              <p class="mt-1 text-2xl font-semibold" :class="queueFailedCount > 0 ? 'text-red-600 dark:text-red-400' : ''">
+                {{ queueFailedCount }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="queueLoading" class="px-4 md:px-6 py-6 text-center text-sm text-secondary-400">
+            Loading queue status…
+          </div>
+          <template v-else>
+            <div class="px-4 md:px-6 pb-4">
+              <h3 class="text-sm font-semibold mb-2" style="color: var(--text-strong)">
+                Failed Jobs
+              </h3>
+              <div v-if="queueFailedJobs.length === 0" class="rounded-xl border border-secondary-200 dark:border-secondary-700 px-4 py-5 text-center text-sm text-secondary-400">
+                No failed biometric queue jobs.
+              </div>
+              <div v-else class="overflow-x-auto rounded-xl border border-secondary-200 dark:border-secondary-700">
+                <table class="w-full text-sm">
+                  <thead class="bg-secondary-50 dark:bg-secondary-800/50">
+                    <tr>
+                      <th class="px-4 py-2.5 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400">
+                        Job
+                      </th>
+                      <th class="px-4 py-2.5 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400">
+                        Target
+                      </th>
+                      <th class="px-4 py-2.5 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 hidden md:table-cell">
+                        Error
+                      </th>
+                      <th class="px-4 py-2.5 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400">
+                        Failed
+                      </th>
+                      <th class="px-4 py-2.5 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-secondary-100 dark:divide-secondary-800">
+                    <tr v-for="job in queueFailedJobs" :key="job.id" class="bg-red-50/30 dark:bg-red-900/10">
+                      <td class="px-4 py-2.5">
+                        <p class="font-medium text-secondary-700 dark:text-secondary-200">
+                          {{ job.type }}
+                        </p>
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                          {{ job.command }}
+                        </p>
+                      </td>
+                      <td class="px-4 py-2.5 text-secondary-600 dark:text-secondary-300">
+                        {{ formatJobTarget(job) }}
+                      </td>
+                      <td class="px-4 py-2.5 text-secondary-500 dark:text-secondary-400 text-xs hidden md:table-cell max-w-[260px] truncate" :title="job.exception || ''">
+                        {{ job.exception || 'Job failed.' }}
+                      </td>
+                      <td class="px-4 py-2.5 text-secondary-500 dark:text-secondary-400 text-xs whitespace-nowrap">
+                        {{ formatDateTime(job.failed_at) }}
+                      </td>
+                      <td class="px-4 py-2.5 text-right">
+                        <button
+                          type="button"
+                          class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 transition-colors"
+                          :disabled="retryingJobId === job.id"
+                          @click="retryFailedJob(job)"
+                        >
+                          <RotateCcw class="w-3.5 h-3.5" :class="retryingJobId === job.id ? 'animate-spin' : ''" :stroke-width="2" />
+                          {{ retryingJobId === job.id ? 'Requeuing…' : 'Retry' }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div v-if="queueFailedMeta.last_page > 1" class="px-4 md:px-6 py-3 border-t border-secondary-100 dark:border-secondary-800 flex items-center justify-between gap-3">
+              <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                Page {{ queueFailedMeta.current_page }} of {{ queueFailedMeta.last_page }} &middot; {{ queueFailedMeta.total }} failed jobs
+              </p>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-40 transition-colors"
+                  :disabled="queueFailedMeta.current_page <= 1"
+                  @click="loadQueueStatus(queueFailedMeta.current_page - 1)"
+                >
+                  <ChevronLeft class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-40 transition-colors"
+                  :disabled="queueFailedMeta.current_page >= queueFailedMeta.last_page"
+                  @click="loadQueueStatus(queueFailedMeta.current_page + 1)"
+                >
+                  <ChevronRight class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div class="px-4 md:px-6 pb-4">
+              <h3 class="text-sm font-semibold mb-2" style="color: var(--text-strong)">
+                Pending Jobs
+              </h3>
+              <div v-if="queuePendingJobs.length === 0" class="rounded-xl border border-secondary-200 dark:border-secondary-700 px-4 py-5 text-center text-sm text-secondary-400">
+                No pending biometric queue jobs.
+              </div>
+              <ul v-else class="rounded-xl border border-secondary-200 dark:border-secondary-700 divide-y divide-secondary-100 dark:divide-secondary-800 overflow-hidden">
+                <li v-for="job in queuePendingJobs" :key="job.id" class="px-4 py-3 flex items-center gap-3">
+                  <Clock class="w-4 h-4 text-secondary-400 flex-shrink-0" :stroke-width="2" />
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium truncate" style="color: var(--text-strong)">
+                      {{ job.type }} · {{ formatJobTarget(job) }}
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                      Attempts {{ job.attempts }} · {{ job.reserved ? 'Reserved' : 'Waiting' }} · {{ formatDateTime(job.created_at) }}
+                    </p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </template>
+        </div>
+
         <!-- Image viewer modal -->
         <div
           v-if="imageViewerOpen && imageViewerSrc"
@@ -855,14 +1024,17 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import {
     Activity,
+    AlertTriangle,
     ArrowDown,
     ArrowUp,
     ChevronLeft,
     ChevronRight,
+    Clock,
     Cpu,
     MonitorCheck,
     Power,
     RefreshCw,
+    RotateCcw,
     ScanFace,
     ShieldCheck,
     Upload,
@@ -926,12 +1098,25 @@ const tabs = [
   { id: 'push', label: 'Real-Time Push', icon: Zap },
   { id: 'events', label: 'Auth Events', icon: ScanFace },
   { id: 'logs', label: 'Sync Logs', icon: Activity },
+  { id: 'jobs', label: 'Failed Jobs', icon: AlertTriangle },
 ];
 
 const logsLoading    = ref(false);
 const recentLogs     = ref([]);
 const logsFailedCount = ref(0);
 const logsMeta       = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
+
+const queueLoading       = ref(false);
+const queueName          = ref('biometric');
+const queuePendingCount  = ref(0);
+const queueFailedCount   = ref(0);
+const queuePendingJobs   = ref([]);
+const queueFailedJobs    = ref([]);
+const queueStatusMessage = ref('');
+const queueStatusError   = ref('');
+const retryingJobId      = ref(null);
+const queuePendingMeta   = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
+const queueFailedMeta    = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
 
 // Real-time authentication events (success/attempted) with captured pictures
 const eventsLoading        = ref(false);
@@ -1005,6 +1190,12 @@ function canOpenTab(tabId) {
   return tabId === 'device' || isBiometricEnabled.value;
 }
 
+function tabBadge(tabId) {
+  if (tabId === 'jobs' && queueFailedCount.value > 0) return queueFailedCount.value;
+  if (tabId === 'logs' && logsFailedCount.value > 0) return logsFailedCount.value;
+  return null;
+}
+
 function setActiveTab(tabId) {
   if (!canOpenTab(tabId)) return;
   activeTab.value = tabId;
@@ -1014,6 +1205,13 @@ watch(() => form.value['biometric.enabled'], (enabled) => {
   if (enabled !== '1' && activeTab.value !== 'device') {
     activeTab.value = 'device';
   }
+});
+
+watch(activeTab, (tab) => {
+  if (!isBiometricEnabled.value) return;
+  if (tab === 'jobs') loadQueueStatus(1);
+  if (tab === 'logs') loadRecentLogs(1);
+  if (tab === 'events') loadAccessEvents(1);
 });
 
 // ── API calls ──────────────────────────────────────────────────────────────
@@ -1032,6 +1230,7 @@ async function load() {
         }
         if (form.value['biometric.enabled'] === '1') loadRecentLogs();
         if (form.value['biometric.enabled'] === '1') loadAccessEvents();
+        if (form.value['biometric.enabled'] === '1') loadQueueStatus();
     } catch {
         loadError.value = 'Failed to load configuration.';
     } finally {
@@ -1082,6 +1281,7 @@ async function syncAllMembers() {
         const res = await apiRequest('/api/settings/biometric/sync-all', { method: 'POST' });
         syncResult.value = res.message || 'Sync complete.';
         loadRecentLogs();
+        loadQueueStatus();
     } catch (err) {
         syncResult.value = err?.response?.data?.message || 'Sync failed.';
     } finally {
@@ -1160,6 +1360,53 @@ async function loadRecentLogs(page = 1) {    logsLoading.value = true;
     } finally {
         logsLoading.value = false;
     }
+}
+
+async function loadQueueStatus(page = 1) {
+  queueLoading.value = true;
+  queueStatusError.value = '';
+  try {
+    const res = await apiRequest(`/api/settings/biometric/queue-status?page=${page}&per_page=20`);
+    queueName.value = res.queue || 'biometric';
+    queuePendingCount.value = res.pending_count ?? 0;
+    queueFailedCount.value = res.failed_count ?? 0;
+    queuePendingJobs.value = res.pending || [];
+    queueFailedJobs.value = res.failed || [];
+    if (res.meta?.pending) queuePendingMeta.value = res.meta.pending;
+    if (res.meta?.failed) queueFailedMeta.value = res.meta.failed;
+  } catch (err) {
+    queueStatusError.value = err?.response?.data?.message || 'Failed to load biometric queue status.';
+  } finally {
+    queueLoading.value = false;
+  }
+}
+
+async function retryFailedJob(job) {
+  if (!job?.id) return;
+  retryingJobId.value = job.id;
+  queueStatusMessage.value = '';
+  queueStatusError.value = '';
+  try {
+    const res = await apiRequest(`/api/settings/biometric/failed-jobs/${job.id}/retry`, { method: 'POST' });
+    queueStatusMessage.value = res.message || 'Failed biometric job requeued.';
+    await loadQueueStatus(queueFailedMeta.value.current_page || 1);
+  } catch (err) {
+    queueStatusError.value = err?.response?.data?.message || 'Failed to requeue biometric job.';
+  } finally {
+    retryingJobId.value = null;
+  }
+}
+
+function formatJobTarget(job) {
+  if (job?.member?.name) {
+    return `${job.member.name}${job.member.biometric_member_id ? ` (${job.member.biometric_member_id})` : ''}`;
+  }
+
+  if (job?.member_id) return `Member #${job.member_id}`;
+  if (job?.employee_no) return `Employee ${job.employee_no}`;
+  if (job?.sync_from || job?.sync_to) return [job.sync_from, job.sync_to].filter(Boolean).join(' → ');
+  if (job?.action) return job.action.replace('_', ' ');
+  return 'Tenant job';
 }
 
 function formatAuthMethod(method) {
@@ -1246,9 +1493,11 @@ async function syncAccessEvents() {
       data: { sync_from: syncFrom },
     });
         syncEventsResult.value = res.message || 'Import queued.';
+        loadQueueStatus(1);
         // Give the queued job a moment, then refresh the list.
     setTimeout(() => {
       loadAccessEvents(1);
+      loadQueueStatus(1);
       load();
     }, 4000);
     } catch (err) {

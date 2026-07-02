@@ -105,6 +105,8 @@ class BiometricSyncService
     public function syncMember(Member $member, string $action): void
     {
         $tenantId = (int) app('tenant')->id;
+        $maker = '';
+        $model = '';
 
         try {
             // Manual sync only requires the device to be enabled (not auto-sync toggle)
@@ -252,6 +254,19 @@ class BiometricSyncService
                 'action' => $action,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
+            ]);
+
+            $this->writeLogSafely([
+                'member_id' => $member->id,
+                'biometric_member_id' => $member->biometric_member_id,
+                'direction' => 'up',
+                'action' => $action,
+                'status' => 'failed',
+                'device_maker' => $maker,
+                'device_model' => $model,
+                'payload' => null,
+                'response' => ['exception' => $e->getMessage()],
+                'error_message' => $e->getMessage(),
             ]);
         }
     }

@@ -31,7 +31,9 @@ class ImportBiometricAccessEventsJob implements ShouldQueue
         private readonly int $tenantId,
         private readonly ?string $syncFrom = null,
         private readonly ?string $syncTo = null,
-    ) {}
+    ) {
+        $this->onQueue((string) config('queue.biometric_queue', 'biometric'));
+    }
 
     public function handle(BiometricSyncService $biometric): void
     {
@@ -49,5 +51,9 @@ class ImportBiometricAccessEventsJob implements ShouldQueue
         $result = $biometric->importDeviceEvents($tenant, $this->syncFrom, $this->syncTo);
 
         Log::info('ImportBiometricAccessEventsJob: complete', $result);
+
+        if (($result['errors'] ?? 0) > 0) {
+            throw new \RuntimeException($result['message'] ?? 'Biometric access event import failed.');
+        }
     }
 }

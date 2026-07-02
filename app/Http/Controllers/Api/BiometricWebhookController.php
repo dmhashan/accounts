@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\BiometricSyncService;
+use App\Jobs\ProcessBiometricAccessEventJob;
 use App\Services\Tenancy\TenantDatabaseManager;
 use App\Services\TenantConfigurationService;
 use Illuminate\Http\Request;
@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Log;
 class BiometricWebhookController extends Controller
 {
     public function __construct(
-        private readonly BiometricSyncService $biometric,
         private readonly TenantConfigurationService $config,
         private readonly TenantDatabaseManager $tenancy,
     ) {}
@@ -113,17 +112,17 @@ class BiometricWebhookController extends Controller
             'event' => $this->summariseEvent($event),
         ]);
 
-        // 5. Persist attendance + write sync log
+        // 5. Queue attendance persistence + sync-log write
         try {
-            $this->biometric->handleIncomingEvent($tenant, $event);
+            ProcessBiometricAccessEventJob::dispatch($tenant->id, $this->queueSafeEvent($event));
 
-            Log::debug('Biometric real-time push: event handed to sync service', [
+            Log::debug('Biometric real-time push: event queued for sync service', [
                 'employee_no' => $event['employeeNoString'] ?? null,
                 'minor' => $event['minor'] ?? null,
                 'time' => $event['time'] ?? null,
             ]);
         } catch (\Throwable $e) {
-            Log::error('Biometric real-time push: persist error', [
+            Log::error('Biometric real-time push: queue dispatch error', [
                 'tenant' => $tenantDomain,
                 'event' => $this->summariseEvent($event),
                 'error' => $e->getMessage(),
@@ -405,5 +404,19 @@ class BiometricWebhookController extends Controller
         }
 
         return $summary;
+    }
+
+    /**
+     * Keep queued payloads JSON-safe; raw multipart image bytes can contain
+     * invalid UTF-8 and break Laravel's database queue payload encoding.
+     */
+    private function queueSafeEvent(array $event): array
+    {
+        if (isset($event['picture_bytes']) && is_string($event['picture_bytes'])) {
+            $event['picture_bytes_base64'] = base64_encode($event['picture_bytes']);
+            unset($event['picture_bytes']);
+        }
+
+        return $event;
     }
 }

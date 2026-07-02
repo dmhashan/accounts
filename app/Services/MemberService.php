@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SyncBiometricMemberJob;
 use App\Models\Member;
 use App\Models\PaymentPlan;
 use App\Models\Tenant;
@@ -215,7 +216,7 @@ class MemberService
 
         $member = Member::create($validated);
 
-        $this->biometric->syncMember($member, 'create');
+        SyncBiometricMemberJob::dispatchForTenant($tenant->id, $member->id, 'create');
         $this->notifications->sendWelcome($member);
 
         return $member;
@@ -309,7 +310,7 @@ class MemberService
             ]);
         }
 
-        $this->biometric->syncMember($member, 'update');
+        SyncBiometricMemberJob::dispatchForTenant((int) app('tenant')->id, $member->id, 'update');
     }
 
     public function toggleStatus(Member $member): array

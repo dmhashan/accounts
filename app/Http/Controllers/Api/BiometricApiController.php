@@ -8,6 +8,7 @@ use App\Models\BiometricAccessEvent;
 use App\Models\BiometricSyncLog;
 use App\Models\Member;
 use App\Models\Tenant;
+use App\Services\BiometricQueueStatusService;
 use App\Services\BiometricSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class BiometricApiController extends Controller
 {
     public function __construct(
         private readonly BiometricSyncService $biometric,
+        private readonly BiometricQueueStatusService $queueStatus,
     ) {}
 
     /**
@@ -462,6 +464,34 @@ class BiometricApiController extends Controller
                 'sync_to' => $syncTo,
             ],
         ]);
+    }
+
+    /**
+     * GET /api/settings/biometric/queue-status
+     */
+    public function queueStatus(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+        $perPage = max(1, min(100, (int) $request->query('per_page', 20)));
+        $page = max(1, (int) $request->query('page', 1));
+
+        return response()->json($this->queueStatus->statusForTenant($tenant, $page, $perPage));
+    }
+
+    /**
+     * POST /api/settings/biometric/failed-jobs/{failedJob}/retry
+     */
+    public function retryFailedJob(string $failedJob): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        if (!$this->queueStatus->retryFailedJob($tenant, $failedJob)) {
+            return response()->json(['message' => 'Failed biometric job not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Failed biometric job requeued.']);
     }
 
     // -------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SyncBiometricMemberJob;
 use App\Models\CompanyAccount;
 use App\Models\Member;
 use App\Models\MemberPayment;
@@ -12,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 class PaymentService
 {
     public function __construct(
-        private readonly BiometricSyncService $biometric,
         private readonly AutomatedMemberNotificationService $notifications,
         private readonly PaymentMethodService $paymentMethods,
         private readonly PaymentSettlementService $settlements,
@@ -361,7 +361,7 @@ class PaymentService
         $member = Member::where('id', $memberId)->first();
 
         if ($member) {
-            $this->biometric->syncMember($member, 'update');
+            SyncBiometricMemberJob::dispatchForTenant($tenantId, $member->id, 'update');
         }
     }
 
