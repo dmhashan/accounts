@@ -288,16 +288,26 @@
 @layer components {
     .app-shell {
         @apply min-h-screen;
+        min-height: 100vh;
+        min-height: 100dvh;
     }
 
     .app-shell-viewport {
+        min-height: 100vh;
         height: 100vh;
+        min-height: 100dvh;
         height: 100dvh;
     }
 
     .app-main {
-        @apply flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-4 sm:px-4 md:px-6 md:pt-6;
+        @apply flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-4 sm:px-4 md:px-6 md:pt-6 lg:py-6;
         padding-bottom: var(--app-shell-bottom-padding);
+    }
+
+    @media (min-width: 1024px) {
+        .app-main {
+            padding-bottom: 2rem;
+        }
     }
 
     .app-bottom-nav {

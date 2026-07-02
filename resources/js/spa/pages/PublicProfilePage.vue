@@ -1,5 +1,5 @@
 <template>
-  <div class="member-portal-shell min-h-screen flex flex-col">
+  <div class="member-portal-shell app-shell-viewport flex flex-col">
     <LoadingScreen v-if="screen === 'loading'" />
 
     <IdentifyScreen
@@ -24,7 +24,7 @@
 
     <!-- ── Scrollable body (profile screens) ──────────── -->
     <template v-else>
-      <main class="flex-1 overflow-y-auto pb-28">
+      <main class="member-portal-main flex-1 overflow-y-auto">
         <div class="max-w-lg mx-auto px-5">
           <router-view v-slot="{ Component }">
             <component

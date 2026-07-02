@@ -9,10 +9,10 @@
 
     <AppMobileDrawer :open="mobileMenuOpen" @close="mobileMenuOpen = false" />
 
-    <div class="relative flex min-w-0 flex-1 flex-col overflow-hidden h-screen">
+    <div class="app-shell-viewport relative flex min-w-0 flex-1 flex-col overflow-hidden">
       <div v-if="routeLoader.loading" class="app-progress-bar shrink-0" />
 
-      <main class="flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-4 sm:px-4 md:px-6 md:pt-6 pb-24 [padding-bottom:calc(6.25rem+env(safe-area-inset-bottom))] lg:py-6 lg:[padding-bottom:2rem]">
+      <main class="app-main">
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
           <RouterView />
         </div>

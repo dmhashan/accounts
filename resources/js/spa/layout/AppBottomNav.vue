@@ -1,6 +1,6 @@
 <template>
-  <nav class="fixed bottom-0 inset-x-0 z-30 lg:hidden px-3 pb-[calc(0.4rem+env(safe-area-inset-bottom))]">
-    <div class="app-glass rounded-2xl shadow-lg">
+  <nav class="app-bottom-nav lg:hidden">
+    <div class="app-glass app-bottom-nav-panel">
       <div class="flex items-end">
         <!-- Left 2 items -->
         <RouterLink

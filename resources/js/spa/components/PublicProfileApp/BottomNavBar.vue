@@ -2,7 +2,7 @@
   <!-- Floating notification button -->
   <button
     type="button"
-    class="fixed z-30 bottom-[72px] right-5 flex items-center gap-2 shadow-lg transition-all active:scale-95 focus:outline-none"
+    class="member-floating-notification fixed z-30 right-5 flex items-center gap-2 shadow-lg transition-all active:scale-95 focus:outline-none"
     :class="isNotifActive
       ? 'bg-gray-900 text-white shadow-gray-900/40 px-4 py-2.5 rounded-2xl'
       : 'bg-white border border-gray-100 text-gray-500 shadow-gray-200/60 px-3.5 py-2.5 rounded-2xl hover:border-gray-200'"
@@ -15,7 +15,7 @@
     <span class="relative text-xs font-bold leading-none">{{ isNotifActive ? 'Notifications' : 'Alerts' }}</span>
   </button>
 
-  <nav class="fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-100 safe-area-bottom">
+  <nav class="member-bottom-nav fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-100">
     <div class="max-w-lg mx-auto flex">
       <button
         v-for="tab in navTabs"
