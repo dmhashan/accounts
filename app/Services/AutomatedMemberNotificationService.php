@@ -42,7 +42,7 @@ class AutomatedMemberNotificationService
 
     public function sendPaymentReceipt(MemberPayment $payment): void
     {
-        $payment->loadMissing(['member', 'account']);
+        $payment->loadMissing(['member', 'paymentMethod', 'membership']);
 
         if (!$payment->member || !app()->bound('tenant')) {
             return;
@@ -52,11 +52,21 @@ class AutomatedMemberNotificationService
         $tenantId = (int) $tenant->id;
         $memberName = $this->memberName($payment->member);
         $tenantName = $this->tenantName($tenant);
-        $accountName = $payment->account?->name ?: ($payment->payment_method === 'member_wallet' ? 'Member Wallet' : 'Cash');
+        $paymentMethodName = $payment->paymentMethod?->name
+            ?: match ($payment->payment_method) {
+                'member_wallet' => 'Member Wallet',
+                'cash' => 'Cash',
+                default => trim((string) $payment->payment_method) ?: 'Cash',
+            };
         $amount = number_format((float) $payment->amount, 2, '.', ',');
         $paymentDate = $payment->payment_date?->toDateString() ?? now()->toDateString();
+        $validUntil = $payment->membership?->end_date?->toDateString();
 
-        $message = "Payment received! {$memberName} paid {$amount} at {$tenantName} on {$paymentDate} via {$accountName}";
+        $message = "Payment received! {$memberName} paid {$amount} at {$tenantName} on {$paymentDate} via {$paymentMethodName}";
+
+        if ($validUntil) {
+            $message .= ". Membership valid until {$validUntil}";
+        }
 
         SendMemberNotificationJob::dispatch(
             $tenantId,
