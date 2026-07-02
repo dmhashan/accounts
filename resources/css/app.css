@@ -128,6 +128,13 @@
 @layer base {
     :root {
         color-scheme: light;
+        --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        --app-bottom-nav-height: 5.75rem;
+        --app-bottom-nav-clearance: calc(var(--app-bottom-nav-height) + var(--app-safe-area-bottom));
+        --app-shell-bottom-padding: calc(var(--app-bottom-nav-clearance) + 1rem);
+        --member-portal-bottom-nav-height: 4.75rem;
+        --member-portal-bottom-padding: calc(var(--member-portal-bottom-nav-height) + var(--app-safe-area-bottom) + 1.25rem);
+        --member-portal-floating-action-bottom: calc(var(--member-portal-bottom-nav-height) + var(--app-safe-area-bottom) + 0.75rem);
         --shell-bg: #f3f6f4;
         --shell-bg-accent: #dde7e2;
         --surface-card: #ffffff;
@@ -281,6 +288,40 @@
 @layer components {
     .app-shell {
         @apply min-h-screen;
+    }
+
+    .app-shell-viewport {
+        height: 100vh;
+        height: 100dvh;
+    }
+
+    .app-main {
+        @apply flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-4 sm:px-4 md:px-6 md:pt-6;
+        padding-bottom: var(--app-shell-bottom-padding);
+    }
+
+    .app-bottom-nav {
+        @apply fixed bottom-0 inset-x-0 z-30 px-3 pt-2;
+        padding-bottom: calc(0.45rem + var(--app-safe-area-bottom));
+    }
+
+    .app-bottom-nav::before {
+        content: '';
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        height: calc(var(--app-bottom-nav-clearance) + 0.75rem);
+        pointer-events: none;
+        background: linear-gradient(
+            to top,
+            color-mix(in srgb, var(--shell-bg) 96%, transparent) 0%,
+            color-mix(in srgb, var(--shell-bg) 78%, transparent) 68%,
+            transparent 100%
+        );
+    }
+
+    .app-bottom-nav-panel {
+        @apply relative rounded-2xl shadow-lg;
     }
 
     .app-surface {
@@ -729,6 +770,8 @@
     .app-page-scroll {
         @apply min-h-0 flex-1 overflow-y-auto;
         overscroll-behavior: contain;
+        padding-bottom: 0.75rem;
+        scroll-padding-bottom: 1.5rem;
     }
 
     .app-page-pagination {
@@ -854,6 +897,19 @@
     .member-auth-secondary:hover {
         color: var(--color-primary-600);
         background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+    }
+
+    .member-portal-main {
+        padding-bottom: var(--member-portal-bottom-padding);
+        scroll-padding-bottom: var(--member-portal-bottom-padding);
+    }
+
+    .member-bottom-nav {
+        padding-bottom: var(--app-safe-area-bottom);
+    }
+
+    .member-floating-notification {
+        bottom: var(--member-portal-floating-action-bottom);
     }
 
     /* ── Public Profile App ─────────────────────────────────── */
