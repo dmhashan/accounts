@@ -35,8 +35,7 @@ class SendBulkNotificationJob implements ShouldQueue
 
     public function handle(SmsService $smsService, TenantMailService $tenantMail, TenantConfigurationService $tenantConfig): void
     {
-        $notification = BulkNotification::with('recipients.member')
-            ->find($this->bulkNotificationId);
+        $notification = BulkNotification::find($this->bulkNotificationId);
 
         if (!$notification) {
             Log::warning('SendBulkNotificationJob: BulkNotification not found.', [
@@ -48,60 +47,51 @@ class SendBulkNotificationJob implements ShouldQueue
 
         $tenantId = (int) app('tenant')->id;
         $channels = $tenantConfig->enabledChannels($tenantId, $this->channels);
-        $recipients = $notification->recipients;
 
-        // SMS — single bulk API call for all recipients
         if (in_array('sms', $channels, true)) {
-            $contacts = $recipients->pluck('phone_number')->filter()->values()->all();
-
-            if (!empty($contacts)) {
-                $smsService->sendBulk($contacts, $notification->message, $tenantId);
-            }
+            $this->sendSmsInChunks($notification, $smsService, $tenantId);
         }
 
-        // Email and in-app per member
-        $inAppInserts = [];
         $now = now();
         $tenantBranding = TenantEmailBranding::forTenantId($tenantId);
+        $sendEmail = in_array('email', $channels, true);
+        $sendInApp = in_array('in_app', $channels, true);
 
-        foreach ($recipients as $recipient) {
-            $member = $recipient->member;
+        if ($sendEmail || $sendInApp) {
+            $notification->recipients()
+                ->with('member:id,first_name,last_name,name,email,profile_photo_path')
+                ->orderBy('id')
+                ->chunkById(200, function ($recipients) use ($notification, $tenantId, $tenantMail, $tenantBranding, $sendEmail, $sendInApp, $now): void {
+                    $inAppInserts = [];
 
-            if (in_array('email', $channels, true) && $member->email) {
-                try {
-                    $tenantMail->mailerForTenant($tenantId)
-                        ->to($member->email)
-                        ->send(new MemberNotificationMail(
-                            $notification->name,
-                            $notification->message,
-                            $tenantBranding,
-                            $this->memberName($member),
-                            TenantEmailBranding::memberAvatarUrl($member),
-                            TenantEmailBranding::initials($this->memberName($member)),
-                        ));
-                } catch (\Throwable $e) {
-                    Log::error('SendBulkNotificationJob: Email send failed.', [
-                        'member_id' => $member->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+                    foreach ($recipients as $recipient) {
+                        $member = $recipient->member;
 
-            if (in_array('in_app', $channels, true)) {
-                $inAppInserts[] = [
-                    'member_id' => $member->id,
-                    'type' => 'bulk',
-                    'title' => $notification->name,
-                    'body' => $notification->message,
-                    'is_read' => false,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
-        }
+                        if (!$member) {
+                            continue;
+                        }
 
-        if (!empty($inAppInserts)) {
-            MemberNotification::insert($inAppInserts);
+                        if ($sendEmail && $member->email) {
+                            $this->sendEmail($member, $notification, $tenantMail, $tenantId, $tenantBranding);
+                        }
+
+                        if ($sendInApp) {
+                            $inAppInserts[] = [
+                                'member_id' => $member->id,
+                                'type' => 'bulk',
+                                'title' => $notification->name,
+                                'body' => $notification->message,
+                                'is_read' => false,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
+                        }
+                    }
+
+                    if ($inAppInserts !== []) {
+                        MemberNotification::insert($inAppInserts);
+                    }
+                }, 'id');
         }
 
         $notification->update([
@@ -125,5 +115,51 @@ class SendBulkNotificationJob implements ShouldQueue
     {
         return trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''))
             ?: ($member->name ?? 'Member');
+    }
+
+    private function sendSmsInChunks(BulkNotification $notification, SmsService $smsService, int $tenantId): void
+    {
+        $notification->recipients()
+            ->whereNotNull('phone_number')
+            ->where('phone_number', '!=', '')
+            ->orderBy('id')
+            ->chunkById(500, function ($recipients) use ($notification, $smsService, $tenantId): void {
+                $contacts = $recipients->pluck('phone_number')->filter()->values()->all();
+
+                if ($contacts !== []) {
+                    $smsService->sendBulk($contacts, $notification->message, $tenantId);
+                }
+            }, 'id');
+    }
+
+    /**
+     * @param  array<string, string|null>  $tenantBranding
+     */
+    private function sendEmail(
+        Member $member,
+        BulkNotification $notification,
+        TenantMailService $tenantMail,
+        int $tenantId,
+        array $tenantBranding,
+    ): void {
+        try {
+            $memberName = $this->memberName($member);
+
+            $tenantMail->mailerForTenant($tenantId)
+                ->to($member->email)
+                ->send(new MemberNotificationMail(
+                    $notification->name,
+                    $notification->message,
+                    $tenantBranding,
+                    $memberName,
+                    TenantEmailBranding::memberAvatarUrl($member),
+                    TenantEmailBranding::initials($memberName),
+                ));
+        } catch (\Throwable $e) {
+            Log::error('SendBulkNotificationJob: Email send failed.', [
+                'member_id' => $member->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

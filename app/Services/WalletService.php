@@ -8,6 +8,7 @@ use App\Models\Member;
 use App\Models\MemberPayment;
 use App\Models\Sale;
 use App\Models\WalletTopup;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class WalletService
@@ -113,72 +114,66 @@ class WalletService
 
     public function transactions(Member $member, int $tenantId, int $perPage): array
     {
-        // Build a unified list of wallet movements
         $topups = WalletTopup::query()
             ->where('member_id', $member->id)
-            ->get()
-            ->map(fn (WalletTopup $t) => [
-                'id' => 'topup_' . $t->id,
-                'type' => 'topup',
-                'label' => 'Wallet Top-up',
-                'amount' => (float) $t->amount,
-                'direction' => 'credit',
-                'date' => $t->topup_date?->toDateString(),
-                'reference' => $t->reference_number,
-                'notes' => $t->notes,
-                'created_at' => optional($t->created_at)->format('Y-m-d H:i'),
-            ]);
+            ->selectRaw('id as source_id')
+            ->selectRaw("'topup' as type")
+            ->selectRaw('amount as amount')
+            ->selectRaw("'credit' as direction")
+            ->selectRaw('topup_date as movement_date')
+            ->selectRaw('reference_number as reference')
+            ->selectRaw('notes as notes')
+            ->selectRaw('created_at as sort_at');
 
         $walletSales = Sale::query()
             ->where('customer_member_id', $member->id)
             ->where('payment_method', 'member_wallet')
             ->whereNull('deleted_at')
-            ->get()
-            ->map(fn (Sale $s) => [
-                'id' => 'sale_' . $s->id,
-                'type' => 'sale',
-                'label' => 'Sale #' . $s->id,
-                'amount' => (float) $s->total_amount,
-                'direction' => 'debit',
-                'date' => optional($s->created_at)->toDateString(),
-                'reference' => $s->reference_number,
-                'notes' => null,
-                'created_at' => optional($s->created_at)->format('Y-m-d H:i'),
-            ]);
+            ->selectRaw('id as source_id')
+            ->selectRaw("'sale' as type")
+            ->selectRaw('total_amount as amount')
+            ->selectRaw("'debit' as direction")
+            ->selectRaw('DATE(created_at) as movement_date')
+            ->selectRaw('reference_number as reference')
+            ->selectRaw('NULL as notes')
+            ->selectRaw('created_at as sort_at');
 
         $walletPayments = MemberPayment::query()
             ->where('member_id', $member->id)
             ->where('payment_method', 'member_wallet')
-            ->get()
-            ->map(fn (MemberPayment $p) => [
-                'id' => 'payment_' . $p->id,
-                'type' => 'payment',
-                'label' => 'Member Payment',
-                'amount' => (float) $p->amount,
-                'direction' => 'debit',
-                'date' => $p->payment_date?->toDateString(),
-                'reference' => $p->reference_number,
-                'notes' => $p->notes,
-                'created_at' => optional($p->created_at)->format('Y-m-d H:i'),
-            ]);
+            ->selectRaw('id as source_id')
+            ->selectRaw("'payment' as type")
+            ->selectRaw('amount as amount')
+            ->selectRaw("'debit' as direction")
+            ->selectRaw('payment_date as movement_date')
+            ->selectRaw('reference_number as reference')
+            ->selectRaw('notes as notes')
+            ->selectRaw('created_at as sort_at');
 
-        $all = $topups->concat($walletSales)->concat($walletPayments)
-            ->sortByDesc('created_at')
-            ->values();
-
-        $total = $all->count();
+        $union = $topups->unionAll($walletSales)->unionAll($walletPayments);
         $page = max(1, (int) request('page', 1));
-        $offset = ($page - 1) * $perPage;
-        $items = $all->slice($offset, $perPage)->values();
-        $lastPage = max(1, (int) ceil($total / $perPage));
+        $paginator = DB::query()
+            ->fromSub($union, 'wallet_movements')
+            ->orderByDesc('sort_at')
+            ->paginate($perPage, ['*'], 'page', $page);
 
         return [
-            'data' => $items,
+            'data' => collect($paginator->items())->map(fn ($row) => [
+                'id' => $row->type . '_' . $row->source_id,
+                'type' => (string) $row->type,
+                'label' => $this->walletMovementLabel((string) $row->type, (int) $row->source_id),
+                'amount' => (float) $row->amount,
+                'direction' => (string) $row->direction,
+                'date' => $row->movement_date ? Carbon::parse($row->movement_date)->toDateString() : null,
+                'reference' => $row->reference,
+                'notes' => $row->notes,
+                'created_at' => $row->sort_at ? Carbon::parse($row->sort_at)->format('Y-m-d H:i') : null,
+            ]),
             'meta' => [
-                'current_page' => $page,
-                'last_page' => $lastPage,
-                'per_page' => $perPage,
-                'total' => $total,
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
             ],
         ];
     }
@@ -218,5 +213,14 @@ class WalletService
             'account_name' => $topup->account?->name,
             'created_at' => optional($topup->created_at)->format('Y-m-d H:i'),
         ];
+    }
+
+    private function walletMovementLabel(string $type, int $sourceId): string
+    {
+        return match ($type) {
+            'sale' => 'Sale #' . $sourceId,
+            'payment' => 'Member Payment',
+            default => 'Wallet Top-up',
+        };
     }
 }

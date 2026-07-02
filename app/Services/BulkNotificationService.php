@@ -118,23 +118,25 @@ class BulkNotificationService
             return;
         }
 
-        $members = Member::query()
+        Member::query()
             ->whereIn('id', $memberIds)
             ->whereNotNull('phone_number')
             ->where('phone_number', '!=', '')
-            ->get(['id', 'phone_number']);
+            ->orderBy('id')
+            ->chunkById(500, function ($members) use ($notification): void {
+                $now = now();
+                $rows = $members->map(fn (Member $m) => [
+                    'bulk_notification_id' => $notification->id,
+                    'member_id' => $m->id,
+                    'phone_number' => $m->phone_number,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all();
 
-        $rows = $members->map(fn (Member $m) => [
-            'bulk_notification_id' => $notification->id,
-            'member_id' => $m->id,
-            'phone_number' => $m->phone_number,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ])->all();
-
-        if ($rows !== []) {
-            BulkNotificationRecipient::insert($rows);
-        }
+                if ($rows !== []) {
+                    BulkNotificationRecipient::insert($rows);
+                }
+            }, 'id');
     }
 
     private function summarize(BulkNotification $notification): array

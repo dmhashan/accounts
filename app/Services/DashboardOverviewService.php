@@ -23,6 +23,8 @@ class DashboardOverviewService
 
     private const AUTH_WIDGET_LIMIT = 20;
 
+    private const DASHBOARD_LIST_LIMIT = 100;
+
     private const TRANSACTION_SOURCE_LABELS = [
         'sale' => 'Sale',
         'payment' => 'Member Payment',
@@ -346,6 +348,7 @@ class DashboardOverviewService
             ->with('account:id,name')
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
+            ->limit(self::DASHBOARD_LIST_LIMIT)
             ->get();
         $sourceDetails = $this->buildTransactionSourceDetailsMap($transactions);
 
@@ -549,6 +552,7 @@ class DashboardOverviewService
             ->with(['items:id,sale_id,quantity'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
+            ->limit(self::DASHBOARD_LIST_LIMIT)
             ->get([
                 'id',
                 'customer_name',
@@ -597,6 +601,7 @@ class DashboardOverviewService
             ->groupByRaw($customerNameExpression)
             ->orderByRaw('COALESCE(SUM(total_amount), 0) DESC')
             ->orderByRaw($customerNameExpression . ' ASC')
+            ->limit(self::DASHBOARD_LIST_LIMIT)
             ->get()
             ->map(function ($item) {
                 return [
@@ -623,6 +628,7 @@ class DashboardOverviewService
             ->selectRaw('COALESCE(SUM(sale_items.subtotal), 0) as total_amount')
             ->orderByRaw('COALESCE(SUM(sale_items.subtotal), 0) DESC')
             ->orderByRaw("COALESCE(products.name, 'Product') ASC")
+            ->limit(self::DASHBOARD_LIST_LIMIT)
             ->get()
             ->map(function ($item) {
                 return [
