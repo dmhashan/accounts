@@ -160,11 +160,11 @@ const emit = defineEmits(['update:modelValue']);
 
 const memberColumns = [
     { value: 'gender', label: 'Gender' },
+    { value: 'email', label: 'Email' },
     { value: 'payment_plan_id', label: 'Payment Plan ID' },
     { value: 'is_active', label: 'Active Status' },
     { value: 'is_verified', label: 'Verified Status' },
     { value: 'is_temp', label: 'Temporary Status' },
-    { value: 'username', label: 'Username' },
     { value: 'address', label: 'Address' },
 ];
 

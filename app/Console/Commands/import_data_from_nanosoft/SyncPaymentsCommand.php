@@ -155,7 +155,7 @@ class SyncPaymentsCommand extends Command
                     continue;
                 }
 
-                $localMemberId = $this->resolveLocalMemberId($tenant->id, $username);
+                $localMemberId = $this->resolveLocalMemberId($legacyMemberId);
 
                 // Auto-detect plan from dates + amount
                 $entryPlan = $this->resolveAutoPlan(
@@ -257,33 +257,33 @@ class SyncPaymentsCommand extends Command
 
         $this->info('Payment sync completed.');
 
-        // ── Remap missing member_id by username ──
+        // ── Remap missing member_id by legacy member id ──
         $this->newLine();
         $this->info('Re-mapping member_id for unlinked payment records...');
 
         $unlinked = DB::table('member_payments')
             ->whereNull('member_id')
-            ->whereNotNull('legacy_username')
+            ->whereNotNull('legacy_member_id')
             ->distinct()
-            ->pluck('legacy_username');
+            ->pluck('legacy_member_id');
 
         if ($unlinked->isEmpty()) {
             $this->line('  Nothing to remap.');
         } else {
             $memberMap = Member::query()
-                ->whereIn('username', $unlinked)
-                ->pluck('id', 'username');
+                ->whereIn('biometric_member_id', $unlinked->map(fn ($value) => (string) $value)->all())
+                ->pluck('id', 'biometric_member_id');
 
             $remapped = 0;
 
-            foreach ($memberMap as $username => $memberId) {
+            foreach ($memberMap as $legacyMemberId => $memberId) {
                 $affected = DB::table('member_payments')
                     ->whereNull('member_id')
-                    ->where('legacy_username', $username)
+                    ->where('legacy_member_id', $legacyMemberId)
                     ->update(['member_id' => $memberId, 'updated_at' => now()]);
 
                 $remapped += $affected;
-                $this->line("  @{$username} → member #{$memberId} ({$affected} record(s) updated)");
+                $this->line("  legacy member #{$legacyMemberId} → member #{$memberId} ({$affected} record(s) updated)");
             }
 
             $this->line("  Done. {$remapped} record(s) linked.");
@@ -368,14 +368,14 @@ class SyncPaymentsCommand extends Command
         return null;
     }
 
-    private function resolveLocalMemberId(int $tenantId, ?string $username): ?int
+    private function resolveLocalMemberId(?int $legacyMemberId): ?int
     {
-        if (!$username) {
+        if (!$legacyMemberId) {
             return null;
         }
 
         $id = Member::query()
-            ->where('username', $username)
+            ->where('biometric_member_id', (string) $legacyMemberId)
             ->value('id');
 
         return $id ? (int) $id : null;

@@ -55,17 +55,9 @@ class MemberApiController extends Controller
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'username' => [
-                'required',
-                'string',
-                'max:50',
-                'alpha_dash',
-                Rule::unique('members'),
-                Rule::unique('users'),
-            ],
             'gender' => ['required', 'in:male,female'],
             'email' => [
-                'required',
+                'nullable',
                 'email',
                 Rule::unique('members'),
                 Rule::unique('users'),
@@ -142,26 +134,19 @@ class MemberApiController extends Controller
     {
         $this->memberService->ensureTenantMember($member, app('tenant')->id);
 
-        /** @var Tenant $tenant */
-        $tenant = app('tenant');
-
-        $memberUsernameRule = Rule::unique('members')->ignore($member->id);
         $memberEmailRule = Rule::unique('members')->ignore($member->id);
 
-        $userUsernameRule = Rule::unique('users');
         $userEmailRule = Rule::unique('users');
 
         if ($member->user_id) {
-            $userUsernameRule = $userUsernameRule->ignore($member->user_id);
             $userEmailRule = $userEmailRule->ignore($member->user_id);
         }
 
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'username' => ['required', 'string', 'max:50', 'alpha_dash', $memberUsernameRule, $userUsernameRule],
             'gender' => ['required', 'in:male,female'],
-            'email' => ['required', 'email', $memberEmailRule, $userEmailRule],
+            'email' => ['nullable', 'email', $memberEmailRule, $userEmailRule],
             'phone_number' => ['required', 'string', 'max:20'],
             'allow_sms' => ['boolean'],
             'allow_whatsapp' => ['boolean'],
@@ -246,8 +231,9 @@ class MemberApiController extends Controller
             ->where(function ($q) use ($member) {
                 $q->where('member_id', $member->id)
                     ->orWhere(function ($q2) use ($member) {
-                        if ($member->username) {
-                            $q2->whereNull('member_id')->where('username', $member->username);
+                        if ($member->biometric_member_id) {
+                            $q2->whereNull('member_id')
+                                ->where('legacy_member_id', $member->biometric_member_id);
                         } else {
                             $q2->whereRaw('0=1');
                         }

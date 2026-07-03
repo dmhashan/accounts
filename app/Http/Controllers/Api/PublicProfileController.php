@@ -195,7 +195,6 @@ class PublicProfileController extends Controller
         return response()->json([
             'meta' => [
                 'name' => $member->name,
-                'username' => $member->username,
                 'gender' => $member->gender,
                 'joined_date' => $member->joined_date?->format('Y-m-d'),
                 'member_role' => $member->member_role,

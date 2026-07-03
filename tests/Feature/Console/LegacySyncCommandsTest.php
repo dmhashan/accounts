@@ -16,7 +16,7 @@ class LegacySyncCommandsTest extends ApiRouteTestCase
 {
     public function testAttendanceSyncImportsAndLinksCurrentTenantMember(): void
     {
-        $member = $this->createMember(attributes: ['username' => 'legacy-attendee']);
+        $member = $this->createMember(attributes: ['biometric_member_id' => '42']);
         Http::fake([
             'https://legacy.test/attendance-summary-to-date*' => Http::response([
                 'attendedMembers' => [[
@@ -44,7 +44,7 @@ class LegacySyncCommandsTest extends ApiRouteTestCase
 
     public function testPaymentSyncImportsMembershipAndAccountTransaction(): void
     {
-        $member = $this->createMember(attributes: ['username' => 'legacy-payer']);
+        $member = $this->createMember(attributes: ['biometric_member_id' => '84']);
         $account = $this->createCompanyAccount(['name' => 'Cash Account']);
         Http::fake([
             'https://legacy.test/getpaymenthistory*' => Http::response([

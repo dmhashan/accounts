@@ -719,7 +719,7 @@ class BiometricSyncService
             $shouldSave = false;
 
             if (!$attendance->username) {
-                $attendance->username = $member->username ?? $member->biometric_member_id;
+                $attendance->username = $member->biometric_member_id;
                 $shouldSave = true;
             }
 
@@ -740,7 +740,7 @@ class BiometricSyncService
             'biometric_access_event_id' => $biometricAccessEventId,
             'legacy_uuid' => null,
             'legacy_member_id' => null,
-            'username' => $member->username ?? $member->biometric_member_id,
+            'username' => $member->biometric_member_id,
             'attended_date' => $attendedDate,
         ]);
     }

@@ -13,7 +13,6 @@ class Member extends Model
         'biometric_member_id',
         'first_name',
         'last_name',
-        'username',
         'profile_photo_path',
         'name',
         'gender',

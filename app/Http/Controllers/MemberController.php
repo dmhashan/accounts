@@ -9,117 +9,6 @@ use Illuminate\Validation\Rule;
 
 class MemberController extends Controller
 {
-    /**
-     * Show a public profile for a member by username (limited data).
-     */
-    public function publicProfile($username)
-    {
-        $tenant = app('tenant');
-        $member = Member::query()
-            ->where('username', $username)
-            ->where('is_active', true)
-            ->with('user')
-            ->firstOrFail();
-
-        // Only expose limited fields
-        $publicData = [
-            'name' => $member->name,
-            'username' => $member->username,
-            'gender' => $member->gender,
-            'joined_date' => $member->joined_date,
-            'member_role' => $member->member_role,
-            'email' => $member->email,
-            'phone_number' => $member->phone_number,
-        ];
-
-        // Assigned workout plans with full program details
-        $assignedWorkouts = \App\Models\WorkoutProgramAssignment::with([
-            'assignedProgram.creator',
-            'assignedProgram.days.dayExercises.exercise',
-            'assignedProgram.extras',
-        ])
-            ->where('member_id', $member->id)
-            ->orderByDesc('effective_date')
-            ->get();
-
-        // Sales/Finance
-        $sales = \App\Models\Sale::query()
-            ->where('customer_member_id', $member->id)
-            ->orderByDesc('created_at')
-            ->with(['items.product', 'items.variation'])
-            ->get();
-        $totalOutstanding = $sales->where('is_paid', false)->sum('balance');
-
-        // Pre-format workout data for Alpine.js preview modals
-        $workoutsData = $assignedWorkouts->map(function ($assignment) {
-            $program = $assignment->assignedProgram;
-
-            return [
-                'title' => $program->title ?? 'N/A',
-                'duration_weeks' => $program->duration_weeks,
-                'creator_name' => $program->creator->name ?? null,
-                'effective_date' => $assignment->effective_date?->format('Y-m-d'),
-                'days' => ($program->days ?? collect())->map(function ($day) {
-                    return [
-                        'day_number' => $day->day_number,
-                        'title' => $day->title,
-                        'exercises' => $day->dayExercises->map(fn ($ex) => [
-                            'exercise_name' => $ex->exercise->name ?? 'Exercise',
-                            'w1_w3_exercise' => $ex->w1_w3_exercise,
-                            'w2_w4_exercise' => $ex->w2_w4_exercise,
-                            'sets' => $ex->sets,
-                            'reps' => $ex->reps,
-                            'tempo' => $ex->tempo,
-                            'rest_seconds' => $ex->rest_seconds,
-                        ])->values(),
-                    ];
-                })->values(),
-                'extras' => ($program->extras ?? collect())->map(fn ($e) => [
-                    'type' => $e->type,
-                    'exercise_name' => $e->exercise_name,
-                    'sets' => $e->sets,
-                    'reps_or_time' => $e->reps_or_time,
-                    'rest' => $e->rest,
-                    'notes' => $e->notes,
-                    'frequency_per_week' => $e->frequency_per_week,
-                    'duration_minutes' => $e->duration_minutes,
-                    'cardio_type' => $e->cardio_type,
-                ])->values(),
-            ];
-        })->values();
-
-        // Pre-format sales data for Alpine.js preview modals
-        $salesData = $sales->map(fn ($sale) => [
-            'id' => $sale->id,
-            'created_at' => $sale->created_at->format('Y-m-d'),
-            'customer_name' => $sale->customer_name,
-            'customer_type' => $sale->customer_type,
-            'payment_method' => $sale->payment_method,
-            'reference_number' => $sale->reference_number,
-            'total_amount' => number_format($sale->total_amount, 2),
-            'paid_amount' => number_format($sale->paid_amount, 2),
-            'balance' => number_format($sale->balance, 2),
-            'is_paid' => $sale->is_paid,
-            'items' => $sale->items->map(fn ($item) => [
-                'product_name' => $item->product->name ?? '-',
-                'variation_name' => $item->variation->name ?? null,
-                'quantity' => $item->quantity,
-                'unit_price' => number_format($item->unit_price, 2),
-                'subtotal' => number_format($item->subtotal, 2),
-            ])->values(),
-        ])->values();
-
-        return view('members.public-profile', [
-            'member' => $member,
-            'publicData' => $publicData,
-            'assignedWorkouts' => $assignedWorkouts,
-            'sales' => $sales,
-            'totalOutstanding' => $totalOutstanding,
-            'workoutsData' => $workoutsData,
-            'salesData' => $salesData,
-        ]);
-    }
-
     public function index()
     {
         $members = Member::query()
@@ -144,16 +33,9 @@ class MemberController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'username' => [
-                'required',
-                'string',
-                'max:50',
-                'alpha_dash',
-                Rule::unique('members'),
-            ],
             'gender' => 'required|in:male,female',
             'email' => [
-                'required',
+                'nullable',
                 'email',
                 Rule::unique('members'),
             ],
@@ -170,6 +52,10 @@ class MemberController extends Controller
             'comment' => 'nullable|string|max:2000',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
+
+        $validated['email'] = filled($validated['email'] ?? null)
+            ? trim((string) $validated['email'])
+            : null;
 
         // Generate member ID server-side and compose full name
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
@@ -205,35 +91,20 @@ class MemberController extends Controller
     {
         // Ensure member belongs to current tenant
 
-        $tenant = app('tenant');
-
-        $memberUsernameRule = Rule::unique('members')->ignore($member->id);
-
         $memberEmailRule = Rule::unique('members')->ignore($member->id);
-
-        $userUsernameRule = Rule::unique('users');
 
         $userEmailRule = Rule::unique('users');
 
         if ($member->user_id) {
-            $userUsernameRule = $userUsernameRule->ignore($member->user_id);
             $userEmailRule = $userEmailRule->ignore($member->user_id);
         }
 
         $validated = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'username' => [
-                'required',
-                'string',
-                'max:50',
-                'alpha_dash',
-                $memberUsernameRule,
-                $userUsernameRule,
-            ],
             'gender' => 'required|in:male,female',
             'email' => [
-                'required',
+                'nullable',
                 'email',
                 $memberEmailRule,
                 $userEmailRule,
@@ -252,6 +123,9 @@ class MemberController extends Controller
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
+        $validated['email'] = filled($validated['email'] ?? null)
+            ? trim((string) $validated['email'])
+            : null;
         $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
 
         if ($request->hasFile('profile_photo')) {
@@ -266,11 +140,15 @@ class MemberController extends Controller
 
         // Update linked user email and name
         if ($member->user) {
-            $member->user->update([
+            $userData = [
                 'name' => $validated['name'],
-                'email' => $validated['email'],
-                'username' => $validated['username'],
-            ]);
+            ];
+
+            if (!empty($validated['email'])) {
+                $userData['email'] = $validated['email'];
+            }
+
+            $member->user->update($userData);
         }
 
         return redirect()->route('members.index')

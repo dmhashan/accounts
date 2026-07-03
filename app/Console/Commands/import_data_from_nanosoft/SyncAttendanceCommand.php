@@ -113,8 +113,7 @@ class SyncAttendanceCommand extends Command
                     continue;
                 }
 
-                // Resolve local member by username
-                $localMemberId = $this->resolveLocalMemberId($tenant->id, $username);
+                $localMemberId = $this->resolveLocalMemberId($legacyMemberId);
 
                 try {
                     DB::table('member_attendances')->upsert(
@@ -152,34 +151,33 @@ class SyncAttendanceCommand extends Command
 
         $this->info('Attendance sync completed.');
 
-        // ── Remap missing member_id by username ──
+        // ── Remap missing member_id by legacy member id ──
         $this->newLine();
         $this->info('Re-mapping member_id for unlinked attendance records...');
 
         $unlinked = DB::table('member_attendances')
             ->whereNull('member_id')
-            ->whereNotNull('username')
+            ->whereNotNull('legacy_member_id')
             ->distinct()
-            ->pluck('username');
+            ->pluck('legacy_member_id');
 
         if ($unlinked->isEmpty()) {
             $this->line('  Nothing to remap.');
         } else {
-            // Build username → member id map in one query
             $memberMap = Member::query()
-                ->whereIn('username', $unlinked)
-                ->pluck('id', 'username');
+                ->whereIn('biometric_member_id', $unlinked->map(fn ($value) => (string) $value)->all())
+                ->pluck('id', 'biometric_member_id');
 
             $remapped = 0;
 
-            foreach ($memberMap as $username => $memberId) {
+            foreach ($memberMap as $legacyMemberId => $memberId) {
                 $affected = DB::table('member_attendances')
                     ->whereNull('member_id')
-                    ->where('username', $username)
+                    ->where('legacy_member_id', $legacyMemberId)
                     ->update(['member_id' => $memberId, 'updated_at' => now()]);
 
                 $remapped += $affected;
-                $this->line("  @{$username} → member #{$memberId} ({$affected} records updated)");
+                $this->line("  legacy member #{$legacyMemberId} → member #{$memberId} ({$affected} records updated)");
             }
 
             $this->line("  Done. {$remapped} record(s) linked.");
@@ -227,15 +225,15 @@ class SyncAttendanceCommand extends Command
         return null;
     }
 
-    private function resolveLocalMemberId(int $tenantId, ?string $username): ?int
+    private function resolveLocalMemberId(?int $legacyMemberId): ?int
     {
-        if (!$username) {
+        if (!$legacyMemberId) {
             return null;
         }
 
         /** @var Member|null $member */
         $member = Member::query()
-            ->where('username', $username)
+            ->where('biometric_member_id', (string) $legacyMemberId)
             ->value('id');
 
         return $member ? (int) $member : null;

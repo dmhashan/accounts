@@ -58,8 +58,8 @@
             Contact Details
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AppFormField label="Email" required>
-              <AppFormInput v-model="form.email" type="email" required />
+            <AppFormField label="Email" optional>
+              <AppFormInput v-model="form.email" type="email" />
             </AppFormField>
             <AppFormField label="Phone Number" required>
               <AppFormInput v-model="form.phone_number" required />
@@ -166,12 +166,6 @@
             Other Details
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AppFormField label="Username" required>
-              <AppFormInput v-model="form.username" required @input="onUsernameInput" />
-              <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
-                Auto-filled from email. You can override it.
-              </p>
-            </AppFormField>
             <AppFormField label="Joined Date" required>
               <AppFormDateInput v-model="form.joined_date" required />
             </AppFormField>
@@ -209,14 +203,12 @@ const isEdit = computed(() => Boolean(route.params.id));
 const submitting = ref(false);
 const errorMessage = ref('');
 const paymentPlans = ref([]);
-const usernameAutoSync = ref(true);
 
 const today = new Date().toISOString().slice(0, 10);
 
 const form = ref({
     first_name: '',
     last_name: '',
-    username: '',
     gender: '',
     email: '',
     phone_number: '',
@@ -290,17 +282,6 @@ watch(() => form.value.payment_plan_id, (planId) => {
     form.value.price = plan ? plan.price : '';
 });
 
-watch(() => form.value.email, (email) => {
-    if (usernameAutoSync.value) {
-        const atIndex = (email ?? '').indexOf('@');
-        form.value.username = atIndex > 0 ? email.slice(0, atIndex) : (email ?? '');
-    }
-});
-
-function onUsernameInput() {
-    usernameAutoSync.value = false;
-}
-
 async function loadMember() {
     if (!isEdit.value) return;
     const response = await apiRequest(`/api/members/${route.params.id}`);
@@ -314,7 +295,6 @@ async function loadMember() {
         payment_plan_id: response.data?.payment_plan_id ?? '',
         price: response.data?.price ?? '',
     };
-    usernameAutoSync.value = false;
 }
 
 async function loadPaymentPlans() {
@@ -328,11 +308,15 @@ async function submit() {
 
     try {
         let memberId = route.params.id;
+        const payload = {
+            ...form.value,
+            email: form.value.email?.trim() || null,
+        };
 
         if (isEdit.value) {
-            await apiRequest(`/api/members/${route.params.id}`, { method: 'put', data: form.value });
+            await apiRequest(`/api/members/${route.params.id}`, { method: 'put', data: payload });
         } else {
-            const response = await apiRequest('/api/members', { method: 'post', data: form.value });
+            const response = await apiRequest('/api/members', { method: 'post', data: payload });
             memberId = response?.data?.id;
         }
 

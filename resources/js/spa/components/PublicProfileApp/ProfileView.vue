@@ -12,9 +12,6 @@
       <h2 class="mt-4 text-xl font-bold text-gray-900 tracking-tight">
         {{ meta.name }}
       </h2>
-      <p class="text-sm text-gray-400 mt-0.5">
-        @{{ meta.username }}
-      </p>
       <span v-if="meta.member_role" class="mt-3 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full shadow-sm">
         {{ meta.member_role }}
       </span>

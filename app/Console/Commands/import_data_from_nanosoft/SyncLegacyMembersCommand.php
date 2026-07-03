@@ -371,9 +371,6 @@ class SyncLegacyMembersCommand extends Command
             ->where('email', $email)
             ->first();
 
-        $preferredUsername = trim((string) ($this->pick($detail, ['username', 'userName', 'user_name']) ?? ''));
-        $username = $preferredUsername !== '' ? $preferredUsername : Str::before($email, '@');
-
         $gender = $this->normalizeGender((string) ($this->pick($detail, ['gender']) ?? 'other'));
         $isActive = $this->toBool($this->pick($detail, ['isActive', 'active', 'is_active']), true);
 
@@ -386,7 +383,6 @@ class SyncLegacyMembersCommand extends Command
             $tenant,
             $email,
             $name,
-            $username,
             $detail,
             $legacyId,
             $firstName,
@@ -407,7 +403,6 @@ class SyncLegacyMembersCommand extends Command
 
             $existingMember->first_name = $firstName;
             $existingMember->last_name = $lastName;
-            $existingMember->username = $username;
             $existingMember->name = $name;
             $existingMember->gender = $gender;
             $existingMember->email = $email;

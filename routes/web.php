@@ -63,10 +63,6 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     Route::get('/profile/event/{slug}', fn () => view('members.public-profile'))->where('slug', '[a-z0-9\-]+');
     Route::get('/profile/notifications', fn () => view('members.public-profile'));
 
-    // Public member profile route (username-based, kept for backwards compatibility)
-    Route::get('/profile/{username}', [App\Http\Controllers\MemberController::class, 'publicProfile'])
-        ->name('member.public_profile');
-
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {
         return redirect('/#/dashboard');

@@ -200,6 +200,9 @@ class MemberService
 
     public function store(Tenant $tenant, array $validated): Member
     {
+        $validated['email'] = filled($validated['email'] ?? null)
+            ? trim((string) $validated['email'])
+            : null;
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
         $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $validated['is_active'] = true;
@@ -234,7 +237,6 @@ class MemberService
             'name' => $member->name,
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'username' => $member->username,
             'gender' => $member->gender,
             'email' => $member->email,
             'phone_number' => $member->phone_number,
@@ -289,6 +291,9 @@ class MemberService
 
     public function update(Member $member, array $validated): void
     {
+        $validated['email'] = filled($validated['email'] ?? null)
+            ? trim((string) $validated['email'])
+            : null;
         $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
 
         if (!empty($validated['payment_plan_id'])) {
@@ -303,11 +308,15 @@ class MemberService
         $member->update($validated);
 
         if ($member->user) {
-            $member->user->update([
+            $userData = [
                 'name' => $validated['name'],
-                'email' => $validated['email'],
-                'username' => $validated['username'],
-            ]);
+            ];
+
+            if (!empty($validated['email'])) {
+                $userData['email'] = $validated['email'];
+            }
+
+            $member->user->update($userData);
         }
 
         SyncBiometricMemberJob::dispatchForTenant((int) app('tenant')->id, $member->id, 'update');

@@ -140,7 +140,6 @@ class PaymentService
             'id' => $member->id,
             'member_id' => $member->biometric_member_id,
             'name' => $name,
-            'username' => $member->username,
             'phone_number' => $member->phone_number,
             'address' => $member->address,
             'joined_date' => $member->joined_date?->toDateString(),

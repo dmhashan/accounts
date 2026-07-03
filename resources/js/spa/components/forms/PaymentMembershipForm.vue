@@ -48,9 +48,9 @@
           </span>
         </div>
         <div class="px-4 py-3 space-y-2">
-          <div v-if="memberInfo.username || memberInfo.name" class="flex justify-between gap-3">
-            <span class="text-secondary-500 dark:text-secondary-400 shrink-0">Username:</span>
-            <span class="font-medium text-secondary-900 dark:text-white text-right">{{ memberInfo.username || memberInfo.name }}</span>
+          <div v-if="memberInfo.name" class="flex justify-between gap-3">
+            <span class="text-secondary-500 dark:text-secondary-400 shrink-0">Member:</span>
+            <span class="font-medium text-secondary-900 dark:text-white text-right">{{ memberInfo.name }}</span>
           </div>
           <div v-if="memberInfo.address" class="flex justify-between gap-3">
             <span class="text-secondary-500 dark:text-secondary-400 shrink-0">Address:</span>

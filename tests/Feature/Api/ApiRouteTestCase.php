@@ -132,7 +132,6 @@ abstract class ApiRouteTestCase extends TestCase
             'biometric_member_id' => Member::generateBiometricMemberId($this->tenant->id),
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'username' => 'member' . $sequence,
             'name' => $firstName . ' ' . $lastName,
             'gender' => 'male',
             'email' => 'member' . $sequence . '@example.com',

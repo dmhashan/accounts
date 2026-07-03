@@ -137,7 +137,6 @@ class MembersApiTest extends ApiRouteTestCase
 
         $payload = $this->memberPayload([
             'email' => 'member-store@example.com',
-            'username' => 'member-store',
         ]);
 
         $response = $this->postJson('/api/members', $payload);
@@ -148,7 +147,26 @@ class MembersApiTest extends ApiRouteTestCase
 
         $this->assertDatabaseHas('members', [
             'email' => 'member-store@example.com',
-            'username' => 'member-store',
+        ]);
+    }
+
+    public function testMembersStoreRouteAllowsOptionalEmail(): void
+    {
+        $this->createRole('member');
+        $this->actingAsUser(['users.view', 'users.create']);
+
+        $payload = $this->memberPayload([
+            'email' => null,
+        ]);
+
+        $response = $this->postJson('/api/members', $payload);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('message', 'Member created successfully.');
+
+        $this->assertDatabaseHas('members', [
+            'email' => null,
         ]);
     }
 
@@ -172,7 +190,7 @@ class MembersApiTest extends ApiRouteTestCase
                         'url' => 'https://chat.whatsapp.com/female',
                         'rules' => [
                             ['field' => 'gender', 'operator' => 'equals', 'value' => 'male'],
-                            ['boolean' => 'or', 'field' => 'username', 'operator' => 'equals', 'value' => 'nimali'],
+                            ['boolean' => 'or', 'field' => 'email', 'operator' => 'equals', 'value' => 'nimali@example.com'],
                         ],
                     ],
                 ],
@@ -183,7 +201,6 @@ class MembersApiTest extends ApiRouteTestCase
             'first_name' => 'Nimali',
             'last_name' => 'Perera',
             'email' => 'nimali@example.com',
-            'username' => 'nimali',
             'gender' => 'female',
         ]);
 
@@ -263,14 +280,12 @@ class MembersApiTest extends ApiRouteTestCase
         $this->actingAsUser(['users.view', 'users.edit']);
         $linkedUser = $this->createUser();
         $member = $this->createMember($linkedUser, [
-            'username' => 'member-update',
             'email' => 'member-update@example.com',
         ]);
 
         $payload = $this->memberPayload([
             'first_name' => 'Updated',
             'last_name' => 'Member',
-            'username' => 'member-update',
             'email' => 'member-update@example.com',
         ]);
 
@@ -284,6 +299,35 @@ class MembersApiTest extends ApiRouteTestCase
             'id' => $member->id,
             'first_name' => 'Updated',
             'last_name' => 'Member',
+        ]);
+    }
+
+    public function testMembersUpdateRouteAllowsBlankMemberEmailWithoutChangingLinkedUserEmail(): void
+    {
+        $this->actingAsUser(['users.view', 'users.edit']);
+        $linkedUser = $this->createUser([], ['email' => 'linked-member@example.com']);
+        $member = $this->createMember($linkedUser, [
+            'email' => 'member-update@example.com',
+        ]);
+
+        $payload = $this->memberPayload([
+            'email' => null,
+        ]);
+
+        $response = $this->putJson('/api/members/' . $member->id, $payload);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'Member updated successfully.');
+
+        $this->assertDatabaseHas('members', [
+            'id' => $member->id,
+            'email' => null,
+        ]);
+        $this->assertDatabaseHas('users', [
+            'id' => $linkedUser->id,
+            'email' => 'linked-member@example.com',
+            'username' => $linkedUser->username,
         ]);
     }
 
@@ -334,7 +378,6 @@ class MembersApiTest extends ApiRouteTestCase
         return array_merge([
             'first_name' => 'John',
             'last_name' => 'Doe',
-            'username' => 'member-' . Str::lower(Str::random(6)),
             'gender' => 'male',
             'email' => 'member-' . Str::lower(Str::random(6)) . '@example.com',
             'phone_number' => '0712345678',
