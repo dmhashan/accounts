@@ -132,11 +132,13 @@ class MemberApiController extends Controller
     public function show(Request $request, Member $member): JsonResponse
     {
         $this->memberService->ensureTenantMember($member, app('tenant')->id);
+        $canEdit = $request->user()->hasPermission('members.edit') || $request->user()->hasPermission('users.edit');
 
         return response()->json([
             'data' => $this->memberService->show($member),
             'permissions' => [
-                'edit' => $request->user()->hasPermission('members.edit') || $request->user()->hasPermission('users.edit'),
+                'edit' => $canEdit,
+                'verify' => $canEdit || $this->canVerifyCampaignMember($request, $member),
                 'delete' => $request->user()->hasPermission('members.delete') || $request->user()->hasPermission('users.delete'),
             ],
         ]);
@@ -189,6 +191,7 @@ class MemberApiController extends Controller
     public function toggleVerification(Member $member): JsonResponse
     {
         $this->memberService->ensureTenantMember($member, app('tenant')->id);
+        abort_unless($this->canToggleVerification(request(), $member), 403, 'You do not have permission to verify this member.');
 
         return response()->json($this->memberService->toggleVerification($member));
     }
@@ -281,5 +284,22 @@ class MemberApiController extends Controller
             'total' => $records->count(),
             'year' => $year,
         ]);
+    }
+
+    private function canToggleVerification(Request $request, Member $member): bool
+    {
+        $user = $request->user();
+
+        if ($user->hasPermission('members.edit') || $user->hasPermission('users.edit')) {
+            return true;
+        }
+
+        return $this->canVerifyCampaignMember($request, $member);
+    }
+
+    private function canVerifyCampaignMember(Request $request, Member $member): bool
+    {
+        return $member->registration_source === 'campaign'
+            && $request->user()->hasPermission('campaigns.verify');
     }
 }

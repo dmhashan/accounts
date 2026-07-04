@@ -125,7 +125,8 @@ export function useNavigation() {
             context.permissions?.notifications ||
             context.permissions?.events ||
             context.permissions?.vouchersManage ||
-            context.permissions?.formsManage
+            context.permissions?.formsManage ||
+            context.permissions?.campaigns
         ) {
             const settingsChildren = [];
             if (context.permissions?.settingsGeneral) settingsChildren.push({ label: 'General', path: '/settings/general' });
@@ -138,6 +139,7 @@ export function useNavigation() {
             if (context.permissions?.events) settingsChildren.push({ label: 'Events', path: '/settings/events', activePrefix: '/settings/events' });
             if (context.permissions?.vouchersManage) settingsChildren.push({ label: 'Vouchers', path: '/settings/vouchers', activePrefix: '/settings/vouchers' });
             if (context.permissions?.formsManage) settingsChildren.push({ label: 'Forms', path: '/settings/forms', activePrefix: '/settings/forms' });
+            if (context.permissions?.campaigns) settingsChildren.push({ label: 'Campaigns', path: '/settings/campaigns', activePrefix: '/settings/campaigns' });
             if (context.permissions?.settingsConfiguration) settingsChildren.push({ label: 'Configuration', path: '/settings/configuration' });
             if (context.permissions?.settingsBiometric) settingsChildren.push({ label: 'Biometric', path: '/settings/biometric' });
             if (context.permissions?.settingsLegacyTools) settingsChildren.push({ label: 'Manual Commands', path: '/settings/legacy-tools' });

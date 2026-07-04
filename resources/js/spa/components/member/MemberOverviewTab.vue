@@ -173,6 +173,14 @@
             {{ formatDate(member.joined_date) }}
           </dd>
         </div>
+        <div v-if="member.registration_source === 'campaign'" class="flex items-start justify-between px-5 py-3 gap-3">
+          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28 pt-0.5">
+            Source
+          </dt>
+          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
+            Campaign<span v-if="member.campaign?.title"> - {{ member.campaign.title }}</span>
+          </dd>
+        </div>
         <div class="flex items-start justify-between px-5 py-3 gap-3">
           <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28 pt-0.5">
             Comment

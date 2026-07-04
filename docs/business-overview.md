@@ -1,6 +1,6 @@
 # Business Overview
 
-Last reviewed: 2026-07-04
+Last reviewed: 2026-07-05
 
 ## Purpose
 
@@ -25,6 +25,7 @@ The application is a multi-tenant management platform for gyms and fitness busin
 The platform helps a fitness business run daily operations from one place:
 
 - Manage members and temporary walk-in customers.
+- Publish public campaign registration pages for promotions or onboarding drives.
 - Collect membership payments and wallet top-ups.
 - Sell products and track inventory.
 - Manage business accounts, expenses, transfers, and daily reconciliation.
@@ -51,7 +52,7 @@ The platform helps a fitness business run daily operations from one place:
 
 ## Tenant Model
 
-Each tenant represents one fitness business. Tenants are separated by their business identity and domain. A tenant has its own branding, member portal link, users, roles, members, financial records, inventory, events, forms, reports, configuration, and media.
+Each tenant represents one fitness business. Tenants are separated by their business identity and domain. A tenant has its own branding, member portal link, users, roles, members, financial records, inventory, events, forms, campaigns, reports, configuration, and media.
 
 Business expectations:
 
@@ -76,6 +77,7 @@ Business rules:
 - A temporary member is used for walk-ins or incomplete profiles.
 - Members may have a default payment plan and a tenant-specific member price.
 - Members can choose or be configured for SMS, WhatsApp, and email contact preferences.
+- Members created from public campaigns are saved as unverified until authorized staff review and verify them.
 
 ### Payments, Plans, Wallets, and Vouchers
 
@@ -156,6 +158,20 @@ Business rules:
 - Submissions are linked to a member and the staff user who submitted them when applicable.
 - Templates can support translations.
 
+### Campaigns
+
+Campaigns allow staff to publish public member registration pages for promotions, offers, events, or onboarding drives. Each campaign has its own public URL, status, cover image, registration form field configuration, and optional document upload requirements.
+
+Business rules:
+
+- New campaigns start as draft and are not publicly available.
+- Published campaigns are available at `/campaigns/<campaign_slug>`.
+- Closed campaigns no longer accept registrations and show a clear closed message.
+- Staff can configure which member fields are shown, required, editable, or filled with fixed values.
+- Campaign registrations create unverified members linked to the campaign.
+- Documents uploaded during campaign registration are visible in the member Documents area.
+- Admins can review campaign source details, submitted information, and documents before verifying the member.
+
 ### Notifications
 
 Notifications support bulk messaging and automated member communication such as welcome messages, payment receipts, expiry reminders, birthdays, and anniversaries where configured.
@@ -204,7 +220,7 @@ Business rules:
 
 ## Business Controls
 
-The system uses role-based access to control which staff can view or manage each business area. Permission groups include dashboard, members, inventory, accounting, sales, employees, reports, settings, workout, activity logs, reconciliation, member portal, notifications, events, vouchers, forms, biometric settings, and system operations.
+The system uses role-based access to control which staff can view or manage each business area. Permission groups include dashboard, members, inventory, accounting, sales, employees, reports, settings, workout, activity logs, reconciliation, member portal, notifications, events, vouchers, forms, campaigns, biometric settings, and system operations.
 
 Business expectations:
 
@@ -220,7 +236,7 @@ Business expectations:
 | Email | Send reports, forms, password reset links, and member notifications. |
 | Social login | Allow staff account login through supported identity providers. |
 | Biometric devices | Sync members, record entry attempts, mark attendance, and support access control. |
-| Media storage | Store tenant logos, member documents, employee documents, expense documents, photos, PDFs, and device images. |
+| Media storage | Store tenant logos, campaign cover images, member documents, employee documents, expense documents, photos, PDFs, and device images. |
 | Legacy imports | Bring members, attendance, and payments from previous systems. |
 
 ## Quality Expectations

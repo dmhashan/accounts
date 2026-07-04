@@ -22,6 +22,7 @@ class MemberService
         private readonly MediaStorageService $media,
         private readonly BiometricSyncService $biometric,
         private readonly AutomatedMemberNotificationService $notifications,
+        private readonly AuditService $audit,
     ) {}
 
     public function meta(): array
@@ -108,6 +109,8 @@ class MemberService
                     'is_active' => (bool) $member->is_active,
                     'is_verified' => (bool) $member->is_verified,
                     'is_temp' => (bool) $member->is_temp,
+                    'registration_source' => $member->registration_source,
+                    'campaign_id' => $member->campaign_id,
                 ];
             }),
             'meta' => [
@@ -275,6 +278,7 @@ class MemberService
 
     public function show(Member $member): array
     {
+        $member->loadMissing(['campaign:id,title,slug,status', 'paymentPlan:id,name']);
         $this->syncMissingProfilePhotoFromBiometric($member);
 
         [$firstName, $lastName] = $this->resolveFirstAndLastName($member);
@@ -298,7 +302,7 @@ class MemberService
             'member_role' => null,
             'admission_fee' => $member->admission_fee,
             'payment_plan_id' => $member->payment_plan_id,
-            'payment_plan' => $member->payment_plan,
+            'payment_plan' => $member->paymentPlan?->name,
             'price' => $member->price,
             'current_balance' => $member->current_balance,
             'joined_date' => optional($member->joined_date)->format('Y-m-d'),
@@ -306,6 +310,13 @@ class MemberService
             'is_active' => (bool) $member->is_active,
             'is_verified' => (bool) $member->is_verified,
             'is_temp' => (bool) $member->is_temp,
+            'registration_source' => $member->registration_source,
+            'campaign' => $member->campaign ? [
+                'id' => $member->campaign->id,
+                'title' => $member->campaign->title,
+                'slug' => $member->campaign->slug,
+                'status' => $member->campaign->status,
+            ] : null,
             'profile_photo_url' => $member->profile_photo_path
                 ? $this->media->url($member->profile_photo_path)
                 : null,
@@ -384,9 +395,18 @@ class MemberService
 
     public function toggleVerification(Member $member): array
     {
+        $before = ['is_verified' => (bool) $member->is_verified];
+
         $member->update([
             'is_verified' => !$member->is_verified,
         ]);
+
+        if ($member->registration_source === 'campaign') {
+            $this->audit->log((int) app('tenant')->id, $member->is_verified ? 'campaign.member_verified' : 'campaign.member_unverified', $member, $before, [
+                'is_verified' => (bool) $member->is_verified,
+                'campaign_id' => $member->campaign_id,
+            ]);
+        }
 
         return [
             'message' => $member->is_verified ? 'Member verified successfully.' : 'Member unverified successfully.',

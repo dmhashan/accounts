@@ -71,6 +71,8 @@ const VoucherViewPage = () => import('./pages/VoucherViewPage.vue');
 const FormsPage = () => import('./pages/FormsPage.vue');
 const FormBuilderFormPage = () => import('./pages/FormBuilderFormPage.vue');
 const FormSubmissionsPage = () => import('./pages/FormSubmissionsPage.vue');
+const CampaignsPage = () => import('./pages/CampaignsPage.vue');
+const CampaignFormPage = () => import('./pages/CampaignFormPage.vue');
 
 const routes = [
     { path: '/', redirect: '/dashboard' },
@@ -159,6 +161,9 @@ const routes = [
     { path: '/settings/forms/new', component: FormBuilderFormPage, meta: { title: 'New Form Template' } },
     { path: '/settings/forms/:id(\\d+)/edit', component: FormBuilderFormPage, meta: { title: 'Edit Form Template' } },
     { path: '/settings/forms/:id(\\d+)/submissions', component: FormSubmissionsPage, meta: { title: 'Form Submissions' } },
+    { path: '/settings/campaigns', component: CampaignsPage, meta: { title: 'Campaigns' } },
+    { path: '/settings/campaigns/new', component: CampaignFormPage, meta: { title: 'New Campaign' } },
+    { path: '/settings/campaigns/:id(\\d+)/edit', component: CampaignFormPage, meta: { title: 'Edit Campaign' } },
     { path: '/settings/legacy-tools', component: LegacyToolsPage, meta: { title: 'Manual Commands' } },
     { path: '/settings/configuration', component: ConfigurationPage, meta: { title: 'Configuration' } },
     { path: '/settings/biometric', component: BiometricSettingsPage, meta: { title: 'Biometric Device' } },
@@ -221,6 +226,9 @@ const routes = [
     { path: '/forms/new', redirect: '/settings/forms/new' },
     { path: '/forms/:id(\\d+)/edit', redirect: to => `/settings/forms/${to.params.id}/edit` },
     { path: '/forms/:id(\\d+)/submissions', redirect: to => `/settings/forms/${to.params.id}/submissions` },
+    { path: '/campaigns', redirect: '/settings/campaigns' },
+    { path: '/campaigns/new', redirect: '/settings/campaigns/new' },
+    { path: '/campaigns/:id(\\d+)/edit', redirect: to => `/settings/campaigns/${to.params.id}/edit` },
 ];
 
 const router = createRouter({

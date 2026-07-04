@@ -63,6 +63,11 @@ Route::middleware([IdentifyTenant::class])->group(function () {
     Route::get('/profile/event/{slug}', fn () => view('members.public-profile'))->where('slug', '[a-z0-9\-]+');
     Route::get('/profile/notifications', fn () => view('members.public-profile'));
 
+    // Public campaign registration pages
+    Route::get('/campaigns/{slug}', fn () => view('campaigns.public'))
+        ->where('slug', '[a-z0-9\-]+')
+        ->name('campaigns.public');
+
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {
         return redirect('/#/dashboard');

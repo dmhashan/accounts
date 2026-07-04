@@ -10,6 +10,8 @@ class Member extends Model
 {
     protected $fillable = [
         'user_id',
+        'campaign_id',
+        'registration_source',
         'biometric_member_id',
         'first_name',
         'last_name',
@@ -59,9 +61,24 @@ class Member extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(Campaign::class);
+    }
+
+    public function paymentPlan(): BelongsTo
+    {
+        return $this->belongsTo(PaymentPlan::class);
+    }
+
     public function bodyMeasurements(): HasMany
     {
         return $this->hasMany(MemberBodyMeasurement::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(MemberDocument::class);
     }
 
     /**

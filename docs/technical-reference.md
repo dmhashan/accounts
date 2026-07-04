@@ -1,6 +1,6 @@
 # Technical Reference
 
-Last reviewed: 2026-07-04
+Last reviewed: 2026-07-05
 
 ## Purpose
 
@@ -36,6 +36,7 @@ If a change also affects business process or architecture, update `docs/business
 | `routes/console.php` | Scheduled commands and small console closures. |
 | `resources/js/spa/` | Vue staff SPA. |
 | `resources/js/spa/components/PublicProfileApp/` | Member-facing portal components. |
+| `resources/js/public-campaign.js` | Public campaign registration entrypoint. |
 | `members_mobileapp/` | Expo React Native member app. |
 | `database/migrations/tenant/` | Tenant and application schema migrations. |
 | `database/seeders/` | Tenant, role, permission, workout, voucher, and form seeders. |
@@ -57,7 +58,7 @@ If a change also affects business process or architecture, update `docs/business
 | Mobile app start | `cd members_mobileapp && npm run start` |
 | Mobile app typecheck | `cd members_mobileapp && npm run typecheck` |
 
-`php artisan route:list --except-vendor` currently reports 319 non-vendor routes.
+`php artisan route:list --except-vendor` currently reports 330 non-vendor routes.
 
 ## Core Stack
 
@@ -86,7 +87,7 @@ If a change also affects business process or architecture, update `docs/business
 | `ResolvePpToken` | Resolves public member portal token from `X-PP-Token`. |
 | `EnsureActiveUser` | Ensures inactive users cannot continue using the app. |
 
-CSRF exclusions currently include public member OTP/activity/event registration routes. The biometric webhook lives outside normal session and CSRF handling.
+CSRF exclusions currently include public member OTP/activity/event registration routes. Public campaign registration uses the CSRF token embedded in its public page. The biometric webhook lives outside normal session and CSRF handling.
 
 ## Tenancy Technical Notes
 
@@ -154,7 +155,7 @@ Permission groups:
 | Reports | `reports.daily_summary`, `reports.real_profit`, `reports.view`, `reports.customers`, `reports.products` |
 | Settings | `settings.manage`, `settings.configuration`, `settings.biometric`, `settings.legacy_tools` |
 | Users and roles | `users.view`, `users.create`, `users.edit`, `users.delete`, `roles.view`, `roles.permissions` |
-| Settings submodules | `accounts.manage`, `payment_plans.manage`, `payment_methods.manage`, `notifications.send`, `events.manage`, `vouchers.manage`, `forms.manage` |
+| Settings submodules | `accounts.manage`, `payment_plans.manage`, `payment_methods.manage`, `notifications.send`, `events.manage`, `vouchers.manage`, `forms.manage`, `campaigns.view`, `campaigns.create`, `campaigns.edit`, `campaigns.publish`, `campaigns.close`, `campaigns.delete`, `campaigns.registrations`, `campaigns.verify` |
 | Workout | `workouts.manage`, `workouts.exercises`, `workouts.assignments` |
 | Activity | `activity.view` |
 | Reconciliation | `reconciliation.perform`, `reconciliation.manage` |
@@ -186,6 +187,7 @@ Route source of truth is `routes/api.php` and the files under `routes/api/`.
 | Employees | `/api/employees/*`, `/api/employee-pay-sheets/*` | Employee records, attendance, documents, pay sheets |
 | Workouts | `/api/exercises/*`, `/api/workout-programs/*`, `/api/workout-program-assignments/*` | Exercise library, programs, assignment |
 | Events | `/api/events/*` | Events, registrations, payment, attendance |
+| Campaigns | `/api/campaigns/*`, `/api/public/campaigns/*` | Campaign management, public campaign configuration, public member registration |
 | Notifications | `/api/notifications/*` | Bulk notification campaigns |
 | Public profile | `/api/public/*` | OTP, profile, wallet, events, notifications |
 | Activity | `/api/member-activity/*` | Member activity log and export |
@@ -202,7 +204,7 @@ Route source of truth is `routes/api.php` and the files under `routes/api/`.
 | Auth and context | `AuthSessionService`, `AppContextService`, `PasswordResetService` |
 | Tenant operations | `TenantDatabaseManager`, `TenantConfigurationService`, `TenantLandingPageService`, `TenantMailService`, `MemberPortalUrlService` |
 | Users and roles | `UserService`, `RoleService`, `AuditService` |
-| Members | `MemberService`, `MemberDocumentService`, `MemberBodyMeasurementService`, `MemberPortalUrlService` |
+| Members | `MemberService`, `MemberDocumentService`, `MemberBodyMeasurementService`, `MemberPortalUrlService`, `CampaignService` |
 | Payments and wallets | `PaymentService`, `PaymentPlanService`, `PaymentMethodService`, `PaymentSettlementService`, `WalletService`, `VoucherService` |
 | Sales and inventory | `SaleProcessingService`, `SaleMetaService`, `InventoryService` |
 | Accounting | `CompanyAccountService`, `ExpenseService`, `ReconciliationService` |
@@ -315,6 +317,7 @@ erDiagram
     TENANTS ||--o{ WORKOUT_PROGRAMS : owns
     TENANTS ||--o{ EXERCISES : owns
     TENANTS ||--o{ EVENTS : owns
+    TENANTS ||--o{ CAMPAIGNS : owns
     TENANTS ||--o{ BULK_NOTIFICATIONS : owns
     TENANTS ||--o{ FORM_TEMPLATES : owns
     TENANTS ||--o{ EMPLOYEES : owns
@@ -338,6 +341,7 @@ erDiagram
     MEMBERS ||--o{ WORKOUT_PROGRAM_ASSIGNMENTS : assigned
     MEMBERS ||--o{ EVENT_REGISTRATIONS : registers
     MEMBERS ||--o{ FORM_SUBMISSIONS : submits
+    CAMPAIGNS ||--o{ MEMBERS : creates
 
     PAYMENT_PLANS ||--o{ MEMBERS : default_plan
     PAYMENT_PLANS ||--o{ PAYMENT_MEMBERSHIPS : used_by
@@ -418,6 +422,7 @@ erDiagram
 | `member_attendances` | `MemberAttendance` | Member attendance dates, optionally linked to biometric access event. |
 | `member_activity_logs` | `MemberActivityLog` | Public portal activity and device/browser metadata. |
 | `member_notifications` | `MemberNotification` | In-app member notifications and read status. |
+| `campaigns` | `Campaign` | Public registration campaign title, slug, status, cover image, field configuration, document requirements, and timestamps. |
 
 ### Payments, Wallets, and Accounting
 
@@ -503,7 +508,7 @@ Current model files:
 AuditLog, BiometricAccessEvent, BiometricSyncLog, BulkNotification,
 BulkNotificationRecipient, CommandRunLog, CompanyAccount,
 CompanyAccountTransaction, CompanyAccountTransfer, DailySummaryReport,
-Employee, EmployeeAttendance, EmployeeDocument, EmployeePaySheetAdjustment,
+Campaign, Employee, EmployeeAttendance, EmployeeDocument, EmployeePaySheetAdjustment,
 EmployeePaySheetItem, EmployeePaySheetRun, Event, EventRegistration,
 EventRegistrationGuest, Exercise, ExerciseVariation, Expense, ExpenseDocument,
 FormSubmission, FormTemplate, Member, MemberActivityLog, MemberAttendance,
@@ -518,6 +523,7 @@ WorkoutProgramDay, WorkoutProgramExtra
 
 Models using soft deletes:
 
+- `Campaign`
 - `PaymentPlan`
 - `Employee`
 - `Sale`
@@ -536,6 +542,17 @@ Models with disabled timestamps:
 2. Full member creation generates a biometric member ID, sets active and verified flags, resolves default plan data, dispatches biometric sync, and sends welcome notification.
 3. Temporary member creation creates an active unverified member with the temporary flag.
 4. Member profile media uses `MediaStorageService`.
+5. Campaign-created members are linked by `members.campaign_id`, marked with `registration_source = campaign`, and remain unverified until staff approval.
+
+### Campaign Registration
+
+1. Staff manage campaigns through `CampaignApiController` and `CampaignService`.
+2. Campaigns are stored in `campaigns` with `draft`, `published`, or `closed` status.
+3. Public pages are served from `/campaigns/{slug}` using `resources/js/public-campaign.js`.
+4. Public configuration is exposed by `GET /api/public/campaigns/{slug}` only for published or closed campaigns; draft campaigns return not found.
+5. Public submissions call `POST /api/public/campaigns/{slug}/register`.
+6. `CampaignService` rebuilds allowed field behavior from its server-side field catalog, applies configured constants, validates document requirements, creates an unverified member, and stores uploaded files through `MemberDocumentService`.
+7. Staff can identify campaign members from the member list/profile and can verify campaign-created members with `campaigns.verify` or general member edit rights.
 
 ### Payments
 

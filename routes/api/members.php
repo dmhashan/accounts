@@ -20,7 +20,7 @@ Route::middleware(['auth', 'permission:members.view,members.temp.view,users.view
     Route::post('/members/temp', [MemberApiController::class, 'storeTemp'])->middleware('permission:members.create,users.create');
     Route::put('/members/{member}', [MemberApiController::class, 'update'])->middleware('permission:members.edit,users.edit');
     Route::patch('/members/{member}/toggle-status', [MemberApiController::class, 'toggleStatus'])->middleware('permission:members.edit,users.edit');
-    Route::patch('/members/{member}/toggle-verification', [MemberApiController::class, 'toggleVerification'])->middleware('permission:members.edit,users.edit');
+    Route::patch('/members/{member}/toggle-verification', [MemberApiController::class, 'toggleVerification'])->middleware('permission:members.edit,users.edit,campaigns.verify');
     Route::delete('/members/{member}', [MemberApiController::class, 'destroy'])->middleware('permission:members.delete,users.delete');
     Route::post('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:members.edit,users.edit');
     Route::put('/members/{member}/avatar', [MemberApiController::class, 'uploadAvatar'])->middleware('permission:members.edit,users.edit');

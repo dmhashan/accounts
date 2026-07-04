@@ -158,7 +158,7 @@ const actionInProgress = ref('');
 const errorMessage = ref('');
 const successMessage = ref('');
 const member = ref(null);
-const permissions = ref({ edit: false, delete: false });
+const permissions = ref({ edit: false, verify: false, delete: false });
 
 // ── Tabs ──
 const tabs = [

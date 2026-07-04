@@ -34,7 +34,7 @@
             {{ actionInProgress === 'status' ? '...' : activeActionLabel }}
           </button>
           <button
-            v-if="permissions.edit"
+            v-if="permissions.verify"
             type="button"
             class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 hover:bg-white/30 border border-white/25 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="Boolean(actionInProgress)"
@@ -94,6 +94,12 @@
           : 'bg-amber-50 dark:bg-amber-900/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'"
       >
         {{ member.is_verified ? '✓ Verified' : '! Unverified' }}
+      </span>
+      <span
+        v-if="member.registration_source === 'campaign'"
+        class="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-purple-50 dark:bg-purple-900/25 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300"
+      >
+        Campaign<span v-if="member.campaign?.title">: {{ member.campaign.title }}</span>
       </span>
       <span v-if="member.is_temp" class="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-orange-50 dark:bg-orange-900/25 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400">Temp</span>
       <span class="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-secondary-100 dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600 text-secondary-600 dark:text-secondary-300">{{ displayValue(member.member_role) }}</span>

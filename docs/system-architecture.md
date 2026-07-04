@@ -1,6 +1,6 @@
 # System Architecture
 
-Last reviewed: 2026-07-04
+Last reviewed: 2026-07-05
 
 ## Purpose
 
@@ -19,6 +19,7 @@ The application is a Laravel 12 multi-tenant SaaS platform for fitness businesse
 - A Laravel backend with session-authenticated web and API routes.
 - A Vue 3 SPA for staff operations.
 - A public member portal served as a separate frontend entry.
+- Public campaign registration pages served as a separate frontend entry.
 - A React Native Expo member mobile app that uses the public member portal APIs.
 - MySQL-compatible central and tenant database connections.
 - Database-backed sessions, cache, queues, and scheduled tasks.
@@ -40,11 +41,13 @@ Current local environment reported by Laravel:
 flowchart LR
     Staff[Staff browser] --> SPA[Vue staff SPA]
     Member[Member browser] --> Portal[Public member portal]
+    Visitor[Public visitor] --> CampaignPage[Public campaign page]
     Mobile[Member mobile app] --> PublicAPI[Public member APIs]
     Device[Biometric device] --> Webhook[Biometric webhook]
 
     SPA --> Laravel[Laravel application]
     Portal --> Laravel
+    CampaignPage --> Laravel
     PublicAPI --> Laravel
     Webhook --> Laravel
 
@@ -68,6 +71,7 @@ flowchart LR
 | Laravel app | HTTP routing, middleware, auth, controllers, services, jobs, commands, models. | `app/`, `routes/`, `config/` |
 | Staff SPA | Authenticated operational UI with hash-based routing. | `resources/js/spa/` |
 | Public member portal | Browser-based member OTP experience. | `resources/js/public-profile.js`, `resources/js/spa/components/PublicProfileApp/` |
+| Public campaign registration | Browser-based public member registration forms for published campaigns. | `resources/js/public-campaign.js`, `resources/js/spa/pages/PublicCampaignPage.vue` |
 | Member mobile app | React Native app for OTP login and member profile views. | `members_mobileapp/` |
 | Service layer | Business logic and transaction orchestration. | `app/Services/` |
 | Models | Eloquent entities and relationships. | `app/Models/` |
@@ -114,6 +118,14 @@ flowchart LR
 3. Verified members receive a short-lived public profile token.
 4. `ResolvePpToken` resolves member-facing requests from the `X-PP-Token` header.
 5. Member portal routes return only the verified member's own profile, wallet, event, workout, and notification data.
+
+### Public Campaign Registration Requests
+
+1. The tenant is resolved from the domain.
+2. `/campaigns/{slug}` serves a lightweight public Vue entry.
+3. Public campaign APIs expose only published campaign form configuration and tenant branding.
+4. Public submissions are validated against the server-side campaign field catalog and document requirements.
+5. Accepted submissions create unverified members linked to the campaign and store uploaded documents through tenant media storage.
 
 ### Biometric Webhook Requests
 
@@ -205,6 +217,8 @@ Key frontend pieces:
 
 The public member portal is a separate member-facing experience and is intentionally smaller than the staff SPA.
 
+Public campaign registration is also a separate public entry. Staff manage campaigns inside the authenticated SPA under Settings, while visitors use `/campaigns/{slug}` without staff login.
+
 The mobile app in `members_mobileapp/` uses the same public OTP and member profile APIs as the public member portal.
 
 ## Service Layer Architecture
@@ -215,6 +229,7 @@ Common patterns:
 
 - Services receive `tenantId`, `Tenant`, `User`, or model instances from controllers.
 - Services validate tenant ownership before mutating related records.
+- Public-facing services re-derive allowed fields and constants server-side rather than trusting form configuration from the browser.
 - Financial workflows centralize transaction and settlement side effects.
 - Device and notification services catch integration failures where business continuity matters.
 - Media storage is accessed through `MediaStorageService`, not direct storage calls.
@@ -305,6 +320,7 @@ Before implementing a significant change, confirm:
 - Does it run before or after tenant resolution?
 - Does it need central data, tenant data, or both?
 - Does it run in HTTP, queue, scheduler, command, webhook, or mobile/public context?
+- Does a public route expose only tenant-approved data?
 - Does it need a new permission or app context flag?
 - Does it create financial, inventory, attendance, notification, or audit side effects?
 - Does it need media namespacing?

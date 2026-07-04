@@ -14,10 +14,12 @@
     <template #trigger>
       <div class="relative cursor-pointer">
         <input
+          :id="id || null"
           type="text"
           :value="displayValue"
           :placeholder="placeholder ?? formatHint"
           :disabled="disabled"
+          :required="required"
           :class="inputClass ?? DEFAULT_CLASS"
           :style="{ paddingRight: '2.25rem' }"
           readonly
@@ -38,6 +40,7 @@ import { Calendar } from 'lucide-vue-next';
 import { useDateTimeFormat } from '../../composables/useDateTimeFormat';
 
 const props = defineProps({
+    id: { type: String, default: '' },
     modelValue: { type: String, default: '' },
     placeholder: { type: String, default: undefined },
     required:   { type: Boolean, default: false },

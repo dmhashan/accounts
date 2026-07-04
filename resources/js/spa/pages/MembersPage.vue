@@ -280,6 +280,9 @@
                     <AppBadge v-if="activeTab === 'members'" :color="member.is_verified ? 'blue' : 'amber'">
                       {{ member.is_verified ? 'Verified' : 'Unverified' }}
                     </AppBadge>
+                    <AppBadge v-if="member.registration_source === 'campaign'" color="purple">
+                      Campaign
+                    </AppBadge>
                   </div>
                   <p class="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400 truncate">
                     {{ member.phone_number || member.email || 'No contact' }}
@@ -360,6 +363,9 @@
                             <AppBadge :color="member.gender === 'male' ? 'indigo' : member.gender === 'female' ? 'purple' : 'secondary'">
                               {{ capitalize(member.gender) || 'N/A' }}
                             </AppBadge>
+                            <AppBadge v-if="member.registration_source === 'campaign'" color="purple">
+                              Campaign
+                            </AppBadge>
                           </div>
                         </div>
                       </div>
@@ -393,6 +399,9 @@
                         </AppBadge>
                         <AppBadge v-if="activeTab === 'members'" :color="member.is_verified ? 'blue' : 'amber'">
                           {{ member.is_verified ? 'Verified' : 'Unverified' }}
+                        </AppBadge>
+                        <AppBadge v-if="member.registration_source === 'campaign'" color="purple">
+                          Campaign
                         </AppBadge>
                       </div>
                     </td>
