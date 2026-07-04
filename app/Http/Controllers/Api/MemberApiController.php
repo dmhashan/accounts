@@ -35,8 +35,20 @@ class MemberApiController extends Controller
         $search = trim((string) $request->query('search', ''));
         $isTemp = $request->has('is_temp') ? filter_var($request->query('is_temp'), FILTER_VALIDATE_BOOLEAN) : null;
         $planId = $request->has('plan_id') ? (int) $request->query('plan_id') : null;
+        $filters = [
+            'active' => $request->query('active'),
+            'verified' => $request->query('verified'),
+            'gender' => $request->query('gender'),
+            'expiry_preset' => $request->query('expiry_preset'),
+            'expiry_days_operator' => $request->query('expiry_days_operator'),
+            'expiry_days' => $request->query('expiry_days'),
+            'attendance_preset' => $request->query('attendance_preset'),
+            'attendance_days_operator' => $request->query('attendance_days_operator'),
+            'attendance_days' => $request->query('attendance_days'),
+            'outstanding' => $request->query('outstanding'),
+        ];
 
-        return response()->json($this->memberService->index($tenant->id, $currentUser, $perPage, $search, $isTemp, $planId));
+        return response()->json($this->memberService->index($tenant->id, $currentUser, $perPage, $search, $isTemp, $planId, $filters));
     }
 
     public function exportGoogleContacts(): StreamedResponse

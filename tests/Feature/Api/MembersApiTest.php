@@ -4,6 +4,9 @@ namespace Tests\Feature\Api;
 
 use App\Models\MemberAttendance;
 use App\Models\MemberNotification;
+use App\Models\MemberPayment;
+use App\Models\PaymentMembership;
+use App\Models\Sale;
 use App\Services\AutomatedMemberNotificationService;
 use App\Services\BiometricSyncService;
 use App\Services\TenantConfigurationService;
@@ -34,6 +37,113 @@ class MembersApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonStructure(['data', 'meta', 'permissions'])
             ->assertJsonFragment(['id' => $member->id]);
+    }
+
+    public function testMembersIndexRouteIncludesDetailsAndAppliesBasicFilters(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['users.view']);
+            $plan = $this->createPaymentPlan(['name' => 'Gold Plan']);
+            $member = $this->createMember(null, [
+                'first_name' => 'Filter',
+                'last_name' => 'Match',
+                'name' => 'Filter Match',
+                'gender' => 'female',
+                'payment_plan_id' => $plan->id,
+                'current_balance' => -50,
+                'profile_photo_path' => 'member-avatars/filter-match.jpg',
+            ]);
+
+            $attachDetails = function ($targetMember, float $walletOutstanding = 50) use ($plan): void {
+                $targetMember->update([
+                    'current_balance' => 0 - $walletOutstanding,
+                ]);
+
+                $payment = MemberPayment::create([
+                    'member_id' => $targetMember->id,
+                    'company_account_id' => null,
+                    'payment_method' => 'cash',
+                    'amount' => 1200,
+                    'payment_date' => '2026-05-05',
+                ]);
+
+                PaymentMembership::create([
+                    'member_payment_id' => $payment->id,
+                    'payment_plan_id' => $plan->id,
+                    'start_date' => '2026-04-06',
+                    'end_date' => '2026-05-05',
+                ]);
+
+                MemberAttendance::create([
+                    'member_id' => $targetMember->id,
+                    'attended_date' => '2026-05-05',
+                ]);
+
+                Sale::create([
+                    'customer_name' => $targetMember->name,
+                    'customer_member_id' => $targetMember->id,
+                    'customer_type' => 'local',
+                    'payment_method' => 'cash',
+                    'total_amount' => 500,
+                    'paid_amount' => 100,
+                    'balance' => -400,
+                    'is_paid' => false,
+                ]);
+            };
+
+            $attachDetails($member);
+
+            $inactiveUnverifiedMember = $this->createMember(null, [
+                'name' => 'Inactive Match',
+                'gender' => 'female',
+                'payment_plan_id' => $plan->id,
+                'is_active' => false,
+                'is_verified' => false,
+            ]);
+            $attachDetails($inactiveUnverifiedMember, 25);
+
+            $this->createMember(null, [
+                'name' => 'Filter Miss',
+                'gender' => 'male',
+            ]);
+
+            $response = $this->getJson('/api/members?per_page=10'
+                . '&active=active'
+                . '&verified=verified'
+                . '&gender=female'
+                . '&plan_id=' . $plan->id
+                . '&expiry_preset=expired_60'
+                . '&attendance_preset=older_60'
+                . '&outstanding=with');
+
+            $response
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.id', $member->id)
+                ->assertJsonPath('data.0.plan_name', 'Gold Plan')
+                ->assertJsonPath('data.0.membership_expiry_date', '2026-05-05')
+                ->assertJsonPath('data.0.days_until_payment_expiry', -60)
+                ->assertJsonPath('data.0.last_attendance_date', '2026-05-05')
+                ->assertJsonPath('data.0.days_since_last_attendance', 60)
+                ->assertJsonPath('data.0.total_outstanding_amount', 450);
+
+            $this->assertStringContainsString(
+                'member-avatars/filter-match.jpg',
+                (string) $response->json('data.0.profile_photo_url'),
+            );
+
+            $this->getJson('/api/members?active=active&expiry_preset=expired_30&attendance_preset=older_30')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1);
+
+            $this->getJson('/api/members?active=active&expiry_preset=expired_90')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 0);
+        } finally {
+            $this->travelBack();
+        }
     }
 
     public function testMembersExportRouteReturnsCsvStream(): void
