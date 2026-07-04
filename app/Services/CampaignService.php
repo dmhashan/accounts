@@ -29,22 +29,11 @@ class CampaignService
     {
         return [
             [
-                'key' => 'first_name',
-                'label' => 'First name',
+                'key' => 'name',
+                'label' => 'Full name',
                 'group' => 'Personal details',
                 'type' => 'text',
-                'rules' => ['string', 'max:100'],
-                'default_visible' => true,
-                'default_required' => true,
-                'default_editable' => true,
-                'supports_constant' => true,
-            ],
-            [
-                'key' => 'last_name',
-                'label' => 'Last name',
-                'group' => 'Personal details',
-                'type' => 'text',
-                'rules' => ['string', 'max:100'],
+                'rules' => ['string', 'max:200'],
                 'default_visible' => true,
                 'default_required' => true,
                 'default_editable' => true,
@@ -383,7 +372,7 @@ class CampaignService
             'data' => $paginator->map(fn (Member $member) => [
                 'id' => $member->id,
                 'biometric_member_id' => $member->biometric_member_id,
-                'name' => $member->name ?: trim((string) $member->first_name . ' ' . (string) $member->last_name),
+                'name' => trim((string) ($member->name ?? '')),
                 'email' => $member->email,
                 'phone_number' => $member->phone_number,
                 'is_active' => (bool) $member->is_active,
@@ -465,7 +454,7 @@ class CampaignService
             $memberData['campaign_id'] = $campaign->id;
             $memberData['registration_source'] = 'campaign';
             $memberData['biometric_member_id'] = Member::generateBiometricMemberId((int) app('tenant')->id);
-            $memberData['name'] = trim((string) ($memberData['first_name'] ?? '') . ' ' . (string) ($memberData['last_name'] ?? ''));
+            $memberData['name'] = trim((string) ($memberData['name'] ?? ''));
             $memberData['email'] = filled($memberData['email'] ?? null) ? trim((string) $memberData['email']) : null;
             $memberData['is_active'] = true;
             $memberData['is_verified'] = false;
@@ -528,7 +517,7 @@ class CampaignService
 
     public function normalizeFieldConfig(mixed $config): array
     {
-        $config = $this->parseArray($config);
+        $config = $this->migrateNameFieldConfig($this->parseArray($config));
         $byKey = collect($config)
             ->filter(fn ($item) => is_array($item) && isset($item['field']))
             ->keyBy('field');
@@ -562,6 +551,53 @@ class CampaignService
             ];
         })
             ->sortBy('sort_order')
+            ->values()
+            ->all();
+    }
+
+    private function migrateNameFieldConfig(array $config): array
+    {
+        $rows = collect($config)
+            ->filter(fn ($item) => is_array($item) && isset($item['field']))
+            ->values();
+
+        if ($rows->contains(fn (array $row) => $row['field'] === 'name')) {
+            return $rows
+                ->reject(fn (array $row) => in_array($row['field'], ['first_name', 'last_name'], true))
+                ->values()
+                ->all();
+        }
+
+        $firstNameRow = $rows->first(fn (array $row) => $row['field'] === 'first_name');
+        $lastNameRow = $rows->first(fn (array $row) => $row['field'] === 'last_name');
+
+        if (!$firstNameRow && !$lastNameRow) {
+            return $config;
+        }
+
+        $nameRow = $firstNameRow ?: $lastNameRow;
+        $nameRow['field'] = 'name';
+
+        $constantValue = trim(implode(' ', array_filter([
+            $this->hasConstantValue($firstNameRow['constant_value'] ?? null) ? (string) $firstNameRow['constant_value'] : null,
+            $this->hasConstantValue($lastNameRow['constant_value'] ?? null) ? (string) $lastNameRow['constant_value'] : null,
+        ])));
+
+        $nameRow['constant_value'] = $constantValue !== '' ? $constantValue : ($nameRow['constant_value'] ?? null);
+        $nameRow['visible'] = $this->booleanValue($firstNameRow['visible'] ?? false)
+            || $this->booleanValue($lastNameRow['visible'] ?? false);
+        $nameRow['required'] = $this->booleanValue($firstNameRow['required'] ?? false)
+            || $this->booleanValue($lastNameRow['required'] ?? false);
+        $nameRow['editable'] = $this->booleanValue($firstNameRow['editable'] ?? false)
+            || $this->booleanValue($lastNameRow['editable'] ?? false);
+        $nameRow['sort_order'] = min(
+            (int) ($firstNameRow['sort_order'] ?? $nameRow['sort_order'] ?? 0),
+            (int) ($lastNameRow['sort_order'] ?? $nameRow['sort_order'] ?? 0),
+        );
+
+        return $rows
+            ->reject(fn (array $row) => in_array($row['field'], ['first_name', 'last_name'], true))
+            ->push($nameRow)
             ->values()
             ->all();
     }
@@ -687,6 +723,16 @@ class CampaignService
         $attributes = [];
         $configuredFields = collect($fieldConfig)->keyBy('field');
 
+        if (!array_key_exists('name', $fieldsInput)) {
+            $legacyName = trim(
+                trim((string) ($fieldsInput['first_name'] ?? '')) . ' ' . trim((string) ($fieldsInput['last_name'] ?? '')),
+            );
+
+            if ($legacyName !== '') {
+                $fieldsInput['name'] = $legacyName;
+            }
+        }
+
         foreach ($this->fieldCatalog() as $definition) {
             $field = $definition['key'];
             $row = $configuredFields->get($field);
@@ -721,11 +767,10 @@ class CampaignService
 
         $validator = Validator::make($data, $rules, [], $attributes);
         $validator->after(function ($validator) use ($data) {
-            $firstName = trim((string) ($data['first_name'] ?? ''));
-            $lastName = trim((string) ($data['last_name'] ?? ''));
+            $name = trim((string) ($data['name'] ?? ''));
 
-            if ($firstName === '' && $lastName === '') {
-                $validator->errors()->add('first_name', 'At least one name field is required.');
+            if ($name === '') {
+                $validator->errors()->add('name', 'Full name is required.');
             }
         });
 

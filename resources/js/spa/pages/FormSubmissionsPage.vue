@@ -563,7 +563,7 @@ function searchMembers() {
             const res = await apiRequest(`/api/members?search=${encodeURIComponent(memberSearch.value.trim())}&per_page=10`);
             memberResults.value = (res.data || []).map(m => ({
                 id: m.id,
-                label: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.name || '',
+                label: m.name || '',
                 member_id: m.biometric_member_id,
             }));
         } catch {

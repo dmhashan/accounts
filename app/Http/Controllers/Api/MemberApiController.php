@@ -63,10 +63,10 @@ class MemberApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
+        $this->normalizeNameInput($request);
 
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:200'],
             'gender' => ['required', 'in:male,female'],
             'email' => [
                 'nullable',
@@ -99,10 +99,10 @@ class MemberApiController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = app('tenant');
+        $this->normalizeNameInput($request);
 
         $validated = $request->validate([
-            'first_name' => ['nullable', 'string', 'max:100'],
-            'last_name' => ['nullable', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:200'],
             'phone_number' => ['nullable', 'string', 'max:20'],
             'email' => [
                 'nullable',
@@ -110,16 +110,6 @@ class MemberApiController extends Controller
                 Rule::unique('members'),
             ],
         ]);
-
-        $firstName = trim($validated['first_name'] ?? '');
-        $lastName = trim($validated['last_name'] ?? '');
-
-        if ($firstName === '' && $lastName === '') {
-            return response()->json([
-                'message' => 'Either first name or last name is required.',
-                'errors' => ['first_name' => ['Either first name or last name is required.']],
-            ], 422);
-        }
 
         $member = $this->memberService->storeTemp($tenant, $validated);
 
@@ -147,6 +137,7 @@ class MemberApiController extends Controller
     public function update(Request $request, Member $member): JsonResponse
     {
         $this->memberService->ensureTenantMember($member, app('tenant')->id);
+        $this->normalizeNameInput($request);
 
         $memberEmailRule = Rule::unique('members')->ignore($member->id);
 
@@ -157,8 +148,7 @@ class MemberApiController extends Controller
         }
 
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:200'],
             'gender' => ['required', 'in:male,female'],
             'email' => ['nullable', 'email', $memberEmailRule, $userEmailRule],
             'phone_number' => ['required', 'string', 'max:20'],
@@ -301,5 +291,24 @@ class MemberApiController extends Controller
     {
         return $member->registration_source === 'campaign'
             && $request->user()->hasPermission('campaigns.verify');
+    }
+
+    private function normalizeNameInput(Request $request): void
+    {
+        if (filled($request->input('name'))) {
+            $request->merge([
+                'name' => trim((string) $request->input('name')),
+            ]);
+
+            return;
+        }
+
+        $name = trim(
+            trim((string) $request->input('first_name', '')) . ' ' . trim((string) $request->input('last_name', '')),
+        );
+
+        if ($name !== '') {
+            $request->merge(['name' => $name]);
+        }
     }
 }

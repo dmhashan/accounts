@@ -130,7 +130,7 @@ class CompanyAccountService
             : collect();
         $payments = $paymentIds->isNotEmpty()
             ? MemberPayment::whereIn('id', $paymentIds)
-                ->with('member:id,first_name,last_name,name')
+                ->with('member:id,name')
                 ->get(['id', 'member_id'])
                 ->keyBy('id')
             : collect();
@@ -141,7 +141,7 @@ class CompanyAccountService
             : collect();
         $topups = $topupIds->isNotEmpty()
             ? WalletTopup::whereIn('id', $topupIds)
-                ->with('member:id,biometric_member_id,first_name,last_name,name')
+                ->with('member:id,biometric_member_id,name')
                 ->get(['id', 'member_id', 'reference_number'])
                 ->keyBy('id')
             : collect();
@@ -167,7 +167,7 @@ class CompanyAccountService
 
                     if ($payment?->member) {
                         $m = $payment->member;
-                        $customer = trim(($m->first_name ?? '') . ' ' . ($m->last_name ?? '')) ?: ($m->name ?? null);
+                        $customer = trim((string) ($m->name ?? '')) ?: null;
                         $memberId = $m->id;
                     }
                 } elseif ($tx->model_name === 'payment_deduction' && $tx->reference_id) {

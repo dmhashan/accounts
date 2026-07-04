@@ -599,22 +599,16 @@ function capitalize(value = '') {
 }
 
 function memberInitials(member) {
-    const first = (member.first_name || '').trim();
-    const last = (member.last_name || '').trim();
-    if (first || last) {
-        return `${first[0] || ''}${last[0] || ''}`.toUpperCase();
-    }
-    return (member.name || '?')[0].toUpperCase();
+    return String(member.name || '?')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase() || '?';
 }
 
 function memberFullName(member) {
-    const firstName = (member.first_name || '').trim();
-    const lastName = (member.last_name || '').trim();
-
-    if (firstName || lastName) {
-        return `${firstName} ${lastName}`.trim();
-    }
-
     return member.name || '-';
 }
 

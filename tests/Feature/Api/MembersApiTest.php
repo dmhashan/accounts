@@ -47,8 +47,6 @@ class MembersApiTest extends ApiRouteTestCase
             $this->actingAsUser(['users.view']);
             $plan = $this->createPaymentPlan(['name' => 'Gold Plan']);
             $member = $this->createMember(null, [
-                'first_name' => 'Filter',
-                'last_name' => 'Match',
                 'name' => 'Filter Match',
                 'gender' => 'female',
                 'payment_plan_id' => $plan->id,
@@ -308,8 +306,7 @@ class MembersApiTest extends ApiRouteTestCase
         ]);
 
         $payload = $this->memberPayload([
-            'first_name' => 'Nimali',
-            'last_name' => 'Perera',
+            'name' => 'Nimali Perera',
             'email' => 'nimali@example.com',
             'gender' => 'female',
         ]);
@@ -331,8 +328,6 @@ class MembersApiTest extends ApiRouteTestCase
         ]);
 
         $member = $this->createMember(null, [
-            'first_name' => 'Asha',
-            'last_name' => 'Fernando',
             'name' => 'Asha Fernando',
             'date_of_birth' => '1994-06-09',
         ]);
@@ -355,8 +350,6 @@ class MembersApiTest extends ApiRouteTestCase
         ]);
 
         $member = $this->createMember(null, [
-            'first_name' => 'Kamal',
-            'last_name' => 'Silva',
             'name' => 'Kamal Silva',
             'date_of_birth' => '1990-01-01',
             'joined_date' => '2025-06-09',
@@ -394,8 +387,7 @@ class MembersApiTest extends ApiRouteTestCase
         ]);
 
         $payload = $this->memberPayload([
-            'first_name' => 'Updated',
-            'last_name' => 'Member',
+            'name' => 'Updated Member',
             'email' => 'member-update@example.com',
         ]);
 
@@ -407,8 +399,7 @@ class MembersApiTest extends ApiRouteTestCase
 
         $this->assertDatabaseHas('members', [
             'id' => $member->id,
-            'first_name' => 'Updated',
-            'last_name' => 'Member',
+            'name' => 'Updated Member',
         ]);
     }
 
@@ -486,8 +477,7 @@ class MembersApiTest extends ApiRouteTestCase
         $plan = $this->createPaymentPlan();
 
         return array_merge([
-            'first_name' => 'John',
-            'last_name' => 'Doe',
+            'name' => 'John Doe',
             'gender' => 'male',
             'email' => 'member-' . Str::lower(Str::random(6)) . '@example.com',
             'phone_number' => '0712345678',

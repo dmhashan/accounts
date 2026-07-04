@@ -95,7 +95,7 @@ class FormBuilderService
     public function listSubmissions(int $tenantId, ?int $memberId = null, ?int $templateId = null): array
     {
         $query = FormSubmission::query()
-            ->with(['template:id,title', 'member:id,first_name,last_name,biometric_member_id', 'submitter:id,name'])
+            ->with(['template:id,title', 'member:id,name,biometric_member_id', 'submitter:id,name'])
             ->orderByDesc('created_at');
 
         if ($memberId) {
@@ -114,7 +114,7 @@ class FormBuilderService
     public function showSubmission(FormSubmission $submission, int $tenantId): array
     {
 
-        $submission->loadMissing(['template', 'member:id,first_name,last_name,biometric_member_id', 'submitter:id,name']);
+        $submission->loadMissing(['template', 'member:id,name,biometric_member_id', 'submitter:id,name']);
 
         return $this->serializeSubmission($submission, withResponses: true);
     }
@@ -201,7 +201,7 @@ class FormBuilderService
         int $tenantId,
         ?\App\Models\Tenant $tenant = null,
     ): array {
-        $memberName = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?? 'Member');
+        $memberName = trim((string) ($member->name ?? '')) ?: 'Member';
 
         // Resolve field labels for the submission language
         $resolvedFields = $this->resolveFieldsForLanguage(
@@ -393,7 +393,7 @@ class FormBuilderService
             'template' => $s->template ? ['id' => $s->template->id, 'title' => $s->template->title] : null,
             'member' => $s->member ? [
                 'id' => $s->member->id,
-                'name' => trim(($s->member->first_name ?? '') . ' ' . ($s->member->last_name ?? '')) ?: ($s->member->name ?? ''),
+                'name' => trim((string) ($s->member->name ?? '')),
                 'member_id' => $s->member->biometric_member_id ?? '',
             ] : null,
             'submitted_by' => $s->submitter ? ['id' => $s->submitter->id, 'name' => $s->submitter->name] : null,

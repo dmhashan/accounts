@@ -392,7 +392,7 @@ class AutomatedMemberNotificationService
 
     private function memberName(Member $member): string
     {
-        return trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?: 'Member');
+        return trim((string) ($member->name ?? '')) ?: 'Member';
     }
 
     private function tenantName(Tenant $tenant): string

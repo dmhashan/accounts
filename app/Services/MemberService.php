@@ -67,7 +67,6 @@ class MemberService
 
         return [
             'data' => collect($members->items())->map(function (Member $member) use ($today) {
-                [$firstName, $lastName] = $this->resolveFirstAndLastName($member);
                 $membershipExpiry = $this->dateOrNull($member->membership_expiry_date);
                 $lastAttendance = $this->dateOrNull($member->last_attendance_date);
                 $daysUntilPaymentExpiry = $membershipExpiry === null ? null : (int) $today->diffInDays($membershipExpiry, false);
@@ -81,8 +80,6 @@ class MemberService
                     'id' => $member->id,
                     'biometric_member_id' => $member->biometric_member_id,
                     'name' => $member->name,
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
                     'email' => $member->email,
                     'gender' => $member->gender,
                     'phone_number' => $member->phone_number,
@@ -178,22 +175,17 @@ class MemberService
             fputcsv($output, $headers);
 
             foreach (Member::query()->orderBy('created_at', 'desc')->cursor() as $member) {
-                [$firstName, $lastName] = $this->resolveFirstAndLastName($member);
-
-                $fileAs = trim($firstName . ' ' . $lastName);
-
-                if ($fileAs === '') {
-                    $fileAs = trim((string) ($member->name ?? ''));
-                }
+                $fileAs = trim((string) ($member->name ?? '')) ?: 'Member';
 
                 $genderLabel = $member->gender === 'female' ? 'Female' : 'Male';
                 $namePrefix = trim($tenantName . ' ' . $genderLabel . ' ' . (string) ($member->biometric_member_id ?? ''));
+                $contactName = trim($namePrefix . ' ' . $fileAs);
 
                 fputcsv($output, [
                     '',
-                    $namePrefix,
-                    $firstName,
-                    $lastName,
+                    $contactName,
+                    '',
+                    '',
                     '',
                     '',
                     '',
@@ -237,14 +229,13 @@ class MemberService
 
     public function storeTemp(Tenant $tenant, array $validated): Member
     {
-        $firstName = trim($validated['first_name'] ?? '');
-        $lastName = trim($validated['last_name'] ?? '');
-
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
-        $validated['name'] = trim("$firstName $lastName") ?: $firstName ?: $lastName;
+        $validated['name'] = trim((string) ($validated['name'] ?? ''));
         $validated['is_active'] = true;
         $validated['is_verified'] = false;
         $validated['is_temp'] = true;
+
+        unset($validated['first_name'], $validated['last_name']);
 
         return Member::create($validated);
     }
@@ -255,9 +246,10 @@ class MemberService
             ? trim((string) $validated['email'])
             : null;
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
-        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
+        $validated['name'] = trim((string) $validated['name']);
         $validated['is_active'] = true;
         $validated['is_verified'] = true;
+        unset($validated['first_name'], $validated['last_name']);
 
         if (!empty($validated['payment_plan_id'])) {
             $plan = PaymentPlan::find($validated['payment_plan_id']);
@@ -281,14 +273,10 @@ class MemberService
         $member->loadMissing(['campaign:id,title,slug,status', 'paymentPlan:id,name']);
         $this->syncMissingProfilePhotoFromBiometric($member);
 
-        [$firstName, $lastName] = $this->resolveFirstAndLastName($member);
-
         return [
             'id' => $member->id,
             'biometric_member_id' => $member->biometric_member_id,
             'name' => $member->name,
-            'first_name' => $firstName,
-            'last_name' => $lastName,
             'gender' => $member->gender,
             'email' => $member->email,
             'phone_number' => $member->phone_number,
@@ -353,7 +341,8 @@ class MemberService
         $validated['email'] = filled($validated['email'] ?? null)
             ? trim((string) $validated['email'])
             : null;
-        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
+        $validated['name'] = trim((string) $validated['name']);
+        unset($validated['first_name'], $validated['last_name']);
 
         if (!empty($validated['payment_plan_id'])) {
             $plan = PaymentPlan::find($validated['payment_plan_id']);
@@ -452,23 +441,6 @@ class MemberService
     public function ensureTenantMember(Member $member, int $tenantId): void
     {
         //
-    }
-
-    private function resolveFirstAndLastName(Member $member): array
-    {
-        $firstName = trim((string) ($member->first_name ?? ''));
-        $lastName = trim((string) ($member->last_name ?? ''));
-
-        if ($firstName !== '' && $lastName !== '') {
-            return [$firstName, $lastName];
-        }
-
-        $parts = preg_split('/\s+/', trim((string) ($member->name ?? '')), 2);
-
-        return [
-            $firstName !== '' ? $firstName : ($parts[0] ?? ''),
-            $lastName !== '' ? $lastName : ($parts[1] ?? ''),
-        ];
     }
 
     /**

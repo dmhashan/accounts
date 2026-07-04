@@ -10,18 +10,10 @@
       <dl class="divide-y divide-secondary-100 dark:divide-secondary-800">
         <div class="flex items-center justify-between px-5 py-3">
           <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
-            First Name
+            Full Name
           </dt>
           <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
-            {{ displayValue(member.first_name) }}
-          </dd>
-        </div>
-        <div class="flex items-center justify-between px-5 py-3">
-          <dt class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0 w-28">
-            Last Name
-          </dt>
-          <dd class="text-sm font-medium text-secondary-900 dark:text-white text-right">
-            {{ displayValue(member.last_name) }}
+            {{ displayValue(member.name) }}
           </dd>
         </div>
         <div class="flex items-center justify-between px-5 py-3">

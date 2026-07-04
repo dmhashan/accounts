@@ -545,7 +545,7 @@ class WorkoutsApiTest extends ApiRouteTestCase
     public function testWorkoutAssignmentMembersRouteReturnsSearchableList(): void
     {
         $this->actingAsUser(['workouts.manage']);
-        $this->createMember(null, ['first_name' => 'Assignable', 'last_name' => 'Member', 'name' => 'Assignable Member']);
+        $this->createMember(null, ['name' => 'Assignable Member']);
 
         $this->getJson('/api/workout-program-assignment-members')
             ->assertOk()

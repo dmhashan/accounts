@@ -17,7 +17,7 @@ class PaymentSettlementService
     {
         $member = $payment->member;
         $memberName = $member
-            ? trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?: 'Member')
+            ? trim((string) ($member->name ?? '')) ?: 'Member'
             : 'Member';
 
         return $this->syncForSource(
@@ -275,7 +275,7 @@ class PaymentSettlementService
             : collect();
         $payments = $paymentIds->isNotEmpty()
             ? MemberPayment::whereIn('id', $paymentIds)
-                ->with('member:id,first_name,last_name,name')
+                ->with('member:id,name')
                 ->get(['id', 'member_id', 'reference_number'])
                 ->keyBy('id')
             : collect();
@@ -304,7 +304,7 @@ class PaymentSettlementService
 
             if ($payment?->member) {
                 $m = $payment->member;
-                $customer = trim(($m->first_name ?? '') . ' ' . ($m->last_name ?? '')) ?: ($m->name ?? null);
+                $customer = trim((string) ($m->name ?? '')) ?: null;
             }
         }
 

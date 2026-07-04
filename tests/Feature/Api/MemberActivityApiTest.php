@@ -36,7 +36,7 @@ class MemberActivityApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonPath('total', 1)
             ->assertJsonPath('data.0.id', $matching->id)
-            ->assertJsonPath('data.0.member_name', $member->first_name . ' ' . $member->last_name);
+            ->assertJsonPath('data.0.member_name', $member->name);
     }
 
     public function testActivityExportContainsFilteredCurrentTenantRows(): void

@@ -117,8 +117,7 @@ class LegacySyncCommandsTest extends ApiRouteTestCase
 
         $this->assertSame(0, $exitCode);
         $member = Member::where('email', 'legacy.member@example.com')->firstOrFail();
-        $this->assertSame('Legacy', $member->first_name);
-        $this->assertSame('Member', $member->last_name);
+        $this->assertSame('Legacy Member', $member->name);
         $this->assertSame('female', $member->gender);
         $this->assertSame('77', $member->biometric_member_id);
         $plan = PaymentPlan::findOrFail($member->payment_plan_id);

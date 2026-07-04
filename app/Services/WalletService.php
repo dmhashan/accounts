@@ -80,7 +80,7 @@ class WalletService
                 'amount' => (float) $validated['amount'],
                 'transaction_date' => $validated['topup_date'],
                 'reference_number' => $topup->reference_number,
-                'notes' => 'Wallet top-up for ' . trim(($lockedMember->first_name ?? '') . ' ' . ($lockedMember->last_name ?? '')) ?: $lockedMember->name,
+                'notes' => 'Wallet top-up for ' . (trim((string) ($lockedMember->name ?? '')) ?: 'Member'),
             ]);
 
             $this->auditService->log($tenantId, 'wallet_topup', $topup, [], [
@@ -181,11 +181,11 @@ class WalletService
     public function show(WalletTopup $topup, int $tenantId): array
     {
 
-        $topup->load(['member:id,first_name,last_name,name,biometric_member_id,email,phone_number', 'account:id,name', 'createdBy:id,name']);
+        $topup->load(['member:id,name,biometric_member_id,email,phone_number', 'account:id,name', 'createdBy:id,name']);
 
         $member = $topup->member;
         $memberName = $member
-            ? (trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: $member->name)
+            ? (trim((string) ($member->name ?? '')) ?: 'Member')
             : null;
 
         return [

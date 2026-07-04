@@ -34,7 +34,7 @@
                                     <option value="">Walk-in (optional)</option>
                                     @foreach($members as $member)
                                         <option value="{{ $member->id }}" {{ old('customer_name') == $member->id ? 'selected' : '' }}>
-                                            {{ $member->first_name }} {{ $member->last_name }} ({{ $member->phone_number }})
+                                            {{ $member->name }} ({{ $member->phone_number }})
                                         </option>
                                     @endforeach
                                 </select>

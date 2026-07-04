@@ -373,7 +373,7 @@ class PaymentsApiTest extends ApiRouteTestCase
             'notifications.inapp.enabled' => '1',
         ]);
 
-        $member = $this->createMember(null, ['first_name' => 'Kamal', 'last_name' => 'Silva', 'name' => 'Kamal Silva']);
+        $member = $this->createMember(null, ['name' => 'Kamal Silva']);
         $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 2500]);
         $account = $this->createAccount(['name' => 'Main Cash']);
 
@@ -390,7 +390,7 @@ class PaymentsApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('member_notifications', [
             'member_id' => $member->id,
             'type' => 'membership_payment_received',
-            'body' => 'Payment received! Kamal Silva paid 2,500.00 at Test Gym on 2026-06-08 via Main Cash',
+            'body' => 'Payment received! Kamal Silva paid 2,500.00 at Test Gym on 2026-06-08 via Main Cash. Membership valid until 2026-07-07',
         ]);
     }
 
@@ -400,7 +400,7 @@ class PaymentsApiTest extends ApiRouteTestCase
             'notifications.inapp.enabled' => '1',
         ]);
 
-        $member = $this->createMember(null, ['first_name' => 'Asha', 'last_name' => 'Fernando', 'name' => 'Asha Fernando']);
+        $member = $this->createMember(null, ['name' => 'Asha Fernando']);
         $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month']);
         $payment = MemberPayment::create([
             'member_id' => $member->id,

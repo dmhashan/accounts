@@ -87,7 +87,7 @@ class RealProfitReportService
         $rows = MemberPayment::query()
             ->whereBetween('payment_date', [$start->toDateString(), $end->toDateString()])
             ->with([
-                'member:id,first_name,last_name,name,phone_number',
+                'member:id,name,phone_number',
                 'account:id,name',
                 'membership.plan:id,name',
             ])
@@ -334,9 +334,7 @@ class RealProfitReportService
             return 'Unknown';
         }
 
-        $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
-
-        return $name !== '' ? $name : ($member->name ?: 'Member');
+        return trim((string) ($member->name ?? '')) ?: 'Member';
     }
 
     private function saleCustomerName(SaleItem $item): string

@@ -15,8 +15,6 @@ class EmployeePaySheetsApiTest extends ApiRouteTestCase
 
         $account = $this->createCompanyAccount(['name' => 'Payroll Cash']);
         $employee = Employee::create([
-            'first_name' => 'Nimal',
-            'last_name' => 'Perera',
             'name' => 'Nimal Perera',
             'status' => 'active',
             'joined_date' => '2026-01-01',

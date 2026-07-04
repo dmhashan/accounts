@@ -188,9 +188,6 @@ defineEmits(['toggle-status', 'toggle-verification', 'remove', 'open-topup', 'op
 const { capitalize, displayValue, formatDate, formatMoney } = useMemberFormatters();
 
 const fullName = computed(() => {
-    const firstName = (props.member.first_name || '').trim();
-    const lastName = (props.member.last_name || '').trim();
-    if (firstName || lastName) return `${firstName} ${lastName}`.trim();
     return props.member.name || 'Member';
 });
 

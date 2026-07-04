@@ -297,12 +297,12 @@ class SyncPaymentsCommand extends Command
         MemberPayment::query()
             ->whereNotNull('legacy_uuid')
             ->whereNotNull('company_account_id')
-            ->with('member:id,first_name,last_name,name')
+            ->with('member:id,name')
             ->chunkById(200, function ($payments) use (&$txSynced) {
                 foreach ($payments as $payment) {
                     $member = $payment->member;
                     $memberName = $member
-                        ? trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?: 'Member')
+                        ? trim((string) ($member->name ?? '')) ?: 'Member'
                         : 'Member';
 
                     CompanyAccountTransaction::updateOrCreate(

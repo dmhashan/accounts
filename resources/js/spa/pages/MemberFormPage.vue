@@ -14,11 +14,8 @@
             Personal Details
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AppFormField label="First Name" required>
-              <AppFormInput v-model="form.first_name" required />
-            </AppFormField>
-            <AppFormField label="Last Name" required>
-              <AppFormInput v-model="form.last_name" required />
+            <AppFormField label="Full Name" required>
+              <AppFormInput v-model="form.name" required />
             </AppFormField>
             <AppFormField label="NIC" optional>
               <AppFormInput v-model="form.nic" placeholder="Old (9+V/X) or New (12 digits)" />
@@ -207,8 +204,7 @@ const paymentPlans = ref([]);
 const today = new Date().toISOString().slice(0, 10);
 
 const form = ref({
-    first_name: '',
-    last_name: '',
+    name: '',
     gender: '',
     email: '',
     phone_number: '',

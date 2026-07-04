@@ -21,9 +21,8 @@ class PaymentService
     public function meta(int $tenantId): array
     {
         $members = Member::query()
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get(['id', 'first_name', 'last_name', 'name', 'phone_number']);
+            ->orderBy('name')
+            ->get(['id', 'name', 'phone_number']);
 
         $accounts = CompanyAccount::query()
             ->orderBy('name')
@@ -39,11 +38,7 @@ class PaymentService
 
         return [
             'members' => $members->map(function (Member $member) {
-                $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
-
-                if ($name === '') {
-                    $name = $member->name ?: 'Member';
-                }
+                $name = trim((string) ($member->name ?? '')) ?: 'Member';
                 $phone = $member->phone_number ?: 'N/A';
 
                 return [
@@ -78,11 +73,7 @@ class PaymentService
 
     public function memberPaymentInfo(Member $member, int $tenantId): array
     {
-        $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
-
-        if ($name === '') {
-            $name = $member->name ?: 'Member';
-        }
+        $name = trim((string) ($member->name ?? '')) ?: 'Member';
 
         // Resolve the member's default plan
         $currentPlan = null;
@@ -174,7 +165,7 @@ class PaymentService
     {
         $payments = MemberPayment::query()
             ->with([
-                'member:id,first_name,last_name,name,phone_number',
+                'member:id,name,phone_number',
                 'account:id,name',
                 'paymentMethod:id,name',
                 'settlement',
@@ -199,7 +190,7 @@ class PaymentService
     {
         $payment = MemberPayment::query()
             ->with([
-                'member:id,first_name,last_name,name,phone_number',
+                'member:id,name,phone_number',
                 'account:id,name',
                 'paymentMethod:id,name',
                 'settlement',
@@ -419,7 +410,7 @@ class PaymentService
     {
         $member = $payment->member;
         $memberName = $member
-            ? trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?: 'Member')
+            ? trim((string) ($member->name ?? '')) ?: 'Member'
             : 'Unknown';
 
         return [

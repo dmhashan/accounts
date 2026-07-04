@@ -104,7 +104,6 @@ class SendMemberNotificationJob implements ShouldQueue
 
     private function memberName(Member $member): string
     {
-        return trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''))
-            ?: ($member->name ?? 'Member');
+        return trim((string) ($member->name ?? '')) ?: 'Member';
     }
 }

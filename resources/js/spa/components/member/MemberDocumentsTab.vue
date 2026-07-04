@@ -288,7 +288,7 @@
               {{ formFillStep === 'pick' ? 'Select Form Template' : (formFillTemplate?.title || 'Fill Form') }}
             </h3>
             <p v-if="formFillStep === 'fill'" class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
-              For: <strong>{{ member?.first_name }} {{ member?.last_name }}</strong>
+              For: <strong>{{ member?.name }}</strong>
             </p>
           </div>
           <button type="button" class="text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 mt-0.5" @click="closeFormFillModal">

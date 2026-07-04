@@ -32,6 +32,8 @@ class EmployeeApiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->normalizeNameInput($request);
+
         $employee = $this->employeeService->store($request->validate($this->employeeRules()));
 
         return response()->json([
@@ -49,6 +51,8 @@ class EmployeeApiController extends Controller
 
     public function update(Request $request, Employee $employee): JsonResponse
     {
+        $this->normalizeNameInput($request);
+
         $this->employeeService->update($employee, $request->validate($this->employeeRules($employee)));
 
         return response()->json([
@@ -160,8 +164,7 @@ class EmployeeApiController extends Controller
 
         return [
             'employee_code' => ['nullable', 'string', 'max:50', 'alpha_dash', $employeeCode],
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['nullable', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:200'],
             'email' => ['nullable', 'email', 'max:255', $email],
             'phone' => ['nullable', 'string', 'max:30'],
             'nic' => ['nullable', 'string', 'max:50'],
@@ -183,5 +186,22 @@ class EmployeeApiController extends Controller
             'half_paid_leave_days_per_month' => ['nullable', 'numeric', 'min:0', 'max:31'],
             'pay_sheet_notes' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    private function normalizeNameInput(Request $request): void
+    {
+        if (filled($request->input('name'))) {
+            $request->merge(['name' => trim((string) $request->input('name'))]);
+
+            return;
+        }
+
+        $name = trim(
+            trim((string) $request->input('first_name', '')) . ' ' . trim((string) $request->input('last_name', '')),
+        );
+
+        if ($name !== '') {
+            $request->merge(['name' => $name]);
+        }
     }
 }

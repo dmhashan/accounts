@@ -60,7 +60,7 @@ class VoucherApiController extends Controller
         /** @var Tenant $tenant */
         $tenant = app('tenant');
 
-        $voucher->load(['createdBy:id,name', 'redemption.member:id,first_name,last_name,name,biometric_member_id', 'redemption.redeemedBy:id,name']);
+        $voucher->load(['createdBy:id,name', 'redemption.member:id,name,biometric_member_id', 'redemption.redeemedBy:id,name']);
 
         return response()->json([
             'id' => $voucher->id,
@@ -76,7 +76,7 @@ class VoucherApiController extends Controller
                 'id' => $voucher->redemption->id,
                 'member' => $voucher->redemption->member ? [
                     'id' => $voucher->redemption->member->id,
-                    'name' => trim(($voucher->redemption->member->first_name ?? '') . ' ' . ($voucher->redemption->member->last_name ?? '')) ?: $voucher->redemption->member->name,
+                    'name' => trim((string) ($voucher->redemption->member->name ?? '')) ?: 'Member',
                     'member_id' => $voucher->redemption->member->biometric_member_id,
                 ] : null,
                 'notes' => $voucher->redemption->notes,

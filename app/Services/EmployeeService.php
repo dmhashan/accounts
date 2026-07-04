@@ -344,8 +344,6 @@ class EmployeeService
         return [
             'id' => $employee->id,
             'employee_code' => $employee->employee_code,
-            'first_name' => $employee->first_name,
-            'last_name' => $employee->last_name,
             'name' => $employee->name,
             'email' => $employee->email,
             'phone' => $employee->phone,
@@ -385,14 +383,11 @@ class EmployeeService
 
     private function normalizeEmployeePayload(array $validated, ?Employee $employee = null): array
     {
-        $firstName = trim((string) $validated['first_name']);
-        $lastName = filled($validated['last_name'] ?? null) ? trim((string) $validated['last_name']) : null;
+        $name = trim((string) $validated['name']);
 
         return [
             'employee_code' => filled($validated['employee_code'] ?? null) ? trim((string) $validated['employee_code']) : ($employee?->employee_code),
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'name' => trim($firstName . ' ' . ($lastName ?? '')),
+            'name' => $name,
             'email' => filled($validated['email'] ?? null) ? trim((string) $validated['email']) : null,
             'phone' => filled($validated['phone'] ?? null) ? trim((string) $validated['phone']) : null,
             'nic' => filled($validated['nic'] ?? null) ? trim((string) $validated['nic']) : null,

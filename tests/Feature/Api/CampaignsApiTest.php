@@ -62,7 +62,7 @@ class CampaignsApiTest extends ApiRouteTestCase
 
         $this->post('/api/public/campaigns/' . $campaign->slug . '/register', [
             'fields' => [
-                'first_name' => 'Nimali',
+                'name' => 'Nimali Perera',
                 'phone_number' => '0771234567',
                 'email' => 'nimali@example.com',
             ],
@@ -100,7 +100,7 @@ class CampaignsApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'Sorry, this campaign has finished or is closed.');
 
         $this->postJson('/api/public/campaigns/' . $campaign->slug . '/register', [
-            'fields' => ['first_name' => 'Closed', 'phone_number' => '0770000000'],
+            'fields' => ['name' => 'Closed Member', 'phone_number' => '0770000000'],
         ])->assertUnprocessable()
             ->assertJsonPath('message', 'Sorry, this campaign has finished or is closed.');
     }
@@ -136,10 +136,10 @@ class CampaignsApiTest extends ApiRouteTestCase
                 $row['editable'] = false;
                 $row['constant_value'] = null;
 
-                if (in_array($row['field'], ['first_name', 'phone_number', 'email'], true)) {
+                if (in_array($row['field'], ['name', 'phone_number', 'email'], true)) {
                     $row['visible'] = true;
                     $row['editable'] = true;
-                    $row['required'] = in_array($row['field'], ['first_name', 'phone_number'], true);
+                    $row['required'] = in_array($row['field'], ['name', 'phone_number'], true);
                 }
 
                 if ($row['field'] === 'gender') {

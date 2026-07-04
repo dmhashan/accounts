@@ -13,8 +13,6 @@ class Member extends Model
         'campaign_id',
         'registration_source',
         'biometric_member_id',
-        'first_name',
-        'last_name',
         'profile_photo_path',
         'name',
         'gender',

@@ -59,7 +59,7 @@ class SendBulkNotificationJob implements ShouldQueue
 
         if ($sendEmail || $sendInApp) {
             $notification->recipients()
-                ->with('member:id,first_name,last_name,name,email,profile_photo_path')
+                ->with('member:id,name,email,profile_photo_path')
                 ->orderBy('id')
                 ->chunkById(200, function ($recipients) use ($notification, $tenantId, $tenantMail, $tenantBranding, $sendEmail, $sendInApp, $now): void {
                     $inAppInserts = [];
@@ -113,8 +113,7 @@ class SendBulkNotificationJob implements ShouldQueue
 
     private function memberName(Member $member): string
     {
-        return trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''))
-            ?: ($member->name ?? 'Member');
+        return trim((string) ($member->name ?? '')) ?: 'Member';
     }
 
     private function sendSmsInChunks(BulkNotification $notification, SmsService $smsService, int $tenantId): void

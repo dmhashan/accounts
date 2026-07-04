@@ -157,7 +157,7 @@ class VoucherService
                 'member_id' => $lockedMember->id,
             ]);
 
-            return $redemption->load(['voucher', 'member:id,first_name,last_name,name,biometric_member_id', 'redeemedBy:id,name']);
+            return $redemption->load(['voucher', 'member:id,name,biometric_member_id', 'redeemedBy:id,name']);
         });
     }
 

@@ -123,16 +123,13 @@ abstract class ApiRouteTestCase extends TestCase
     protected function createMember(?User $user = null, array $attributes = []): Member
     {
         $sequence = $this->nextSequence();
-        $firstName = 'Member' . $sequence;
-        $lastName = 'Tester';
+        $name = 'Member' . $sequence . ' Tester';
         $plan = $this->createPaymentPlan();
 
         return Member::create(array_merge([
             'user_id' => $user?->id,
             'biometric_member_id' => Member::generateBiometricMemberId($this->tenant->id),
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'name' => $firstName . ' ' . $lastName,
+            'name' => $name,
             'gender' => 'male',
             'email' => 'member' . $sequence . '@example.com',
             'phone_number' => '07000000' . $sequence,

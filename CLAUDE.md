@@ -137,7 +137,7 @@ Roles are seeded globally (not per-tenant). Users are assigned one role. Permiss
 `users` — `tenant_id`, `role_id`, `name`, `email`, `username`, `password`, `social_provider`, `social_provider_id`, `avatar`
 
 ### Member (gym member / customer)
-`members` — `tenant_id`, `user_id` (nullable, links to User for self-service portal), `member_id` (format: `MEM-YYYY-XXXX`), `first_name`, `last_name`, `name`, `gender`, `email`, `phone_number`, `nic`, `date_of_birth`, `age`, `address`, `member_role`, `admission_fee`, `payment_plan`, `price`, `current_balance`, `joined_date`, `is_active`, `is_verified`, `is_temp`
+`members` — `tenant_id`, `user_id` (nullable, links to User for self-service portal), `member_id` (format: `MEM-YYYY-XXXX`), `name`, `gender`, `email`, `phone_number`, `nic`, `date_of_birth`, `age`, `address`, `member_role`, `admission_fee`, `payment_plan`, `price`, `current_balance`, `joined_date`, `is_active`, `is_verified`, `is_temp`
 
 `is_temp` = walk-in / temporary member (incomplete profile).
 

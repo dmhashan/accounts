@@ -19,11 +19,8 @@
               </option>
             </AppFormSelect>
           </AppFormField>
-          <AppFormField label="First name" required>
-            <AppFormInput v-model="form.first_name" type="text" required />
-          </AppFormField>
-          <AppFormField label="Last name" optional>
-            <AppFormInput v-model="form.last_name" type="text" />
+          <AppFormField label="Full name" required>
+            <AppFormInput v-model="form.name" type="text" required />
           </AppFormField>
           <AppFormField label="Email" optional>
             <AppFormInput v-model="form.email" type="email" />
@@ -139,8 +136,7 @@ const form = ref(defaultForm());
 function defaultForm() {
     return {
         employee_code: '',
-        first_name: '',
-        last_name: '',
+        name: '',
         email: '',
         phone: '',
         nic: '',

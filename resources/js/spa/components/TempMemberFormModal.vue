@@ -26,26 +26,16 @@
 
       <!-- Form -->
       <form class="px-5 py-4 space-y-4" @submit.prevent="submit">
-        <!-- Name row -->
-        <div class="grid grid-cols-2 gap-3">
-          <AppFormField label="First Name" :required="!form.last_name">
-            <AppFormInput
-              v-model.trim="form.first_name"
-              placeholder="e.g. John"
-              autocomplete="off"
-            />
-          </AppFormField>
-          <AppFormField label="Last Name" :required="!form.first_name">
-            <AppFormInput
-              v-model.trim="form.last_name"
-              placeholder="e.g. Silva"
-              autocomplete="off"
-            />
-          </AppFormField>
-        </div>
-        <p v-if="errors.first_name" class="text-xs text-red-600 dark:text-red-400 -mt-2">
-          {{ errors.first_name }}
-        </p>
+        <AppFormField label="Full Name" required>
+          <AppFormInput
+            v-model.trim="form.name"
+            placeholder="e.g. John Silva"
+            autocomplete="off"
+          />
+          <p v-if="errors.name" class="mt-1 text-xs text-red-600 dark:text-red-400">
+            {{ errors.name }}
+          </p>
+        </AppFormField>
 
         <!-- Phone -->
         <AppFormField label="Phone Number" optional>
@@ -111,8 +101,7 @@ import { apiRequest } from '../composables/useApiClient';
 const emit = defineEmits(['close', 'created']);
 
 const form = reactive({
-    first_name: '',
-    last_name: '',
+    name: '',
     phone_number: '',
     email: '',
 });
@@ -125,20 +114,17 @@ async function submit() {
     errors.value = {};
     generalError.value = '';
 
-    const firstName = form.first_name.trim();
-    const lastName = form.last_name.trim();
+    const name = form.name.trim();
 
-    if (!firstName && !lastName) {
-        errors.value.first_name = 'Either first name or last name is required.';
+    if (!name) {
+        errors.value.name = 'Full name is required.';
         return;
     }
 
     saving.value = true;
 
     try {
-        const payload = {};
-        if (firstName) payload.first_name = firstName;
-        if (lastName) payload.last_name = lastName;
+        const payload = { name };
         if (form.phone_number.trim()) payload.phone_number = form.phone_number.trim();
         if (form.email.trim()) payload.email = form.email.trim();
 

@@ -385,8 +385,6 @@ class SyncLegacyMembersCommand extends Command
             $name,
             $detail,
             $legacyId,
-            $firstName,
-            $lastName,
             $gender,
             $isActive,
             $planName,
@@ -401,8 +399,6 @@ class SyncLegacyMembersCommand extends Command
                 $memberStatus = 'created';
             }
 
-            $existingMember->first_name = $firstName;
-            $existingMember->last_name = $lastName;
             $existingMember->name = $name;
             $existingMember->gender = $gender;
             $existingMember->email = $email;

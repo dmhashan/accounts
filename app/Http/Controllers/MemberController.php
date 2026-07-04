@@ -29,10 +29,10 @@ class MemberController extends Controller
     public function store(Request $request)
     {
         $tenant = app('tenant');
+        $this->normalizeNameInput($request);
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
+            'name' => 'required|string|max:200',
             'gender' => 'required|in:male,female',
             'email' => [
                 'nullable',
@@ -57,9 +57,8 @@ class MemberController extends Controller
             ? trim((string) $validated['email'])
             : null;
 
-        // Generate member ID server-side and compose full name
         $validated['biometric_member_id'] = Member::generateBiometricMemberId($tenant->id);
-        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
+        $validated['name'] = trim((string) $validated['name']);
         $validated['is_active'] = true;
         $validated['is_verified'] = true; // Admin-created members are verified
 
@@ -78,18 +77,13 @@ class MemberController extends Controller
     {
         // Ensure member belongs to current tenant
 
-        if (!$member->first_name || !$member->last_name) {
-            $parts = preg_split('/\s+/', trim($member->name ?? ''), 2);
-            $member->first_name = $member->first_name ?: ($parts[0] ?? '');
-            $member->last_name = $member->last_name ?: ($parts[1] ?? '');
-        }
-
         return view('members.edit', compact('member'));
     }
 
     public function update(Request $request, Member $member)
     {
         // Ensure member belongs to current tenant
+        $this->normalizeNameInput($request);
 
         $memberEmailRule = Rule::unique('members')->ignore($member->id);
 
@@ -100,8 +94,7 @@ class MemberController extends Controller
         }
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
+            'name' => 'required|string|max:200',
             'gender' => 'required|in:male,female',
             'email' => [
                 'nullable',
@@ -126,7 +119,7 @@ class MemberController extends Controller
         $validated['email'] = filled($validated['email'] ?? null)
             ? trim((string) $validated['email'])
             : null;
-        $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
+        $validated['name'] = trim((string) $validated['name']);
 
         if ($request->hasFile('profile_photo')) {
             if ($member->profile_photo_path) {
@@ -211,5 +204,22 @@ class MemberController extends Controller
             ->firstOrFail();
 
         return view('members.profile', compact('member'));
+    }
+
+    private function normalizeNameInput(Request $request): void
+    {
+        if (filled($request->input('name'))) {
+            $request->merge(['name' => trim((string) $request->input('name'))]);
+
+            return;
+        }
+
+        $name = trim(
+            trim((string) $request->input('first_name', '')) . ' ' . trim((string) $request->input('last_name', '')),
+        );
+
+        if ($name !== '') {
+            $request->merge(['name' => $name]);
+        }
     }
 }

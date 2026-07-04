@@ -252,7 +252,7 @@ class EventService
                 'type' => 'credit',
                 'amount' => (float) $registration->total_fee,
                 'transaction_date' => now()->toDateString(),
-                'notes' => 'Event registration: ' . $registration->first_name . ' ' . $registration->last_name,
+                'notes' => 'Event registration: ' . (trim((string) ($registration->name ?? '')) ?: 'Guest'),
             ],
         );
 

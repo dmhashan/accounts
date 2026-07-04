@@ -15,16 +15,14 @@ class MemberActivityLogController extends Controller
     {
         $tenant = app('tenant');
 
-        $query = MemberActivityLog::with('member:id,first_name,last_name,name,biometric_member_id')
+        $query = MemberActivityLog::with('member:id,name,biometric_member_id')
             ->orderByDesc('created_at');
 
         // Filters
         if ($request->filled('member_search')) {
             $search = '%' . trim($request->member_search) . '%';
             $query->whereHas('member', fn ($q) => $q
-                ->where('first_name', 'like', $search)
-                ->orWhere('last_name', 'like', $search)
-                ->orWhere('name', 'like', $search)
+                ->where('name', 'like', $search)
                 ->orWhere('biometric_member_id', 'like', $search),
             );
         }
@@ -65,7 +63,7 @@ class MemberActivityLogController extends Controller
     {
         $tenant = app('tenant');
 
-        $query = MemberActivityLog::with('member:id,first_name,last_name,name,biometric_member_id')
+        $query = MemberActivityLog::with('member:id,name,biometric_member_id')
             ->orderByDesc('created_at');
 
         if ($request->filled('member_id')) {
@@ -108,7 +106,7 @@ class MemberActivityLogController extends Controller
             $query->chunk(200, function ($logs) use ($handle) {
                 foreach ($logs as $log) {
                     $memberName = $log->member
-                        ? trim(($log->member->first_name ?? '') . ' ' . ($log->member->last_name ?? '')) ?: ($log->member->name ?? '')
+                        ? trim((string) ($log->member->name ?? ''))
                         : '';
                     $resolution = ($log->screen_width && $log->screen_height)
                         ? "{$log->screen_width}x{$log->screen_height}"
@@ -140,7 +138,7 @@ class MemberActivityLogController extends Controller
     {
         $member = $log->member;
         $memberName = $member
-            ? trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? '')) ?: ($member->name ?? '')
+            ? trim((string) ($member->name ?? ''))
             : null;
 
         return [
