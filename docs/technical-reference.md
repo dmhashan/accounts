@@ -57,7 +57,7 @@ If a change also affects business process or architecture, update `docs/business
 | Mobile app start | `cd members_mobileapp && npm run start` |
 | Mobile app typecheck | `cd members_mobileapp && npm run typecheck` |
 
-`php artisan route:list --except-vendor` currently reports 314 non-vendor routes.
+`php artisan route:list --except-vendor` currently reports 319 non-vendor routes.
 
 ## Core Stack
 
@@ -190,7 +190,7 @@ Route source of truth is `routes/api.php` and the files under `routes/api/`.
 | Public profile | `/api/public/*` | OTP, profile, wallet, events, notifications |
 | Activity | `/api/member-activity/*` | Member activity log and export |
 | Reconciliation | `/api/reconciliation/*` | Config, open, close, comparison, history |
-| Reports | `/api/reports/*` | Overview, daily summary, real profit, PDFs, email |
+| Reports | `/api/reports/*` | Overview, daily summary, real profit, member analysis, PDFs, email |
 | Forms | `/api/forms/*` | Form templates, submissions, member submission |
 | Settings | `/api/settings/*` | General settings, configuration, legacy tools, biometric |
 | Biometric webhook | `/api/biometric/events/{tenantDomain}` | Device event push |
@@ -209,7 +209,7 @@ Route source of truth is `routes/api.php` and the files under `routes/api/`.
 | Employees | `EmployeeService`, `EmployeePaySheetService` |
 | Workouts | `WorkoutProgramService` |
 | Events and forms | `EventService`, `FormBuilderService` |
-| Reports | `DashboardOverviewService`, `DailySummaryService`, `DailySummaryReportService`, `RealProfitReportService` |
+| Reports | `DashboardOverviewService`, `DailySummaryService`, `DailySummaryReportService`, `RealProfitReportService`, `MemberAnalysisReportService` |
 | Notifications | `BulkNotificationService`, `AutomatedMemberNotificationService`, `SmsService` |
 | Biometric | `BiometricSyncService`, `BiometricQueueStatusService`, `HikvisionService` |
 | Media | `MediaStorageService` |
@@ -605,6 +605,22 @@ Important biometric configuration keys:
 1. Daily summaries aggregate account, income, expense, stock, and final snapshot data.
 2. Real profit reports include payments, sales margin, payment deductions, and expenses.
 3. Report PDFs can be downloaded and emailed through queued jobs.
+4. Member analysis reports use attendance, membership periods, payments, member wallet balance, outstanding sales, and biometric configuration to identify members for follow-up.
+5. Member analysis filter rules support plan, active status, verification status, temporary-member status, payment expiry date, expiry day count, last attendance date, attendance day count, attendance count, biometric status, and outstanding balance. Active, verified, and temporary filters apply directly to `members.is_active`, `members.is_verified`, and `members.is_temp`.
+6. Member analysis bulk status actions require report access plus member edit access. Selected report rows can be marked active or inactive through the bulk endpoint, which updates only `members.is_active`.
+7. Member analysis rows expose payment expiry date, signed days until or since payment expiry, last attendance date, days since last attendance, biometric configured status, biometric synced status, and biometric last synced timestamp.
+
+Member analysis API endpoints:
+
+| Route | Controller | Purpose |
+| --- | --- | --- |
+| `GET /api/reports/member-analysis/summary` | `Api\Reports\MemberAnalysisReportController@summary` | Summary cards for payment, attendance, and outstanding groups. |
+| `GET /api/reports/member-analysis/members` | `Api\Reports\MemberAnalysisReportController@members` | Paginated member rows with search, follow-up flags, sorting, expiry day counts, attendance day counts, and biometric sync status. |
+| `PATCH /api/reports/member-analysis/members/status` | `Api\Reports\MemberAnalysisReportController@updateMemberStatus` | Mark selected members active or inactive. Requires `reports.view` and `members.edit` or `users.edit`. |
+| `GET /api/reports/member-analysis/export` | `Api\Reports\MemberAnalysisReportController@export` | CSV export respecting active filters. |
+| `GET /api/reports/member-analysis/filters/options` | `Api\Reports\MemberAnalysisReportController@filterOptions` | Tenant-scoped filter option data, including payment plans. |
+
+The frontend page is `resources/js/spa/pages/reports/MemberAnalysisReport.vue` and is routed at `/reports/member-analysis`. Access uses the existing `reports.view` permission and app context flag `reportsMemberAnalysis`. The bulk status toolbar is shown only when the app context exposes `membersEdit`; selected count, action selector, and apply button remain inline. The Filter button opens a modal with multi-select rules plus date/number comparison rules, and predefined quick-filter chips sit below the search bar.
 
 ## Frontend Reference
 

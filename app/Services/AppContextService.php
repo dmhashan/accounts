@@ -80,6 +80,7 @@ class AppContextService
                 'reports' => $this->hasAnyPermission($user, ['reports.daily_summary', 'reports.real_profit', 'reports.view', 'reports.customers', 'reports.products']),
                 'reportsDailySummary' => $this->hasAnyPermission($user, ['reports.daily_summary', 'reports.view']),
                 'reportsRealProfit' => $this->hasAnyPermission($user, ['reports.real_profit', 'reports.view']),
+                'reportsMemberAnalysis' => $this->hasAnyPermission($user, ['reports.view']),
                 'reportsStatistics' => $this->hasAnyPermission($user, ['reports.view']),
                 'reportsCustomers' => $this->hasAnyPermission($user, ['reports.customers', 'reports.view']),
                 'reportsProducts' => $this->hasAnyPermission($user, ['reports.products', 'reports.view']),

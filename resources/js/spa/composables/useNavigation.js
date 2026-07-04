@@ -102,6 +102,7 @@ export function useNavigation() {
             const children = [];
             if (context.permissions?.reportsDailySummary) children.push({ label: 'Daily Summary', path: '/reports/daily-summary' });
             if (context.permissions?.reportsRealProfit) children.push({ label: 'Real Profit', path: '/reports/real-profit' });
+            if (context.permissions?.reportsMemberAnalysis) children.push({ label: 'Member Analysis', path: '/reports/member-analysis' });
             if (context.permissions?.reportsStatistics) children.push({ label: 'Statistics', path: '/reports' });
             if (context.permissions?.reportsCustomers) children.push({ label: 'Customers', path: '/reports/customers' });
             if (context.permissions?.reportsProducts) children.push({ label: 'Products', path: '/reports/products' });

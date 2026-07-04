@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ReportApiController;
+use App\Http\Controllers\Api\Reports\MemberAnalysisReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/reports/overview', [ReportApiController::class, 'overview'])->middleware(['auth', 'permission:reports.view,reports.daily_summary,reports.real_profit,reports.customers,reports.products']);
@@ -12,3 +13,13 @@ Route::post('/reports/daily-summary/generate', [ReportApiController::class, 'gen
 Route::get('/reports/daily-summary/history', [ReportApiController::class, 'dailySummaryHistory'])->middleware(['auth', 'permission:reports.daily_summary,reports.view']);
 Route::get('/reports/daily-summary/reports/{report}', [ReportApiController::class, 'showDailySummaryReport'])->middleware(['auth', 'permission:reports.daily_summary,reports.view']);
 Route::get('/reports/daily-summary/reports/{report}/pdf', [ReportApiController::class, 'downloadDailySummaryReport'])->middleware(['auth', 'permission:reports.daily_summary,reports.view']);
+
+Route::prefix('/reports/member-analysis')
+    ->middleware(['auth', 'permission:reports.view'])
+    ->group(function () {
+        Route::get('/summary', [MemberAnalysisReportController::class, 'summary']);
+        Route::get('/members', [MemberAnalysisReportController::class, 'members']);
+        Route::patch('/members/status', [MemberAnalysisReportController::class, 'updateMemberStatus'])->middleware('permission:members.edit,users.edit');
+        Route::get('/export', [MemberAnalysisReportController::class, 'export']);
+        Route::get('/filters/options', [MemberAnalysisReportController::class, 'filterOptions']);
+    });

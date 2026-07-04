@@ -32,7 +32,7 @@ The platform helps a fitness business run daily operations from one place:
 - Run events and registrations.
 - Send member notifications by available channels.
 - Track employee attendance, documents, and pay sheets.
-- Provide reports for daily operations and profit review.
+- Provide reports for daily operations, profit review, and member follow-up analysis.
 - Support member self-service through a portal and mobile app.
 - Integrate with biometric access devices for attendance and access control.
 
@@ -168,13 +168,18 @@ Business rules:
 
 ### Reports
 
-Reporting supports daily summaries, real profit review, statistics, customer reporting, and product reporting.
+Reporting supports daily summaries, real profit review, member analysis, statistics, customer reporting, and product reporting.
 
 Business rules:
 
 - Reports must match the tenant's financial and operational records.
 - Daily summary reports can be generated, downloaded, and emailed.
 - Profit reporting depends on revenue, payment deductions, inventory cost, and expense data.
+- Member analysis reporting identifies inactive members, payment-missed members, outstanding balances, paid members who are not attending, attendance after payment expiry, regular members, and new members.
+- Member analysis reporting shows payment expiry dates, days until or since expiry, last attendance dates, days since last attendance, and biometric sync status when a biometric device is configured.
+- Member analysis can be filtered by plan, active status, verification status, temporary-member status, payment expiry, expiry days, last attendance, attendance days, attendance count, biometric status, and outstanding balance.
+- Member analysis offers predefined quick filters for common follow-up groups such as active, inactive, biometric sync status, long-expired payments, and members absent for more than two months.
+- Staff with member edit rights can select members from the member analysis report and confirm bulk activation or deactivation.
 
 ### Member Portal and Mobile App
 

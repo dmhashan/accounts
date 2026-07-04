@@ -7,10 +7,14 @@ use App\Jobs\SendRealProfitReportJob;
 use App\Models\CompanyAccountTransaction;
 use App\Models\DailySummaryReport;
 use App\Models\Expense;
+use App\Models\Member;
+use App\Models\MemberAttendance;
 use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
 use App\Models\PaymentMethod;
 use App\Models\PaymentSettlement;
+use App\Models\Sale;
+use App\Services\TenantConfigurationService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -261,6 +265,339 @@ class ReportsApiTest extends ApiRouteTestCase
         );
     }
 
+    public function testMemberAnalysisFilterOptionsReturnsPaymentPlans(): void
+    {
+        $this->actingAsUser(['reports.view']);
+        $plan = $this->createPaymentPlan(['name' => 'Gold Plan']);
+
+        $this->getJson('/api/reports/member-analysis/filters/options')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $plan->id,
+                'name' => 'Gold Plan',
+            ]);
+    }
+
+    public function testMemberAnalysisFilterRulesUseDatabaseStatusColumns(): void
+    {
+        $this->actingAsUser(['reports.view']);
+
+        $match = $this->createMember(attributes: [
+            'name' => 'Status Match',
+            'is_active' => false,
+            'is_verified' => false,
+            'is_temp' => true,
+        ]);
+        $this->createMember(attributes: [
+            'name' => 'Active Verified Member',
+            'is_active' => true,
+            'is_verified' => true,
+            'is_temp' => false,
+        ]);
+        $this->createMember(attributes: [
+            'name' => 'Inactive Verified Member',
+            'is_active' => false,
+            'is_verified' => true,
+            'is_temp' => true,
+        ]);
+
+        $rules = urlencode(json_encode([
+            ['field' => 'active', 'operator' => 'eq', 'value' => ['inactive']],
+            ['field' => 'verified', 'operator' => 'eq', 'value' => ['unverified']],
+            ['field' => 'temp', 'operator' => 'eq', 'value' => ['temp']],
+        ], JSON_THROW_ON_ERROR));
+
+        $this->getJson('/api/reports/member-analysis/members?filter_rules=' . $rules)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.member_id', $match->id)
+            ->assertJsonPath('data.0.is_active', false)
+            ->assertJsonPath('data.0.is_verified', false)
+            ->assertJsonPath('data.0.is_temp', true);
+    }
+
+    public function testMemberAnalysisBulkStatusUpdateSetsSelectedMembersActiveOrInactive(): void
+    {
+        $this->actingAsUser(['reports.view', 'members.edit']);
+        $first = $this->createMember(attributes: ['is_active' => false]);
+        $second = $this->createMember(attributes: ['is_active' => false]);
+        $third = $this->createMember(attributes: ['is_active' => true]);
+
+        $this->patchJson('/api/reports/member-analysis/members/status', [
+            'member_ids' => [$first->id, $second->id],
+            'status' => 'active',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'active')
+            ->assertJsonPath('selected_count', 2)
+            ->assertJsonPath('updated_count', 2);
+
+        $this->assertTrue($first->fresh()->is_active);
+        $this->assertTrue($second->fresh()->is_active);
+        $this->assertTrue($third->fresh()->is_active);
+
+        $this->patchJson('/api/reports/member-analysis/members/status', [
+            'member_ids' => [$second->id, $third->id],
+            'status' => 'inactive',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'inactive')
+            ->assertJsonPath('selected_count', 2)
+            ->assertJsonPath('updated_count', 2);
+
+        $this->assertTrue($first->fresh()->is_active);
+        $this->assertFalse($second->fresh()->is_active);
+        $this->assertFalse($third->fresh()->is_active);
+    }
+
+    public function testMemberAnalysisBulkStatusUpdateRequiresMemberEditPermission(): void
+    {
+        $this->actingAsUser(['reports.view']);
+        $member = $this->createMember(attributes: ['is_active' => false]);
+
+        $this->patchJson('/api/reports/member-analysis/members/status', [
+            'member_ids' => [$member->id],
+            'status' => 'active',
+        ])->assertForbidden();
+
+        $this->assertFalse($member->fresh()->is_active);
+    }
+
+    public function testMemberAnalysisReturnsExpiryAttendanceAndBiometricSyncCalculations(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['reports.view']);
+            app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+                'biometric.enabled' => '1',
+                'biometric.device_maker' => 'hikvision',
+                'biometric.device_ip' => 'device.local',
+            ]);
+
+            $member = $this->createMember(attributes: [
+                'name' => 'Synced Member',
+                'joined_date' => '2026-01-01',
+                'biometric_last_synced_at' => '2026-07-03 09:30:00',
+            ]);
+            $this->createMembershipForReport($member, '2026-07-01', '2026-07-10');
+
+            MemberAttendance::create([
+                'member_id' => $member->id,
+                'attended_date' => '2026-07-01',
+            ]);
+
+            $this->getJson('/api/reports/member-analysis/members?search=Synced')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.member_id', $member->id)
+                ->assertJsonPath('data.0.membership_expiry_date', '2026-07-10')
+                ->assertJsonPath('data.0.days_until_payment_expiry', 6)
+                ->assertJsonPath('data.0.payment_expiry_days', 6)
+                ->assertJsonPath('data.0.last_attendance_date', '2026-07-01')
+                ->assertJsonPath('data.0.days_since_last_attendance', 3)
+                ->assertJsonPath('data.0.last_attendance_days', 3)
+                ->assertJsonPath('data.0.biometric_configured', true)
+                ->assertJsonPath('data.0.biometric_synced', true);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    public function testMemberAnalysisFilterRulesApplyPlanDateCountBiometricAndOutstandingFilters(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['reports.view']);
+            app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+                'biometric.enabled' => '1',
+                'biometric.device_maker' => 'hikvision',
+                'biometric.device_ip' => 'device.local',
+            ]);
+
+            $member = $this->createMember(attributes: [
+                'name' => 'Filter Match',
+                'joined_date' => '2026-01-01',
+                'biometric_last_synced_at' => null,
+            ]);
+            $this->createMembershipForReport($member, '2026-07-01', '2026-07-10');
+
+            MemberAttendance::create([
+                'member_id' => $member->id,
+                'attended_date' => '2026-07-01',
+            ]);
+
+            Sale::create([
+                'customer_name' => $member->name,
+                'customer_member_id' => $member->id,
+                'customer_type' => 'local',
+                'payment_method' => 'cash',
+                'total_amount' => 500,
+                'paid_amount' => 100,
+                'balance' => -400,
+                'is_paid' => false,
+            ]);
+
+            $this->createMember(attributes: [
+                'name' => 'Filter Miss',
+                'joined_date' => '2026-01-01',
+                'biometric_last_synced_at' => '2026-07-03 09:30:00',
+            ]);
+
+            $rules = urlencode(json_encode([
+                ['field' => 'plan', 'operator' => 'eq', 'value' => [(string) $member->payment_plan_id]],
+                ['field' => 'payment_expiry_date', 'operator' => 'gt', 'value' => '2026-07-05'],
+                ['field' => 'expiry_days', 'operator' => 'lte', 'value' => 6],
+                ['field' => 'last_attendance_date', 'operator' => 'lt', 'value' => '2026-07-02'],
+                ['field' => 'attendance_days', 'operator' => 'gt', 'value' => 2],
+                ['field' => 'attendance_count', 'operator' => 'gte', 'value' => 1],
+                ['field' => 'biometric', 'operator' => 'eq', 'value' => ['not_synced']],
+                ['field' => 'outstanding', 'operator' => 'gt', 'value' => 300],
+            ], JSON_THROW_ON_ERROR));
+
+            $this->getJson('/api/reports/member-analysis/members?filter_rules=' . $rules)
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.member_id', $member->id)
+                ->assertJsonPath('data.0.days_until_payment_expiry', 6)
+                ->assertJsonPath('data.0.days_since_last_attendance', 3)
+                ->assertJsonPath('data.0.attendance_count', 1)
+                ->assertJsonPath('data.0.biometric_synced', false)
+                ->assertJsonPath('data.0.total_outstanding_amount', 400);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    public function testMemberAnalysisClassifiesInactiveMembers(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['reports.view']);
+            $member = $this->createMember(attributes: [
+                'name' => 'Inactive Member',
+                'joined_date' => '2026-01-01',
+            ]);
+
+            MemberAttendance::create([
+                'member_id' => $member->id,
+                'attended_date' => '2026-05-01',
+            ]);
+
+            $this->getJson('/api/reports/member-analysis/members?inactive_only=1')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.member_id', $member->id)
+                ->assertJsonPath('data.0.flags.inactive', true)
+                ->assertJsonPath('data.0.attendance_status', 'inactive');
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    public function testMemberAnalysisClassifiesPaymentMissedWithGracePeriod(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['reports.view']);
+            $member = $this->createMember(attributes: ['joined_date' => '2026-01-01']);
+            $this->createMembershipForReport($member, '2026-05-26', '2026-06-26');
+
+            $this->getJson('/api/reports/member-analysis/members?payment_missed_only=1')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.member_id', $member->id)
+                ->assertJsonPath('data.0.membership_status', 'expired')
+                ->assertJsonPath('data.0.flags.payment_missed', true);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    public function testMemberAnalysisClassifiesOutstandingMembers(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['reports.view']);
+            $member = $this->createMember(attributes: ['joined_date' => '2026-01-01']);
+
+            Sale::create([
+                'customer_name' => $member->name,
+                'customer_member_id' => $member->id,
+                'customer_type' => 'local',
+                'payment_method' => 'cash',
+                'total_amount' => 500,
+                'paid_amount' => 100,
+                'balance' => -400,
+                'is_paid' => false,
+            ]);
+
+            $this->getJson('/api/reports/member-analysis/members?outstanding_only=1')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.member_id', $member->id)
+                ->assertJsonPath('data.0.flags.outstanding', true)
+                ->assertJsonPath('data.0.sales_outstanding_amount', 400)
+                ->assertJsonPath('data.0.total_outstanding_amount', 400);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    public function testMemberAnalysisClassifiesPaidButNotAttendingMembers(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['reports.view']);
+            $member = $this->createMember(attributes: ['joined_date' => '2026-01-01']);
+            $this->createMembershipForReport($member, '2026-07-01', '2026-07-31');
+
+            MemberAttendance::create([
+                'member_id' => $member->id,
+                'attended_date' => '2026-06-10',
+            ]);
+
+            $this->getJson('/api/reports/member-analysis/members?paid_not_attending_only=1')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.member_id', $member->id)
+                ->assertJsonPath('data.0.membership_status', 'valid')
+                ->assertJsonPath('data.0.flags.paid_not_attending', true);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    public function testMemberAnalysisClassifiesAttendingWithExpiredPaymentMembers(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-04 10:00:00'));
+
+        try {
+            $this->actingAsUser(['reports.view']);
+            $member = $this->createMember(attributes: ['joined_date' => '2026-01-01']);
+            $this->createMembershipForReport($member, '2026-06-01', '2026-06-30');
+
+            MemberAttendance::create([
+                'member_id' => $member->id,
+                'attended_date' => '2026-07-02',
+            ]);
+
+            $this->getJson('/api/reports/member-analysis/members?attending_with_expired_payment_only=1')
+                ->assertOk()
+                ->assertJsonPath('meta.total', 1)
+                ->assertJsonPath('data.0.member_id', $member->id)
+                ->assertJsonPath('data.0.membership_status', 'expired')
+                ->assertJsonPath('data.0.flags.attending_with_expired_payment', true);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
     private function createReport(int $tenantId, string $pdfPath): DailySummaryReport
     {
         return DailySummaryReport::create([
@@ -271,6 +608,24 @@ class ReportsApiTest extends ApiRouteTestCase
             'changes' => [],
             'totals' => [],
             'pdf_path' => $pdfPath,
+        ]);
+    }
+
+    private function createMembershipForReport(Member $member, string $startDate, string $endDate): PaymentMembership
+    {
+        $payment = MemberPayment::create([
+            'member_id' => $member->id,
+            'company_account_id' => null,
+            'payment_method' => 'cash',
+            'amount' => 1200,
+            'payment_date' => $startDate,
+        ]);
+
+        return PaymentMembership::create([
+            'member_payment_id' => $payment->id,
+            'payment_plan_id' => $member->payment_plan_id,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
         ]);
     }
 
