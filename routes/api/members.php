@@ -15,6 +15,7 @@ Route::middleware(['auth', 'permission:members.view,members.temp.view,users.view
     Route::get('/members/meta', [MemberApiController::class, 'meta']);
     Route::get('/members', [MemberApiController::class, 'index']);
     Route::get('/members/export/google-contacts', [MemberApiController::class, 'exportGoogleContacts']);
+    Route::get('/members/biometric-status', [BiometricApiController::class, 'memberStatus']);
     Route::get('/members/{member}', [MemberApiController::class, 'show']);
     Route::post('/members', [MemberApiController::class, 'store'])->middleware('permission:members.create,users.create');
     Route::post('/members/temp', [MemberApiController::class, 'storeTemp'])->middleware('permission:members.create,users.create');
@@ -71,13 +72,17 @@ Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
     Route::get('/members/{member}/wallet/transactions', [WalletApiController::class, 'transactions']);
 });
 
-// Biometric device sync per-member (requires member edit permission)
+// Biometric per-member read access (requires member view permission)
+Route::middleware(['auth', 'permission:members.view,members.temp.view,users.view'])->group(function () {
+    Route::get('/members/{member}/biometric-logs', [BiometricApiController::class, 'memberLogs']);
+    Route::get('/members/{member}/biometric-device-info', [BiometricApiController::class, 'memberDeviceInfo']);
+    Route::get('/members/{member}/biometric-face-image', [BiometricApiController::class, 'faceImage']);
+});
+
+// Biometric per-member actions (requires member edit permission)
 Route::middleware(['auth', 'permission:members.edit,users.edit'])->group(function () {
     Route::post('/members/{member}/biometric-assign-id', [BiometricApiController::class, 'assignMemberId']);
     Route::post('/members/{member}/biometric-sync', [BiometricApiController::class, 'syncMember']);
     Route::post('/members/{member}/biometric-setup-fingerprint', [BiometricApiController::class, 'setupFingerprint']);
-    Route::get('/members/{member}/biometric-logs', [BiometricApiController::class, 'memberLogs']);
-    Route::get('/members/{member}/biometric-device-info', [BiometricApiController::class, 'memberDeviceInfo']);
-    Route::get('/members/{member}/biometric-face-image', [BiometricApiController::class, 'faceImage']);
     Route::post('/members/{member}/biometric-upload-face-photo', [BiometricApiController::class, 'uploadFaceAsPhoto']);
 });

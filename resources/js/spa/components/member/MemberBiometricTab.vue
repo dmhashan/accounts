@@ -428,8 +428,8 @@ const { formatDate, formatDateTime } = useDateTimeFormat();
 // ── API calls ─────────────────────────────────────────────────────────────────
 async function checkBiometricEnabled() {
     try {
-        const res = await apiRequest('/api/settings/configuration');
-        biometricEnabled.value = (res.data?.['biometric.enabled'] ?? '0') === '1';
+        const res = await apiRequest('/api/members/biometric-status');
+        biometricEnabled.value = Boolean(res.data?.configured ?? false);
     } catch {
         biometricEnabled.value = false;
     }

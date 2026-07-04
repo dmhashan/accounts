@@ -24,6 +24,19 @@ class BiometricApiController extends Controller
     ) {}
 
     /**
+     * GET /api/members/biometric-status
+     */
+    public function memberStatus(): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        return response()->json([
+            'data' => $this->biometric->memberStatus((int) $tenant->id),
+        ]);
+    }
+
+    /**
      * POST /api/settings/biometric/test-connection
      */
     public function testConnection(): JsonResponse

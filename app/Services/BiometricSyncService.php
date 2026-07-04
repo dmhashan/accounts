@@ -83,6 +83,28 @@ class BiometricSyncService
         return $this->isEnabled($tenantId) && $this->cfg($tenantId, 'biometric.sync_members') === '1';
     }
 
+    /**
+     * Narrow member-facing status. This intentionally avoids returning device
+     * connection details or credentials from the settings configuration.
+     *
+     * @return array{enabled: bool, configured: bool, sync_members: bool, access_control: bool}
+     */
+    public function memberStatus(int $tenantId): array
+    {
+        $config = $this->config->all($tenantId);
+        $enabled = ($config['biometric.enabled'] ?? '0') === '1';
+        $configured = $enabled
+            && isset(self::DRIVERS[$config['biometric.device_maker'] ?? ''])
+            && filled($config['biometric.device_ip'] ?? '');
+
+        return [
+            'enabled' => $enabled,
+            'configured' => $configured,
+            'sync_members' => $enabled && ($config['biometric.sync_members'] ?? '0') === '1',
+            'access_control' => $enabled && ($config['biometric.access_control'] ?? '0') === '1',
+        ];
+    }
+
     public function isAccessControlEnabled(int $tenantId): bool
     {
         return $this->isEnabled($tenantId) && $this->cfg($tenantId, 'biometric.access_control') === '1';

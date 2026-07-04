@@ -4,12 +4,77 @@ namespace Tests\Feature\Api;
 
 use App\Models\BiometricAccessEvent;
 use App\Models\BiometricSyncLog;
+use App\Models\Member;
 use App\Models\Tenant;
 use App\Services\BiometricSyncService;
 use App\Services\TenantConfigurationService;
 
 class BiometricApiTest extends ApiRouteTestCase
 {
+    public function testMemberBiometricStatusIsAvailableWithoutSettingsPermission(): void
+    {
+        $this->actingAsUser(['members.view']);
+
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'biometric.enabled' => '1',
+            'biometric.device_maker' => 'hikvision',
+            'biometric.device_ip' => '192.0.2.10',
+            'biometric.sync_members' => '1',
+            'biometric.access_control' => '1',
+        ]);
+
+        $this->getJson('/api/members/biometric-status')
+            ->assertOk()
+            ->assertJsonPath('data.enabled', true)
+            ->assertJsonPath('data.configured', true)
+            ->assertJsonPath('data.sync_members', true)
+            ->assertJsonPath('data.access_control', true);
+
+        $this->getJson('/api/settings/configuration')->assertForbidden();
+    }
+
+    public function testMemberBiometricReadEndpointsUseMemberViewPermission(): void
+    {
+        $member = $this->createMember();
+
+        BiometricSyncLog::create([
+            'member_id' => $member->id,
+            'biometric_member_id' => $member->biometric_member_id,
+            'direction' => 'up',
+            'action' => 'manual_sync',
+            'status' => 'success',
+            'synced_at' => now(),
+            'created_at' => now(),
+        ]);
+
+        $this->actingAsUser(['members.view']);
+
+        $this->getJson("/api/members/{$member->id}/biometric-logs")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.action', 'manual_sync');
+
+        $this->postJson("/api/members/{$member->id}/biometric-sync")->assertForbidden();
+    }
+
+    public function testMemberBiometricActionsUseMemberEditPermissionWithoutSettingsPermission(): void
+    {
+        $this->actingAsUser(['members.view', 'members.edit']);
+        $member = $this->createMember();
+
+        $biometric = \Mockery::mock(BiometricSyncService::class);
+        $this->app->instance(BiometricSyncService::class, $biometric);
+
+        $biometric->shouldReceive('syncMember')
+            ->once()
+            ->withArgs(fn (Member $actual, string $action) => $actual->is($member) && $action === 'manual_sync')
+            ->andReturnNull();
+
+        $this->postJson("/api/members/{$member->id}/biometric-sync")
+            ->assertOk()
+            ->assertJsonPath('message', 'Member synced to biometric device.');
+    }
+
     public function testDeviceActionsAlwaysUseTheCurrentTenantAndClampDoorNumber(): void
     {
         $this->actingAsUser(['settings.manage']);
