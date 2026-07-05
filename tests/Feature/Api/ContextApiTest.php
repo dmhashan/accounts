@@ -36,6 +36,19 @@ class ContextApiTest extends ApiRouteTestCase
             ->assertJsonPath('permissions.stats', true);
     }
 
+    public function testAppContextShowsDashboardForWidgetPermission(): void
+    {
+        $this->actingAsUser(['dashboard.widget.cash_flow']);
+
+        $this->getJson('/api/app/context')
+            ->assertOk()
+            ->assertJsonPath('permissions.dashboard', true)
+            ->assertJsonPath('permissions.dashboardWidgetCashFlow', true)
+            ->assertJsonPath('permissions.dashboardWidgetAuthDetails', false)
+            ->assertJsonPath('permissions.dashboardWidgetStockAvailability', false)
+            ->assertJsonPath('permissions.stats', true);
+    }
+
     public function testAppContextUsesConfiguredMemberPortalUrl(): void
     {
         $this->actingAsUser();

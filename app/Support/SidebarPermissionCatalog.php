@@ -15,7 +15,10 @@ class SidebarPermissionCatalog
             [
                 'label' => 'Dashboard',
                 'permissions' => [
-                    ['name' => 'Dashboard', 'slug' => 'dashboard.view', 'description' => 'View the dashboard sidebar item and dashboard overview.'],
+                    ['name' => 'Dashboard', 'slug' => 'dashboard.view', 'description' => 'View the dashboard sidebar item and page shell.'],
+                    ['name' => 'Cash Flow Widget', 'slug' => 'dashboard.widget.cash_flow', 'description' => 'View the dashboard cash flow widget with totals and transaction details.'],
+                    ['name' => 'Auth Details Widget', 'slug' => 'dashboard.widget.auth_details', 'description' => 'View the dashboard biometric authentication details widget.'],
+                    ['name' => 'Stock Availability Widget', 'slug' => 'dashboard.widget.stock_availability', 'description' => 'View the dashboard stock availability widget with product variation details.'],
                 ],
             ],
             [
@@ -68,7 +71,8 @@ class SidebarPermissionCatalog
                 'permissions' => [
                     ['name' => 'Daily Summary', 'slug' => 'reports.daily_summary', 'description' => 'View, generate, download, and email daily summary reports.'],
                     ['name' => 'Real Profit', 'slug' => 'reports.real_profit', 'description' => 'View, download, and email real profit reports.'],
-                    ['name' => 'Statistics', 'slug' => 'reports.view', 'description' => 'View statistics reports.'],
+                    ['name' => 'Statistics', 'slug' => 'reports.statistics', 'description' => 'View statistics reports.'],
+                    ['name' => 'Member Analysis', 'slug' => 'reports.member_analysis', 'description' => 'View member analysis reports and exports.'],
                     ['name' => 'Customers', 'slug' => 'reports.customers', 'description' => 'View customer reports.'],
                     ['name' => 'Products', 'slug' => 'reports.products', 'description' => 'View product reports.'],
                 ],

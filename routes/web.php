@@ -89,7 +89,7 @@ Route::middleware([IdentifyTenant::class])->group(function () {
 
         // Reports route
         Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])
-            ->middleware('permission:reports.view,reports.daily_summary,reports.real_profit,reports.customers,reports.products')
+            ->middleware('permission:reports.view,reports.daily_summary,reports.real_profit,reports.statistics,reports.member_analysis,reports.customers,reports.products')
             ->name('reports.index');
 
         // Inventory routes

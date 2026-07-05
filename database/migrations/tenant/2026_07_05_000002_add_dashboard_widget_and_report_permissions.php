@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('permissions') || !Schema::hasTable('roles') || !Schema::hasTable('role_permission')) {
+        if (!Schema::hasTable('permissions')) {
             return;
         }
 
@@ -22,40 +22,46 @@ return new class extends Migration
                     'name' => $permission['name'],
                     'feature' => $permission['feature'],
                     'description' => $permission['description'],
-                    'updated_at' => $timestamp,
                     'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
                 ],
             );
         }
 
-        $this->copyExistingGrantsToSidebarChildren($timestamp);
-        $this->removePermissionsOutsideSidebarCatalog();
+        if (!Schema::hasTable('roles') || !Schema::hasTable('role_permission')) {
+            return;
+        }
+
+        $this->copyExistingGrants($timestamp);
+        $this->removeLegacyReportViewPermission();
         $this->grantAdminRolesAllPermissions($timestamp);
     }
 
     public function down(): void
     {
-        // This migration intentionally keeps permission rows in place on rollback.
-        // Removing live permission rows would detach role access unexpectedly.
+        // Keep permission rows and grants on rollback to avoid surprising live role changes.
     }
 
-    private function copyExistingGrantsToSidebarChildren(mixed $timestamp): void
+    private function copyExistingGrants(mixed $timestamp): void
     {
         $grantMap = [
-            'dashboard.view' => ['dashboard.widget.cash_flow', 'dashboard.widget.auth_details', 'dashboard.widget.stock_availability'],
-            'users.view' => ['members.view', 'members.temp.view'],
-            'users.create' => ['members.create'],
-            'users.edit' => ['members.edit'],
-            'users.delete' => ['members.delete'],
-            'inventory.manage' => ['inventory.audit', 'dashboard.widget.stock_availability'],
-            'inventory.stock' => ['dashboard.widget.stock_availability'],
-            'accounts.manage' => ['accounts.transfers', 'accounts.transactions', 'expenses.manage', 'dashboard.widget.cash_flow'],
+            'dashboard.view' => [
+                'dashboard.widget.cash_flow',
+                'dashboard.widget.auth_details',
+                'dashboard.widget.stock_availability',
+            ],
+            'accounts.manage' => ['dashboard.widget.cash_flow'],
             'accounts.transactions' => ['dashboard.widget.cash_flow'],
-            'sales.process' => ['sales.paid.view'],
-            'payments.manage' => ['payment_plans.manage', 'payment_methods.manage'],
-            'reports.view' => ['reports.daily_summary', 'reports.real_profit', 'reports.statistics', 'reports.member_analysis', 'reports.customers', 'reports.products'],
-            'settings.manage' => ['settings.configuration', 'settings.biometric', 'settings.legacy_tools'],
-            'workouts.manage' => ['workouts.exercises', 'workouts.assignments'],
+            'inventory.manage' => ['dashboard.widget.stock_availability'],
+            'inventory.stock' => ['dashboard.widget.stock_availability'],
+            'reports.view' => [
+                'reports.daily_summary',
+                'reports.real_profit',
+                'reports.statistics',
+                'reports.member_analysis',
+                'reports.customers',
+                'reports.products',
+            ],
         ];
 
         $permissionIds = DB::table('permissions')
@@ -101,24 +107,22 @@ return new class extends Migration
         }
     }
 
-    private function removePermissionsOutsideSidebarCatalog(): void
+    private function removeLegacyReportViewPermission(): void
     {
-        $catalogSlugs = SidebarPermissionCatalog::slugs();
+        $permissionId = DB::table('permissions')
+            ->where('slug', 'reports.view')
+            ->value('id');
 
-        $stalePermissionIds = DB::table('permissions')
-            ->whereNotIn('slug', $catalogSlugs)
-            ->pluck('id');
-
-        if ($stalePermissionIds->isEmpty()) {
+        if (!$permissionId) {
             return;
         }
 
         DB::table('role_permission')
-            ->whereIn('permission_id', $stalePermissionIds)
+            ->where('permission_id', $permissionId)
             ->delete();
 
         DB::table('permissions')
-            ->whereIn('id', $stalePermissionIds)
+            ->where('id', $permissionId)
             ->delete();
     }
 

@@ -13,9 +13,8 @@ class DashboardApiTest extends ApiRouteTestCase
     public function testDashboardOverviewRouteReturnsIncomeExpenseSummaryPayload(): void
     {
         $this->actingAsUser([
-            'accounts.manage',
-            'inventory.manage',
-            'sales.process',
+            'dashboard.widget.cash_flow',
+            'dashboard.widget.stock_availability',
         ]);
 
         $product = $this->createProduct(['name' => 'Protein Powder']);
@@ -71,9 +70,8 @@ class DashboardApiTest extends ApiRouteTestCase
     public function testDashboardOverviewRouteSupportsASharedDateRange(): void
     {
         $this->actingAsUser([
-            'accounts.manage',
-            'inventory.manage',
-            'sales.process',
+            'dashboard.widget.cash_flow',
+            'dashboard.widget.stock_availability',
         ]);
 
         $account = $this->createCompanyAccount();
@@ -111,7 +109,7 @@ class DashboardApiTest extends ApiRouteTestCase
 
     public function testDashboardAuthSummaryCountsMembersForSuccessAndPaymentExpiredBuckets(): void
     {
-        $this->actingAsUser(['dashboard.view']);
+        $this->actingAsUser(['dashboard.widget.auth_details']);
 
         $memberA = $this->createMember();
         $memberB = $this->createMember();
@@ -237,7 +235,7 @@ class DashboardApiTest extends ApiRouteTestCase
 
     public function testDashboardStatsRouteSupportsAccountTransactionsForCustomDateRange(): void
     {
-        $this->actingAsUser(['accounts.manage']);
+        $this->actingAsUser(['dashboard.widget.cash_flow']);
 
         $account = $this->createCompanyAccount();
         CompanyAccountTransaction::create([
@@ -269,6 +267,37 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('cash_flow_summary.expense', 175)
             ->assertJsonPath('cash_flow_summary.net_movement', 325)
             ->assertJsonCount(2, 'account_transaction_list');
+    }
+
+    public function testDashboardStatsRouteAllowsStatisticsReportPermissionWithoutSalesOrAccountsPermissions(): void
+    {
+        $this->actingAsUser(['reports.statistics']);
+
+        $product = $this->createProduct(['name' => 'Report Product']);
+        $variation = $this->createVariation($product, ['name' => 'Default']);
+        $sale = $this->createSaleWithItem(now()->startOfDay()->addHours(10), 'Report Customer', 320, 2, 160, $product->id, $variation->id);
+
+        $account = $this->createCompanyAccount();
+        CompanyAccountTransaction::create([
+            'company_account_id' => $account->id,
+            'model_name' => 'sale',
+            'reference_id' => $sale->id,
+            'type' => 'sale',
+            'amount' => 320,
+            'transaction_date' => now()->toDateString(),
+        ]);
+
+        $response = $this->getJson('/api/dashboard/stats?range_type=date&range_value=' . now()->toDateString());
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('can_view_sales', true)
+            ->assertJsonPath('can_view_accounts', true)
+            ->assertJsonPath('transactions', 1)
+            ->assertJsonPath('gross_amount', 320)
+            ->assertJsonPath('cash_flow_summary.income', 320)
+            ->assertJsonCount(1, 'transaction_list')
+            ->assertJsonCount(1, 'account_transaction_list');
     }
 
     private function createSaleWithItem(

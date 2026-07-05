@@ -33,6 +33,12 @@ class DashboardOverviewService
         'expense' => 'Expense',
     ];
 
+    private const CASH_FLOW_WIDGET_PERMISSION = 'dashboard.widget.cash_flow';
+
+    private const AUTH_DETAILS_WIDGET_PERMISSION = 'dashboard.widget.auth_details';
+
+    private const STOCK_AVAILABILITY_WIDGET_PERMISSION = 'dashboard.widget.stock_availability';
+
     public function __construct(private readonly BiometricSyncService $biometric) {}
 
     public function build(User $user, Tenant $tenant, ?string $startDate = null, ?string $endDate = null): array
@@ -66,7 +72,7 @@ class DashboardOverviewService
 
     private function buildTodayAuthSummary(User $user, int $tenantId, Carbon $startAt, Carbon $endAt, string $rangeLabel): array
     {
-        $canViewTodayAuth = $user->hasPermission('dashboard.view');
+        $canViewTodayAuth = $user->hasPermission(self::AUTH_DETAILS_WIDGET_PERMISSION);
 
         $summary = [
             'can_view' => $canViewTodayAuth,
@@ -191,8 +197,10 @@ class DashboardOverviewService
     ): array {
         [$normalizedRangeType, $normalizedRangeValue, $startAt, $endAt, $rangeLabel] = $this->resolveSalesRange($rangeType, $rangeValue, $startDate, $endDate);
 
-        $canViewSalesSummary = $user->hasPermission('sales.process');
-        $canViewAccountSummary = $user->hasPermission('accounts.manage');
+        $canViewStatisticsReport = $user->hasPermission('reports.statistics') || $user->hasPermission('reports.view');
+        $canViewCashFlowWidget = $user->hasPermission(self::CASH_FLOW_WIDGET_PERMISSION);
+        $canViewSalesSummary = $canViewStatisticsReport || $user->hasPermission('sales.process');
+        $canViewAccountSummary = $canViewStatisticsReport || $canViewCashFlowWidget || $user->hasPermission('accounts.manage');
 
         $stats = [
             'can_view' => $canViewSalesSummary || $canViewAccountSummary,
@@ -237,7 +245,7 @@ class DashboardOverviewService
 
     private function buildStockSummary(User $user, int $tenantId, string $today): array
     {
-        $canViewStockSummary = $user->hasPermission('inventory.manage');
+        $canViewStockSummary = $user->hasPermission(self::STOCK_AVAILABILITY_WIDGET_PERMISSION);
 
         $stockSummary = [
             'can_view' => $canViewStockSummary,
@@ -300,7 +308,7 @@ class DashboardOverviewService
         Carbon $endAt,
         string $rangeLabel,
     ): array {
-        $canViewAccounts = $user->hasPermission('accounts.manage');
+        $canViewAccounts = $user->hasPermission(self::CASH_FLOW_WIDGET_PERMISSION);
 
         $summary = [
             'can_view' => $canViewAccounts,

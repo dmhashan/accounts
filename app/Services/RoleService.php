@@ -80,7 +80,10 @@ class RoleService
             ->groupBy('feature');
 
         foreach ($extraPermissions as $feature => $permissions) {
-            $allPermissions[$feature] = $permissions->values()->all();
+            $items = $permissions->values()->all();
+            $allPermissions[$feature] = isset($allPermissions[$feature])
+                ? array_values(array_merge($allPermissions[$feature], $items))
+                : $items;
         }
 
         return [

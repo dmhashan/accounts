@@ -33,6 +33,14 @@ class ReportsApiTest extends ApiRouteTestCase
             ->assertJsonCount(4, 'features');
     }
 
+    public function testMemberAnalysisReportUsesSeparatePermission(): void
+    {
+        $this->actingAsUser(['reports.member_analysis']);
+
+        $this->getJson('/api/reports/member-analysis/summary')->assertOk();
+        $this->getJson('/api/reports/daily-summary')->assertForbidden();
+    }
+
     public function testDailySummaryContainsFinancialData(): void
     {
         $this->actingAsUser(['reports.view']);

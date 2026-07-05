@@ -40,7 +40,15 @@ class AppContextService
                 'member_portal_url' => $this->memberPortalUrl->urlForTenant($tenant),
             ],
             'permissions' => [
-                'dashboard' => $this->hasAnyPermission($user, ['dashboard.view']),
+                'dashboard' => $this->hasAnyPermission($user, [
+                    'dashboard.view',
+                    'dashboard.widget.cash_flow',
+                    'dashboard.widget.auth_details',
+                    'dashboard.widget.stock_availability',
+                ]),
+                'dashboardWidgetCashFlow' => $this->hasAnyPermission($user, ['dashboard.widget.cash_flow']),
+                'dashboardWidgetAuthDetails' => $this->hasAnyPermission($user, ['dashboard.widget.auth_details']),
+                'dashboardWidgetStockAvailability' => $this->hasAnyPermission($user, ['dashboard.widget.stock_availability']),
 
                 'members' => $this->hasAnyPermission($user, ['members.view', 'members.temp.view', 'users.view']),
                 'membersList' => $this->hasAnyPermission($user, ['members.view', 'users.view']),
@@ -67,7 +75,7 @@ class AppContextService
                 'salesCreate' => $this->hasAnyPermission($user, ['sales.create']),
                 'salesEdit' => $this->hasAnyPermission($user, ['sales.edit']),
                 'salesDelete' => $this->hasAnyPermission($user, ['sales.delete']),
-                'stats' => $this->hasAnyPermission($user, ['reports.view', 'sales.process', 'accounts.transactions', 'accounts.manage']),
+                'stats' => $this->hasAnyPermission($user, ['reports.statistics', 'reports.view', 'sales.process', 'accounts.transactions', 'accounts.manage', 'dashboard.widget.cash_flow']),
 
                 'payments' => $this->hasAnyPermission($user, ['payments.manage', 'payment_plans.manage', 'payment_methods.manage', 'member.payments.view']),
                 'paymentsManage' => $this->hasAnyPermission($user, ['payments.manage']),
@@ -77,11 +85,11 @@ class AppContextService
                 'employeesManage' => $this->hasAnyPermission($user, ['employees.manage']),
                 'employeePaySheetsManage' => $this->hasAnyPermission($user, ['employee_pay_sheets.manage']),
 
-                'reports' => $this->hasAnyPermission($user, ['reports.daily_summary', 'reports.real_profit', 'reports.view', 'reports.customers', 'reports.products']),
+                'reports' => $this->hasAnyPermission($user, ['reports.daily_summary', 'reports.real_profit', 'reports.statistics', 'reports.member_analysis', 'reports.customers', 'reports.products', 'reports.view']),
                 'reportsDailySummary' => $this->hasAnyPermission($user, ['reports.daily_summary', 'reports.view']),
                 'reportsRealProfit' => $this->hasAnyPermission($user, ['reports.real_profit', 'reports.view']),
-                'reportsMemberAnalysis' => $this->hasAnyPermission($user, ['reports.view']),
-                'reportsStatistics' => $this->hasAnyPermission($user, ['reports.view']),
+                'reportsMemberAnalysis' => $this->hasAnyPermission($user, ['reports.member_analysis', 'reports.view']),
+                'reportsStatistics' => $this->hasAnyPermission($user, ['reports.statistics', 'reports.view']),
                 'reportsCustomers' => $this->hasAnyPermission($user, ['reports.customers', 'reports.view']),
                 'reportsProducts' => $this->hasAnyPermission($user, ['reports.products', 'reports.view']),
 
