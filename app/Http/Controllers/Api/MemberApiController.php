@@ -34,7 +34,8 @@ class MemberApiController extends Controller
         $perPage = min((int) $request->integer('per_page', 15), 50);
         $search = trim((string) $request->query('search', ''));
         $isTemp = $request->has('is_temp') ? filter_var($request->query('is_temp'), FILTER_VALIDATE_BOOLEAN) : null;
-        $planId = $request->has('plan_id') ? (int) $request->query('plan_id') : null;
+        $rawPlanId = $request->query('plan_id');
+        $planId = is_numeric($rawPlanId) && (int) $rawPlanId > 0 ? (int) $rawPlanId : null;
         $filters = [
             'active' => $request->query('active'),
             'verified' => $request->query('verified'),

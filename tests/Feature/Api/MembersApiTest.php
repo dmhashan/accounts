@@ -144,6 +144,66 @@ class MembersApiTest extends ApiRouteTestCase
         }
     }
 
+    public function testMembersIndexPlanFilterUsesResolvedPlanAndUpdatesPaginationMeta(): void
+    {
+        $this->actingAsUser(['users.view']);
+
+        $basicPlan = $this->createPaymentPlan(['name' => 'Basic Plan']);
+        $goldPlan = $this->createPaymentPlan(['name' => 'Gold Plan']);
+        $otherPlan = $this->createPaymentPlan(['name' => 'Other Plan']);
+
+        $latestPlanMember = $this->createMember(null, [
+            'name' => 'Latest Plan Member',
+            'payment_plan_id' => $basicPlan->id,
+        ]);
+        $defaultPlanMember = $this->createMember(null, [
+            'name' => 'Default Plan Member',
+            'payment_plan_id' => $goldPlan->id,
+        ]);
+        $missedPlanMember = $this->createMember(null, [
+            'name' => 'Missed Plan Member',
+            'payment_plan_id' => $otherPlan->id,
+        ]);
+
+        $payment = MemberPayment::create([
+            'member_id' => $latestPlanMember->id,
+            'company_account_id' => null,
+            'payment_method' => 'cash',
+            'amount' => 1200,
+            'payment_date' => '2026-07-01',
+        ]);
+
+        PaymentMembership::create([
+            'member_payment_id' => $payment->id,
+            'payment_plan_id' => $goldPlan->id,
+            'start_date' => '2026-07-01',
+            'end_date' => '2026-07-31',
+        ]);
+
+        $response = $this->getJson('/api/members?per_page=1&plan_id=' . $goldPlan->id);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.per_page', 1)
+            ->assertJsonPath('meta.last_page', 2)
+            ->assertJsonCount(1, 'data');
+
+        $allMatches = $this->getJson('/api/members?per_page=10&plan_id=' . $goldPlan->id)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2);
+
+        $matchedIds = collect($allMatches->json('data'))->pluck('id')->all();
+        $this->assertContains($latestPlanMember->id, $matchedIds);
+        $this->assertContains($defaultPlanMember->id, $matchedIds);
+        $this->assertNotContains($missedPlanMember->id, $matchedIds);
+
+        $this->getJson('/api/members?per_page=10&plan_id=' . $basicPlan->id)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0)
+            ->assertJsonPath('meta.last_page', 1);
+    }
+
     public function testMembersExportRouteReturnsCsvStream(): void
     {
         $this->actingAsUser(['users.view']);

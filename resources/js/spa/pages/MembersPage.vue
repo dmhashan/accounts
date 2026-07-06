@@ -55,9 +55,19 @@
             </template>
           </AppSearchField>
 
-          <div v-if="appliedFilterLabels.length > 0" class="flex flex-wrap items-center gap-2">
-            <AppBadge v-for="label in appliedFilterLabels" :key="label" color="secondary">
-              {{ label }}
+          <div v-if="appliedFilterTags.length > 0 || hasListFilters" class="flex flex-wrap items-center gap-2">
+            <AppBadge v-for="tag in appliedFilterTags" :key="tag.key" color="secondary">
+              <span>{{ tag.label }}</span>
+              <button
+                type="button"
+                :disabled="loading"
+                class="-mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-secondary-500 transition hover:bg-secondary-200 hover:text-secondary-900 disabled:opacity-50 dark:text-secondary-300 dark:hover:bg-secondary-700 dark:hover:text-white"
+                :title="`Remove ${tag.label} filter`"
+                :aria-label="`Remove ${tag.label} filter`"
+                @click.stop="removeFilterTag(tag.key)"
+              >
+                <X class="h-3 w-3" :stroke-width="2.5" />
+              </button>
             </AppBadge>
             <button
               v-if="hasListFilters"
@@ -486,9 +496,9 @@ const hasListFilters = computed(() => Boolean(
     || filters.value.active !== 'active'
     || filters.value.verified,
 ));
-const appliedFilterLabels = computed(() => filterLabels(filters.value));
-const activeFilterCount = computed(() => appliedFilterLabels.value.length);
-const draftFilterCount = computed(() => filterLabels(draftFilters.value).length);
+const appliedFilterTags = computed(() => filterTags(filters.value));
+const activeFilterCount = computed(() => appliedFilterTags.value.length);
+const draftFilterCount = computed(() => filterTags(draftFilters.value).length);
 
 const ACTIVE_LABELS = {
     active: 'Active',
@@ -539,19 +549,19 @@ function cloneFilters(source) {
     return { ...defaultFilters(), ...source };
 }
 
-function filterLabels(source) {
-    const labels = [];
+function filterTags(source) {
+    const tags = [];
     const selectedPlanId = planId.value || Number(source.plan_id || 0);
 
-    if (source.active && ACTIVE_LABELS[source.active]) labels.push(ACTIVE_LABELS[source.active]);
-    if (source.verified && VERIFIED_LABELS[source.verified]) labels.push(VERIFIED_LABELS[source.verified]);
-    if (source.gender && GENDER_LABELS[source.gender]) labels.push(GENDER_LABELS[source.gender]);
-    if (selectedPlanId) labels.push(resolvePlanLabel(selectedPlanId));
-    if (source.expiry_preset && EXPIRY_PRESET_LABELS[source.expiry_preset]) labels.push(EXPIRY_PRESET_LABELS[source.expiry_preset]);
-    if (source.attendance_preset && ATTENDANCE_PRESET_LABELS[source.attendance_preset]) labels.push(ATTENDANCE_PRESET_LABELS[source.attendance_preset]);
-    if (source.outstanding && OUTSTANDING_LABELS[source.outstanding]) labels.push(OUTSTANDING_LABELS[source.outstanding]);
+    if (source.active && ACTIVE_LABELS[source.active]) tags.push({ key: 'active', label: ACTIVE_LABELS[source.active] });
+    if (source.verified && VERIFIED_LABELS[source.verified]) tags.push({ key: 'verified', label: VERIFIED_LABELS[source.verified] });
+    if (source.gender && GENDER_LABELS[source.gender]) tags.push({ key: 'gender', label: GENDER_LABELS[source.gender] });
+    if (selectedPlanId) tags.push({ key: 'plan_id', label: resolvePlanLabel(selectedPlanId) });
+    if (source.expiry_preset && EXPIRY_PRESET_LABELS[source.expiry_preset]) tags.push({ key: 'expiry_preset', label: EXPIRY_PRESET_LABELS[source.expiry_preset] });
+    if (source.attendance_preset && ATTENDANCE_PRESET_LABELS[source.attendance_preset]) tags.push({ key: 'attendance_preset', label: ATTENDANCE_PRESET_LABELS[source.attendance_preset] });
+    if (source.outstanding && OUTSTANDING_LABELS[source.outstanding]) tags.push({ key: 'outstanding', label: OUTSTANDING_LABELS[source.outstanding] });
 
-    return labels;
+    return tags;
 }
 
 function resolvePlanLabel(id) {
@@ -675,6 +685,31 @@ function resetFilters() {
     filters.value = defaultFilters();
     draftFilters.value = defaultFilters();
     filtersOpen.value = false;
+    loadMembers(1);
+}
+
+function removeFilterTag(key) {
+    if (loading.value) return;
+
+    const nextFilters = cloneFilters(filters.value);
+    nextFilters[key] = key === 'active' ? '' : defaultFilters()[key];
+    filters.value = nextFilters;
+    draftFilters.value = cloneFilters(nextFilters);
+
+    if (key !== 'plan_id' && planId.value) {
+        draftFilters.value.plan_id = planId.value;
+    }
+
+    filtersOpen.value = false;
+
+    if (key === 'plan_id' && planId.value) {
+        const query = { ...route.query };
+        delete query.plan_id;
+        delete query.plan_name;
+        router.push({ path: route.path, query });
+        return;
+    }
+
     loadMembers(1);
 }
 

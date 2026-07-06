@@ -49,7 +49,6 @@ class MemberService
             ->selectSub($this->lastAttendanceDateSubquery($tenantId), 'last_attendance_date')
             ->selectSub($this->salesOutstandingSubquery($tenantId), 'sales_outstanding_amount')
             ->when($isTemp !== null, fn ($q) => $q->where('members.is_temp', $isTemp))
-            ->when($planId !== null, fn ($q) => $q->where('members.payment_plan_id', $planId))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
                     $innerQuery->where('members.biometric_member_id', 'like', "%{$search}%")
@@ -58,6 +57,10 @@ class MemberService
                         ->orWhere('members.phone_number', 'like', "%{$search}%");
                 });
             });
+
+        if ($planId !== null) {
+            $this->applyPlanFilter($query, $tenantId, $planId);
+        }
 
         $this->applyListFilters($query, $tenantId, $filters, $today);
 
@@ -516,6 +519,16 @@ class MemberService
         if (in_array($outstanding, ['with', 'without'], true)) {
             $this->applyOutstandingFilter($query, $tenantId, $outstanding);
         }
+    }
+
+    private function applyPlanFilter(Builder $query, int $tenantId, int $planId): void
+    {
+        $planSubquery = $this->latestMembershipSubquery($tenantId, 'payment_memberships.payment_plan_id');
+
+        $query->whereRaw(
+            'COALESCE((' . $planSubquery->toSql() . '), members.payment_plan_id) = ?',
+            array_merge($planSubquery->getBindings(), [$planId]),
+        );
     }
 
     private function latestMembershipSubquery(int $tenantId, string $column): Builder
