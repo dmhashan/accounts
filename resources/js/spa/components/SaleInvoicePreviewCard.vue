@@ -25,9 +25,14 @@
               ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
               : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'"
           >{{ sale.is_paid ? 'Paid' : 'Outstanding' }}</span>
-          <div v-if="sale.payment_method" class="flex items-center gap-1.5 text-xs text-secondary-500 dark:text-secondary-400">
-            <CreditCard class="w-3.5 h-3.5 shrink-0" />
-            <span class="capitalize">{{ sale.payment_method }}</span>
+          <div v-if="sale.payment_method" class="flex items-center gap-1.5 text-xs">
+            <span
+              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border"
+              :class="`${getColorClasses(sale.payment_method_color).bg} ${getColorClasses(sale.payment_method_color).text} ${getColorClasses(sale.payment_method_color).border}`"
+            >
+              <component :is="getIconComponent(sale.payment_method_icon)" class="w-3 h-3 shrink-0" />
+              <span>{{ sale.payment_method_name || sale.payment_method }}</span>
+            </span>
           </div>
           <div v-if="sale.reference_number" class="text-xs text-secondary-400 dark:text-secondary-500">
             Ref: {{ sale.reference_number }}
@@ -122,7 +127,7 @@
 </template>
 
 <script setup>
-import { CreditCard } from 'lucide-vue-next';
+import { getColorClasses, getIconComponent } from '../utils/paymentMethodHelper';
 defineProps({
     /**
      * Sale object:

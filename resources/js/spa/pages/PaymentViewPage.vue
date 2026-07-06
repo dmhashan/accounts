@@ -58,9 +58,19 @@
             <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
               Payment Method
             </p>
-            <p class="font-medium text-secondary-800 dark:text-secondary-200">
-              {{ payment.payment_method_name || payment.account_name || '—' }}
-            </p>
+            <div class="mt-0.5">
+              <span
+                v-if="payment.payment_method_name"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border"
+                :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text} ${getColorClasses(payment.payment_method_color).border}`"
+              >
+                <component :is="getIconComponent(payment.payment_method_icon)" class="w-3.5 h-3.5 shrink-0" />
+                <span>{{ payment.payment_method_name }}</span>
+              </span>
+              <p v-else class="font-medium text-secondary-800 dark:text-secondary-200">
+                {{ payment.account_name || '—' }}
+              </p>
+            </div>
             <p v-if="payment.account_name" class="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400">
               {{ payment.account_name }}
             </p>
@@ -134,6 +144,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
+import { getColorClasses, getIconComponent } from '../utils/paymentMethodHelper';
 
 const route = useRoute();
 const router = useRouter();

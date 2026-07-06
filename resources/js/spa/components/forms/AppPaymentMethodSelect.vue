@@ -12,11 +12,12 @@
         class="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-xl transition-all duration-200"
         :class="selectedValue === 'member_wallet'
           ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400'
-          : selectedValue
-            ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400'
+          : selectedMethod
+            ? `${getColorClasses(selectedMethod.color).bg} ${getColorClasses(selectedMethod.color).text}`
             : 'bg-secondary-100 text-secondary-400 dark:bg-secondary-800 dark:text-secondary-500'"
       >
         <Wallet v-if="selectedValue === 'member_wallet'" class="w-3.5 h-3.5" />
+        <component :is="getIconComponent(selectedMethod.icon)" v-else-if="selectedMethod" class="w-3.5 h-3.5" />
         <CreditCard v-else class="w-3.5 h-3.5" />
       </span>
 
@@ -126,22 +127,22 @@
 
           <div class="flex-1 overflow-y-auto overscroll-contain" :class="memberId ? '' : 'py-1.5'">
             <button
-              v-for="method in methods"
+              v-for="method in sortedMethods"
               :key="method.id"
               type="button"
               class="relative w-full flex items-start gap-3 px-4 py-3 text-sm text-left transition-all duration-150 hover:bg-secondary-50 dark:hover:bg-secondary-800/60 border-l-2"
               :class="selectedValue === method.id
-                ? 'bg-primary-50/60 border-l-primary-500 dark:bg-primary-900/10 dark:border-l-primary-500'
+                ? `${getColorClasses(method.color).bg} border-l-primary-500`
                 : 'border-l-transparent'"
               @click="select(method.id)"
             >
               <span
                 class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl transition-colors"
                 :class="selectedValue === method.id
-                  ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400'
-                  : 'bg-secondary-100 text-secondary-500 dark:bg-secondary-800 dark:text-secondary-400'"
+                  ? `${getColorClasses(method.color).bg} ${getColorClasses(method.color).text}`
+                  : `${getColorClasses(method.color).bg} ${getColorClasses(method.color).text} opacity-80`"
               >
-                <CreditCard class="w-4 h-4" />
+                <component :is="getIconComponent(method.icon)" class="w-4 h-4" />
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block font-semibold text-secondary-800 dark:text-secondary-100 truncate">{{ method.name }}</span>
@@ -176,6 +177,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { CreditCard, Wallet, ChevronDown, X, Check, Loader2 } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
+import { getColorClasses, getIconComponent } from '../../utils/paymentMethodHelper';
 
 const props = defineProps({
     modelValue: { type: [String, Number], default: null },
@@ -198,6 +200,19 @@ const panelRef = ref(null);
 const panelStyle = ref({});
 
 const selectedValue = computed(() => props.modelValue);
+
+const selectedMethod = computed(() => {
+    return props.methods.find((item) => item.id === props.modelValue);
+});
+
+const sortedMethods = computed(() => {
+    return [...props.methods].sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || '').localeCompare(b.name || '');
+    });
+});
 
 const selectedLabel = computed(() => {
     if (props.modelValue === 'member_wallet') return 'Member Wallet';

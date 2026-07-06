@@ -76,7 +76,7 @@ class SaleApiController extends Controller
         $status = $request->string('status')->toString();
 
         $sales = Sale::query()
-            ->with(['items.product', 'items.variation', 'paymentMethod:id,name', 'settlement'])
+            ->with(['items.product', 'items.variation', 'paymentMethod', 'settlement'])
             ->when($status === 'outstanding', fn ($query) => $query->where('is_paid', false))
             ->when($status === 'paid', fn ($query) => $query->where('is_paid', true))
             ->orderBy('created_at', 'desc')
@@ -89,7 +89,9 @@ class SaleApiController extends Controller
                 'customer_type' => $sale->customer_type,
                 'payment_method' => $sale->payment_method,
                 'payment_method_id' => $sale->payment_method_id,
-                'payment_method_name' => $sale->paymentMethod?->name ?? $sale->payment_method,
+                'payment_method_name' => $sale->payment_method === 'member_wallet' ? 'Member Wallet' : ($sale->paymentMethod?->name ?? $sale->payment_method),
+                'payment_method_color' => $sale->payment_method === 'member_wallet' ? 'emerald' : ($sale->paymentMethod?->color ?? 'slate'),
+                'payment_method_icon' => $sale->payment_method === 'member_wallet' ? 'Wallet' : ($sale->paymentMethod?->icon ?? 'CreditCard'),
                 'reference_number' => $sale->reference_number,
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,
@@ -141,7 +143,9 @@ class SaleApiController extends Controller
                 'customer_type' => $sale->customer_type,
                 'payment_method' => $sale->payment_method,
                 'payment_method_id' => $sale->payment_method_id,
-                'payment_method_name' => $sale->paymentMethod?->name ?? $sale->payment_method,
+                'payment_method_name' => $sale->payment_method === 'member_wallet' ? 'Member Wallet' : ($sale->paymentMethod?->name ?? $sale->payment_method),
+                'payment_method_color' => $sale->payment_method === 'member_wallet' ? 'emerald' : ($sale->paymentMethod?->color ?? 'slate'),
+                'payment_method_icon' => $sale->payment_method === 'member_wallet' ? 'Wallet' : ($sale->paymentMethod?->icon ?? 'CreditCard'),
                 'reference_number' => $sale->reference_number,
                 'total_amount' => (float) $sale->total_amount,
                 'paid_amount' => (float) $sale->paid_amount,

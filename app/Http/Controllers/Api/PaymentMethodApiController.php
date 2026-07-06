@@ -91,6 +91,9 @@ class PaymentMethodApiController extends Controller
             'record_deduction_as_expense' => ['nullable', 'boolean'],
             'requires_reconciliation' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
+            'color' => ['nullable', 'string', Rule::in(PaymentMethod::PREDEFINED_COLORS)],
+            'icon' => ['nullable', 'string', Rule::in(PaymentMethod::PREDEFINED_ICONS)],
+            'order' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

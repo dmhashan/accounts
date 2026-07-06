@@ -43,7 +43,7 @@
     $num = fn ($value) => rtrim(rtrim(number_format((float) $value, 2), '0'), '.') ?: '0';
     $signed = fn ($value) => ((float) $value >= 0 ? '+' : '-') . $money(abs((float) $value));
     $profitClass = fn ($value) => (float) $value >= 0 ? 'pos' : 'neg';
-    $method = fn ($value) => ['cash' => 'Cash', 'bank' => 'Bank', 'card' => 'Card', 'member_wallet' => 'Member Wallet'][$value ?? ''] ?? 'Other';
+    $method = fn ($value) => ['cash' => 'Cash', 'bank' => 'Bank', 'card' => 'Card', 'member_wallet' => 'Member Wallet'][$value ?? ''] ?? ($value ?: 'Other');
 @endphp
 
 <div class="top-bar"></div>

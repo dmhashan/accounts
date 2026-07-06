@@ -89,6 +89,7 @@ class RealProfitReportService
             ->with([
                 'member:id,name,phone_number',
                 'account:id,name',
+                'paymentMethod',
                 'membership.plan:id,name',
             ])
             ->orderByDesc('payment_date')
@@ -353,6 +354,9 @@ class RealProfitReportService
             'member_phone' => $payment->member?->phone_number,
             'payment_plan_name' => $payment->membership?->plan?->name,
             'payment_method' => $payment->payment_method ?? 'cash',
+            'payment_method_name' => $payment->payment_method === 'member_wallet' ? 'Member Wallet' : ($payment->paymentMethod?->name ?? $payment->payment_method ?? 'Cash'),
+            'payment_method_color' => $payment->payment_method === 'member_wallet' ? 'emerald' : ($payment->paymentMethod?->color ?? 'slate'),
+            'payment_method_icon' => $payment->payment_method === 'member_wallet' ? 'Wallet' : ($payment->paymentMethod?->icon ?? 'CreditCard'),
             'account_name' => $payment->account?->name,
             'amount' => $this->roundMoney((float) $payment->amount),
             'payment_date' => $payment->payment_date?->toDateString(),

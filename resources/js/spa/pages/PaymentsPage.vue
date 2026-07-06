@@ -67,10 +67,20 @@
                     <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">
                       {{ payment.member_name }}
                     </p>
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                      {{ payment.payment_date }} &bull; {{ payment.payment_method_name || payment.account_name }}
+                    <div class="flex flex-wrap items-center gap-1.5 mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+                      <span>{{ payment.payment_date }}</span>
+                      <span>&bull;</span>
+                      <span
+                        v-if="payment.payment_method_name"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border"
+                        :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text} ${getColorClasses(payment.payment_method_color).border}`"
+                      >
+                        <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3 shrink-0" />
+                        {{ payment.payment_method_name }}
+                      </span>
+                      <span v-else>{{ payment.account_name || '—' }}</span>
                       <span v-if="payment.payment_plan_name"> &bull; {{ payment.payment_plan_name }}</span>
-                    </p>
+                    </div>
                     <p class="text-sm font-bold text-primary-600 dark:text-primary-400">
                       {{ money(payment.amount) }}
                     </p>
@@ -130,8 +140,16 @@
                       {{ payment.payment_date }}
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
-                      {{ payment.payment_method_name || payment.account_name }}
-                      <p v-if="payment.payment_method_name && payment.account_name" class="text-xs text-secondary-500 dark:text-secondary-400">
+                      <span
+                        v-if="payment.payment_method_name"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border"
+                        :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text} ${getColorClasses(payment.payment_method_color).border}`"
+                      >
+                        <component :is="getIconComponent(payment.payment_method_icon)" class="w-3.5 h-3.5 shrink-0" />
+                        {{ payment.payment_method_name }}
+                      </span>
+                      <span v-else>{{ payment.account_name || '—' }}</span>
+                      <p v-if="payment.payment_method_name && payment.account_name" class="text-xs text-secondary-500 dark:text-secondary-400 mt-1 pl-1">
                         {{ payment.account_name }}
                       </p>
                     </td>
@@ -309,13 +327,22 @@
             <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
               <article v-for="method in paymentMethods" :key="method.id" class="p-4 space-y-2">
                 <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">
-                      {{ method.name }}
-                    </p>
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                      {{ method.account_name || '-' }}
-                    </p>
+                  <div class="min-w-0 flex items-center gap-3">
+                    <span
+                      class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl transition-colors"
+                      :class="`${getColorClasses(method.color).bg} ${getColorClasses(method.color).text}`"
+                    >
+                      <component :is="getIconComponent(method.icon)" class="w-4 h-4" />
+                    </span>
+                    <div>
+                      <p class="text-sm font-semibold text-secondary-900 dark:text-white truncate">
+                        {{ method.name }}
+                        <span class="text-xs text-secondary-400 font-normal ml-1">({{ method.order ?? 0 }})</span>
+                      </p>
+                      <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                        {{ method.account_name || '-' }}
+                      </p>
+                    </div>
                   </div>
                   <span
                     class="shrink-0 text-xs px-2 py-0.5 rounded-full font-medium"
@@ -367,8 +394,15 @@
                 </thead>
                 <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
                   <tr v-for="method in paymentMethods" :key="method.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
-                    <td class="px-6 py-4 text-sm font-semibold text-secondary-900 dark:text-white">
-                      {{ method.name }}
+                    <td class="px-6 py-4 text-sm font-semibold text-secondary-900 dark:text-white flex items-center gap-3">
+                      <span
+                        class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl transition-colors"
+                        :class="`${getColorClasses(method.color).bg} ${getColorClasses(method.color).text}`"
+                      >
+                        <component :is="getIconComponent(method.icon)" class="w-4 h-4" />
+                      </span>
+                      <span>{{ method.name }}</span>
+                      <span class="text-xs text-secondary-400 font-normal">({{ method.order ?? 0 }})</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
                       {{ method.account_name || '-' }}
@@ -421,109 +455,165 @@
     <!-- Plan create/edit modal -->
     <Teleport to="body">
       <div v-if="methodModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-        <div class="bg-white dark:bg-secondary-900 rounded-2xl shadow-xl w-full max-w-lg">
-          <div class="flex items-center justify-between p-5 border-b border-secondary-200 dark:border-secondary-700">
-            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
-              {{ methodForm.id ? 'Edit Payment Method' : 'Create Payment Method' }}
-            </h3>
-            <button type="button" class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200" @click="closeMethodModal">
-              <component :is="X" class="w-5 h-5" />
-            </button>
-          </div>
-
-          <form class="p-5 space-y-4" @submit.prevent="saveMethod">
-            <div v-if="methodModalError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-              {{ methodModalError }}
+        <div class="bg-white dark:bg-secondary-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+          <form class="flex flex-col flex-1 min-h-0" @submit.prevent="saveMethod">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-5 border-b border-secondary-200 dark:border-secondary-700 flex-shrink-0">
+              <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
+                {{ methodForm.id ? 'Edit Payment Method' : 'Create Payment Method' }}
+              </h3>
+              <button type="button" class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200" @click="closeMethodModal">
+                <component :is="X" class="w-5 h-5" />
+              </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Method Name</label>
-                <input
-                  v-model="methodForm.name"
-                  type="text"
-                  required
-                  maxlength="255"
-                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
+            <!-- Content Area (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-4 min-h-0">
+              <div v-if="methodModalError" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+                {{ methodModalError }}
               </div>
 
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
-                <select
-                  v-model="methodForm.company_account_id"
-                  required
-                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="" disabled>
-                    Select account
-                  </option>
-                  <option v-for="account in metaAccounts" :key="account.id" :value="String(account.id)">
-                    {{ account.name }}
-                  </option>
-                </select>
-              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Method Name</label>
+                  <input
+                    v-model="methodForm.name"
+                    type="text"
+                    required
+                    maxlength="255"
+                    class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
 
-              <div>
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Deductions</label>
-                <select
-                  v-model="methodForm.deduction_type"
-                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="none">
-                    No
-                  </option>
-                  <option value="fixed">
-                    Fixed Rate
-                  </option>
-                  <option value="percentage">
-                    Percentage Base
-                  </option>
-                </select>
-              </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Company Account</label>
+                  <select
+                    v-model="methodForm.company_account_id"
+                    required
+                    class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="" disabled>
+                      Select account
+                    </option>
+                    <option v-for="account in metaAccounts" :key="account.id" :value="String(account.id)">
+                      {{ account.name }}
+                    </option>
+                  </select>
+                </div>
 
-              <div v-if="methodForm.deduction_type === 'fixed'">
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Fixed Rate</label>
-                <input
-                  v-model="methodForm.deduction_value"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  required
-                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
+                <div>
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Deductions</label>
+                  <select
+                    v-model="methodForm.deduction_type"
+                    class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="none">
+                      No
+                    </option>
+                    <option value="fixed">
+                      Fixed Rate
+                    </option>
+                    <option value="percentage">
+                      Percentage Base
+                    </option>
+                  </select>
+                </div>
 
-              <div v-else-if="methodForm.deduction_type === 'percentage'">
-                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Percentage</label>
-                <input
-                  v-model="methodForm.deduction_value"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  required
-                  class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
+                <div v-if="methodForm.deduction_type === 'fixed'">
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Fixed Rate</label>
+                  <input
+                    v-model="methodForm.deduction_value"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
 
-              <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
-                  <input v-model="methodForm.record_deduction_as_expense" type="checkbox" class="rounded" />
-                  Profit Fee
-                </label>
-                <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
-                  <input v-model="methodForm.requires_reconciliation" type="checkbox" class="rounded" />
-                  Reconciliation
-                </label>
-                <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
-                  <input v-model="methodForm.is_active" type="checkbox" class="rounded" />
-                  Active
-                </label>
+                <div v-else-if="methodForm.deduction_type === 'percentage'">
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Percentage</label>
+                  <input
+                    v-model="methodForm.deduction_value"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    required
+                    class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Display Order</label>
+                  <input
+                    v-model.number="methodForm.order"
+                    type="number"
+                    min="0"
+                    required
+                    class="w-full px-3 py-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-sm text-secondary-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">Color Badge</label>
+                  <div class="grid grid-cols-10 gap-2">
+                    <button
+                      v-for="color in predefinedColors"
+                      :key="color.key"
+                      type="button"
+                      class="h-7 w-7 rounded-full border flex items-center justify-center transition-all cursor-pointer hover:scale-110"
+                      :class="[
+                        getColorClasses(color.key).bg,
+                        getColorClasses(color.key).text,
+                        methodForm.color === color.key ? 'ring-2 ring-primary-500 border-transparent scale-110 font-bold' : 'border-secondary-200 dark:border-secondary-700'
+                      ]"
+                      :title="color.label"
+                      @click="methodForm.color = color.key"
+                    >
+                      <Check v-if="methodForm.color === color.key" class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">Icon Representing Method</label>
+                  <div class="grid grid-cols-10 gap-2 p-2 rounded-xl bg-secondary-50 dark:bg-secondary-800/40 border border-secondary-200 dark:border-secondary-700 max-h-36 overflow-y-auto">
+                    <button
+                      v-for="icon in predefinedIcons"
+                      :key="icon.key"
+                      type="button"
+                      class="h-8 w-8 rounded-lg flex items-center justify-center transition-all cursor-pointer hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-600 dark:text-secondary-300"
+                      :class="[
+                        methodForm.icon === icon.key ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-500 dark:bg-primary-900/40 dark:text-primary-300 scale-105' : ''
+                      ]"
+                      :title="icon.label"
+                      @click="methodForm.icon = icon.key"
+                    >
+                      <component :is="icon.component" class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
+                    <input v-model="methodForm.record_deduction_as_expense" type="checkbox" class="rounded" />
+                    Profit Fee
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
+                    <input v-model="methodForm.requires_reconciliation" type="checkbox" class="rounded" />
+                    Reconciliation
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300">
+                    <input v-model="methodForm.is_active" type="checkbox" class="rounded" />
+                    Active
+                  </label>
+                </div>
               </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-2">
+            <!-- Footer -->
+            <div class="flex justify-end gap-2 p-5 border-t border-secondary-200 dark:border-secondary-700 bg-secondary-50/50 dark:bg-secondary-800/10 flex-shrink-0">
               <button type="button" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm text-secondary-700 dark:text-secondary-300" @click="closeMethodModal">
                 Cancel
               </button>
@@ -708,9 +798,10 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { CreditCard, Plus, Tag, X } from 'lucide-vue-next';
+import { CreditCard, Plus, Tag, X, Check } from 'lucide-vue-next';
 import AppConfirmModal from '../components/AppConfirmModal.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { getColorClasses, getIconComponent, predefinedColors, predefinedIcons } from '../utils/paymentMethodHelper';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppPagination from '../components/AppPagination.vue';
@@ -797,6 +888,9 @@ const methodForm = ref({
     record_deduction_as_expense: true,
     requires_reconciliation: false,
     is_active: true,
+    color: 'slate',
+    icon: 'CreditCard',
+    order: 0,
 });
 
 async function loadPaymentMethods(page = 1) {
@@ -830,6 +924,9 @@ async function openMethodModal(method = null) {
             record_deduction_as_expense: Boolean(method.record_deduction_as_expense),
             requires_reconciliation: Boolean(method.requires_reconciliation),
             is_active: Boolean(method.is_active),
+            color: method.color || 'slate',
+            icon: method.icon || 'CreditCard',
+            order: method.order ?? 0,
         };
     } else {
         methodForm.value = {
@@ -841,6 +938,9 @@ async function openMethodModal(method = null) {
             record_deduction_as_expense: true,
             requires_reconciliation: false,
             is_active: true,
+            color: 'slate',
+            icon: 'CreditCard',
+            order: 0,
         };
     }
 
@@ -871,6 +971,9 @@ async function saveMethod() {
             record_deduction_as_expense: methodForm.value.deduction_type !== 'none' && methodForm.value.record_deduction_as_expense,
             requires_reconciliation: methodForm.value.requires_reconciliation,
             is_active: methodForm.value.is_active,
+            color: methodForm.value.color || 'slate',
+            icon: methodForm.value.icon || 'CreditCard',
+            order: Number(methodForm.value.order || 0),
         };
 
         if (methodForm.value.id) {

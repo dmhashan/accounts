@@ -50,11 +50,10 @@
         </div>
         <div class="shrink-0 text-right">
           <span
-            class="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase rounded-full"
-            :class="payment.payment_method === 'member_wallet'
-              ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800'
-              : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'"
+            class="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-semibold uppercase rounded-full border"
+            :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text} ${getColorClasses(payment.payment_method_color).border}`"
           >
+            <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3" />
             {{ payment.payment_method === 'member_wallet' ? 'Wallet' : (payment.payment_method_name || 'Method') }}
           </span>
         </div>
@@ -127,6 +126,7 @@ import { useMemberFormatters } from '../../composables/useMemberFormatters';
 import { useAppContext } from '../../composables/useAppContext';
 import PaymentMembershipForm from '../forms/PaymentMembershipForm.vue';
 import PaymentOtherForm from '../forms/PaymentOtherForm.vue';
+import { getColorClasses, getIconComponent } from '../../utils/paymentMethodHelper';
 
 const props = defineProps({
     memberId: { type: [Number, String], required: true },

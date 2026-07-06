@@ -16,6 +16,7 @@ class PaymentMethodService
         $methods = PaymentMethod::query()
             ->with('account:id,name')
             ->orderByDesc('is_active')
+            ->orderBy('order')
             ->orderBy('name')
             ->paginate($perPage);
 
@@ -50,6 +51,7 @@ class PaymentMethodService
         return PaymentMethod::query()
             ->with('account:id,name')
             ->where('is_active', true)
+            ->orderBy('order')
             ->orderBy('name')
             ->get()
             ->map(fn (PaymentMethod $method) => $this->serialize($method))
@@ -175,6 +177,9 @@ class PaymentMethodService
             'record_deduction_as_expense' => (bool) $method->record_deduction_as_expense,
             'requires_reconciliation' => (bool) $method->requires_reconciliation,
             'is_active' => (bool) $method->is_active,
+            'color' => $method->color ?? 'slate',
+            'icon' => $method->icon ?? 'CreditCard',
+            'order' => (int) ($method->order ?? 0),
             'created_at' => optional($method->created_at)->format('Y-m-d H:i'),
         ];
     }
@@ -194,6 +199,9 @@ class PaymentMethodService
             'record_deduction_as_expense' => (bool) ($validated['record_deduction_as_expense'] ?? false),
             'requires_reconciliation' => (bool) ($validated['requires_reconciliation'] ?? false),
             'is_active' => (bool) ($validated['is_active'] ?? true),
+            'color' => $validated['color'] ?? 'slate',
+            'icon' => $validated['icon'] ?? 'CreditCard',
+            'order' => (int) ($validated['order'] ?? 0),
         ];
     }
 

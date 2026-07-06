@@ -308,7 +308,17 @@ class PaymentsApiTest extends ApiRouteTestCase
             'record_deduction_as_expense' => true,
             'requires_reconciliation' => true,
             'is_active' => true,
+            'color' => 'blue',
+            'icon' => 'Coins',
+            'order' => 5,
         ])->assertCreated()->json('data.id');
+
+        $this->assertDatabaseHas('payment_methods', [
+            'id' => $methodId,
+            'color' => 'blue',
+            'icon' => 'Coins',
+            'order' => 5,
+        ]);
 
         $paymentId = (int) $this->postJson('/api/payments', [
             'member_id' => $member->id,

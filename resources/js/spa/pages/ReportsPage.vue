@@ -527,7 +527,7 @@ function formatSignedMoney(value) {
 }
 
 function paymentMethodLabel(value) {
-    return { cash: 'Cash', card: 'Card', bank: 'Bank Transfer', member_wallet: 'Member Wallet' }[value] || 'Other';
+    return { cash: 'Cash', card: 'Card', bank: 'Bank Transfer', member_wallet: 'Member Wallet' }[value] || (value || 'Other');
 }
 
 function customerTypeLabel(value) {

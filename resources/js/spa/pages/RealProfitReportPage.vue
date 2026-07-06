@@ -341,9 +341,16 @@
                   +{{ formatMoney(payment.amount) }}
                 </p>
               </div>
-              <p class="text-xs text-secondary-600 dark:text-secondary-300">
-                {{ paymentMethodLabel(payment.payment_method) }}<span v-if="payment.account_name"> · {{ payment.account_name }}</span>
-              </p>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+                  :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text}`"
+                >
+                  <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3" />
+                  {{ payment.payment_method_name }}
+                </span>
+                <span v-if="payment.account_name" class="text-xs text-secondary-500 dark:text-secondary-400">· {{ payment.account_name }}</span>
+              </div>
             </article>
           </template>
           <template #desktop>
@@ -382,7 +389,13 @@
                     {{ payment.payment_plan_name || '-' }}
                   </td>
                   <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
-                    {{ paymentMethodLabel(payment.payment_method) }}
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                      :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text}`"
+                    >
+                      <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3" />
+                      {{ payment.payment_method_name }}
+                    </span>
                   </td>
                   <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
                     {{ payment.start_date || '-' }} to {{ payment.end_date || '-' }}
@@ -417,9 +430,16 @@
                   +{{ formatMoney(payment.amount) }}
                 </p>
               </div>
-              <p class="text-xs text-secondary-600 dark:text-secondary-300">
-                {{ paymentMethodLabel(payment.payment_method) }}<span v-if="payment.account_name"> · {{ payment.account_name }}</span>
-              </p>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+                  :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text}`"
+                >
+                  <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3" />
+                  {{ payment.payment_method_name }}
+                </span>
+                <span v-if="payment.account_name" class="text-xs text-secondary-500 dark:text-secondary-400">· {{ payment.account_name }}</span>
+              </div>
               <p v-if="payment.notes" class="text-xs text-secondary-500 dark:text-secondary-400">
                 {{ payment.notes }}
               </p>
@@ -458,7 +478,13 @@
                     {{ payment.member_name }}
                   </td>
                   <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
-                    {{ paymentMethodLabel(payment.payment_method) }}
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                      :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text}`"
+                    >
+                      <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3" />
+                      {{ payment.payment_method_name }}
+                    </span>
                   </td>
                   <td class="px-3 py-2 text-sm text-secondary-700 dark:text-secondary-300">
                     {{ payment.reference_number || '-' }}
@@ -583,6 +609,7 @@ import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { getColorClasses, getIconComponent } from '../utils/paymentMethodHelper';
 
 const ReportPanel = defineComponent({
     props: {
@@ -725,9 +752,6 @@ function profitClass(value) {
     return Number(value || 0) >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400';
 }
 
-function paymentMethodLabel(value) {
-    return { cash: 'Cash', bank: 'Bank', card: 'Card', member_wallet: 'Member Wallet' }[value] || 'Other';
-}
 
 function costSourceLabel(value) {
     return { exact: 'Exact', estimated: 'Estimated', missing: 'Missing' }[value] || 'Unknown';
