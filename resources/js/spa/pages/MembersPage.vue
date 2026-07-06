@@ -56,6 +56,9 @@
           </AppSearchField>
 
           <div v-if="appliedFilterTags.length > 0 || hasListFilters" class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-secondary-500 dark:text-secondary-400">
+              Filtered By
+            </span>
             <AppBadge v-for="tag in appliedFilterTags" :key="tag.key" color="secondary">
               <span>{{ tag.label }}</span>
               <button
