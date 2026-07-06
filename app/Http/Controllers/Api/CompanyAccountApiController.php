@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CompanyAccount;
+use App\Models\CompanyAccountAdjustment;
 use App\Models\CompanyAccountTransfer;
 use App\Models\Expense;
 use App\Models\ExpenseDocument;
+use App\Services\CompanyAccountAdjustmentService;
 use App\Services\CompanyAccountService;
 use App\Services\ExpenseService;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +20,7 @@ class CompanyAccountApiController extends Controller
     public function __construct(
         private readonly CompanyAccountService $companyAccountService,
         private readonly ExpenseService $expenseService,
+        private readonly CompanyAccountAdjustmentService $adjustmentService,
     ) {}
 
     public function meta(): JsonResponse
@@ -270,6 +273,70 @@ class CompanyAccountApiController extends Controller
                 'mimes:pdf,jpg,jpeg,png,webp,gif,doc,docx,xls,xlsx,txt',
                 'max:' . ExpenseService::MAX_DOCUMENT_SIZE_KB,
             ],
+        ];
+    }
+
+    // ─── Adjustments ─────────────────────────────────────────────────────────
+
+    public function adjustments(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->integer('per_page', 10), 50);
+
+        return response()->json($this->adjustmentService->adjustments(app('tenant')->id, $perPage));
+    }
+
+    public function showAdjustment(CompanyAccountAdjustment $adjustment): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->adjustmentService->showAdjustment($adjustment, app('tenant')->id),
+        ]);
+    }
+
+    public function storeAdjustment(Request $request): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $validated = $request->validate($this->adjustmentRules());
+
+        $adjustment = $this->adjustmentService->storeAdjustment($tenantId, $validated, $request->user()?->id);
+
+        return response()->json([
+            'message' => 'Account adjustment recorded successfully.',
+            'data' => [
+                'id' => $adjustment->id,
+            ],
+        ], 201);
+    }
+
+    public function updateAdjustment(Request $request, CompanyAccountAdjustment $adjustment): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $validated = $request->validate($this->adjustmentRules());
+
+        $this->adjustmentService->updateAdjustment($adjustment, $tenantId, $validated, $request->user()?->id);
+
+        return response()->json([
+            'message' => 'Account adjustment updated successfully.',
+        ]);
+    }
+
+    public function destroyAdjustment(CompanyAccountAdjustment $adjustment): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $this->adjustmentService->destroyAdjustment($adjustment, $tenantId, request()->user()?->id);
+
+        return response()->json([
+            'message' => 'Account adjustment deleted successfully.',
+        ]);
+    }
+
+    private function adjustmentRules(): array
+    {
+        return [
+            'company_account_id' => ['required', 'integer', 'exists:company_accounts,id'],
+            'type' => ['required', 'string', Rule::in(['credit', 'debit'])],
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'reason' => ['required', 'string', 'max:1000'],
+            'adjustment_date' => ['required', 'date'],
         ];
     }
 }

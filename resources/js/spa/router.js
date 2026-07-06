@@ -16,6 +16,7 @@ const InventoryStockFormPage = () => import('./pages/InventoryStockFormPage.vue'
 const AccountsPage = () => import('./pages/AccountsPage.vue');
 const AccountFormPage = () => import('./pages/AccountFormPage.vue');
 const AccountTransferFormPage = () => import('./pages/AccountTransferFormPage.vue');
+const AccountAdjustmentFormPage = () => import('./pages/AccountAdjustmentFormPage.vue');
 const ExpensesPage = () => import('./pages/ExpensesPage.vue');
 const ExpenseFormPage = () => import('./pages/ExpenseFormPage.vue');
 const SalesPage = () => import('./pages/SalesPage.vue');
@@ -193,6 +194,9 @@ const routes = [
     { path: '/accounting/transfers/:id(\\d+)', component: AccountTransferViewPage, meta: { title: 'Transfer' } },
     { path: '/accounting/transfers/:id(\\d+)/edit', component: AccountTransferFormPage, meta: { title: 'Edit Transfer' } },
     { path: '/accounting/transactions', component: AccountsPage, meta: { title: 'Transactions' } },
+    { path: '/accounting/adjustments', component: AccountsPage, meta: { title: 'Adjustments' } },
+    { path: '/accounting/adjustments/new', component: AccountAdjustmentFormPage, meta: { title: 'New Adjustment' } },
+    { path: '/accounting/adjustments/:id(\\d+)/edit', component: AccountAdjustmentFormPage, meta: { title: 'Edit Adjustment' } },
     { path: '/payments', redirect: to => ({ path: '/accounting/payments', query: to.query }) },
     { path: '/payments/plans', redirect: '/settings/payments-plans' },
     { path: '/payments/methods', redirect: '/settings/payments-methods' },

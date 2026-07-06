@@ -121,6 +121,34 @@ class TenantScopedJobsTest extends ApiRouteTestCase
         ))->handle($sms, $mail, app(TenantConfigurationService::class));
     }
 
+    public function testSendAccountAdjustmentNotificationJobDeliversEmailToAdmins(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $account = $this->createCompanyAccount();
+        $adminRole = $this->createRole('admin');
+        $admin = $this->createUser(attributes: ['email' => 'admin-job@test.com', 'role_id' => $adminRole->id]);
+
+        $details = [
+            'account_name' => $account->name,
+            'type' => 'credit',
+            'amount' => 150.00,
+            'reason' => 'Job testing',
+            'date' => now()->toDateString(),
+            'operator_name' => 'Operator One',
+        ];
+
+        (new \App\Jobs\SendAccountAdjustmentNotificationJob(
+            $this->tenant->id,
+            'created',
+            $details,
+        ))->handle(app(TenantMailService::class));
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\AccountAdjustmentNotificationMail::class, function ($mail) use ($admin) {
+            return $mail->hasTo($admin->email) && $mail->action === 'created';
+        });
+    }
+
     private function createOtherTenant(): Tenant
     {
         return Tenant::create([

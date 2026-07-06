@@ -61,12 +61,13 @@ export function useNavigation() {
             items.push({ label: 'Inventory', shortLabel: 'Stock', path: '/inventory', icon: ICONS.inventory, children: invChildren });
         }
 
-        if (context.permissions?.paymentsManage || context.permissions?.expenses || context.permissions?.accountsTransfers || context.permissions?.accountsTransactions) {
+        if (context.permissions?.paymentsManage || context.permissions?.expenses || context.permissions?.accountsTransfers || context.permissions?.accountsTransactions || context.permissions?.accountsAdjust) {
             const children = [];
             if (context.permissions?.paymentsManage) children.push({ label: 'Payments', path: '/accounting/payments', activePrefix: '/accounting/payments' });
             if (context.permissions?.expenses) children.push({ label: 'Expenses', path: '/accounting/expenses', activePrefix: '/accounting/expenses' });
             if (context.permissions?.accountsTransfers) children.push({ label: 'Transfers', path: '/accounting/transfers', activePrefix: '/accounting/transfers' });
             if (context.permissions?.accountsTransactions) children.push({ label: 'Transactions', path: '/accounting/transactions' });
+            if (context.permissions?.accountsAdjust) children.push({ label: 'Adjustments', path: '/accounting/adjustments', activePrefix: '/accounting/adjustments' });
             items.push({
                 label: 'Accounting',
                 shortLabel: 'Accounting',

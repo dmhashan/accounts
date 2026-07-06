@@ -120,6 +120,7 @@ class CompanyAccountService
         $deductionSettlementIds = $items->where('model_name', 'payment_deduction')->pluck('reference_id')->filter()->unique()->values();
         $topupIds = $items->where('model_name', 'wallet_topup')->pluck('reference_id')->filter()->unique()->values();
         $paySheetRunIds = $items->where('model_name', 'employee_pay_sheet')->pluck('reference_id')->filter()->unique()->values();
+        $adjustmentIds = $items->where('model_name', 'adjustment')->pluck('reference_id')->filter()->unique()->values();
 
         // Load related records in bulk
         $sales = $saleIds->isNotEmpty()
@@ -148,9 +149,12 @@ class CompanyAccountService
         $paySheetRuns = $paySheetRunIds->isNotEmpty()
             ? EmployeePaySheetRun::whereIn('id', $paySheetRunIds)->get(['id', 'period_start', 'period_end'])->keyBy('id')
             : collect();
+        $adjustments = $adjustmentIds->isNotEmpty()
+            ? \App\Models\CompanyAccountAdjustment::whereIn('id', $adjustmentIds)->get(['id', 'reason'])->keyBy('id')
+            : collect();
 
         return [
-            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments, $deductionSettlements, $topups, $paySheetRuns) {
+            'data' => $items->map(function (CompanyAccountTransaction $tx) use ($sales, $expenses, $payments, $deductionSettlements, $topups, $paySheetRuns, $adjustments) {
                 $sourceReference = null;
                 $customer = null;
                 $memberId = null;
@@ -193,6 +197,10 @@ class CompanyAccountService
                         $sourceReference = $paySheetRun->period_start?->toDateString() . ' to ' . $paySheetRun->period_end?->toDateString();
                     }
                     $customer = 'Employee Pay Sheet';
+                } elseif ($tx->model_name === 'adjustment' && $tx->reference_id) {
+                    $adjustment = $adjustments->get($tx->reference_id);
+                    $sourceReference = 'Adjustment';
+                    $customer = $adjustment?->reason;
                 }
 
                 return [

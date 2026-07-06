@@ -58,7 +58,7 @@ class RolesApiTest extends ApiRouteTestCase
         $this->assertArrayNotHasKey('Payments', $permissionGroups);
         $this->assertArrayNotHasKey('Notifications', $permissionGroups);
         $this->assertSame(
-            ['payments.manage', 'expenses.manage', 'accounts.transfers', 'accounts.transactions'],
+            ['payments.manage', 'expenses.manage', 'accounts.transfers', 'accounts.transactions', 'accounts.adjust'],
             collect($permissionGroups['Accounting'])->pluck('slug')->all(),
         );
         $this->assertContains('accounts.manage', collect($permissionGroups['Settings'])->pluck('slug')->all());

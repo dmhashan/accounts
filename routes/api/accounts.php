@@ -5,6 +5,13 @@ use App\Http\Controllers\Api\PaymentSettlementApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/accounts/meta', [CompanyAccountApiController::class, 'meta'])->middleware(['auth', 'permission:accounts.manage,accounts.transfers,accounts.transactions,expenses.manage']);
+
+Route::get('/accounts/adjustments', [CompanyAccountApiController::class, 'adjustments'])->middleware(['auth', 'permission:accounts.adjust,accounts.manage']);
+Route::post('/accounts/adjustments', [CompanyAccountApiController::class, 'storeAdjustment'])->middleware(['auth', 'permission:accounts.adjust,accounts.manage']);
+Route::get('/accounts/adjustments/{adjustment}', [CompanyAccountApiController::class, 'showAdjustment'])->middleware(['auth', 'permission:accounts.adjust,accounts.manage']);
+Route::put('/accounts/adjustments/{adjustment}', [CompanyAccountApiController::class, 'updateAdjustment'])->middleware(['auth', 'permission:accounts.adjust,accounts.manage']);
+Route::delete('/accounts/adjustments/{adjustment}', [CompanyAccountApiController::class, 'destroyAdjustment'])->middleware(['auth', 'permission:accounts.adjust,accounts.manage']);
+
 Route::get('/accounts', [CompanyAccountApiController::class, 'index'])->middleware(['auth', 'permission:accounts.manage']);
 Route::post('/accounts', [CompanyAccountApiController::class, 'store'])->middleware(['auth', 'permission:accounts.manage']);
 

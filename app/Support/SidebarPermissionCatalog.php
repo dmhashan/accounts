@@ -47,6 +47,7 @@ class SidebarPermissionCatalog
                     ['name' => 'Expenses', 'slug' => 'expenses.manage', 'description' => 'View and manage expenses.'],
                     ['name' => 'Transfers', 'slug' => 'accounts.transfers', 'description' => 'View and manage account transfers.'],
                     ['name' => 'Transactions', 'slug' => 'accounts.transactions', 'description' => 'View account transaction history.'],
+                    ['name' => 'Adjustments', 'slug' => 'accounts.adjust', 'description' => 'View, create, edit, and delete account adjustments.'],
                 ],
             ],
             [

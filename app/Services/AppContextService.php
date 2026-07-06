@@ -63,10 +63,11 @@ class AppContextService
                 'inventoryDisplay' => $this->hasAnyPermission($user, ['inventory.display']),
                 'inventoryAudit' => $this->hasAnyPermission($user, ['inventory.audit', 'inventory.stock', 'inventory.display']),
 
-                'accounts' => $this->hasAnyPermission($user, ['accounts.manage', 'accounts.transfers', 'accounts.transactions']),
+                'accounts' => $this->hasAnyPermission($user, ['accounts.manage', 'accounts.transfers', 'accounts.transactions', 'accounts.adjust']),
                 'accountsManage' => $this->hasAnyPermission($user, ['accounts.manage']),
                 'accountsTransfers' => $this->hasAnyPermission($user, ['accounts.transfers', 'accounts.manage']),
                 'accountsTransactions' => $this->hasAnyPermission($user, ['accounts.transactions', 'accounts.manage']),
+                'accountsAdjust' => $this->hasAnyPermission($user, ['accounts.adjust', 'accounts.manage']),
                 'expenses' => $this->hasAnyPermission($user, ['expenses.manage', 'accounts.manage']),
 
                 'sales' => $this->hasAnyPermission($user, ['sales.process', 'sales.paid.view']),

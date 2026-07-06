@@ -358,6 +358,112 @@
         />
       </div>
     </div>
+
+    <div v-if="activeTab === 'adjustments'" class="min-h-0 flex flex-1 flex-col">
+      <div class="app-page-scroll">
+        <div class="app-surface rounded-2xl overflow-hidden">
+          <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
+            <article
+              v-for="adj in filteredAdjustments"
+              :key="adj.id"
+              class="p-4 space-y-2 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-800/40 transition-colors"
+              @click="router.push('/accounting/adjustments/' + adj.id + '/edit')"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                    {{ adj.account_name }}
+                  </p>
+                  <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                    {{ adj.adjustment_date || '-' }}
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+                    {{ money(adj.amount) }}
+                  </p>
+                  <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                    {{ formatType(adj.type) }}
+                  </p>
+                </div>
+              </div>
+
+              <p v-if="adj.reason" class="text-xs text-secondary-600 dark:text-secondary-300">
+                {{ adj.reason }}
+              </p>
+            </article>
+            <div v-if="filteredAdjustments.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
+              No adjustments found.
+            </div>
+          </div>
+
+          <div class="hidden md:block app-table-scroll">
+            <table class="w-full">
+              <thead class="app-table-head-sticky bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Date
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Account
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Type
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Reason
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
+                <tr
+                  v-for="adj in filteredAdjustments"
+                  :key="adj.id"
+                  class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50 align-top cursor-pointer"
+                  @click="router.push('/accounting/adjustments/' + adj.id + '/edit')"
+                >
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ adj.adjustment_date || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-900 dark:text-white">
+                    {{ adj.account_name }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ formatType(adj.type) }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 max-w-xs truncate">
+                    {{ adj.reason || '-' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm font-medium text-secondary-900 dark:text-white text-right">
+                    {{ money(adj.amount) }}
+                  </td>
+                </tr>
+                <tr v-if="filteredAdjustments.length === 0">
+                  <td colspan="5" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    No adjustments found.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-page-pagination">
+        <AppPagination
+          :current-page="adjustmentMeta.current_page"
+          :last-page="adjustmentMeta.last_page"
+          :per-page="adjustmentPerPage"
+          :total="adjustmentMeta.total"
+          :disabled="loadingAdjustments"
+          @page-change="handleAdjustmentPageChange"
+          @limit-change="handleAdjustmentLimitChange"
+        />
+      </div>
+    </div>
   </section>
 </template>
 
@@ -376,21 +482,30 @@ const route = useRoute();
 const router = useRouter();
 const context = useAppContext();
 
-const activeTab = ref(route.path === '/accounting/transfers' ? 'transfers' : route.path === '/accounting/transactions' ? 'transactions' : 'accounts');
+const activeTab = ref(
+    route.path === '/accounting/transfers' ? 'transfers' :
+    route.path === '/accounting/transactions' ? 'transactions' :
+    route.path === '/accounting/adjustments' ? 'adjustments' :
+    'accounts'
+);
 const accounts = ref([]);
 const transfers = ref([]);
 const transactions = ref([]);
+const adjustments = ref([]);
 const search = ref('');
 const errorMessage = ref('');
 const loadingAccounts = ref(false);
 const loadingTransfers = ref(false);
 const loadingTransactions = ref(false);
+const loadingAdjustments = ref(false);
 const accountMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const transferMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const transactionMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
+const adjustmentMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 const accountPerPage = ref(10);
 const transferPerPage = ref(10);
 const transactionPerPage = ref(10);
+const adjustmentPerPage = ref(10);
 
 const tabCta = computed(() => {
     if (activeTab.value === 'transactions') {
@@ -404,6 +519,16 @@ const tabCta = computed(() => {
             to: '/accounting/transfers/new',
             icon: ArrowRightLeft,
             label: 'New Transfer',
+        };
+    }
+
+    if (activeTab.value === 'adjustments') {
+        if (!context.permissions?.accountsAdjust) return null;
+
+        return {
+            to: '/accounting/adjustments/new',
+            icon: ArrowRightLeft,
+            label: 'New Adjustment',
         };
     }
 
@@ -424,6 +549,20 @@ const filteredAccounts = computed(() => {
     return accounts.value.filter((account) => {
         return [account.name, account.description, account.opening_balance, account.current_balance]
             .some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
+    });
+});
+
+const filteredAdjustments = computed(() => {
+    if (!normalizedSearch.value) return adjustments.value;
+
+    return adjustments.value.filter((adj) => {
+        return [
+            adj.account_name,
+            adj.adjustment_date,
+            adj.reason,
+            adj.type,
+            adj.amount,
+        ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value));
     });
 });
 
@@ -494,6 +633,11 @@ function triggerActiveSearch() {
 
     if (activeTab.value === 'transfers') {
         loadTransfers(1);
+        return;
+    }
+
+    if (activeTab.value === 'adjustments') {
+        loadAdjustments(1);
         return;
     }
 
@@ -571,6 +715,7 @@ async function loadAll() {
     if (context.permissions?.accountsManage) requests.push(loadAccounts());
     if (context.permissions?.accountsTransfers) requests.push(loadTransfers());
     if (context.permissions?.accountsTransactions) requests.push(loadTransactions());
+    if (context.permissions?.accountsAdjust) requests.push(loadAdjustments());
 
     try {
         await Promise.all(requests);
@@ -610,10 +755,44 @@ function handleTransactionLimitChange(limit) {
 watch(
     () => route.path,
     (path) => {
-        const newTab = path === '/accounting/transfers' ? 'transfers' : path === '/accounting/transactions' ? 'transactions' : 'accounts';
+        const newTab =
+            path === '/accounting/transfers' ? 'transfers' :
+            path === '/accounting/transactions' ? 'transactions' :
+            path === '/accounting/adjustments' ? 'adjustments' :
+            'accounts';
         if (activeTab.value !== newTab) activeTab.value = newTab;
     }
 );
+
+async function loadAdjustments(page = 1) {
+    if (!context.permissions?.accountsAdjust) return;
+
+    loadingAdjustments.value = true;
+
+    try {
+        const response = await apiRequest('/api/accounts/adjustments', {
+            params: {
+                page,
+                per_page: adjustmentPerPage.value,
+            },
+        });
+
+        adjustments.value = response.data || [];
+        adjustmentMeta.value = response.meta || adjustmentMeta.value;
+        adjustmentPerPage.value = adjustmentMeta.value.per_page || adjustmentPerPage.value;
+    } finally {
+        loadingAdjustments.value = false;
+    }
+}
+
+function handleAdjustmentPageChange(page) {
+    loadAdjustments(page);
+}
+
+function handleAdjustmentLimitChange(limit) {
+    adjustmentPerPage.value = Number(limit);
+    loadAdjustments(1);
+}
 
 onMounted(() => {
     loadAll();
