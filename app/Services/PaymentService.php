@@ -161,7 +161,7 @@ class PaymentService
         ];
     }
 
-    public function payments(int $tenantId, int $perPage): array
+    public function payments(int $tenantId, int $perPage, ?string $status = null): array
     {
         $payments = MemberPayment::query()
             ->with([
@@ -171,6 +171,8 @@ class PaymentService
                 'settlement',
                 'membership.plan:id,name',
             ])
+            ->when($status === 'outstanding', fn ($query) => $query->where('is_paid', false))
+            ->when($status === 'paid', fn ($query) => $query->where('is_paid', true))
             ->orderBy('payment_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -208,52 +210,62 @@ class PaymentService
     public function storePayment(int $tenantId, array $validated): MemberPayment
     {
         $payment = DB::transaction(function () use ($tenantId, $validated) {
-            $isWalletPayment = ($validated['payment_method'] ?? 'cash') === 'member_wallet';
+            $isPaid = filter_var($validated['is_paid'] ?? true, FILTER_VALIDATE_BOOLEAN);
+            $isWalletPayment = $isPaid && (($validated['payment_method'] ?? 'cash') === 'member_wallet');
 
             if (!empty($validated['member_id'])) {
                 $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
             }
 
             $paymentMethod = null;
+            $accountId = null;
+            $paymentMethodName = null;
 
-            if ($isWalletPayment) {
-                if (empty($validated['member_id'])) {
-                    abort(422, 'Please select a member for wallet payment.');
-                }
-                $member = Member::query()
-                    ->lockForUpdate()
-                    ->find((int) $validated['member_id']);
+            if ($isPaid) {
+                if ($isWalletPayment) {
+                    if (empty($validated['member_id'])) {
+                        abort(422, 'Please select a member for wallet payment.');
+                    }
+                    $member = Member::query()
+                        ->lockForUpdate()
+                        ->find((int) $validated['member_id']);
 
-                if (!$member) {
-                    abort(422, 'Member not found.');
-                }
+                    if (!$member) {
+                        abort(422, 'Member not found.');
+                    }
 
-                if ((float) $member->current_balance < (float) $validated['amount']) {
-                    abort(422, 'Insufficient wallet balance.');
+                    if ((float) $member->current_balance < (float) $validated['amount']) {
+                        abort(422, 'Insufficient wallet balance.');
+                    }
+                    $member->update([
+                        'current_balance' => (float) $member->current_balance - (float) $validated['amount'],
+                    ]);
+                    $accountId = null;
+                    $paymentMethodName = 'member_wallet';
+                } else {
+                    $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
+                    $accountId = $paymentMethod->company_account_id;
+                    $paymentMethodName = $paymentMethod->name;
                 }
-                $member->update([
-                    'current_balance' => (float) $member->current_balance - (float) $validated['amount'],
-                ]);
-                $accountId = null;
-            } else {
-                $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
-                $accountId = $paymentMethod->company_account_id;
             }
 
             $payment = MemberPayment::create([
                 'member_id' => $validated['member_id'] ?? null,
                 'company_account_id' => $accountId,
                 'payment_method_id' => $paymentMethod?->id,
-                'payment_method' => $isWalletPayment ? 'member_wallet' : $paymentMethod->name,
+                'payment_method' => $paymentMethodName,
                 'amount' => $validated['amount'],
                 'payment_date' => $validated['payment_date'],
                 'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
                 'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+                'is_paid' => $isPaid,
+                'paid_amount' => $isPaid ? $validated['amount'] : 0.00,
+                'balance' => $isPaid ? 0.00 : $validated['amount'],
             ]);
 
             $this->syncMembership($payment, $tenantId, $validated);
 
-            if (!$isWalletPayment) {
+            if ($isPaid && !$isWalletPayment) {
                 $this->settlements->syncForPayment($payment->fresh(['member']), $paymentMethod);
             }
 
@@ -261,7 +273,12 @@ class PaymentService
         });
 
         $this->triggerBiometricSync($payment->member_id, $tenantId);
-        $this->notifications->sendPaymentReceipt($payment);
+
+        if ($payment->is_paid) {
+            $this->notifications->sendPaymentReceipt($payment);
+        } else {
+            $this->notifications->sendPaymentOutstanding($payment);
+        }
 
         return $payment;
     }
@@ -309,6 +326,81 @@ class PaymentService
         foreach (array_unique(array_filter([$oldMemberId, $newMemberId])) as $memberId) {
             $this->triggerBiometricSync($memberId, $tenantId);
         }
+    }
+
+    public function markAsPaid(MemberPayment $payment, int $tenantId, array $validated): MemberPayment
+    {
+        $paid = DB::transaction(function () use ($payment, $tenantId, $validated) {
+            $lockedPayment = MemberPayment::query()
+                ->lockForUpdate()
+                ->find($payment->id);
+
+            if (!$lockedPayment) {
+                abort(404);
+            }
+
+            if ($lockedPayment->is_paid) {
+                abort(422, 'Payment is already paid.');
+            }
+
+            $isWallet = ($validated['payment_method'] ?? null) === 'member_wallet';
+            $paymentMethod = null;
+            $accountId = null;
+            $paymentMethodName = null;
+
+            if ($isWallet) {
+                if (!$lockedPayment->member_id) {
+                    abort(422, 'Member wallet payment requires a member to be assigned.');
+                }
+
+                $member = Member::query()
+                    ->lockForUpdate()
+                    ->find($lockedPayment->member_id);
+
+                if (!$member) {
+                    abort(422, 'Member not found.');
+                }
+
+                if ((float) $member->current_balance < (float) $lockedPayment->amount) {
+                    abort(422, 'Insufficient member wallet balance.');
+                }
+
+                $member->update([
+                    'current_balance' => (float) $member->current_balance - (float) $lockedPayment->amount,
+                ]);
+
+                $lockedPayment->update([
+                    'company_account_id' => null,
+                    'payment_method_id' => null,
+                    'payment_method' => 'member_wallet',
+                    'is_paid' => true,
+                    'paid_amount' => (float) $lockedPayment->amount,
+                    'balance' => 0.00,
+                ]);
+            } else {
+                $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
+                $accountId = $paymentMethod->company_account_id;
+                $paymentMethodName = $paymentMethod->name;
+
+                $lockedPayment->update([
+                    'company_account_id' => $accountId,
+                    'payment_method_id' => $paymentMethod->id,
+                    'payment_method' => $paymentMethodName,
+                    'is_paid' => true,
+                    'paid_amount' => (float) $lockedPayment->amount,
+                    'balance' => 0.00,
+                ]);
+
+                $this->settlements->syncForPayment($lockedPayment->fresh(['member']), $paymentMethod);
+            }
+
+            return $lockedPayment->fresh();
+        });
+
+        $this->triggerBiometricSync($paid->member_id, $tenantId);
+        $this->notifications->sendPaymentReceipt($paid);
+
+        return $paid;
     }
 
     public function destroyPayment(MemberPayment $payment, int $tenantId): void
@@ -438,6 +530,9 @@ class PaymentService
             'reference_number' => $payment->reference_number,
             'notes' => $payment->notes,
             'created_at' => optional($payment->created_at)->format('Y-m-d H:i'),
+            'is_paid' => (bool) $payment->is_paid,
+            'paid_amount' => round((float) $payment->paid_amount, 2),
+            'balance' => round((float) $payment->balance, 2),
         ];
     }
 }

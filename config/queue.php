@@ -16,6 +16,7 @@ return [
     'default' => env('QUEUE_CONNECTION', 'database'),
 
     'biometric_queue' => env('BIOMETRIC_QUEUE', 'biometric'),
+    'biometric_connection' => env('BIOMETRIC_CONNECTION', 'database'),
 
     /*
     |--------------------------------------------------------------------------

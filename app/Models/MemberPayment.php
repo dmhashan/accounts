@@ -17,11 +17,17 @@ class MemberPayment extends Model
         'payment_date',
         'reference_number',
         'notes',
+        'is_paid',
+        'paid_amount',
+        'balance',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'payment_date' => 'date',
+        'is_paid' => 'boolean',
+        'paid_amount' => 'decimal:2',
+        'balance' => 'decimal:2',
     ];
 
     public function tenant(): BelongsTo

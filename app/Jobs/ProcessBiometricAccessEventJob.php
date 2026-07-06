@@ -26,6 +26,7 @@ class ProcessBiometricAccessEventJob implements ShouldQueue
         private readonly int $tenantId,
         private readonly array $event,
     ) {
+        $this->onConnection((string) config('queue.biometric_connection', 'database'));
         $this->onQueue((string) config('queue.biometric_queue', 'biometric'));
     }
 

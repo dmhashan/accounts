@@ -32,5 +32,6 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="TENANT_DATABASE_ISOLATION_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="BIOMETRIC_CONNECTION" value="sync"/>
     </php>
 </phpunit>

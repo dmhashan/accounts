@@ -42,8 +42,9 @@ class PaymentApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->integer('per_page', 20), 50);
+        $status = $request->query('status');
 
-        return response()->json($this->paymentService->payments(app('tenant')->id, $perPage));
+        return response()->json($this->paymentService->payments(app('tenant')->id, $perPage, $status));
     }
 
     public function show(MemberPayment $payment): JsonResponse
@@ -76,6 +77,34 @@ class PaymentApiController extends Controller
         ]);
     }
 
+    public function markAsPaid(MemberPayment $payment, Request $request): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+
+        $validated = $request->validate([
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'payment_method_id' => ['nullable', 'integer', 'exists:payment_methods,id'],
+            'company_account_id' => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => ($request->input('payment_method') ?? 'cash') !== 'member_wallet' && !$request->filled('payment_method_id')),
+                'nullable',
+                'integer',
+                'exists:company_accounts,id',
+            ],
+        ]);
+
+        $payment = $this->paymentService->markAsPaid($payment, $tenantId, $validated);
+
+        return response()->json([
+            'message' => 'Payment marked as paid successfully.',
+            'data' => [
+                'id' => $payment->id,
+                'is_paid' => (bool) $payment->is_paid,
+                'company_account_id' => $payment->company_account_id,
+                'payment_method_id' => $payment->payment_method_id,
+            ],
+        ]);
+    }
+
     public function destroy(MemberPayment $payment): JsonResponse
     {
         $this->paymentService->destroyPayment($payment, app('tenant')->id);
@@ -99,6 +128,7 @@ class PaymentApiController extends Controller
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'reference_number' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'is_paid' => ['nullable', 'boolean'],
         ];
     }
 }

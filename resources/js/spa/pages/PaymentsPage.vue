@@ -40,12 +40,37 @@
         </button>
       </template>
     </AppPageHeader>
-
     <!-- Payments tab -->
     <div v-if="activeTab === 'payments'" class="min-h-0 flex flex-1 flex-col">
       <div class="app-page-scroll">
         <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
           {{ errorMessage }}
+        </div>
+
+        <!-- Sub-tabs for Outstanding vs Paid -->
+        <div class="border-b border-secondary-200 dark:border-secondary-700 mb-4 overflow-hidden mx-4">
+          <nav class="-mb-px flex gap-4 pb-px" aria-label="Payment status tabs">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center pb-3 pt-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer"
+              :class="paymentStatusTab === 'outstanding'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
+              @click="switchPaymentStatusTab('outstanding')"
+            >
+              Outstanding Payments
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center pb-3 pt-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer"
+              :class="paymentStatusTab === 'paid'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
+              @click="switchPaymentStatusTab('paid')"
+            >
+              Paid Payments
+            </button>
+          </nav>
         </div>
 
         <div class="app-surface rounded-2xl overflow-hidden">
@@ -71,12 +96,18 @@
                       <span>{{ payment.payment_date }}</span>
                       <span>&bull;</span>
                       <span
-                        v-if="payment.payment_method_name"
+                        v-if="payment.is_paid && payment.payment_method_name"
                         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border"
                         :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text} ${getColorClasses(payment.payment_method_color).border}`"
                       >
                         <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3 shrink-0" />
                         {{ payment.payment_method_name }}
+                      </span>
+                      <span
+                        v-else-if="!payment.is_paid"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                      >
+                        Outstanding
                       </span>
                       <span v-else>{{ payment.account_name || '—' }}</span>
                       <span v-if="payment.payment_plan_name"> &bull; {{ payment.payment_plan_name }}</span>
@@ -141,15 +172,21 @@
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
                       <span
-                        v-if="payment.payment_method_name"
+                        v-if="payment.is_paid && payment.payment_method_name"
                         class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border"
                         :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text} ${getColorClasses(payment.payment_method_color).border}`"
                       >
                         <component :is="getIconComponent(payment.payment_method_icon)" class="w-3.5 h-3.5 shrink-0" />
                         {{ payment.payment_method_name }}
                       </span>
+                      <span
+                        v-else-if="!payment.is_paid"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                      >
+                        Outstanding
+                      </span>
                       <span v-else>{{ payment.account_name || '—' }}</span>
-                      <p v-if="payment.payment_method_name && payment.account_name" class="text-xs text-secondary-500 dark:text-secondary-400 mt-1 pl-1">
+                      <p v-if="payment.is_paid && payment.payment_method_name && payment.account_name" class="text-xs text-secondary-500 dark:text-secondary-400 mt-1 pl-1">
                         {{ payment.account_name }}
                       </p>
                     </td>
@@ -829,9 +866,16 @@ const loading = ref(false);
 const errorMessage = ref('');
 const payments = ref([]);
 const pagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
+const paymentStatusTab = ref('outstanding');
 
 function money(value) {
     return Number(value || 0).toFixed(2);
+}
+
+function switchPaymentStatusTab(tab) {
+    if (paymentStatusTab.value === tab) return;
+    paymentStatusTab.value = tab;
+    loadPayments(1);
 }
 
 async function loadPayments(page = 1) {
@@ -840,7 +884,13 @@ async function loadPayments(page = 1) {
     loading.value = true;
     errorMessage.value = '';
     try {
-        const response = await apiRequest('/api/payments', { params: { page, per_page: 20 } });
+        const response = await apiRequest('/api/payments', {
+            params: {
+                page,
+                per_page: 20,
+                status: paymentStatusTab.value,
+            },
+        });
         payments.value = response.data || [];
         pagination.value = response.meta || { current_page: 1, last_page: 1, per_page: 20, total: 0 };
     } catch {

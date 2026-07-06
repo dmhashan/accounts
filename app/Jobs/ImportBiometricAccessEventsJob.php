@@ -32,6 +32,7 @@ class ImportBiometricAccessEventsJob implements ShouldQueue
         private readonly ?string $syncFrom = null,
         private readonly ?string $syncTo = null,
     ) {
+        $this->onConnection((string) config('queue.biometric_connection', 'database'));
         $this->onQueue((string) config('queue.biometric_queue', 'biometric'));
     }
 

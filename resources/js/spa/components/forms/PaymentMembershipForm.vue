@@ -108,16 +108,6 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Method <span class="text-red-500">*</span></label>
-        <AppPaymentMethodSelect
-          v-model="accountValue"
-          :methods="paymentMethods"
-          :member-id="effectiveMemberId ?? undefined"
-          :amount="parseFloat(form.amount) || 0"
-        />
-      </div>
-
-      <div>
         <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Date <span class="text-red-500">*</span></label>
         <AppFormDateInput
           v-model="form.payment_date"
@@ -144,14 +134,69 @@
         />
       </div>
 
-      <button
-        type="submit"
-        class="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-        :disabled="saving || !effectiveMemberId || !form.plan_id || !accountValue"
-      >
-        {{ saving ? 'Recording...' : 'Make Payment' }}
-      </button>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          class="w-full py-2.5 border border-secondary-300 dark:border-secondary-600 text-secondary-800 dark:text-secondary-100 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 hover:bg-secondary-50 dark:hover:bg-secondary-800"
+          :disabled="saving || !effectiveMemberId || !form.plan_id"
+          @click="submitOutstanding"
+        >
+          {{ saving ? 'Saving...' : 'Save' }}
+        </button>
+        <button
+          type="button"
+          class="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+          :disabled="saving || !effectiveMemberId || !form.plan_id"
+          @click="openPayNow"
+        >
+          {{ saving ? 'Processing...' : 'Pay Now' }}
+        </button>
+      </div>
     </form>
+
+    <!-- Pay Now Modal -->
+    <div v-if="payNowOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/45" @click="closePayNow" />
+      <div class="relative z-10 w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-4 md:p-5 shadow-xl">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
+              Select Payment Method
+            </h3>
+            <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+              Choose how this membership payment is collected.
+            </p>
+          </div>
+          <button type="button" class="text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-200" @click="closePayNow">
+            ✕
+          </button>
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Method</label>
+          <AppPaymentMethodSelect
+            v-model="accountValue"
+            :methods="paymentMethods"
+            :member-id="effectiveMemberId ?? undefined"
+            :amount="parseFloat(form.amount) || 0"
+          />
+        </div>
+
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <button type="button" class="px-4 py-2 text-sm rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-100 hover:bg-secondary-100 dark:hover:bg-secondary-800" @click="closePayNow">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
+            :disabled="saving || !accountValue"
+            @click="submitPaid"
+          >
+            {{ saving ? 'Processing...' : 'Confirm Payment' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -236,7 +281,35 @@ async function onMemberSelect(id) {
     if (id) await loadMemberInfo(id);
 }
 
-function submit() {
+const payNowOpen = ref(false);
+
+function openPayNow() {
+    if (!effectiveMemberId.value || !form.value.plan_id) return;
+    if (!accountValue.value && props.paymentMethods.length > 0) {
+        accountValue.value = props.paymentMethods[0].id;
+    }
+    payNowOpen.value = true;
+}
+
+function closePayNow() {
+    payNowOpen.value = false;
+}
+
+function submitOutstanding() {
+    if (!effectiveMemberId.value || !form.value.plan_id || !form.value.amount) return;
+    emit('submit', {
+        member_id: effectiveMemberId.value,
+        payment_plan_id: form.value.plan_id,
+        amount: parseFloat(form.value.amount),
+        payment_date: form.value.payment_date,
+        start_date: startDate.value,
+        end_date: endDate.value,
+        notes: form.value.notes || null,
+        is_paid: false,
+    });
+}
+
+function submitPaid() {
     if (!effectiveMemberId.value || !form.value.plan_id || !form.value.amount || !accountValue.value) return;
     const isWallet = accountValue.value === 'member_wallet';
     emit('submit', {
@@ -249,6 +322,8 @@ function submit() {
         start_date: startDate.value,
         end_date: endDate.value,
         notes: form.value.notes || null,
+        is_paid: true,
     });
+    payNowOpen.value = false;
 }
 </script>

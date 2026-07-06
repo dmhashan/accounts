@@ -77,6 +77,50 @@ class AutomatedMemberNotificationService
         );
     }
 
+    public function sendPaymentOutstanding(MemberPayment $payment): void
+    {
+        $payment->loadMissing(['member', 'membership']);
+
+        if (!$payment->member || !app()->bound('tenant')) {
+            return;
+        }
+
+        $tenant = app('tenant');
+        $tenantId = (int) $tenant->id;
+        $memberName = $this->memberName($payment->member);
+        $tenantName = $this->tenantName($tenant);
+        $amount = number_format((float) $payment->amount, 2, '.', ',');
+        $paymentDate = $payment->payment_date?->toDateString() ?? now()->toDateString();
+        $validUntil = $payment->membership?->end_date?->toDateString();
+
+        $salesOutstanding = (float) \App\Models\Sale::where('customer_member_id', $payment->member_id)
+            ->where('is_paid', false)
+            ->sum('balance');
+        $paymentsOutstanding = (float) MemberPayment::where('member_id', $payment->member_id)
+            ->where('is_paid', false)
+            ->sum('balance');
+        $walletBalance = (float) ($payment->member->current_balance ?? 0);
+        $walletOutstanding = $walletBalance < 0 ? abs($walletBalance) : 0.0;
+        $totalOutstandingVal = round($salesOutstanding + $paymentsOutstanding + $walletOutstanding, 2);
+        $totalOutstanding = number_format($totalOutstandingVal, 2, '.', ',');
+
+        $message = "Outstanding payment created! {$memberName}, payment amount: LKR {$amount} at {$tenantName} on {$paymentDate}";
+
+        if ($validUntil) {
+            $message .= ". Membership valid until {$validUntil}";
+        }
+
+        $message .= ". Total outstanding: LKR {$totalOutstanding}. Please settle soon.";
+
+        SendMemberNotificationJob::dispatch(
+            $tenantId,
+            $payment->member->id,
+            'membership_payment_outstanding',
+            'Outstanding Payment recorded',
+            $message,
+        );
+    }
+
     public function sendMembershipExpiryReminders(?Carbon $today = null): int
     {
         $today ??= today();

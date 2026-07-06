@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\SyncBiometricMemberJob;
 use App\Models\Member;
 use App\Models\MemberAttendance;
+use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
 use App\Models\PaymentPlan;
 use App\Models\Sale;
@@ -48,6 +49,7 @@ class MemberService
             ->selectSub($this->latestMembershipSubquery($tenantId, 'payment_plans.name'), 'membership_plan_name')
             ->selectSub($this->lastAttendanceDateSubquery($tenantId), 'last_attendance_date')
             ->selectSub($this->salesOutstandingSubquery($tenantId), 'sales_outstanding_amount')
+            ->selectSub($this->paymentsOutstandingSubquery($tenantId), 'payments_outstanding_amount')
             ->when($isTemp !== null, fn ($q) => $q->where('members.is_temp', $isTemp))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
@@ -75,9 +77,10 @@ class MemberService
                 $daysUntilPaymentExpiry = $membershipExpiry === null ? null : (int) $today->diffInDays($membershipExpiry, false);
                 $daysSinceLastAttendance = $lastAttendance === null ? null : (int) $lastAttendance->diffInDays($today);
                 $salesOutstanding = (float) ($member->sales_outstanding_amount ?? 0);
+                $paymentsOutstanding = (float) ($member->payments_outstanding_amount ?? 0);
                 $walletBalance = (float) ($member->current_balance ?? 0);
                 $walletOutstanding = $walletBalance < 0 ? abs($walletBalance) : 0.0;
-                $totalOutstanding = round($salesOutstanding + $walletOutstanding, 2);
+                $totalOutstanding = round($salesOutstanding + $paymentsOutstanding + $walletOutstanding, 2);
 
                 return [
                     'id' => $member->id,
@@ -101,6 +104,7 @@ class MemberService
                     'days_since_last_attendance' => $daysSinceLastAttendance,
                     'last_attendance_days' => $daysSinceLastAttendance,
                     'sales_outstanding_amount' => round($salesOutstanding, 2),
+                    'payments_outstanding_amount' => round($paymentsOutstanding, 2),
                     'wallet_balance' => round($walletBalance, 2),
                     'total_outstanding_amount' => $totalOutstanding,
                     'profile_photo_url' => $member->profile_photo_path
@@ -600,14 +604,30 @@ class MemberService
         );
     }
 
+    private function paymentsOutstandingSubquery(int $tenantId): Builder
+    {
+        $query = MemberPayment::query()
+            ->selectRaw('COALESCE(SUM(balance), 0)')
+            ->where('is_paid', false)
+            ->whereColumn('member_payments.member_id', 'members.id');
+
+        return $this->applyTenantScope($query, 'member_payments', $tenantId);
+    }
+
     private function applyOutstandingFilter(Builder $query, int $tenantId, string $outstanding): void
     {
         $salesSubquery = $this->salesOutstandingSubquery($tenantId);
+        $paymentsSubquery = $this->paymentsOutstandingSubquery($tenantId);
+
         $expression = '(COALESCE((' . $salesSubquery->toSql() . '), 0) '
+            . '+ COALESCE((' . $paymentsSubquery->toSql() . '), 0) '
             . '+ CASE WHEN members.current_balance < 0 THEN ABS(members.current_balance) ELSE 0 END)';
         $operator = $outstanding === 'with' ? '>' : '<=';
 
-        $query->whereRaw($expression . " {$operator} 0", $salesSubquery->getBindings());
+        $query->whereRaw(
+            $expression . " {$operator} 0",
+            array_merge($salesSubquery->getBindings(), $paymentsSubquery->getBindings()),
+        );
     }
 
     private function whereSubqueryDate(Builder $query, Builder $dateSubquery, string $operator, string $date): void

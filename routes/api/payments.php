@@ -19,6 +19,7 @@ Route::middleware(['auth', 'permission:payments.manage'])->group(function () {
     Route::get('/payments/member/{member}/payment-info', [PaymentApiController::class, 'memberPaymentInfo']);
     Route::get('/payments', [PaymentApiController::class, 'index']);
     Route::post('/payments', [PaymentApiController::class, 'store']);
+    Route::post('/payments/{payment}/mark-as-paid', [PaymentApiController::class, 'markAsPaid']);
     Route::get('/payments/{payment}', [PaymentApiController::class, 'show']);
     Route::put('/payments/{payment}', [PaymentApiController::class, 'update']);
     Route::delete('/payments/{payment}', [PaymentApiController::class, 'destroy']);

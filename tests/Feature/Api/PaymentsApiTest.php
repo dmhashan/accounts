@@ -476,6 +476,118 @@ class PaymentsApiTest extends ApiRouteTestCase
     }
 
     // ------------------------------------------------------------------
+    // Outstanding payments
+    // ------------------------------------------------------------------
+
+    public function testCreateOutstandingPayment(): void
+    {
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.inapp.enabled' => '1',
+        ]);
+
+        $this->actingAsUser(['payments.manage']);
+        $member = $this->createMember(null, ['name' => 'John Doe']);
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
+
+        $response = $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_plan_id' => $plan->id,
+            'amount' => 1000,
+            'payment_date' => '2026-06-03',
+            'start_date' => '2026-06-03',
+            'is_paid' => false,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('member_payments', [
+            'id' => $response->json('data.id'),
+            'is_paid' => false,
+            'amount' => 1000.00,
+            'paid_amount' => 0.00,
+            'balance' => 1000.00,
+        ]);
+
+        // Membership should still be created
+        $this->assertDatabaseHas('payment_memberships', [
+            'payment_plan_id' => $plan->id,
+            'start_date' => '2026-06-03 00:00:00',
+            'end_date' => '2026-07-02 00:00:00',
+        ]);
+
+        // Should dispatch outstanding notification
+        $this->assertDatabaseHas('member_notifications', [
+            'member_id' => $member->id,
+            'type' => 'membership_payment_outstanding',
+        ]);
+    }
+
+    public function testMarkOutstandingPaymentAsPaid(): void
+    {
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.inapp.enabled' => '1',
+        ]);
+
+        $this->actingAsUser(['payments.manage']);
+        $member = $this->createMember(null, ['name' => 'Jane Smith']);
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
+        $account = $this->createAccount(['name' => 'Main Account']);
+
+        // Create outstanding payment
+        $payment = MemberPayment::create([
+            'member_id' => $member->id,
+            'amount' => 1000,
+            'payment_date' => '2026-06-03',
+            'is_paid' => false,
+            'paid_amount' => 0,
+            'balance' => 1000,
+        ]);
+
+        // Mark as paid
+        $response = $this->postJson('/api/payments/' . $payment->id . '/mark-as-paid', [
+            'company_account_id' => $account->id,
+            'payment_method' => 'cash',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('member_payments', [
+            'id' => $payment->id,
+            'is_paid' => true,
+            'paid_amount' => 1000.00,
+            'balance' => 0.00,
+            'company_account_id' => $account->id,
+        ]);
+
+        // Should dispatch receipt notification
+        $this->assertDatabaseHas('member_notifications', [
+            'member_id' => $member->id,
+            'type' => 'membership_payment_received',
+        ]);
+    }
+
+    public function testTotalOutstandingCalculationIncludesUnpaidPayments(): void
+    {
+        $this->actingAsUser(['payments.manage', 'members.view']);
+        $member = $this->createMember(null, ['name' => 'Bob Junior']);
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1200]);
+
+        // Create outstanding payment
+        $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_plan_id' => $plan->id,
+            'amount' => 1200,
+            'payment_date' => '2026-06-03',
+            'start_date' => '2026-06-03',
+            'is_paid' => false,
+        ])->assertCreated();
+
+        // Get members list, verify total_outstanding_amount matches
+        $response = $this->getJson('/api/members')->assertOk();
+        $memberData = collect($response->json('data'))->firstWhere('id', $member->id);
+
+        $this->assertNotNull($memberData);
+        $this->assertEquals(1200.00, (float) $memberData['payments_outstanding_amount']);
+        $this->assertEquals(1200.00, (float) $memberData['total_outstanding_amount']);
+    }
+
+    // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
 

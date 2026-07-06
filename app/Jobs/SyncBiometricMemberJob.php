@@ -27,6 +27,7 @@ class SyncBiometricMemberJob implements ShouldQueue
         private readonly int $memberId,
         private readonly string $action,
     ) {
+        $this->onConnection((string) config('queue.biometric_connection', 'database'));
         $this->onQueue((string) config('queue.biometric_queue', 'biometric'));
     }
 
