@@ -11,7 +11,7 @@
       </div>
       <div class="flex items-center gap-2">
         <!-- Multi Select Dropdown Filter -->
-        <div v-if="summary.payment_methods && summary.payment_methods.length > 0" class="relative">
+        <div v-if="summary.accounts && summary.accounts.length > 0" class="relative">
           <button
             ref="triggerRef"
             type="button"
@@ -42,24 +42,24 @@
                 <button
                   type="button"
                   class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors hover:bg-secondary-100/50 dark:hover:bg-secondary-800/50"
-                  :class="selectedPaymentMethodIds.length === 0 ? 'text-primary-600 dark:text-primary-400 font-bold' : 'text-secondary-700 dark:text-secondary-300'"
+                  :class="selectedAccountIds.length === 0 ? 'text-primary-600 dark:text-primary-400 font-bold' : 'text-secondary-700 dark:text-secondary-300'"
                   @click="emit('change-filter', [])"
                 >
-                  <span>All Methods</span>
-                  <Check v-if="selectedPaymentMethodIds.length === 0" class="h-3.5 w-3.5" />
+                  <span>All Accounts</span>
+                  <Check v-if="selectedAccountIds.length === 0" class="h-3.5 w-3.5" />
                 </button>
                 <div class="my-1 h-px bg-secondary-200/60 dark:bg-secondary-800/60" />
                 <div class="flex-1 overflow-y-auto overscroll-contain">
                   <button
-                    v-for="method in summary.payment_methods"
-                    :key="method.id"
+                    v-for="account in summary.accounts"
+                    :key="account.id"
                     type="button"
                     class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-colors hover:bg-secondary-100/50 dark:hover:bg-secondary-800/50"
-                    :class="selectedPaymentMethodIds.includes(method.id) ? 'font-semibold text-primary-600 dark:text-primary-400 font-bold' : 'text-secondary-600 dark:text-secondary-400'"
-                    @click="selectMethod(method.id)"
+                    :class="selectedAccountIds.includes(account.id) ? 'font-semibold text-primary-600 dark:text-primary-400 font-bold' : 'text-secondary-600 dark:text-secondary-400'"
+                    @click="selectAccount(account.id)"
                   >
-                    <span class="truncate">{{ method.name }}</span>
-                    <Check v-if="selectedPaymentMethodIds.includes(method.id)" class="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
+                    <span class="truncate">{{ account.name }}</span>
+                    <Check v-if="selectedAccountIds.includes(account.id)" class="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
                   </button>
                 </div>
               </div>
@@ -200,7 +200,7 @@ import AppEmptyState from '../AppEmptyState.vue';
 
 const props = defineProps({
   loading: { type: Boolean, default: false },
-  selectedPaymentMethodIds: { type: Array, default: () => [] },
+  selectedAccountIds: { type: Array, default: () => [] },
   summary: {
     type: Object,
     default: () => ({
@@ -214,7 +214,7 @@ const props = defineProps({
       start_date: '',
       end_date: '',
       transactions: [],
-      payment_methods: [],
+      accounts: [],
     }),
   },
 });
@@ -227,16 +227,16 @@ const panelRef = ref(null);
 const panelStyle = ref({});
 
 const triggerLabel = computed(() => {
-  const selectedIds = props.selectedPaymentMethodIds;
-  const methods = props.summary.payment_methods || [];
-  if (!selectedIds || selectedIds.length === 0 || selectedIds.length === methods.length) {
-    return 'All Methods';
+  const selectedIds = props.selectedAccountIds;
+  const accounts = props.summary.accounts || [];
+  if (!selectedIds || selectedIds.length === 0 || selectedIds.length === accounts.length) {
+    return 'All Accounts';
   }
   if (selectedIds.length === 1) {
-    const found = methods.find(m => m.id === selectedIds[0]);
-    return found ? found.name : '1 Method';
+    const found = accounts.find(a => a.id === selectedIds[0]);
+    return found ? found.name : '1 Account';
   }
-  return `${selectedIds.length} Methods`;
+  return `${selectedIds.length} Accounts`;
 });
 
 function computePanelStyle() {
@@ -264,12 +264,12 @@ function toggleDropdown() {
   }
 }
 
-function selectMethod(methodId) {
-  let newSelected = [...props.selectedPaymentMethodIds];
-  if (newSelected.includes(methodId)) {
-    newSelected = newSelected.filter(id => id !== methodId);
+function selectAccount(accountId) {
+  let newSelected = [...props.selectedAccountIds];
+  if (newSelected.includes(accountId)) {
+    newSelected = newSelected.filter(id => id !== accountId);
   } else {
-    newSelected.push(methodId);
+    newSelected.push(accountId);
   }
   emit('change-filter', newSelected);
 }

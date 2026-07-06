@@ -333,7 +333,7 @@ class DashboardApiTest extends ApiRouteTestCase
         return $sale;
     }
 
-    public function testDashboardOverviewRouteFiltersByPaymentMethods(): void
+    public function testDashboardOverviewRouteFiltersByAccounts(): void
     {
         $this->actingAsUser([
             'dashboard.widget.cash_flow',
@@ -342,43 +342,21 @@ class DashboardApiTest extends ApiRouteTestCase
         $accountCash = $this->createCompanyAccount(['name' => 'Cash Account']);
         $accountBank = $this->createCompanyAccount(['name' => 'Bank Account']);
 
-        $methodCash = \App\Models\PaymentMethod::create([
-            'company_account_id' => $accountCash->id,
-            'name' => 'Cash Method',
-            'is_active' => true,
-        ]);
-
-        $methodBank = \App\Models\PaymentMethod::create([
-            'company_account_id' => $accountBank->id,
-            'name' => 'Bank Method',
-            'is_active' => true,
-        ]);
-
-        // Create a cash sale transaction
-        $saleCash = $this->createSale([
-            'total_amount' => 100,
-            'paid_amount' => 100,
-            'payment_method_id' => $methodCash->id,
-        ]);
+        // Create a cash transaction
         CompanyAccountTransaction::create([
             'company_account_id' => $accountCash->id,
             'model_name' => 'sale',
-            'reference_id' => $saleCash->id,
+            'reference_id' => 10,
             'type' => 'sale',
             'amount' => 100,
             'transaction_date' => now()->toDateString(),
         ]);
 
-        // Create a bank sale transaction
-        $saleBank = $this->createSale([
-            'total_amount' => 200,
-            'paid_amount' => 200,
-            'payment_method_id' => $methodBank->id,
-        ]);
+        // Create a bank transaction
         CompanyAccountTransaction::create([
             'company_account_id' => $accountBank->id,
             'model_name' => 'sale',
-            'reference_id' => $saleBank->id,
+            'reference_id' => 11,
             'type' => 'sale',
             'amount' => 200,
             'transaction_date' => now()->toDateString(),
@@ -390,12 +368,12 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertOk()
             ->assertJsonPath('income_expense_summary.income', 300)
             ->assertJsonCount(2, 'income_expense_summary.transactions')
-            // Assert payment methods are returned in the response
-            ->assertJsonPath('income_expense_summary.payment_methods.0.name', 'Bank Method')
-            ->assertJsonPath('income_expense_summary.payment_methods.1.name', 'Cash Method');
+            // Assert accounts list is returned in the response
+            ->assertJsonPath('income_expense_summary.accounts.0.name', 'Bank Account')
+            ->assertJsonPath('income_expense_summary.accounts.1.name', 'Cash Account');
 
-        // 2. Check filtered by Cash only
-        $responseCash = $this->getJson('/api/dashboard/overview?payment_method_ids=' . $methodCash->id);
+        // 2. Check filtered by Cash Account only
+        $responseCash = $this->getJson('/api/dashboard/overview?account_ids=' . $accountCash->id);
         $responseCash
             ->assertOk()
             ->assertJsonPath('income_expense_summary.income', 100)
@@ -403,14 +381,14 @@ class DashboardApiTest extends ApiRouteTestCase
             ->assertJsonPath('income_expense_summary.transactions.0.amount', 100);
 
         // 3. Check filtered by both Cash and Bank (comma-separated string)
-        $responseBoth = $this->getJson('/api/dashboard/overview?payment_method_ids=' . $methodCash->id . ',' . $methodBank->id);
+        $responseBoth = $this->getJson('/api/dashboard/overview?account_ids=' . $accountCash->id . ',' . $accountBank->id);
         $responseBoth
             ->assertOk()
             ->assertJsonPath('income_expense_summary.income', 300)
             ->assertJsonCount(2, 'income_expense_summary.transactions');
 
         // 4. Check filtered by both Cash and Bank (array query parameters)
-        $responseBothArray = $this->getJson('/api/dashboard/overview?payment_method_ids[]=' . $methodCash->id . '&payment_method_ids[]=' . $methodBank->id);
+        $responseBothArray = $this->getJson('/api/dashboard/overview?account_ids[]=' . $accountCash->id . '&account_ids[]=' . $accountBank->id);
         $responseBothArray
             ->assertOk()
             ->assertJsonPath('income_expense_summary.income', 300)

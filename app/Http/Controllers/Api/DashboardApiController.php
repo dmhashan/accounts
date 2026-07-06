@@ -15,17 +15,17 @@ class DashboardApiController extends Controller
 
     public function overview(Request $request): JsonResponse
     {
-        if ($request->has('payment_method_ids') && is_string($request->input('payment_method_ids'))) {
+        if ($request->has('account_ids') && is_string($request->input('account_ids'))) {
             $request->merge([
-                'payment_method_ids' => array_filter(array_map('intval', explode(',', $request->input('payment_method_ids')))),
+                'account_ids' => array_filter(array_map('intval', explode(',', $request->input('account_ids')))),
             ]);
         }
 
         $validated = $request->validate([
             'start_date' => ['nullable', 'date_format:Y-m-d'],
             'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-            'payment_method_ids' => ['nullable', 'array'],
-            'payment_method_ids.*' => ['integer', 'exists:payment_methods,id'],
+            'account_ids' => ['nullable', 'array'],
+            'account_ids.*' => ['integer', 'exists:company_accounts,id'],
         ]);
 
         /** @var User $user */
@@ -39,7 +39,7 @@ class DashboardApiController extends Controller
             $tenant,
             $validated['start_date'] ?? null,
             $validated['end_date'] ?? null,
-            $validated['payment_method_ids'] ?? [],
+            $validated['account_ids'] ?? [],
         ));
     }
 
