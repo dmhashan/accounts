@@ -7,6 +7,7 @@ use App\Models\CompanyAccountTransaction;
 use App\Models\EventRegistration;
 use App\Models\Member;
 use App\Models\MemberPayment;
+use App\Models\PaymentMethod;
 use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -41,7 +42,7 @@ class DashboardOverviewService
 
     public function __construct(private readonly BiometricSyncService $biometric) {}
 
-    public function build(User $user, Tenant $tenant, ?string $startDate = null, ?string $endDate = null): array
+    public function build(User $user, Tenant $tenant, ?string $startDate = null, ?string $endDate = null, array $paymentMethodIds = []): array
     {
         $tenantId = $tenant->id;
         $today = now()->toDateString();
@@ -65,7 +66,7 @@ class DashboardOverviewService
                 'email' => $user->email,
             ],
             'stock_summary' => $this->buildStockSummary($user, $tenantId, $resolvedEndDate),
-            'income_expense_summary' => $this->buildIncomeExpenseSummary($user, $tenantId, $startAt, $endAt, $rangeLabel),
+            'income_expense_summary' => $this->buildIncomeExpenseSummary($user, $tenantId, $startAt, $endAt, $rangeLabel, $paymentMethodIds),
             'today_auth_summary' => $this->buildTodayAuthSummary($user, $tenantId, $startAt, $endAt, $rangeLabel),
         ];
     }
@@ -307,6 +308,7 @@ class DashboardOverviewService
         Carbon $startAt,
         Carbon $endAt,
         string $rangeLabel,
+        array $paymentMethodIds = [],
     ): array {
         $canViewAccounts = $user->hasPermission(self::CASH_FLOW_WIDGET_PERMISSION);
 
@@ -321,21 +323,33 @@ class DashboardOverviewService
             'income_count' => 0,
             'expense_count' => 0,
             'transactions' => [],
+            'payment_methods' => [],
         ];
 
         if (!$canViewAccounts) {
             return $summary;
         }
 
-        $summary = array_merge($summary, $this->buildCashFlowTotals($tenantId, $startAt, $endAt));
-        $summary['transactions'] = $this->buildAccountTransactionListForRange($tenantId, $startAt, $endAt);
+        $summary['payment_methods'] = PaymentMethod::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (PaymentMethod $pm) => [
+                'id' => (int) $pm->id,
+                'name' => (string) $pm->name,
+            ])
+            ->values()
+            ->all();
+
+        $summary = array_merge($summary, $this->buildCashFlowTotals($tenantId, $startAt, $endAt, $paymentMethodIds));
+        $summary['transactions'] = $this->buildAccountTransactionListForRange($tenantId, $startAt, $endAt, $paymentMethodIds);
 
         return $summary;
     }
 
-    private function buildCashFlowTotals(int $tenantId, Carbon $startAt, Carbon $endAt): array
+    private function buildCashFlowTotals(int $tenantId, Carbon $startAt, Carbon $endAt, array $paymentMethodIds = []): array
     {
-        $baseQuery = $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt);
+        $baseQuery = $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt, $paymentMethodIds);
         $incomeQuery = (clone $baseQuery)->where('amount', '>', 0);
         $expenseQuery = (clone $baseQuery)->where('amount', '<', 0);
         $income = round((float) (clone $incomeQuery)->sum('amount'), 2);
@@ -350,9 +364,9 @@ class DashboardOverviewService
         ];
     }
 
-    private function buildAccountTransactionListForRange(int $tenantId, Carbon $startAt, Carbon $endAt): array
+    private function buildAccountTransactionListForRange(int $tenantId, Carbon $startAt, Carbon $endAt, array $paymentMethodIds = []): array
     {
-        $transactions = $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt)
+        $transactions = $this->accountTransactionRangeQuery($tenantId, $startAt, $endAt, $paymentMethodIds)
             ->with('account:id,name')
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
@@ -471,11 +485,51 @@ class DashboardOverviewService
             ->all();
     }
 
-    private function accountTransactionRangeQuery(int $tenantId, Carbon $startAt, Carbon $endAt)
+    private function accountTransactionRangeQuery(int $tenantId, Carbon $startAt, Carbon $endAt, array $paymentMethodIds = [])
     {
-        return CompanyAccountTransaction::query()
+        $query = CompanyAccountTransaction::query()
             ->whereDate('transaction_date', '>=', $startAt->toDateString())
             ->whereDate('transaction_date', '<=', $endAt->toDateString());
+
+        if (!empty($paymentMethodIds)) {
+            $companyAccountIds = PaymentMethod::query()
+                ->whereIn('id', $paymentMethodIds)
+                ->pluck('company_account_id')
+                ->unique()
+                ->all();
+
+            $query->where(function ($q) use ($paymentMethodIds, $companyAccountIds) {
+                $q->where(function ($sub) use ($paymentMethodIds) {
+                    $sub->whereIn('model_name', ['sale', 'payment', 'payment_deduction'])
+                        ->where(function ($inner) use ($paymentMethodIds) {
+                            $inner->where(function ($s) use ($paymentMethodIds) {
+                                $s->where('model_name', 'sale')
+                                    ->whereIn('reference_id', function ($query) use ($paymentMethodIds) {
+                                        $query->select('id')->from('sales')->whereIn('payment_method_id', $paymentMethodIds);
+                                    });
+                            })
+                                ->orWhere(function ($p) use ($paymentMethodIds) {
+                                    $p->where('model_name', 'payment')
+                                        ->whereIn('reference_id', function ($query) use ($paymentMethodIds) {
+                                            $query->select('id')->from('member_payments')->whereIn('payment_method_id', $paymentMethodIds);
+                                        });
+                                })
+                                ->orWhere(function ($pd) use ($paymentMethodIds) {
+                                    $pd->where('model_name', 'payment_deduction')
+                                        ->whereIn('reference_id', function ($query) use ($paymentMethodIds) {
+                                            $query->select('id')->from('payment_settlements')->whereIn('payment_method_id', $paymentMethodIds);
+                                        });
+                                });
+                        });
+                })
+                    ->orWhere(function ($sub) use ($companyAccountIds) {
+                        $sub->whereNotIn('model_name', ['sale', 'payment', 'payment_deduction'])
+                            ->whereIn('company_account_id', $companyAccountIds);
+                    });
+            });
+        }
+
+        return $query;
     }
 
     private function transactionSourceLabel(CompanyAccountTransaction $transaction, ?array $sourceDetails = null): string

@@ -62,6 +62,8 @@
               <DashboardIncomeExpenseCard
                 :loading="loading"
                 :summary="incomeExpenseSummary"
+                :selected-payment-method-ids="selectedPaymentMethodIds"
+                @change-filter="changePaymentMethodFilters"
               />
             </div>
 
@@ -104,7 +106,9 @@ const {
   selectedEndDate,
   selectedRangePreset,
   selectedRangeLabel,
+  selectedPaymentMethodIds,
   loadDashboardSummary,
   changeDateRange,
+  changePaymentMethodFilters,
 } = useDashboardOverview();
 </script>

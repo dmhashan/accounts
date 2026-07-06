@@ -9,14 +9,73 @@
           {{ summary.range_label || 'Selected period' }}
         </p>
       </div>
-      <RouterLink
-        :to="statsLink"
-        title="View all transactions"
-        aria-label="View all transactions"
-        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary-100 transition-colors hover:bg-secondary-200 dark:bg-secondary-800 dark:hover:bg-secondary-700"
-      >
-        <ChartNoAxesCombined class="h-5 w-5 text-secondary-700 dark:text-secondary-300" :stroke-width="2" />
-      </RouterLink>
+      <div class="flex items-center gap-2">
+        <!-- Multi Select Dropdown Filter -->
+        <div v-if="summary.payment_methods && summary.payment_methods.length > 0" class="relative">
+          <button
+            ref="triggerRef"
+            type="button"
+            :disabled="loading"
+            class="inline-flex h-10 items-center gap-1.5 rounded-lg border border-secondary-300 bg-white px-3 text-xs font-semibold text-secondary-700 transition-colors hover:bg-secondary-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-secondary-700 dark:bg-secondary-900 dark:text-secondary-300 dark:hover:bg-secondary-800"
+            @click="toggleDropdown"
+          >
+            <Filter class="h-3.5 w-3.5 text-secondary-500" />
+            <span>{{ triggerLabel }}</span>
+            <ChevronDown class="h-3 w-3 text-secondary-400 transition-transform duration-200" :class="dropdownOpen ? 'rotate-180' : ''" />
+          </button>
+
+          <Teleport to="body">
+            <Transition
+              enter-active-class="transition duration-100 ease-out"
+              enter-from-class="opacity-0 scale-95"
+              enter-to-class="opacity-100 scale-100"
+              leave-active-class="transition duration-75 ease-in"
+              leave-from-class="opacity-100 scale-100"
+              leave-to-class="opacity-0 scale-95"
+            >
+              <div
+                v-if="dropdownOpen"
+                ref="panelRef"
+                class="app-overlay-panel fixed z-[9999] flex flex-col overflow-hidden rounded-xl border border-secondary-200/80 bg-white/90 p-1 shadow-lg backdrop-blur-md dark:border-secondary-800/80 dark:bg-secondary-900/90"
+                :style="panelStyle"
+              >
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors hover:bg-secondary-100/50 dark:hover:bg-secondary-800/50"
+                  :class="selectedPaymentMethodIds.length === 0 ? 'text-primary-600 dark:text-primary-400 font-bold' : 'text-secondary-700 dark:text-secondary-300'"
+                  @click="emit('change-filter', [])"
+                >
+                  <span>All Methods</span>
+                  <Check v-if="selectedPaymentMethodIds.length === 0" class="h-3.5 w-3.5" />
+                </button>
+                <div class="my-1 h-px bg-secondary-200/60 dark:bg-secondary-800/60" />
+                <div class="flex-1 overflow-y-auto overscroll-contain">
+                  <button
+                    v-for="method in summary.payment_methods"
+                    :key="method.id"
+                    type="button"
+                    class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-colors hover:bg-secondary-100/50 dark:hover:bg-secondary-800/50"
+                    :class="selectedPaymentMethodIds.includes(method.id) ? 'font-semibold text-primary-600 dark:text-primary-400 font-bold' : 'text-secondary-600 dark:text-secondary-400'"
+                    @click="selectMethod(method.id)"
+                  >
+                    <span class="truncate">{{ method.name }}</span>
+                    <Check v-if="selectedPaymentMethodIds.includes(method.id)" class="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
+                  </button>
+                </div>
+              </div>
+            </Transition>
+          </Teleport>
+        </div>
+
+        <RouterLink
+          :to="statsLink"
+          title="View all transactions"
+          aria-label="View all transactions"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary-100 transition-colors hover:bg-secondary-200 dark:bg-secondary-800 dark:hover:bg-secondary-700"
+        >
+          <ChartNoAxesCombined class="h-5 w-5 text-secondary-700 dark:text-secondary-300" :stroke-width="2" />
+        </RouterLink>
+      </div>
     </div>
 
     <div v-if="loading" class="mt-4 grid grid-cols-2 gap-2">
@@ -134,13 +193,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowDownLeft, ArrowUpRight, ChartNoAxesCombined, ReceiptText } from 'lucide-vue-next';
+import { ArrowDownLeft, ArrowUpRight, ChartNoAxesCombined, ReceiptText, ChevronDown, Check, Filter } from 'lucide-vue-next';
 import AppEmptyState from '../AppEmptyState.vue';
 
 const props = defineProps({
   loading: { type: Boolean, default: false },
+  selectedPaymentMethodIds: { type: Array, default: () => [] },
   summary: {
     type: Object,
     default: () => ({
@@ -154,8 +214,87 @@ const props = defineProps({
       start_date: '',
       end_date: '',
       transactions: [],
+      payment_methods: [],
     }),
   },
+});
+
+const emit = defineEmits(['change-filter']);
+
+const dropdownOpen = ref(false);
+const triggerRef = ref(null);
+const panelRef = ref(null);
+const panelStyle = ref({});
+
+const triggerLabel = computed(() => {
+  const selectedIds = props.selectedPaymentMethodIds;
+  const methods = props.summary.payment_methods || [];
+  if (!selectedIds || selectedIds.length === 0 || selectedIds.length === methods.length) {
+    return 'All Methods';
+  }
+  if (selectedIds.length === 1) {
+    const found = methods.find(m => m.id === selectedIds[0]);
+    return found ? found.name : '1 Method';
+  }
+  return `${selectedIds.length} Methods`;
+});
+
+function computePanelStyle() {
+  if (!triggerRef.value) return;
+  const rect = triggerRef.value.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const spaceBelow = viewportHeight - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  const openBelow = spaceBelow >= 160 || spaceBelow >= spaceAbove;
+  const maxHeight = Math.min(openBelow ? spaceBelow : spaceAbove, 240);
+  panelStyle.value = {
+    top: openBelow ? `${rect.bottom + 6}px` : undefined,
+    bottom: !openBelow ? `${viewportHeight - rect.top + 6}px` : undefined,
+    left: `${rect.left + rect.width - 180}px`,
+    width: '180px',
+    maxHeight: `${maxHeight}px`,
+  };
+}
+
+function toggleDropdown() {
+  if (props.loading) return;
+  dropdownOpen.value = !dropdownOpen.value;
+  if (dropdownOpen.value) {
+    computePanelStyle();
+  }
+}
+
+function selectMethod(methodId) {
+  let newSelected = [...props.selectedPaymentMethodIds];
+  if (newSelected.includes(methodId)) {
+    newSelected = newSelected.filter(id => id !== methodId);
+  } else {
+    newSelected.push(methodId);
+  }
+  emit('change-filter', newSelected);
+}
+
+function handleOutsideClick(e) {
+  if (!dropdownOpen.value) return;
+  if (triggerRef.value?.contains(e.target)) return;
+  if (panelRef.value?.contains(e.target)) return;
+  dropdownOpen.value = false;
+}
+
+function handleScrollOrResize() {
+  if (dropdownOpen.value) computePanelStyle();
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick, true);
+  window.addEventListener('scroll', handleScrollOrResize, true);
+  window.addEventListener('resize', handleScrollOrResize);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleOutsideClick, true);
+  window.removeEventListener('scroll', handleScrollOrResize, true);
+  window.removeEventListener('resize', handleScrollOrResize);
 });
 
 const moneyFormatter = new Intl.NumberFormat(undefined, {

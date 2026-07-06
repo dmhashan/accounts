@@ -71,6 +71,7 @@ export function useDashboardOverview() {
   const selectedEndDate = ref(getTodayInputDate());
   const selectedRangePreset = ref('today');
   const selectedRangeLabel = ref('Today');
+  const selectedPaymentMethodIds = ref([]);
 
   async function loadDashboardSummary() {
     loading.value = true;
@@ -80,6 +81,9 @@ export function useDashboardOverview() {
       const params = new URLSearchParams();
       params.set('start_date', selectedStartDate.value);
       params.set('end_date', selectedEndDate.value);
+      if (selectedPaymentMethodIds.value && selectedPaymentMethodIds.value.length > 0) {
+        params.set('payment_method_ids', selectedPaymentMethodIds.value.join(','));
+      }
       const response = await apiRequest(`/api/dashboard/overview?${params.toString()}`);
       stockSummary.value = {
         ...stockSummary.value,
@@ -121,6 +125,11 @@ export function useDashboardOverview() {
     await loadDashboardSummary();
   }
 
+  async function changePaymentMethodFilters(ids) {
+    selectedPaymentMethodIds.value = ids || [];
+    await loadDashboardSummary();
+  }
+
   onMounted(() => {
     loadDashboardSummary();
   });
@@ -135,7 +144,9 @@ export function useDashboardOverview() {
     selectedEndDate,
     selectedRangePreset,
     selectedRangeLabel,
+    selectedPaymentMethodIds,
     loadDashboardSummary,
     changeDateRange,
+    changePaymentMethodFilters,
   };
 }
