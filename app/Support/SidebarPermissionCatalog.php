@@ -123,13 +123,6 @@ class SidebarPermissionCatalog
                 ],
             ],
             [
-                'label' => 'Reconciliation',
-                'permissions' => [
-                    ['name' => 'Perform Reconciliation', 'slug' => 'reconciliation.perform', 'description' => 'Open and close daily reconciliation sessions.'],
-                    ['name' => 'Manage Reconciliation', 'slug' => 'reconciliation.manage', 'description' => 'Configure reconciliation and view all reconciliation history.'],
-                ],
-            ],
-            [
                 'label' => 'Member Portal',
                 'permissions' => [
                     ['name' => 'Workout Schedule', 'slug' => 'member.workout.view', 'description' => 'View the member workout schedule sidebar item.'],

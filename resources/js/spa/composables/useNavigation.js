@@ -10,7 +10,6 @@ import {
     Settings,
     Dumbbell,
     Activity,
-    ClipboardCheck,
     BriefcaseBusiness,
     MessageSquareMore,
 } from 'lucide-vue-next';
@@ -28,7 +27,6 @@ const ICONS = {
     settings:      Settings,
     workout:       Dumbbell,
     activity:      Activity,
-    reconciliation: ClipboardCheck,
     employees:     BriefcaseBusiness,
     chatbot:       MessageSquareMore,
 };
@@ -170,7 +168,6 @@ export function useNavigation() {
         }
 
         if (context.permissions?.activity)               items.push({ label: 'Activity Logs',  shortLabel: 'Activity',      path: '/activity',        icon: ICONS.activity });
-        if (context.permissions?.reconciliation) items.push({ label: 'Reconciliation', shortLabel: 'Recon', path: '/reconciliation', icon: ICONS.reconciliation });
 
         return items;
     });

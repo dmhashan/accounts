@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a **multi-tenant SaaS management platform** built for fitness-related businesses (gyms, fitness centres). It provides member management, POS sales, financial accounts, inventory, workout programming, event management, bulk SMS notifications, and daily cash reconciliation.
+This is a **multi-tenant SaaS management platform** built for fitness-related businesses (gyms, fitness centres). It provides member management, POS sales, financial accounts, inventory, workout programming, event management, bulk SMS notifications, and payment settlements.
 
 **Core stack:**
 - Backend: Laravel 12 (PHP 8.2+) — session-based auth, REST API
@@ -116,8 +116,6 @@ Roles are seeded globally (not per-tenant). Users are assigned one role. Permiss
 | `notifications.send` | Bulk SMS Notifications |
 | `events.manage` | Events & Registrations |
 | `activity.view` | Member Activity Logs |
-| `reconciliation.perform` | Daily cash open/close |
-| `reconciliation.manage` | Reconciliation config & history |
 | `member.profile.view` | Own profile (member role) |
 | `member.workout.view` | Own workout (member role) |
 | `member.payments.view` | Own payment history |
@@ -187,17 +185,6 @@ Events are publicly accessible via slug. Members can register via the public pro
 
 SMS is sent via `SmsService` (SMSlenz API). Sending is fire-and-forget; errors are logged but never bubble up.
 
-### ReconciliationSession / ReconciliationEntry / ReconciliationConfig
-Daily cash reconciliation workflow:
-1. Staff opens a session (`POST /api/reconciliation/open`) for today
-2. Records actual cash collected per account
-3. System compares against expected (transactions from that day)
-4. Staff closes session with optional adjustment reason
-
-`reconciliation_sessions` — `tenant_id`, `date`, `status` (open/closed), `opened_by`, `closed_by`, `closed_at`, `adjustment_reason`, `notes`  
-`reconciliation_entries` — `session_id`, `tenant_id`, `type` (account/stock), `reference_id`, `expected_amount`, `actual_amount`, `variance`, `notes`  
-`reconciliation_configs` — `tenant_id`, `role_id`, `type`, `reference_id`, `is_active`
-
 ### AuditLog
 `audit_logs` — `tenant_id`, `user_id`, `action`, `auditable_type`, `auditable_id`, `before_data` (JSON), `after_data` (JSON), `created_at`
 
@@ -232,7 +219,6 @@ All API routes live under `routes/api.php` and are loaded under `middleware(['we
 | `workouts.php` | `/exercises/*`, `/workout-programs/*` | `auth` + `permission:workouts.manage` |
 | `events.php` | `/events/*` | `auth` + `permission:events.manage` |
 | `notifications.php` | `/notifications/*` | `auth` + `permission:notifications.send` |
-| `reconciliation.php` | `/reconciliation/*` | `auth` + `permission:reconciliation.*` |
 | `reports.php` | `/reports/*` | `auth` + `permission:reports.view` |
 | `activity.php` | `/member-activity/*` | `auth` + `permission:activity.view` |
 | `public-profile.php` | `/public/*` | Public OTP / `pp.token` |

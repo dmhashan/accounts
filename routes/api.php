@@ -24,7 +24,6 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
     require __DIR__ . '/api/events.php';
     require __DIR__ . '/api/public-profile.php';
     require __DIR__ . '/api/activity.php';
-    require __DIR__ . '/api/reconciliation.php';
     require __DIR__ . '/api/vouchers.php';
     require __DIR__ . '/api/forms.php';
     require __DIR__ . '/api/campaigns.php';

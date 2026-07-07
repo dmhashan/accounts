@@ -64,10 +64,6 @@ const EventFormPage = () => import('./pages/EventFormPage.vue');
 const EventDetailPage = () => import('./pages/EventDetailPage.vue');
 const EventRegistrationsPage = () => import('./pages/EventRegistrationsPage.vue');
 const MemberActivityPage = () => import('./pages/MemberActivityPage.vue');
-const ReconciliationPage = () => import('./pages/ReconciliationPage.vue');
-const ReconciliationFormPage = () => import('./pages/ReconciliationFormPage.vue');
-const ReconciliationComparisonPage = () => import('./pages/ReconciliationComparisonPage.vue');
-const ReconciliationConfigPage = () => import('./pages/ReconciliationConfigPage.vue');
 const VouchersPage = () => import('./pages/VouchersPage.vue');
 const VoucherViewPage = () => import('./pages/VoucherViewPage.vue');
 const FormsPage = () => import('./pages/FormsPage.vue');
@@ -220,12 +216,6 @@ const routes = [
     { path: '/events/:id(\\d+)/edit', redirect: to => `/settings/events/${to.params.id}/edit` },
     { path: '/events/:id(\\d+)/registrations', redirect: to => `/settings/events/${to.params.id}/registrations` },
     { path: '/activity', component: MemberActivityPage, meta: { title: 'Activity Logs' } },
-    { path: '/reconciliation', component: ReconciliationPage, meta: { title: 'Reconciliation' } },
-    { path: '/reconciliation/open', component: ReconciliationFormPage, meta: { title: 'Open Reconciliation' } },
-    { path: '/reconciliation/close/:id', component: ReconciliationFormPage, meta: { title: 'Close Reconciliation' } },
-    { path: '/reconciliation/comparison/:id', component: ReconciliationComparisonPage, meta: { title: 'Reconciliation Comparison' } },
-    { path: '/reconciliation/sessions/:id', component: ReconciliationComparisonPage, meta: { title: 'Reconciliation Session' } },
-    { path: '/reconciliation/config', component: ReconciliationConfigPage, meta: { title: 'Reconciliation Config' } },
     { path: '/vouchers', redirect: to => ({ path: '/settings/vouchers', query: to.query }) },
     { path: '/vouchers/:id(\\d+)', redirect: to => `/settings/vouchers/${to.params.id}` },
     { path: '/forms', redirect: to => ({ path: '/settings/forms', query: to.query }) },

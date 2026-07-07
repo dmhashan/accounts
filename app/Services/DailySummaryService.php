@@ -210,8 +210,7 @@ class DailySummaryService
      * Live stock (StockEntry.quantity) is mutated on every sale, so the closing
      * balance is anchored to the current on-hand value and rolled back through
      * any movements that happened AFTER the selected day. The opening balance is
-     * then derived from the day's net movement (received − sold), mirroring the
-     * convention already used by the reconciliation feature.
+     * then derived from the day's net movement (received − sold).
      */
     private function buildStock(int $tenantId, string $dateStr, Carbon $startOf, Carbon $endOf): array
     {
