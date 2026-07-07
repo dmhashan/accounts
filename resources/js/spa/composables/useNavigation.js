@@ -12,6 +12,7 @@ import {
     Activity,
     ClipboardCheck,
     BriefcaseBusiness,
+    MessageSquareMore,
 } from 'lucide-vue-next';
 import { useAppContext } from './useAppContext';
 
@@ -29,6 +30,7 @@ const ICONS = {
     activity:      Activity,
     reconciliation: ClipboardCheck,
     employees:     BriefcaseBusiness,
+    chatbot:       MessageSquareMore,
 };
 
 export function useNavigation() {
@@ -37,7 +39,10 @@ export function useNavigation() {
     const menuItems = computed(() => {
         const items = [];
 
-        if (context.permissions?.dashboard) items.push({ label: 'Dashboard', shortLabel: 'Home',     path: '/dashboard', icon: ICONS.dashboard });
+        if (context.permissions?.dashboard) {
+            items.push({ label: 'Dashboard', shortLabel: 'Home',     path: '/dashboard', icon: ICONS.dashboard });
+            items.push({ label: 'AI Assistant', shortLabel: 'Chat',     path: '/chatbot', icon: ICONS.chatbot });
+        }
 
         if (context.permissions?.members) {
             const children = [];

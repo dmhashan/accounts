@@ -28,6 +28,7 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
     require __DIR__ . '/api/vouchers.php';
     require __DIR__ . '/api/forms.php';
     require __DIR__ . '/api/campaigns.php';
+    require __DIR__ . '/api/chatbot.php';
 });
 
 // Public biometric device webhook — no session/CSRF, tenant identified by URL param

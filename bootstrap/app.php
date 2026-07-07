@@ -35,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/public/verify-otp',
             'api/public/activity',
             'api/public/event/*/register',
+            'api/chatbot/message',
         ]);
 
         $middleware->alias([

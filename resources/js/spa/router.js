@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import { routeLoader } from './routeLoader';
 
 const DashboardPage = () => import('./pages/DashboardPage.vue');
+const ChatBotPage = () => import('./pages/ChatBotPage.vue');
 const UsersPage = () => import('./pages/UsersPage.vue');
 const UserFormPage = () => import('./pages/UserFormPage.vue');
 const MembersPage = () => import('./pages/MembersPage.vue');
@@ -78,6 +79,7 @@ const CampaignFormPage = () => import('./pages/CampaignFormPage.vue');
 const routes = [
     { path: '/', redirect: '/dashboard' },
     { path: '/dashboard', component: DashboardPage, meta: { title: 'Dashboard' } },
+    { path: '/chatbot', component: ChatBotPage, meta: { title: 'AI Assistant' } },
     { path: '/users', component: UsersPage, meta: { title: 'Users' } },
     { path: '/users/new', component: UserFormPage, meta: { title: 'New User' } },
     { path: '/users/:id', component: UserViewPage, meta: { title: 'User' } },

@@ -53,4 +53,9 @@ return [
         'redirect' => env('APPLE_REDIRECT_URI'),
     ],
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
 ];
+
