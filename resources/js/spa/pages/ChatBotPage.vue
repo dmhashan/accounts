@@ -1,6 +1,6 @@
 <template>
   <section class="app-page-frame">
-    <AppPageHeader title="AI Assistant">
+    <AppPageHeader title="AI Assistant (Beta)">
       <template #cta-slot>
         <div class="flex items-center gap-2">
           <!-- Connection Status Badge -->
@@ -26,6 +26,22 @@
         </div>
       </template>
     </AppPageHeader>
+
+    <!-- Warning alert if Gemini is not connected -->
+    <div 
+      v-if="!geminiConnected"
+      class="mb-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 flex gap-3 items-start text-sm text-amber-800 dark:text-amber-200 shadow-sm"
+    >
+      <AlertTriangle class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      <div>
+        <h4 class="font-bold text-amber-900 dark:text-amber-300 mb-0.5">
+          Gemini AI Not Connected
+        </h4>
+        <p class="leading-relaxed opacity-90">
+          The application could not establish a connection to the Gemini API. The assistant is currently running in fallback mode using the local rule-based query engine. AI-powered conversations will be unavailable, but you can still run direct queries on database metrics.
+        </p>
+      </div>
+    </div>
 
     <div class="min-h-0 flex flex-1 flex-col p-4 md:p-6 bg-secondary-50/50 dark:bg-secondary-950/30 rounded-3xl border border-secondary-200/50 dark:border-secondary-800/30 overflow-hidden">
       <!-- Chat Messages Container -->
@@ -142,7 +158,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
 import { apiRequest } from '../composables/useApiClient';
-import { Sparkles, User, Send, Trash2 } from 'lucide-vue-next';
+import { Sparkles, User, Send, Trash2, AlertTriangle } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 
 const messages = ref([]);

@@ -79,7 +79,7 @@ const CampaignFormPage = () => import('./pages/CampaignFormPage.vue');
 const routes = [
     { path: '/', redirect: '/dashboard' },
     { path: '/dashboard', component: DashboardPage, meta: { title: 'Dashboard' } },
-    { path: '/chatbot', component: ChatBotPage, meta: { title: 'AI Assistant' } },
+    { path: '/chatbot', component: ChatBotPage, meta: { title: 'AI Assistant (Beta)' } },
     { path: '/users', component: UsersPage, meta: { title: 'Users' } },
     { path: '/users/new', component: UserFormPage, meta: { title: 'New User' } },
     { path: '/users/:id', component: UserViewPage, meta: { title: 'User' } },

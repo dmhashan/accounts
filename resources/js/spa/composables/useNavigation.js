@@ -41,7 +41,7 @@ export function useNavigation() {
 
         if (context.permissions?.dashboard) {
             items.push({ label: 'Dashboard', shortLabel: 'Home',     path: '/dashboard', icon: ICONS.dashboard });
-            items.push({ label: 'AI Assistant', shortLabel: 'Chat',     path: '/chatbot', icon: ICONS.chatbot });
+            items.push({ label: 'AI Assistant (Beta)', shortLabel: 'Chat',     path: '/chatbot', icon: ICONS.chatbot });
         }
 
         if (context.permissions?.members) {
