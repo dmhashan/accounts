@@ -1,6 +1,12 @@
 <template>
   <section class="app-page-frame">
-    <AppPageHeader title="AI Assistant (Beta)">
+    <AppPageHeader>
+      <template #title-slot>
+        <div class="flex items-center gap-2">
+          <span>AI Assistant</span>
+          <span class="px-2 py-0.5 text-xs font-bold bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 rounded-full border border-primary-200/50 dark:border-primary-800/30 shrink-0 leading-none">Beta</span>
+        </div>
+      </template>
       <template #cta-slot>
         <div class="flex items-center gap-2">
           <!-- Connection Status Badge -->

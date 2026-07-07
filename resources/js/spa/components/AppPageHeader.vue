@@ -16,8 +16,10 @@
         </button>
 
         <!-- Title -->
-        <h2 class="text-xl md:text-2xl font-bold truncate app-gradient-title">
-          {{ resolvedTitle }}
+        <h2 class="text-xl md:text-2xl font-bold truncate app-gradient-title flex items-center gap-2">
+          <slot name="title-slot">
+            <span>{{ resolvedTitle }}</span>
+          </slot>
         </h2>
       </div>
 

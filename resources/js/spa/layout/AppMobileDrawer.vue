@@ -51,7 +51,12 @@
             @click="!item.children?.length && $emit('close')"
           >
             <component :is="item.icon" class="h-[18px] w-[18px] flex-shrink-0" :stroke-width="isActive(item.path) ? 2.25 : 2" />
-            <span class="truncate flex-1">{{ item.label }}</span>
+            <span class="truncate flex-1 flex items-center gap-1.5 min-w-0">
+              <span class="truncate">{{ item.label }}</span>
+              <span v-if="item.badge" class="px-1.5 py-0.5 text-[9px] font-bold bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 rounded-full border border-primary-200/50 dark:border-primary-800/30 shrink-0 leading-none scale-95 origin-left">
+                {{ item.badge }}
+              </span>
+            </span>
             <ChevronDown
               v-if="item.children?.length"
               class="h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200"
