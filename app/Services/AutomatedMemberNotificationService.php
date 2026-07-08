@@ -60,12 +60,14 @@ class AutomatedMemberNotificationService
             };
         $amount = number_format((float) $payment->amount, 2, '.', ',');
         $paymentDate = $payment->payment_date?->toDateString() ?? now()->toDateString();
-        $validUntil = $payment->membership?->end_date?->toDateString();
+        $startDate = $payment->membership?->start_date?->toDateString();
+        $endDate = $payment->membership?->end_date?->toDateString();
+        $nextPaymentDate = $payment->membership?->end_date ? $payment->membership->end_date->copy()->addDay()->toDateString() : null;
 
         $message = "Payment received! {$memberName} paid {$amount} at {$tenantName} on {$paymentDate} via {$paymentMethodName}";
 
-        if ($validUntil) {
-            $message .= ". Membership valid until {$validUntil}";
+        if ($startDate && $endDate && $nextPaymentDate) {
+            $message .= ". This payment valid from {$startDate} to {$endDate}. dont miss next payment date is {$nextPaymentDate}";
         }
 
         SendMemberNotificationJob::dispatch(
@@ -91,7 +93,9 @@ class AutomatedMemberNotificationService
         $tenantName = $this->tenantName($tenant);
         $amount = number_format((float) $payment->amount, 2, '.', ',');
         $paymentDate = $payment->payment_date?->toDateString() ?? now()->toDateString();
-        $validUntil = $payment->membership?->end_date?->toDateString();
+        $startDate = $payment->membership?->start_date?->toDateString();
+        $endDate = $payment->membership?->end_date?->toDateString();
+        $nextPaymentDate = $payment->membership?->end_date ? $payment->membership->end_date->copy()->addDay()->toDateString() : null;
 
         $salesOutstanding = (float) \App\Models\Sale::where('customer_member_id', $payment->member_id)
             ->where('is_paid', false)
@@ -106,8 +110,8 @@ class AutomatedMemberNotificationService
 
         $message = "Outstanding payment created! {$memberName}, payment amount: LKR {$amount} at {$tenantName} on {$paymentDate}";
 
-        if ($validUntil) {
-            $message .= ". Membership valid until {$validUntil}";
+        if ($startDate && $endDate && $nextPaymentDate) {
+            $message .= ". This payment valid from {$startDate} to {$endDate}. dont miss next payment date is {$nextPaymentDate}";
         }
 
         $message .= ". Total outstanding: LKR {$totalOutstanding}. Please settle soon.";

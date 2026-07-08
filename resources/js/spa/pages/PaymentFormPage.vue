@@ -75,11 +75,11 @@
             />
           </AppFormField>
 
-          <AppFormField label="Membership Start Date" optional>
+          <AppFormField label="payment Valid from" optional>
             <AppFormDateInput v-model="form.start_date" @change="onStartDateChange" />
           </AppFormField>
 
-          <AppFormField label="Membership End Date" optional>
+          <AppFormField label="payment Valid to" optional>
             <AppFormDateInput v-model="form.end_date" />
           </AppFormField>
 

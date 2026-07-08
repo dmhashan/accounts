@@ -121,7 +121,7 @@
           </div>
           <div>
             <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
-              Membership Start
+              payment Valid from
             </p>
             <p class="font-medium text-secondary-800 dark:text-secondary-200">
               {{ payment.start_date || '—' }}
@@ -129,7 +129,7 @@
           </div>
           <div>
             <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
-              Membership End
+              payment Valid to
             </p>
             <p class="font-medium text-secondary-800 dark:text-secondary-200">
               {{ payment.end_date || '—' }}

@@ -107,20 +107,29 @@
         />
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Date <span class="text-red-500">*</span></label>
-        <AppFormDateInput
-          v-model="form.payment_date"
-          required
-          input-class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Date <span class="text-red-500">*</span></label>
+          <AppFormDateInput
+            v-model="form.payment_date"
+            :max="todayStr()"
+            required
+            input-class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Effective Date <span class="text-red-500">*</span></label>
+          <AppFormDateInput
+            v-model="form.start_date"
+            required
+            input-class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Next Payment Date</label>
-        <div class="px-3 py-2 h-[38px] flex items-center rounded-lg border border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800 text-sm text-secondary-700 dark:text-secondary-300">
-          {{ nextPaymentDate ? formatDate(nextPaymentDate) : '—' }}
-        </div>
+
+      <div v-if="selectedPlan && form.start_date" class="p-3 rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/20 text-xs text-primary-700 dark:text-primary-300">
+        This payment valid from {{ startDate }} to {{ endDate }}. dont miss next payment date is {{ nextPaymentDate }}
       </div>
 
       <div>
@@ -228,14 +237,14 @@ function todayStr() {
     return new Date().toISOString().slice(0, 10);
 }
 
-const form = ref({ member_id: null, plan_id: null, amount: '', payment_date: todayStr(), notes: '' });
+const form = ref({ member_id: null, plan_id: null, amount: '', payment_date: todayStr(), start_date: todayStr(), notes: '' });
 const accountValue = ref(null);
 const memberInfoLoading = ref(false);
 const memberInfo = ref(null);
 
 const effectiveMemberId = computed(() => props.memberId ? Number(props.memberId) : (form.value.member_id ?? null));
 const selectedPlan = computed(() => props.plans.find(p => p.id === form.value.plan_id) || null);
-const startDate = computed(() => form.value.payment_date || todayStr());
+const startDate = computed(() => form.value.start_date || todayStr());
 const endDate = computed(() => calcPlanEndDate(startDate.value, selectedPlan.value));
 const nextPaymentDate = computed(() => calcNextStartDate(startDate.value, selectedPlan.value));
 
@@ -263,8 +272,9 @@ async function loadMemberInfo(id) {
     try {
         const info = await apiRequest(`/api/payments/member/${id}/payment-info`);
         memberInfo.value = info;
-        // Default payment_date to the max due date; fall back to today
-        form.value.payment_date = info.last_payment?.end_date || todayStr();
+        // Default start_date to the next start date, and payment_date to today
+        form.value.start_date = info.next_start_date || todayStr();
+        form.value.payment_date = todayStr();
         if (info.current_plan) {
             form.value.plan_id = info.current_plan.id;
             form.value.amount = String(info.current_plan.price.toFixed(2));
@@ -278,6 +288,8 @@ async function onMemberSelect(id) {
     memberInfo.value = null;
     form.value.plan_id = null;
     form.value.amount = '';
+    form.value.start_date = todayStr();
+    form.value.payment_date = todayStr();
     if (id) await loadMemberInfo(id);
 }
 

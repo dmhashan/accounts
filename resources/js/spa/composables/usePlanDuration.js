@@ -41,7 +41,17 @@ export function formatPlanDuration(plan) {
  * Inclusive membership end date for the given plan starting on `startDate` (YYYY-MM-DD).
  * Mirrors `PaymentPlan::endDateFrom`: addUnits(value) − 1 day.
  * Returns '' if inputs are missing.
+ *
+ * NOTE: We intentionally use local date parts (getFullYear/getMonth/getDate) rather than
+ * toISOString() to avoid UTC-offset shifts for users in UTC+ timezones.
  */
+function toLocalDateStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 export function calcPlanEndDate(startDate, plan) {
     if (!startDate || !plan) return '';
 
@@ -72,7 +82,7 @@ export function calcPlanEndDate(startDate, plan) {
 
     // Inclusive end → subtract one day
     d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
+    return toLocalDateStr(d);
 }
 
 /**
@@ -83,7 +93,7 @@ export function calcNextStartDate(startDate, plan) {
     if (!end) return '';
     const d = new Date(end + 'T00:00:00');
     d.setDate(d.getDate() + 1);
-    return d.toISOString().slice(0, 10);
+    return toLocalDateStr(d);
 }
 
 export const PLAN_UNIT_OPTIONS = [

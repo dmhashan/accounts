@@ -104,7 +104,7 @@ class PaymentService
             ->first();
 
         $lastPayment = null;
-        $nextStartDate = now()->toDateString();
+        $nextStartDate = $member->joined_date?->toDateString() ?: now()->toDateString();
 
         if ($lastMembership) {
             $lastPayment = [

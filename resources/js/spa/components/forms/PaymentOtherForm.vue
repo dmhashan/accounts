@@ -62,30 +62,11 @@
         <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Payment Date <span class="text-red-500">*</span></label>
         <AppFormDateInput
           v-model="form.payment_date"
+          :max="todayStr()"
           required
           input-class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
-
-      <template v-if="form.plan_id">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Membership Start</label>
-            <AppFormDateInput
-              v-model="form.start_date"
-              input-class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              @change="onStartDateChange"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Membership End</label>
-            <AppFormDateInput
-              v-model="form.end_date"
-              input-class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-        </div>
-      </template>
 
       <div>
         <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Reference <span class="text-secondary-400 font-normal">(Optional)</span></label>
@@ -187,7 +168,7 @@ import { X } from 'lucide-vue-next';
 import AppPaymentMethodSelect from './AppPaymentMethodSelect.vue';
 import AppSearchableDropdown from './AppSearchableDropdown.vue';
 import AppFormDateInput from './AppFormDateInput.vue';
-import { formatPlanDuration, calcPlanEndDate } from '../../composables/usePlanDuration.js';
+import { formatPlanDuration } from '../../composables/usePlanDuration.js';
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -226,15 +207,10 @@ function onPlanSelect() {
     const plan = selectedPlan.value;
     if (plan) {
         if (!form.value.amount) form.value.amount = String(plan.price);
-        if (!form.value.start_date) form.value.start_date = form.value.payment_date || todayStr();
-        form.value.end_date = calcPlanEndDate(form.value.start_date, plan);
     }
 }
 
-function onStartDateChange() {
-    const plan = selectedPlan.value;
-    if (plan) form.value.end_date = calcPlanEndDate(form.value.start_date, plan);
-}
+
 
 const payNowOpen = ref(false);
 
