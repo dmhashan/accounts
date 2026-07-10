@@ -295,7 +295,7 @@ class PaymentsApiTest extends ApiRouteTestCase
 
     public function testPaymentMethodWithReconciliationCreatesPendingSettlementUntilConfirmed(): void
     {
-        $this->actingAsUser(['payments.manage', 'accounts.manage']);
+        $user = $this->actingAsUser(['payments.manage', 'accounts.manage']);
         $member = $this->createMember();
         $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
         $account = $this->createAccount(['name' => 'Bank Account']);
@@ -355,6 +355,11 @@ class PaymentsApiTest extends ApiRouteTestCase
             'confirmation_reference' => 'BANK-123',
         ])->assertOk();
 
+        $this->assertDatabaseHas('payment_settlements', [
+            'id' => $settlementId,
+            'confirmed_by' => $user->id,
+        ]);
+
         $this->assertDatabaseHas('company_account_transactions', [
             'model_name' => 'payment',
             'reference_id' => $paymentId,
@@ -374,6 +379,204 @@ class PaymentsApiTest extends ApiRouteTestCase
         $this->getJson('/api/accounts/' . $account->id)
             ->assertOk()
             ->assertJsonPath('data.current_balance', 970);
+    }
+
+    public function testBulkConfirmSettlementsConfirmsAllSelectedRows(): void
+    {
+        $user = $this->actingAsUser(['payments.manage', 'accounts.manage']);
+        $member = $this->createMember();
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
+        $account = $this->createAccount(['name' => 'Bulk Bank Account']);
+
+        $methodId = $this->createReconciliationPaymentMethod($account->id, 'Bulk Card');
+
+        $paymentAId = (int) $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_method_id' => $methodId,
+            'payment_plan_id' => $plan->id,
+            'amount' => 1000,
+            'payment_date' => '2026-06-03',
+            'start_date' => '2026-06-03',
+        ])->assertCreated()->json('data.id');
+
+        $paymentBId = (int) $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_method_id' => $methodId,
+            'payment_plan_id' => $plan->id,
+            'amount' => 1200,
+            'payment_date' => '2026-06-04',
+            'start_date' => '2026-06-04',
+        ])->assertCreated()->json('data.id');
+
+        $settlementIds = PaymentSettlement::query()
+            ->where('source_type', 'payment')
+            ->whereIn('source_id', [$paymentAId, $paymentBId])
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $this->postJson('/api/accounts/' . $account->id . '/payment-settlements/confirm-bulk', [
+            'settlement_ids' => $settlementIds,
+            'transaction_date' => '2026-06-05',
+            'confirmation_reference' => 'BANK-BULK-001',
+        ])->assertOk()
+            ->assertJsonPath('data.confirmed_count', 2);
+
+        foreach ($settlementIds as $settlementId) {
+            $this->assertDatabaseHas('payment_settlements', [
+                'id' => $settlementId,
+                'status' => PaymentSettlement::STATUS_CONFIRMED,
+                'confirmation_reference' => 'BANK-BULK-001',
+                'confirmed_by' => $user->id,
+            ]);
+
+            $this->assertSame(
+                '2026-06-05',
+                PaymentSettlement::query()->find($settlementId)?->confirmed_transaction_date?->toDateString(),
+            );
+
+            $this->assertDatabaseHas('company_account_transactions', [
+                'model_name' => 'payment_deduction',
+                'reference_id' => $settlementId,
+                'company_account_id' => $account->id,
+                'type' => 'payment_deduction',
+            ]);
+        }
+
+        $this->assertDatabaseHas('company_account_transactions', [
+            'model_name' => 'payment',
+            'reference_id' => $paymentAId,
+            'company_account_id' => $account->id,
+            'type' => 'payment',
+            'amount' => 1000,
+        ]);
+
+        $this->assertDatabaseHas('company_account_transactions', [
+            'model_name' => 'payment',
+            'reference_id' => $paymentBId,
+            'company_account_id' => $account->id,
+            'type' => 'payment',
+            'amount' => 1200,
+        ]);
+    }
+
+    public function testBulkConfirmSettlementsIsAllOrNothingWhenAnySelectionIsNotPending(): void
+    {
+        $this->actingAsUser(['payments.manage', 'accounts.manage']);
+        $member = $this->createMember();
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
+        $account = $this->createAccount(['name' => 'Atomic Bank']);
+
+        $methodId = $this->createReconciliationPaymentMethod($account->id, 'Atomic Card');
+
+        $paymentAId = (int) $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_method_id' => $methodId,
+            'payment_plan_id' => $plan->id,
+            'amount' => 1000,
+            'payment_date' => '2026-06-06',
+            'start_date' => '2026-06-06',
+        ])->assertCreated()->json('data.id');
+
+        $paymentBId = (int) $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_method_id' => $methodId,
+            'payment_plan_id' => $plan->id,
+            'amount' => 900,
+            'payment_date' => '2026-06-07',
+            'start_date' => '2026-06-07',
+        ])->assertCreated()->json('data.id');
+
+        $settlementAId = (int) PaymentSettlement::query()
+            ->where('source_type', 'payment')
+            ->where('source_id', $paymentAId)
+            ->value('id');
+        $settlementBId = (int) PaymentSettlement::query()
+            ->where('source_type', 'payment')
+            ->where('source_id', $paymentBId)
+            ->value('id');
+
+        $this->postJson('/api/accounts/payment-settlements/' . $settlementAId . '/confirm', [
+            'transaction_date' => '2026-06-08',
+            'confirmation_reference' => 'ALREADY-CONFIRMED',
+        ])->assertOk();
+
+        $this->postJson('/api/accounts/' . $account->id . '/payment-settlements/confirm-bulk', [
+            'settlement_ids' => [$settlementAId, $settlementBId],
+            'transaction_date' => '2026-06-09',
+            'confirmation_reference' => 'SHOULD-NOT-APPLY',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('payment_settlements', [
+            'id' => $settlementAId,
+            'status' => PaymentSettlement::STATUS_CONFIRMED,
+            'confirmation_reference' => 'ALREADY-CONFIRMED',
+        ]);
+
+        $this->assertDatabaseHas('payment_settlements', [
+            'id' => $settlementBId,
+            'status' => PaymentSettlement::STATUS_PENDING,
+        ]);
+
+        $this->assertDatabaseMissing('company_account_transactions', [
+            'model_name' => 'payment',
+            'reference_id' => $paymentBId,
+        ]);
+    }
+
+    public function testBulkConfirmSettlementsRejectsRowsFromAnotherAccount(): void
+    {
+        $this->actingAsUser(['payments.manage', 'accounts.manage']);
+        $member = $this->createMember();
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1000]);
+        $accountA = $this->createAccount(['name' => 'Scope A']);
+        $accountB = $this->createAccount(['name' => 'Scope B']);
+
+        $methodAId = $this->createReconciliationPaymentMethod($accountA->id, 'Scope Card A');
+        $methodBId = $this->createReconciliationPaymentMethod($accountB->id, 'Scope Card B');
+
+        $paymentAId = (int) $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_method_id' => $methodAId,
+            'payment_plan_id' => $plan->id,
+            'amount' => 1000,
+            'payment_date' => '2026-06-10',
+            'start_date' => '2026-06-10',
+        ])->assertCreated()->json('data.id');
+
+        $paymentBId = (int) $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'payment_method_id' => $methodBId,
+            'payment_plan_id' => $plan->id,
+            'amount' => 800,
+            'payment_date' => '2026-06-11',
+            'start_date' => '2026-06-11',
+        ])->assertCreated()->json('data.id');
+
+        $settlementAId = (int) PaymentSettlement::query()
+            ->where('source_type', 'payment')
+            ->where('source_id', $paymentAId)
+            ->value('id');
+        $settlementBId = (int) PaymentSettlement::query()
+            ->where('source_type', 'payment')
+            ->where('source_id', $paymentBId)
+            ->value('id');
+
+        $this->postJson('/api/accounts/' . $accountA->id . '/payment-settlements/confirm-bulk', [
+            'settlement_ids' => [$settlementAId, $settlementBId],
+            'transaction_date' => '2026-06-12',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('payment_settlements', [
+            'id' => $settlementAId,
+            'status' => PaymentSettlement::STATUS_PENDING,
+        ]);
+
+        $this->assertDatabaseHas('payment_settlements', [
+            'id' => $settlementBId,
+            'status' => PaymentSettlement::STATUS_PENDING,
+        ]);
     }
 
     public function testMembershipPaymentSendsReceiptNotification(): void
@@ -597,5 +800,21 @@ class PaymentsApiTest extends ApiRouteTestCase
             'name' => 'Cash',
             'opening_balance' => 0,
         ], $attributes));
+    }
+
+    private function createReconciliationPaymentMethod(int $accountId, string $name): int
+    {
+        return (int) $this->postJson('/api/payment-methods', [
+            'name' => $name,
+            'company_account_id' => $accountId,
+            'deduction_type' => 'percentage',
+            'deduction_value' => 3,
+            'record_deduction_as_expense' => true,
+            'requires_reconciliation' => true,
+            'is_active' => true,
+            'color' => 'blue',
+            'icon' => 'Coins',
+            'order' => 5,
+        ])->assertCreated()->json('data.id');
     }
 }

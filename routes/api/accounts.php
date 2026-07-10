@@ -32,6 +32,7 @@ Route::delete('/accounts/expenses/{expense}/documents/{document}', [CompanyAccou
 
 Route::get('/accounts/{account}/payment-settlements', [PaymentSettlementApiController::class, 'accountIndex'])->middleware(['auth', 'permission:accounts.manage,accounts.transactions']);
 Route::post('/accounts/payment-settlements/{settlement}/confirm', [PaymentSettlementApiController::class, 'confirm'])->middleware(['auth', 'permission:accounts.manage,accounts.transactions']);
+Route::post('/accounts/{account}/payment-settlements/confirm-bulk', [PaymentSettlementApiController::class, 'confirmBulk'])->middleware(['auth', 'permission:accounts.manage,accounts.transactions']);
 
 Route::get('/accounts/{account}', [CompanyAccountApiController::class, 'show'])->middleware(['auth', 'permission:accounts.manage']);
 Route::put('/accounts/{account}', [CompanyAccountApiController::class, 'update'])->middleware(['auth', 'permission:accounts.manage']);

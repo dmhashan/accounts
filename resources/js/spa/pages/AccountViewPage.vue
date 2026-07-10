@@ -77,6 +77,34 @@
           </button>
         </div>
 
+        <div v-if="selectedCount > 0" class="px-4 py-3 md:px-6 border-b border-secondary-200 dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800/40">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm text-secondary-700 dark:text-secondary-200">
+              <span class="font-semibold">{{ selectedCount }}</span> selected
+              <span class="ml-2">Gross: <span class="font-semibold">{{ money(selectedGrossTotal) }}</span></span>
+              <span class="ml-2">Net: <span class="font-semibold">{{ money(selectedNetTotal) }}</span></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+                :disabled="bulkConfirming || confirming"
+                @click="clearSelectedSettlements"
+              >
+                Clear Selection
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold disabled:opacity-50"
+                :disabled="bulkConfirming || confirming"
+                @click="openBulkConfirmModal"
+              >
+                Confirm Selected Payments
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div v-if="settlementsError" class="px-4 py-3 text-sm text-red-600 dark:text-red-400">
           {{ settlementsError }}
         </div>
@@ -90,6 +118,16 @@
           <table class="w-full">
             <thead class="bg-secondary-50 dark:bg-background-dark border-b border-secondary-200 dark:border-secondary-700">
               <tr>
+                <th class="w-10 px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                    :checked="allSettlementsSelected"
+                    :indeterminate="someSettlementsSelected && !allSettlementsSelected"
+                    aria-label="Select all settlements"
+                    @change="toggleAllSettlements"
+                  />
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                   Date
                 </th>
@@ -112,7 +150,21 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
-              <tr v-for="settlement in pendingSettlements" :key="settlement.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50">
+              <tr
+                v-for="settlement in pendingSettlements"
+                :key="settlement.id"
+                class="hover:bg-secondary-50 dark:hover:bg-secondary-800/50"
+                :class="selectedSettlementIds.has(settlement.id) ? 'bg-primary-50/60 dark:bg-primary-900/10' : ''"
+              >
+                <td class="px-4 py-4">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                    :checked="selectedSettlementIds.has(settlement.id)"
+                    :aria-label="`Select settlement ${settlement.id}`"
+                    @change="toggleSettlementSelection(settlement.id)"
+                  />
+                </td>
                 <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 whitespace-nowrap">
                   {{ settlement.payment_date || '-' }}
                 </td>
@@ -145,7 +197,7 @@
                   <button
                     type="button"
                     class="px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold disabled:opacity-50"
-                    :disabled="confirming"
+                    :disabled="confirming || bulkConfirming"
                     @click="openConfirmSettlement(settlement)"
                   >
                     Confirm
@@ -213,11 +265,68 @@
         </form>
       </div>
     </div>
+
+    <div v-if="bulkConfirmOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div class="bg-white dark:bg-secondary-900 rounded-2xl shadow-xl w-full max-w-md">
+        <div class="flex items-center justify-between p-5 border-b border-secondary-200 dark:border-secondary-700">
+          <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">
+            Confirm Selected Settlements
+          </h3>
+          <button type="button" class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200" @click="bulkConfirmOpen = false">
+            x
+          </button>
+        </div>
+
+        <form class="p-5 space-y-4" @submit.prevent="submitBulkConfirmSettlements">
+          <div class="rounded-xl bg-secondary-50 dark:bg-secondary-800 px-3 py-2 text-sm text-secondary-700 dark:text-secondary-200">
+            <p>{{ selectedCount }} settlements selected</p>
+            <p>Gross: <span class="font-semibold">{{ money(selectedGrossTotal) }}</span></p>
+            <p>Net: <span class="font-semibold">{{ money(selectedNetTotal) }}</span></p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Received Date</label>
+            <input
+              v-model="bulkConfirmForm.transaction_date"
+              type="date"
+              class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Reference</label>
+            <input
+              v-model="bulkConfirmForm.confirmation_reference"
+              type="text"
+              maxlength="255"
+              class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Notes</label>
+            <textarea
+              v-model="bulkConfirmForm.confirmation_notes"
+              rows="3"
+              maxlength="1000"
+              class="app-form-control w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+            />
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm" @click="bulkConfirmOpen = false">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50" :disabled="bulkConfirming">
+              {{ bulkConfirming ? 'Confirming...' : 'Confirm Selected Payments' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -232,13 +341,28 @@ const deleting = ref(false);
 const settlementsLoading = ref(false);
 const settlementsError = ref('');
 const pendingSettlements = ref([]);
+const selectedSettlementIds = ref(new Set());
 const confirmSettlement = ref(null);
 const confirming = ref(false);
+const bulkConfirmOpen = ref(false);
+const bulkConfirming = ref(false);
 const confirmForm = ref({
     transaction_date: new Date().toISOString().slice(0, 10),
     confirmation_reference: '',
     confirmation_notes: '',
 });
+const bulkConfirmForm = ref({
+    transaction_date: new Date().toISOString().slice(0, 10),
+    confirmation_reference: '',
+    confirmation_notes: '',
+});
+
+const selectedSettlements = computed(() => pendingSettlements.value.filter((settlement) => selectedSettlementIds.value.has(settlement.id)));
+const selectedCount = computed(() => selectedSettlements.value.length);
+const selectedGrossTotal = computed(() => selectedSettlements.value.reduce((sum, settlement) => sum + Number(settlement.gross_amount || 0), 0));
+const selectedNetTotal = computed(() => selectedSettlements.value.reduce((sum, settlement) => sum + Number(settlement.net_amount || 0), 0));
+const allSettlementsSelected = computed(() => pendingSettlements.value.length > 0 && pendingSettlements.value.every((settlement) => selectedSettlementIds.value.has(settlement.id)));
+const someSettlementsSelected = computed(() => pendingSettlements.value.some((settlement) => selectedSettlementIds.value.has(settlement.id)));
 
 function money(value) {
     return Number(value || 0).toFixed(2);
@@ -278,11 +402,36 @@ async function loadSettlements() {
             params: { status: 'pending', per_page: 50 },
         });
         pendingSettlements.value = response.data || [];
+        const visibleIds = new Set(pendingSettlements.value.map((settlement) => settlement.id));
+        selectedSettlementIds.value = new Set([...selectedSettlementIds.value].filter((id) => visibleIds.has(id)));
     } catch {
         settlementsError.value = 'Failed to load payment settlements.';
     } finally {
         settlementsLoading.value = false;
     }
+}
+
+function toggleSettlementSelection(id) {
+    const next = new Set(selectedSettlementIds.value);
+    if (next.has(id)) {
+        next.delete(id);
+    } else {
+        next.add(id);
+    }
+    selectedSettlementIds.value = next;
+}
+
+function toggleAllSettlements() {
+    if (allSettlementsSelected.value) {
+        selectedSettlementIds.value = new Set();
+        return;
+    }
+
+    selectedSettlementIds.value = new Set(pendingSettlements.value.map((settlement) => settlement.id));
+}
+
+function clearSelectedSettlements() {
+    selectedSettlementIds.value = new Set();
 }
 
 function openConfirmSettlement(settlement) {
@@ -303,11 +452,44 @@ async function submitConfirmSettlement() {
             data: confirmForm.value,
         });
         confirmSettlement.value = null;
+        clearSelectedSettlements();
         await Promise.all([load(), loadSettlements()]);
     } catch (e) {
         alert(e?.response?.data?.message || 'Failed to confirm settlement.');
     } finally {
         confirming.value = false;
+    }
+}
+
+function openBulkConfirmModal() {
+    if (selectedCount.value === 0) return;
+    bulkConfirmForm.value = {
+        transaction_date: new Date().toISOString().slice(0, 10),
+        confirmation_reference: '',
+        confirmation_notes: '',
+    };
+    bulkConfirmOpen.value = true;
+}
+
+async function submitBulkConfirmSettlements() {
+    if (selectedCount.value === 0) return;
+
+    bulkConfirming.value = true;
+    try {
+        await apiRequest(`/api/accounts/${route.params.id}/payment-settlements/confirm-bulk`, {
+            method: 'post',
+            data: {
+                settlement_ids: [...selectedSettlementIds.value],
+                ...bulkConfirmForm.value,
+            },
+        });
+        bulkConfirmOpen.value = false;
+        clearSelectedSettlements();
+        await Promise.all([load(), loadSettlements()]);
+    } catch (e) {
+        alert(e?.response?.data?.message || 'Failed to confirm selected settlements.');
+    } finally {
+        bulkConfirming.value = false;
     }
 }
 

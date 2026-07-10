@@ -49,6 +49,35 @@ class PaymentSettlementApiController extends Controller
             'data' => [
                 'id' => $settlement->id,
                 'status' => $settlement->status,
+                'confirmed_by' => $settlement->confirmed_by,
+                'confirmed_by_name' => $settlement->confirmedBy?->name,
+            ],
+        ]);
+    }
+
+    public function confirmBulk(Request $request, CompanyAccount $account): JsonResponse
+    {
+        $validated = $request->validate([
+            'settlement_ids' => ['required', 'array', 'min:1', 'max:100'],
+            'settlement_ids.*' => ['required', 'integer', 'distinct', 'exists:payment_settlements,id'],
+            'transaction_date' => ['nullable', 'date'],
+            'confirmation_reference' => ['nullable', 'string', 'max:255'],
+            'confirmation_notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $confirmedIds = $this->paymentSettlementService->confirmBulkForAccount(
+            $account,
+            app('tenant')->id,
+            $validated['settlement_ids'],
+            $validated,
+            $request->user()?->id,
+        );
+
+        return response()->json([
+            'message' => 'Selected payment settlements confirmed successfully.',
+            'data' => [
+                'confirmed_count' => count($confirmedIds),
+                'settlement_ids' => $confirmedIds,
             ],
         ]);
     }

@@ -69,7 +69,7 @@ class PaymentSettlementService
     public function accountSettlements(CompanyAccount $account, int $tenantId, string $status, int $perPage): array
     {
         $query = PaymentSettlement::query()
-            ->with(['paymentMethod:id,name', 'account:id,name'])
+            ->with(['paymentMethod:id,name', 'account:id,name', 'confirmedBy:id,name'])
             ->where('company_account_id', $account->id)
             ->orderBy('payment_date')
             ->orderBy('id');
@@ -104,30 +104,56 @@ class PaymentSettlementService
                 abort(404);
             }
 
-            if ($locked->status === PaymentSettlement::STATUS_CONFIRMED) {
-                abort(422, 'Settlement is already confirmed.');
+            $this->confirmLockedSettlement($locked, $validated, $userId);
+
+            return $locked->fresh(['paymentMethod:id,name', 'account:id,name', 'confirmedBy:id,name']);
+        });
+    }
+
+    public function confirmBulkForAccount(
+        CompanyAccount $account,
+        int $tenantId,
+        array $settlementIds,
+        array $validated,
+        ?int $userId,
+    ): array {
+        $uniqueIds = collect($settlementIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($uniqueIds->isEmpty()) {
+            abort(422, 'Please select at least one settlement.');
+        }
+
+        return DB::transaction(function () use ($account, $uniqueIds, $validated, $userId) {
+            $settlements = PaymentSettlement::query()
+                ->where('company_account_id', $account->id)
+                ->whereIn('id', $uniqueIds)
+                ->lockForUpdate()
+                ->orderBy('id')
+                ->get();
+
+            if ($settlements->count() !== $uniqueIds->count()) {
+                abort(422, 'Some selected settlements do not belong to this account.');
             }
 
-            if ($locked->status === PaymentSettlement::STATUS_CANCELLED) {
-                abort(422, 'Cancelled settlements cannot be confirmed.');
+            $ineligible = $settlements->first(fn (PaymentSettlement $settlement) => $settlement->status !== PaymentSettlement::STATUS_PENDING);
+
+            if ($ineligible) {
+                if ($ineligible->status === PaymentSettlement::STATUS_CONFIRMED) {
+                    abort(422, 'One or more selected settlements are already confirmed.');
+                }
+
+                abort(422, 'One or more selected settlements are not eligible for confirmation.');
             }
 
-            $locked->update([
-                'status' => PaymentSettlement::STATUS_CONFIRMED,
-                'confirmed_transaction_date' => $validated['transaction_date'] ?? Carbon::today()->toDateString(),
-                'confirmed_at' => now(),
-                'confirmed_by' => $userId,
-                'confirmation_reference' => filled($validated['confirmation_reference'] ?? null)
-                    ? trim((string) $validated['confirmation_reference'])
-                    : $locked->confirmation_reference,
-                'confirmation_notes' => filled($validated['confirmation_notes'] ?? null)
-                    ? trim((string) $validated['confirmation_notes'])
-                    : $locked->confirmation_notes,
-            ]);
+            foreach ($settlements as $settlement) {
+                $this->confirmLockedSettlement($settlement, $validated, $userId);
+            }
 
-            $this->createAccountTransactions($locked);
-
-            return $locked->fresh(['paymentMethod:id,name', 'account:id,name']);
+            return $settlements->pluck('id')->map(fn ($id) => (int) $id)->all();
         });
     }
 
@@ -238,6 +264,32 @@ class PaymentSettlementService
         }
     }
 
+    private function confirmLockedSettlement(PaymentSettlement $settlement, array $validated, ?int $userId): void
+    {
+        if ($settlement->status === PaymentSettlement::STATUS_CONFIRMED) {
+            abort(422, 'Settlement is already confirmed.');
+        }
+
+        if ($settlement->status === PaymentSettlement::STATUS_CANCELLED) {
+            abort(422, 'Cancelled settlements cannot be confirmed.');
+        }
+
+        $settlement->update([
+            'status' => PaymentSettlement::STATUS_CONFIRMED,
+            'confirmed_transaction_date' => $validated['transaction_date'] ?? Carbon::today()->toDateString(),
+            'confirmed_at' => now(),
+            'confirmed_by' => $userId,
+            'confirmation_reference' => filled($validated['confirmation_reference'] ?? null)
+                ? trim((string) $validated['confirmation_reference'])
+                : $settlement->confirmation_reference,
+            'confirmation_notes' => filled($validated['confirmation_notes'] ?? null)
+                ? trim((string) $validated['confirmation_notes'])
+                : $settlement->confirmation_notes,
+        ]);
+
+        $this->createAccountTransactions($settlement);
+    }
+
     private function deleteAccountTransactions(PaymentSettlement $settlement): void
     {
         CompanyAccountTransaction::where('model_name', $settlement->source_type)
@@ -327,6 +379,8 @@ class PaymentSettlementService
             'payment_date' => $settlement->payment_date?->toDateString(),
             'confirmed_transaction_date' => $settlement->confirmed_transaction_date?->toDateString(),
             'confirmed_at' => optional($settlement->confirmed_at)->format('Y-m-d H:i'),
+            'confirmed_by' => $settlement->confirmed_by,
+            'confirmed_by_name' => $settlement->confirmedBy?->name,
             'reference_number' => $settlement->reference_number,
             'confirmation_reference' => $settlement->confirmation_reference,
             'notes' => $settlement->notes,
