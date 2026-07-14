@@ -9,12 +9,26 @@ use Illuminate\Support\Facades\Route;
 
 // Root route - check for tenant
 Route::get('/', function (TenantDatabaseManager $tenancy) {
-    $tenancy->deactivate();
     $domain = $tenancy->domainForRequest(request());
+
+    if ($domain === 'portal') {
+        return view('portal-spa');
+    }
+
+    $tenancy->deactivate();
     $tenant = $domain ? $tenancy->activateByDomain($domain) : null;
 
     if (!$tenant) {
         return view('product-landing-page');
+    }
+
+    if (!$tenant->is_active) {
+        $appType = auth()->check() ? 'Administrator Portal' : 'Website';
+
+        return response()->view('tenant-blocked', [
+            'tenant' => $tenant,
+            'appType' => $appType,
+        ]);
     }
 
     if (auth()->check()) {

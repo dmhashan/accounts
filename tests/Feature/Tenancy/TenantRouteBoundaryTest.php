@@ -32,6 +32,7 @@ class TenantRouteBoundaryTest extends TestCase
 
         $unprotected = collect(app('router')->getRoutes())
             ->filter(fn (Route $route) => str_starts_with($route->uri(), 'api/'))
+            ->reject(fn (Route $route) => str_starts_with($route->uri(), 'api/portal/'))
             ->reject(fn (Route $route) => in_array($route->uri(), $exceptions, true))
             ->reject(fn (Route $route) => in_array(IdentifyTenant::class, $route->gatherMiddleware(), true))
             ->map(fn (Route $route) => implode('|', $route->methods()) . ' ' . $route->uri())
@@ -64,6 +65,7 @@ class TenantRouteBoundaryTest extends TestCase
     {
         $routes = collect(app('router')->getRoutes())
             ->filter(fn (Route $route) => str_starts_with($route->uri(), 'api/'))
+            ->reject(fn (Route $route) => str_starts_with($route->uri(), 'api/portal/'))
             ->reject(fn (Route $route) => in_array(IdentifyTenant::class, $route->gatherMiddleware(), true))
             ->map(fn (Route $route) => $route->uri())
             ->values()

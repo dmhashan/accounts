@@ -13,7 +13,7 @@ export default defineConfig({
     },
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/spa/main.js', 'resources/js/public-profile.js', 'resources/js/public-campaign.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/spa/main.js', 'resources/js/public-profile.js', 'resources/js/public-campaign.js', 'resources/js/portal/main.js'],
             refresh: true,
         }),
         vue(),

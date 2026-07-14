@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
 {
+    public bool $is_active = true;
+
     protected $fillable = [
         'name',
         'domain',

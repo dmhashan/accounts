@@ -12,12 +12,12 @@ class TenantLandingPageService
     {
         $fileName = Str::slug($tenant->domain) . '.html';
 
-        return public_path('tenant-pages/' . $fileName);
+        return storage_path('app/tenant-pages/' . $fileName);
     }
 
     public function ensureCustomPageExists(Tenant $tenant): string
     {
-        $directory = public_path('tenant-pages');
+        $directory = storage_path('app/tenant-pages');
         $filePath = $this->getCustomPagePath($tenant);
 
         if (!File::exists($directory)) {

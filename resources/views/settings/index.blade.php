@@ -20,7 +20,7 @@
                     <div class="bg-white dark:bg-secondary-900 rounded-xl shadow-sm border border-secondary-200 dark:border-secondary-700 p-6 md:p-8">
                         <h2 class="text-xl font-semibold text-secondary-900 dark:text-white mb-2">Tenant Landing Page</h2>
                         <p class="text-sm text-secondary-600 dark:text-secondary-400 mb-6">
-                            Turn on custom landing page to load HTML from <span class="font-medium">public/tenant-pages</span>. If the tenant file does not exist, it will be created automatically.
+                            Turn on custom landing page to load HTML from <span class="font-medium">storage/app/tenant-pages</span>. If the tenant file does not exist, it will be created automatically.
                         </p>
 
                         <form action="{{ route('settings.landing-page.update') }}" method="POST" class="space-y-6">

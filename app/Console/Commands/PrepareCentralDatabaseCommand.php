@@ -30,7 +30,16 @@ class PrepareCentralDatabaseCommand extends Command
         $this->createQueueTables($schema);
         $this->createSessionsTable($schema);
 
-        foreach (['tenants', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'sessions'] as $table) {
+        // Run central portal migrations
+        $this->info('Running central portal migrations...');
+        \Illuminate\Support\Facades\Artisan::call('migrate', [
+            '--database' => (string) config('tenancy.central_connection', 'central'),
+            '--path' => 'database/migrations/portal',
+            '--force' => true,
+        ]);
+        $this->line(\Illuminate\Support\Facades\Artisan::output());
+
+        foreach (['tenants', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'sessions', 'portal_users'] as $table) {
             if (!$schema->hasTable($table)) {
                 throw new \RuntimeException("Central table [{$table}] was not created.");
             }

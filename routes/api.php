@@ -3,6 +3,10 @@
 use App\Http\Middleware\IdentifyTenant;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware(['web'])->prefix('portal')->group(function () {
+    require __DIR__ . '/api/portal.php';
+});
+
 Route::middleware(['web', IdentifyTenant::class])->group(function () {
     require __DIR__ . '/api/health.php';
     require __DIR__ . '/api/auth.php';

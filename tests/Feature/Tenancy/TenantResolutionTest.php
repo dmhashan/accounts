@@ -24,7 +24,6 @@ class TenantResolutionTest extends TestCase
         ]);
 
         $this->getJson('http://alpha.example.test/api/health')->assertOk();
-
         $this->assertTrue(app('tenant')->is($expected));
     }
 

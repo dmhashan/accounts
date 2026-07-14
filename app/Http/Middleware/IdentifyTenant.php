@@ -29,6 +29,31 @@ class IdentifyTenant
             return redirect('/');
         }
 
+        if (!$tenant->is_active) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => 'This tenant has been temporarily blocked.',
+                    'blocked' => true,
+                ], 403);
+            }
+
+            $path = $request->getPathInfo();
+            $appType = 'Website';
+
+            if (str_starts_with($path, '/profile')) {
+                $appType = 'Member Portal';
+            } elseif (str_starts_with($path, '/dashboard') || str_starts_with($path, '/login')) {
+                $appType = 'Administrator Portal';
+            } elseif (auth()->check()) {
+                $appType = 'Administrator Portal';
+            }
+
+            return response()->view('tenant-blocked', [
+                'tenant' => $tenant,
+                'appType' => $appType,
+            ]);
+        }
+
         $request->merge(['tenant' => $tenant]);
 
         return $next($request);

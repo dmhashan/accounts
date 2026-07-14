@@ -42,20 +42,26 @@ class TenantDatabaseManager
             return null;
         }
 
-        if (!$this->isolationEnabled()) {
-            $tenant = Tenant::where('domain', $domain)->first();
-
-            return $tenant ? $this->bind($tenant) : null;
-        }
-
-        $this->assertHostOnlySessions();
-        $this->deactivate();
-
         $mapping = $this->mappings()->firstWhere('subdomain', $domain);
 
         if (!$mapping) {
             return null;
         }
+
+        if (!$this->isolationEnabled()) {
+            $tenant = Tenant::where('domain', $domain)->first();
+
+            if ($tenant) {
+                $tenant->is_active = (bool) ($mapping->is_active ?? true);
+
+                return $this->bind($tenant);
+            }
+
+            return null;
+        }
+
+        $this->assertHostOnlySessions();
+        $this->deactivate();
 
         $database = (string) $mapping->database_name;
         $this->assertUuidDatabaseName($database);
@@ -72,6 +78,8 @@ class TenantDatabaseManager
             throw new \RuntimeException("Tenant database [{$database}] does not contain its expected tenant row.");
         }
 
+        $tenant->is_active = (bool) ($mapping->is_active ?? true);
+
         return $this->bind($tenant);
     }
 
@@ -84,7 +92,14 @@ class TenantDatabaseManager
         if (!$this->isolationEnabled()) {
             $tenant = Tenant::find($tenantId);
 
-            return $tenant ? $this->bind($tenant) : null;
+            if ($tenant) {
+                $mapping = $this->mappings()->firstWhere('subdomain', $tenant->domain);
+                $tenant->is_active = (bool) ($mapping ? ($mapping->is_active ?? true) : ($tenant->is_active ?? true));
+
+                return $this->bind($tenant);
+            }
+
+            return null;
         }
 
         if ($this->app->bound('tenant')) {
@@ -109,24 +124,49 @@ class TenantDatabaseManager
     }
 
     /**
-     * @return Collection<int, object{subdomain: string, database_name: string}>
+     * @return Collection<int, object{subdomain: string, database_name: string, is_active: bool}>
      */
     public function mappings(): Collection
     {
-        if (!$this->isolationEnabled()) {
-            return Tenant::query()
-                ->orderBy('domain')
-                ->get(['domain', 'tenant_uuid'])
-                ->map(fn (Tenant $tenant): object => (object) [
-                    'subdomain' => $tenant->domain,
-                    'database_name' => $tenant->tenant_uuid,
+        $mappings = collect();
+
+        // 1. Try to load from central registry
+        try {
+            $centralMappings = DB::connection($this->centralConnection())
+                ->table('tenants')
+                ->orderBy('subdomain')
+                ->get(['subdomain', 'database_name', 'is_active'])
+                ->map(fn ($row): object => (object) [
+                    'subdomain' => $row->subdomain,
+                    'database_name' => $row->database_name,
+                    'is_active' => (bool) ($row->is_active ?? true),
                 ]);
+
+            foreach ($centralMappings as $m) {
+                $mappings->put($m->subdomain, $m);
+            }
+        } catch (\Throwable $e) {
+            // Ignore connection errors and fall back to local
         }
 
-        return DB::connection($this->centralConnection())
-            ->table('tenants')
-            ->orderBy('subdomain')
-            ->get(['subdomain', 'database_name']);
+        // 2. Load from local table to support non-isolated/local/test setups
+        if (!$this->isolationEnabled() && \Illuminate\Support\Facades\Schema::hasTable('tenants')) {
+            $localTenants = Tenant::query()
+                ->orderBy('domain')
+                ->get(['domain', 'tenant_uuid']);
+
+            foreach ($localTenants as $tenant) {
+                if (!$mappings->has($tenant->domain)) {
+                    $mappings->put($tenant->domain, (object) [
+                        'subdomain' => $tenant->domain,
+                        'database_name' => $tenant->tenant_uuid,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        }
+
+        return $mappings->values();
     }
 
     public function eachTenant(callable $callback): void
