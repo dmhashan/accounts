@@ -106,6 +106,35 @@ class PortalTenantController extends Controller
                         ->limit(5)
                         ->get(['name', 'email', 'phone_number', 'joined_date', 'is_active'])
                         ->toArray();
+
+                    // Calculate Member Summary enhancements
+                    $memberSummary['new_this_month'] = DB::connection('tenant')->table('members')
+                        ->where('created_at', '>=', now()->startOfMonth())
+                        ->count();
+
+                    $totalMembers = $memberSummary['total_count'];
+                    $activeMembers = DB::connection('tenant')->table('members')->where('is_active', true)->count();
+                    $memberSummary['retention_rate'] = $totalMembers > 0 ? round(($activeMembers / $totalMembers) * 100, 1) : 100.0;
+
+                    $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+                    $registrations = DB::connection('tenant')->table('members')
+                        ->where('created_at', '>=', $sixMonthsAgo)
+                        ->pluck('created_at')
+                        ->map(fn ($date) => \Carbon\Carbon::parse($date));
+
+                    $trends = [];
+
+                    for ($i = 5; $i >= 0; $i--) {
+                        $monthDate = now()->subMonths($i);
+                        $monthKey = $monthDate->format('Y-m');
+                        $monthLabel = $monthDate->format('M');
+                        $count = $registrations->filter(fn ($date) => $date->format('Y-m') === $monthKey)->count();
+                        $trends[] = [
+                            'label' => $monthLabel,
+                            'count' => $count,
+                        ];
+                    }
+                    $memberSummary['trends'] = $trends;
                 }
 
                 // Check if table users exists
@@ -122,6 +151,65 @@ class PortalTenantController extends Controller
                         ->limit(5)
                         ->get(['users.name', 'users.email', 'roles.name as role_name', 'users.is_active'])
                         ->toArray();
+
+                    // Calculate User Summary enhancements
+                    $trainersCount = 0;
+                    $otherCount = 0;
+                    $rolesList = DB::connection('tenant')->table('users')
+                        ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
+                        ->get(['roles.slug', 'roles.name']);
+
+                    foreach ($rolesList as $r) {
+                        $slug = strtolower($r->slug ?? '');
+                        $name = strtolower($r->name ?? '');
+
+                        if (str_contains($slug, 'trainer') || str_contains($slug, 'coach') ||
+                            str_contains($name, 'trainer') || str_contains($name, 'coach')) {
+                            $trainersCount++;
+                        } else {
+                            $otherCount++;
+                        }
+                    }
+                    $totalStaff = $trainersCount + $otherCount;
+                    $userSummary['staff_split'] = [
+                        'trainers_percentage' => $totalStaff > 0 ? round(($trainersCount / $totalStaff) * 100, 1) : 0.0,
+                        'trainers_count' => $trainersCount,
+                        'other_count' => $otherCount,
+                    ];
+
+                    $activeStaff = DB::connection('tenant')->table('users')->where('is_active', true)->count();
+                    $verifiedStaff = DB::connection('tenant')->table('users')->where('is_active', true)->whereNotNull('email_verified_at')->count();
+                    $userSummary['access_security'] = $activeStaff > 0 ? round(($verifiedStaff / $activeStaff) * 100, 1) : 100.0;
+
+                    // Logins activity logs over last 7 days
+                    $logins = collect();
+                    $auditLogsExists = DB::connection('tenant')->selectOne(
+                        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'audit_logs'",
+                        [$uuid],
+                    );
+
+                    if ($auditLogsExists) {
+                        $sevenDaysAgo = now()->subDays(6)->startOfDay();
+                        $logins = DB::connection('tenant')->table('audit_logs')
+                            ->where('action', 'user.login')
+                            ->where('created_at', '>=', $sevenDaysAgo)
+                            ->pluck('created_at')
+                            ->map(fn ($date) => \Carbon\Carbon::parse($date));
+                    }
+
+                    $activity = [];
+
+                    for ($i = 6; $i >= 0; $i--) {
+                        $dayDate = now()->subDays($i);
+                        $dayKey = $dayDate->format('Y-m-d');
+                        $dayLabel = $dayDate->format('D');
+                        $count = $logins->filter(fn ($date) => $date->format('Y-m-d') === $dayKey)->count();
+                        $activity[] = [
+                            'label' => $dayLabel,
+                            'count' => $count,
+                        ];
+                    }
+                    $userSummary['activity'] = $activity;
                 }
             } else {
                 // Query default connection using tenant domain mapping
@@ -142,6 +230,35 @@ class PortalTenantController extends Controller
                         ->get(['name', 'email', 'phone_number', 'joined_date', 'is_active'])
                         ->toArray();
 
+                    // Calculate Member Summary enhancements
+                    $memberSummary['new_this_month'] = DB::table('members')->where('tenant_id', $localTenant->id)
+                        ->where('created_at', '>=', now()->startOfMonth())
+                        ->count();
+
+                    $totalMembers = $memberSummary['total_count'];
+                    $activeMembers = DB::table('members')->where('tenant_id', $localTenant->id)->where('is_active', true)->count();
+                    $memberSummary['retention_rate'] = $totalMembers > 0 ? round(($activeMembers / $totalMembers) * 100, 1) : 100.0;
+
+                    $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+                    $registrations = DB::table('members')->where('tenant_id', $localTenant->id)
+                        ->where('created_at', '>=', $sixMonthsAgo)
+                        ->pluck('created_at')
+                        ->map(fn ($date) => \Carbon\Carbon::parse($date));
+
+                    $trends = [];
+
+                    for ($i = 5; $i >= 0; $i--) {
+                        $monthDate = now()->subMonths($i);
+                        $monthKey = $monthDate->format('Y-m');
+                        $monthLabel = $monthDate->format('M');
+                        $count = $registrations->filter(fn ($date) => $date->format('Y-m') === $monthKey)->count();
+                        $trends[] = [
+                            'label' => $monthLabel,
+                            'count' => $count,
+                        ];
+                    }
+                    $memberSummary['trends'] = $trends;
+
                     $userSummary['total_count'] = DB::table('users')->where('tenant_id', $localTenant->id)->count();
                     $userSummary['recent'] = DB::table('users')
                         ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
@@ -150,6 +267,60 @@ class PortalTenantController extends Controller
                         ->limit(5)
                         ->get(['users.name', 'users.email', 'roles.name as role_name', 'users.is_active'])
                         ->toArray();
+
+                    // Calculate User Summary enhancements
+                    $trainersCount = 0;
+                    $otherCount = 0;
+                    $rolesList = DB::table('users')->where('users.tenant_id', $localTenant->id)
+                        ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
+                        ->get(['roles.slug', 'roles.name']);
+
+                    foreach ($rolesList as $r) {
+                        $slug = strtolower($r->slug ?? '');
+                        $name = strtolower($r->name ?? '');
+
+                        if (str_contains($slug, 'trainer') || str_contains($slug, 'coach') ||
+                            str_contains($name, 'trainer') || str_contains($name, 'coach')) {
+                            $trainersCount++;
+                        } else {
+                            $otherCount++;
+                        }
+                    }
+                    $totalStaff = $trainersCount + $otherCount;
+                    $userSummary['staff_split'] = [
+                        'trainers_percentage' => $totalStaff > 0 ? round(($trainersCount / $totalStaff) * 100, 1) : 0.0,
+                        'trainers_count' => $trainersCount,
+                        'other_count' => $otherCount,
+                    ];
+
+                    $activeStaff = DB::table('users')->where('tenant_id', $localTenant->id)->where('is_active', true)->count();
+                    $verifiedStaff = DB::table('users')->where('tenant_id', $localTenant->id)->where('is_active', true)->whereNotNull('email_verified_at')->count();
+                    $userSummary['access_security'] = $activeStaff > 0 ? round(($verifiedStaff / $activeStaff) * 100, 1) : 100.0;
+
+                    $logins = collect();
+
+                    if (Schema::hasTable('audit_logs')) {
+                        $sevenDaysAgo = now()->subDays(6)->startOfDay();
+                        $logins = DB::table('audit_logs')->where('tenant_id', $localTenant->id)
+                            ->where('action', 'user.login')
+                            ->where('created_at', '>=', $sevenDaysAgo)
+                            ->pluck('created_at')
+                            ->map(fn ($date) => \Carbon\Carbon::parse($date));
+                    }
+
+                    $activity = [];
+
+                    for ($i = 6; $i >= 0; $i--) {
+                        $dayDate = now()->subDays($i);
+                        $dayKey = $dayDate->format('Y-m-d');
+                        $dayLabel = $dayDate->format('D');
+                        $count = $logins->filter(fn ($date) => $date->format('Y-m-d') === $dayKey)->count();
+                        $activity[] = [
+                            'label' => $dayLabel,
+                            'count' => $count,
+                        ];
+                    }
+                    $userSummary['activity'] = $activity;
                 }
             }
         } catch (\Throwable $e) {

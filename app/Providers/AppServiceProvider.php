@@ -58,5 +58,24 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(fn (JobProcessed $event) => app(TenantDatabaseManager::class)->deactivate());
         Event::listen(fn (JobExceptionOccurred $event) => app(TenantDatabaseManager::class)->deactivate());
+
+        Event::listen(\Illuminate\Auth\Events\Login::class, function (\Illuminate\Auth\Events\Login $event): void {
+            try {
+                $tenant = app('tenant') ?? null;
+
+                if ($tenant && $event->user && \Illuminate\Support\Facades\Schema::hasTable('audit_logs')) {
+                    \Illuminate\Support\Facades\DB::table('audit_logs')->insert([
+                        'tenant_id' => $tenant->id,
+                        'user_id' => $event->user->id,
+                        'action' => 'user.login',
+                        'auditable_type' => get_class($event->user),
+                        'auditable_id' => $event->user->id,
+                        'created_at' => now(),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                // Ignore failures
+            }
+        });
     }
 }

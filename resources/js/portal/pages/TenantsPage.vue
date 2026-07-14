@@ -71,23 +71,25 @@
               <th class="px-6 py-4">
                 Status
               </th>
-              <th class="px-6 py-4 text-right">
-                Actions
-              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm">
             <tr v-if="loading && tenants.length === 0">
-              <td colspan="4" class="px-6 py-8 text-center text-slate-400">
+              <td colspan="3" class="px-6 py-8 text-center text-slate-400">
                 Loading tenants...
               </td>
             </tr>
             <tr v-else-if="tenants.length === 0">
-              <td colspan="4" class="px-6 py-8 text-center text-slate-400">
+              <td colspan="3" class="px-6 py-8 text-center text-slate-400">
                 No tenants registered yet.
               </td>
             </tr>
-            <tr v-for="t in tenants" :key="t.subdomain" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
+            <tr
+              v-for="t in tenants"
+              :key="t.subdomain"
+              class="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all cursor-pointer"
+              @click="viewTenant(t.subdomain)"
+            >
               <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
                 {{ t.name }}
               </td>
@@ -104,11 +106,6 @@
                   <span class="w-1.5 h-1.5 rounded-full" :class="t.is_active ? 'bg-emerald-500' : 'bg-rose-500'" />
                   {{ t.is_active ? 'Active' : 'Inactive' }}
                 </span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <router-link :to="`/tenants/${t.subdomain}`" class="text-xs font-semibold px-3 py-1.5 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 rounded-lg transition-all inline-block hover:text-indigo-600 dark:hover:text-indigo-400">
-                  View Detail
-                </router-link>
               </td>
             </tr>
           </tbody>
@@ -283,6 +280,7 @@
 
 <script>
 import { ref, reactive, onMounted, inject } from 'vue';
+import { useRouter } from 'vue-router';
 import { apiRequest } from '../composables/usePortalApi';
 
 export default {
@@ -291,6 +289,11 @@ export default {
     const search = ref('');
     const loading = ref(false);
     const showToast = inject('showToast');
+    const router = useRouter();
+
+    const viewTenant = (subdomain) => {
+      router.push(`/tenants/${subdomain}`);
+    };
 
     const pagination = reactive({
       current_page: 1,
@@ -473,6 +476,7 @@ export default {
       submitForm,
       sendActionOtp,
       confirmActionWithOtp,
+      viewTenant,
     };
   }
 };

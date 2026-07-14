@@ -208,15 +208,14 @@
               </div>
             </div>
 
-            <!-- Metric 2: Monthly Signups (Static) -->
+            <!-- Metric 2: Monthly Signups -->
             <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
               <div>
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">New This Month</span>
                 <div class="flex items-baseline gap-2 mt-1">
                   <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white">
-                    28
+                    {{ members.new_this_month ?? 0 }}
                   </h3>
-                  <span class="text-xs font-bold text-emerald-500 flex items-center">+14.8%</span>
                 </div>
               </div>
               <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
@@ -236,12 +235,12 @@
               </div>
             </div>
 
-            <!-- Metric 3: Active Status (Static Circular Gauge) -->
+            <!-- Metric 3: Active Status (Circular Gauge) -->
             <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
               <div>
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Member Retention</span>
                 <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1">
-                  92.4%
+                  {{ members.retention_rate ?? '100.0' }}%
                 </h3>
               </div>
               <div class="relative w-12 h-12 flex items-center justify-center">
@@ -261,12 +260,12 @@
                     class="stroke-indigo-600 dark:stroke-indigo-400"
                     stroke-width="3"
                     stroke-dasharray="113"
-                    stroke-dashoffset="8.5"
+                    :stroke-dashoffset="113 - (113 * (members.retention_rate ?? 100) / 100)"
                     stroke-linecap="round"
                     fill="transparent"
                   />
                 </svg>
-                <span class="absolute text-[10px] font-bold text-indigo-600 dark:text-indigo-400">92%</span>
+                <span class="absolute text-[10px] font-bold text-indigo-600 dark:text-indigo-400">{{ Math.round(members.retention_rate ?? 100) }}%</span>
               </div>
             </div>
           </div>
@@ -282,50 +281,23 @@
               <div class="absolute inset-x-0 bottom-2/4 border-b border-slate-100 dark:border-slate-800/50 pointer-events-none" />
               <div class="absolute inset-x-0 bottom-3/4 border-b border-slate-100 dark:border-slate-800/50 pointer-events-none" />
 
-              <div class="flex-1 flex flex-col items-center gap-2 group relative">
-                <div class="w-full bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-500/40 rounded-t-md transition-all duration-300" style="height: 36px" />
+              <div 
+                v-for="(t, index) in (members.trends || [])" 
+                :key="index" 
+                class="flex-1 flex flex-col items-center gap-2 group relative"
+              >
+                <div 
+                  class="w-full rounded-t-md transition-all duration-300"
+                  :class="index === 5 ? 'bg-indigo-600 group-hover:bg-indigo-500 shadow-lg shadow-indigo-500/20' : 'bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-500/40'"
+                  :style="{ height: `${Math.max(10, Math.min(130, (t.count / Math.max(1, maxTrendCount)) * 130))}px` }" 
+                />
                 <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all">
-                  12
-                </div>
-              </div>
-              <div class="flex-1 flex flex-col items-center gap-2 group relative">
-                <div class="w-full bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-500/40 rounded-t-md transition-all duration-300" style="height: 58px" />
-                <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all">
-                  19
-                </div>
-              </div>
-              <div class="flex-1 flex flex-col items-center gap-2 group relative">
-                <div class="w-full bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-500/40 rounded-t-md transition-all duration-300" style="height: 72px" />
-                <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all">
-                  24
-                </div>
-              </div>
-              <div class="flex-1 flex flex-col items-center gap-2 group relative">
-                <div class="w-full bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-500/40 rounded-t-md transition-all duration-300" style="height: 98px" />
-                <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all">
-                  32
-                </div>
-              </div>
-              <div class="flex-1 flex flex-col items-center gap-2 group relative">
-                <div class="w-full bg-indigo-500/10 dark:bg-indigo-500/20 group-hover:bg-indigo-500/40 border border-indigo-500/20 rounded-t-md transition-all duration-300" style="height: 124px" />
-                <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all">
-                  41
-                </div>
-              </div>
-              <div class="flex-1 flex flex-col items-center gap-2 group relative">
-                <div class="w-full bg-indigo-600 group-hover:bg-indigo-500 rounded-t-md shadow-lg shadow-indigo-500/20 transition-all duration-300" :style="{ height: `${Math.min(150, 60 + members.total_count * 8)}px` }" />
-                <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all">
-                  {{ members.total_count + 12 }}
+                  {{ t.count }}
                 </div>
               </div>
             </div>
             <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400 mt-2 px-4">
-              <span>Jan</span>
-              <span>Feb</span>
-              <span>Mar</span>
-              <span>Apr</span>
-              <span>May</span>
-              <span>Jun</span>
+              <span v-for="(t, index) in (members.trends || [])" :key="index">{{ t.label }}</span>
             </div>
           </div>
         </div>
@@ -359,26 +331,26 @@
               </div>
             </div>
 
-            <!-- Metric 2: Staff Split (Static progress bar) -->
+            <!-- Metric 2: Staff Split (Progress bar) -->
             <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex flex-col justify-center space-y-2">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Staff Split</span>
               <div class="space-y-1">
                 <div class="flex items-center justify-between text-[10px] font-bold">
-                  <span class="text-slate-500">Trainers / Coaches</span>
-                  <span class="text-slate-700 dark:text-slate-300">60%</span>
+                  <span class="text-slate-500">Trainers ({{ users.staff_split?.trainers_count ?? 0 }}) / Other ({{ users.staff_split?.other_count ?? 0 }})</span>
+                  <span class="text-slate-700 dark:text-slate-300">{{ users.staff_split?.trainers_percentage ?? '0.0' }}%</span>
                 </div>
                 <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-indigo-600 h-1.5 rounded-full" style="width: 60%" />
+                  <div class="bg-indigo-600 h-1.5 rounded-full" :style="{ width: `${users.staff_split?.trainers_percentage ?? 0}%` }" />
                 </div>
               </div>
             </div>
 
-            <!-- Metric 3: Active Status (Static Circular Gauge) -->
+            <!-- Metric 3: Active Status (Circular Gauge) -->
             <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
               <div>
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Access Security</span>
                 <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1">
-                  100%
+                  {{ users.access_security ?? '100.0' }}%
                 </h3>
               </div>
               <div class="relative w-12 h-12 flex items-center justify-center">
@@ -398,12 +370,12 @@
                     class="stroke-emerald-500"
                     stroke-width="3"
                     stroke-dasharray="113"
-                    stroke-dashoffset="0"
+                    :stroke-dashoffset="113 - (113 * (users.access_security ?? 100) / 100)"
                     stroke-linecap="round"
                     fill="transparent"
                   />
                 </svg>
-                <span class="absolute text-[10px] font-bold text-emerald-500">100%</span>
+                <span class="absolute text-[10px] font-bold text-emerald-500">{{ Math.round(users.access_security ?? 100) }}%</span>
               </div>
             </div>
           </div>
@@ -453,57 +425,54 @@
                   stroke-width="1"
                 />
                 
-                <path d="M 0 130 C 50 110, 80 40, 116 40 C 180 40, 220 90, 280 80 C 350 70, 390 10, 450 10 C 520 10, 580 110, 700 80 L 700 130 Z" fill="url(#areaGradient)" />
-                <path
-                  d="M 0 130 C 50 110, 80 40, 116 40 C 180 40, 220 90, 280 80 C 350 70, 390 10, 450 10 C 520 10, 580 110, 700 80"
+                <polygon
+                  :points="`0,130 ${loginsPoints.map(p => `${p.x},${p.y}`).join(' ')} 700,130`"
+                  fill="url(#areaGradient)"
+                />
+                <polyline
+                  :points="loginsPoints.map(p => `${p.x},${p.y}`).join(' ')"
                   fill="none"
                   stroke="#6366f1"
                   stroke-width="3"
                   stroke-linecap="round"
+                  stroke-linejoin="round"
                 />
                 
-                <circle
-                  cx="116"
-                  cy="40"
-                  r="4.5"
-                  fill="#6366f1"
-                  stroke="#ffffff"
-                  stroke-width="1.5"
-                />
-                <circle
-                  cx="280"
-                  cy="80"
-                  r="4.5"
-                  fill="#6366f1"
-                  stroke="#ffffff"
-                  stroke-width="1.5"
-                />
-                <circle
-                  cx="450"
-                  cy="10"
-                  r="4.5"
-                  fill="#6366f1"
-                  stroke="#ffffff"
-                  stroke-width="1.5"
-                />
-                <circle
-                  cx="700"
-                  cy="80"
-                  r="4.5"
-                  fill="#6366f1"
-                  stroke="#ffffff"
-                  stroke-width="1.5"
-                />
+                <g v-for="(p, index) in loginsPoints" :key="index" class="group/point">
+                  <circle
+                    :cx="p.x"
+                    :cy="p.y"
+                    r="4.5"
+                    fill="#6366f1"
+                    stroke="#ffffff"
+                    stroke-width="1.5"
+                  />
+                  <!-- Hover tooltip on dots -->
+                  <g class="opacity-0 group-hover/point:opacity-100 transition-opacity pointer-events-none">
+                    <rect
+                      :x="p.x - 20"
+                      :y="p.y - 30"
+                      width="40"
+                      height="20"
+                      rx="4"
+                      fill="#0f172a"
+                    />
+                    <text
+                      :x="p.x"
+                      :y="p.y - 17"
+                      fill="#ffffff"
+                      font-size="10"
+                      font-weight="bold"
+                      text-anchor="middle"
+                    >
+                      {{ p.count }}
+                    </text>
+                  </g>
+                </g>
               </svg>
             </div>
             <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400 mt-2 px-1">
-              <span>Mon</span>
-              <span>Tue</span>
-              <span>Wed</span>
-              <span>Thu</span>
-              <span>Fri</span>
-              <span>Sat</span>
-              <span>Sun</span>
+              <span v-for="(p, index) in loginsPoints" :key="index">{{ p.label }}</span>
             </div>
           </div>
         </div>
@@ -652,7 +621,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, inject } from 'vue';
+import { ref, reactive, onMounted, inject, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/usePortalApi';
 
@@ -665,6 +634,31 @@ export default {
     const tenant = ref(null);
     const members = ref({ total_count: 0, recent: [] });
     const users = ref({ total_count: 0, recent: [] });
+
+    const maxTrendCount = computed(() => {
+      if (!members.value?.trends) return 1;
+      return Math.max(...members.value.trends.map(t => t.count), 1);
+    });
+
+    const loginsPoints = computed(() => {
+      const activity = users.value?.activity || [];
+      if (activity.length === 0) {
+        return Array.from({ length: 7 }, (_, i) => ({
+          x: (i * 700) / 6,
+          y: 120,
+          label: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
+          count: 0
+        }));
+      }
+      const counts = activity.map(a => a.count);
+      const maxCount = Math.max(...counts, 1);
+      return activity.map((a, i) => ({
+        x: (i * 700) / 6,
+        y: 120 - (a.count / maxCount) * 110,
+        label: a.label,
+        count: a.count
+      }));
+    });
     
     const activeTab = ref('members'); // members | users
 
@@ -833,6 +827,8 @@ export default {
       confirmActionWithOtp,
       copied,
       copyCommandText,
+      maxTrendCount,
+      loginsPoints,
     };
   }
 };
