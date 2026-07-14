@@ -129,7 +129,7 @@
 
 
       <div v-if="selectedPlan && form.start_date" class="p-3 rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/20 text-xs text-primary-700 dark:text-primary-300">
-        This payment valid from {{ startDate }} to {{ endDate }}. dont miss next payment date is {{ nextPaymentDate }}
+        Membership is active from {{ startDate }} to {{ endDate }}. Next payment due: {{ nextPaymentDate }}
       </div>
 
       <div>

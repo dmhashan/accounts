@@ -64,10 +64,12 @@ class AutomatedMemberNotificationService
         $endDate = $payment->membership?->end_date?->toDateString();
         $nextPaymentDate = $payment->membership?->end_date ? $payment->membership->end_date->copy()->addDay()->toDateString() : null;
 
-        $message = "Payment received! {$memberName} paid {$amount} at {$tenantName} on {$paymentDate} via {$paymentMethodName}";
+        $firstName = explode(' ', $memberName)[0] ?: 'Member';
 
         if ($startDate && $endDate && $nextPaymentDate) {
-            $message .= ". This payment valid from {$startDate} to {$endDate}. dont miss next payment date is {$nextPaymentDate}";
+            $message = "Payment received! {$firstName}, your {$tenantName} membership is active from {$startDate} to {$endDate}. Next payment due: {$nextPaymentDate}.";
+        } else {
+            $message = "Payment received! {$firstName} paid {$amount} at {$tenantName} on {$paymentDate} via {$paymentMethodName}.";
         }
 
         SendMemberNotificationJob::dispatch(

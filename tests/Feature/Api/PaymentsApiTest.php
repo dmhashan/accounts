@@ -603,7 +603,7 @@ class PaymentsApiTest extends ApiRouteTestCase
         $this->assertDatabaseHas('member_notifications', [
             'member_id' => $member->id,
             'type' => 'membership_payment_received',
-            'body' => 'Payment received! Kamal Silva paid 2,500.00 at Test Gym on 2026-06-08 via Main Cash. This payment valid from 2026-06-08 to 2026-07-07. dont miss next payment date is 2026-07-08',
+            'body' => 'Payment received! Kamal, your Test Gym membership is active from 2026-06-08 to 2026-07-07. Next payment due: 2026-07-08.',
         ]);
     }
 
