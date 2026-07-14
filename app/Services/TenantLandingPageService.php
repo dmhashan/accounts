@@ -24,7 +24,18 @@ class TenantLandingPageService
             File::makeDirectory($directory, 0755, true);
         }
 
-        if (!File::exists($filePath)) {
+        $subdomain = $tenant->domain;
+        $publicPath = public_path("tenant-pages/{$subdomain}.html");
+
+        if (!File::exists($publicPath)) {
+            $publicPath = public_path("tenant_pages/{$subdomain}.html");
+        }
+
+        if (File::exists($publicPath)) {
+            if (!File::exists($filePath) || File::lastModified($publicPath) > File::lastModified($filePath)) {
+                File::copy($publicPath, $filePath);
+            }
+        } elseif (!File::exists($filePath)) {
             File::put($filePath, $this->buildDefaultCustomHtml($tenant));
         }
 

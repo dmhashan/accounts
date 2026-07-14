@@ -35,7 +35,14 @@ Route::get('/', function (TenantDatabaseManager $tenancy) {
         return view('spa');
     }
 
-    if ($tenant->use_custom_landing_page) {
+    $subdomain = $tenant->domain;
+    $publicPath = public_path("tenant-pages/{$subdomain}.html");
+
+    if (!file_exists($publicPath)) {
+        $publicPath = public_path("tenant_pages/{$subdomain}.html");
+    }
+
+    if (file_exists($publicPath) || $tenant->use_custom_landing_page) {
         $customPagePath = app(TenantLandingPageService::class)->ensureCustomPageExists($tenant);
 
         return response()->file($customPagePath);
