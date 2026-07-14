@@ -20,7 +20,7 @@ Route::middleware(['auth:portal'])->group(function () {
 
     // Mutating actions are checked by VerifyPortalOtp middleware
     Route::middleware([VerifyPortalOtp::class])->group(function () {
-        Route::apiResource('tenants', PortalTenantController::class)->except(['show']);
+        Route::apiResource('tenants', PortalTenantController::class)->except(['show', 'destroy']);
         Route::apiResource('users', PortalUserController::class)->except(['show']);
     });
 });

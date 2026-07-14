@@ -103,9 +103,44 @@
           <button class="px-3.5 py-2 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/20 rounded-lg text-xs font-semibold cursor-pointer transition-all" @click="openEditModal">
             Edit Profile
           </button>
-          <button class="px-3.5 py-2 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-50/20 rounded-lg text-xs font-semibold cursor-pointer transition-all" @click="promptDelete">
-            Delete
-          </button>
+        </div>
+      </div>
+
+      <!-- Guidelines card (if inactive) -->
+      <div v-if="!tenant.is_active" class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+        <div class="p-4 bg-rose-500/5 border border-rose-500/20 rounded-xl space-y-2 max-w-3xl">
+          <div class="flex items-start gap-3">
+            <svg
+              class="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div class="space-y-1">
+              <h4 class="text-xs font-bold text-rose-800 dark:text-rose-400 uppercase tracking-wider">
+                Tenant Deletion Guidelines
+              </h4>
+              <p class="text-xs text-rose-600 dark:text-rose-400/80">
+                This tenant is inactive. To permanently delete it, drop its isolated database, and purge all records, run the following Artisan command in your host terminal:
+              </p>
+              <div class="mt-3 flex items-center justify-between gap-4 bg-slate-950 dark:bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 dark:border-slate-800/80 font-mono text-xs text-slate-300">
+                <span>php artisan tenants:delete {{ tenant.subdomain }}</span>
+                <button 
+                  class="px-2 py-1 text-[10px] font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-800 active:scale-95 rounded text-slate-200 transition-all cursor-pointer"
+                  @click="copyCommandText(`php artisan tenants:delete ${tenant.subdomain}`)"
+                >
+                  {{ copied ? 'Copied!' : 'Copy' }}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -633,6 +668,15 @@ export default {
     
     const activeTab = ref('members'); // members | users
 
+    const copied = ref(false);
+    const copyCommandText = (text) => {
+      navigator.clipboard.writeText(text);
+      copied.value = true;
+      setTimeout(() => {
+        copied.value = false;
+      }, 2000);
+    };
+
     const editModal = reactive({
       show: false,
     });
@@ -739,32 +783,6 @@ export default {
       };
     };
 
-    const promptDelete = () => {
-      otpModal.show = true;
-      otpModal.codeSent = false;
-      otpModal.code = '';
-      otpModal.error = null;
-      otpModal.debugCode = null;
-
-      otpModal.onVerifySuccess = async (otpCode) => {
-        if (!confirm(`Are you absolutely sure you want to permanently delete tenant "${tenant.value.name}"?\nThis drops its isolated database and cannot be undone.`)) {
-          otpModal.show = false;
-          return;
-        }
-
-        try {
-          await apiRequest(`/tenants/${tenant.value.subdomain}`, {
-            method: 'delete',
-            headers: { 'X-Portal-OTP': otpCode },
-          });
-          showToast('Tenant mapping and isolated database deleted.');
-          otpModal.show = false;
-          router.push('/tenants');
-        } catch (err) {
-          otpModal.error = err.response?.data?.message || 'Failed to delete tenant.';
-        }
-      };
-    };
 
     const sendActionOtp = async () => {
       otpModal.loading = true;
@@ -811,9 +829,10 @@ export default {
       openEditModal,
       submitEditForm,
       promptToggleStatus,
-      promptDelete,
       sendActionOtp,
       confirmActionWithOtp,
+      copied,
+      copyCommandText,
     };
   }
 };

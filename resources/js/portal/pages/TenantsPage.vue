@@ -422,34 +422,6 @@ export default {
       };
     };
 
-    // Prompt OTP verification before executing deletion
-    const promptDelete = (tenant) => {
-      otpModal.show = true;
-      otpModal.codeSent = false;
-      otpModal.code = '';
-      otpModal.error = null;
-      otpModal.debugCode = null;
-
-      otpModal.onVerifySuccess = async (otpCode) => {
-        if (!confirm(`Are you absolutely sure you want to permanently delete tenant "${tenant.name}"?\nThis drops its isolated database and cannot be undone.`)) {
-          otpModal.show = false;
-          return;
-        }
-
-        try {
-          await apiRequest(`/tenants/${tenant.subdomain}`, {
-            method: 'delete',
-            headers: { 'X-Portal-OTP': otpCode },
-          });
-          showToast('Tenant mapping and isolated database deleted.');
-          otpModal.show = false;
-          fetchTenants();
-        } catch (err) {
-          otpModal.error = err.response?.data?.message || 'Failed to delete tenant.';
-        }
-      };
-    };
-
     // Request Action OTP (Mutating Edit Verification)
     const sendActionOtp = async () => {
       otpModal.loading = true;
@@ -499,7 +471,6 @@ export default {
       openCreateModal,
       openEditModal,
       submitForm,
-      promptDelete,
       sendActionOtp,
       confirmActionWithOtp,
     };

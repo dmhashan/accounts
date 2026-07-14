@@ -154,28 +154,74 @@ class PortalTenantTest extends TestCase
         $this->assertEquals('0779998887', $centralRow->phone);
     }
 
-    public function testCanDeleteTenantWithOtp()
+    public function testApiDeleteRouteIsDisabled()
     {
-        // Setup initial tenant row in central
+        $response = $this->actingAs($this->user, 'portal')
+            ->deleteJson('/api/portal/tenants/deletegym');
+
+        // Since it is excluded from apiResource, it should return 404 or 405
+        $this->assertTrue(in_array($response->status(), [404, 405]));
+    }
+
+    public function testDeleteCommandFailsForNonExistentTenant()
+    {
+        $this->artisan('tenants:delete', ['subdomain' => 'nonexistent'])
+            ->expectsOutput("Tenant 'nonexistent' not found in the central registry.")
+            ->assertFailed();
+    }
+
+    public function testDeleteCommandFailsForActiveTenant()
+    {
         DB::connection('central')->table('tenants')->insert([
-            'subdomain' => 'deletegym',
-            'database_name' => 'uuid-deleteme',
-            'name' => 'To Delete',
+            'subdomain' => 'activegym',
+            'database_name' => 'uuid-active',
+            'name' => 'Active Gym',
+            'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $otp = '999888';
-        Cache::put("otp:portal:action:{$this->user->id}", $otp, now()->addMinutes(10));
+        $this->artisan('tenants:delete', ['subdomain' => 'activegym'])
+            ->expectsOutput("Cannot delete active tenant 'activegym'. You must suspend/block the tenant first.")
+            ->assertFailed();
+    }
 
-        $response = $this->actingAs($this->user, 'portal')
-            ->withHeader('X-Portal-OTP', $otp)
-            ->deleteJson('/api/portal/tenants/deletegym');
+    public function testDeleteCommandSucceedsForInactiveTenant()
+    {
+        DB::connection('central')->table('tenants')->insert([
+            'subdomain' => 'inactivegym',
+            'database_name' => 'uuid-inactive',
+            'name' => 'Inactive Gym',
+            'is_active' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-        $response->assertStatus(200);
+        $this->artisan('tenants:delete', ['subdomain' => 'inactivegym'])
+            ->expectsConfirmation("Are you absolutely sure you want to permanently delete tenant 'inactivegym'? This drops its database and cannot be undone.", 'yes')
+            ->expectsOutput("Tenant 'inactivegym' has been successfully deleted.")
+            ->assertSuccessful();
 
-        // Check central registry deleted
-        $this->assertFalse(DB::connection('central')->table('tenants')->where('subdomain', 'deletegym')->exists());
+        $this->assertFalse(DB::connection('central')->table('tenants')->where('subdomain', 'inactivegym')->exists());
+    }
+
+    public function testDeleteCommandCancelsOnNegativeConfirmation()
+    {
+        DB::connection('central')->table('tenants')->insert([
+            'subdomain' => 'inactivegym2',
+            'database_name' => 'uuid-inactive2',
+            'name' => 'Inactive Gym 2',
+            'is_active' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->artisan('tenants:delete', ['subdomain' => 'inactivegym2'])
+            ->expectsConfirmation("Are you absolutely sure you want to permanently delete tenant 'inactivegym2'? This drops its database and cannot be undone.", 'no')
+            ->expectsOutput('Deletion cancelled.')
+            ->assertSuccessful();
+
+        $this->assertTrue(DB::connection('central')->table('tenants')->where('subdomain', 'inactivegym2')->exists());
     }
 
     public function testCanGetTenantDetailsShowView()

@@ -398,49 +398,4 @@ class PortalTenantController extends Controller
             DB::purge('tenant');
         }
     }
-
-    /**
-     * Delete a tenant.
-     */
-    public function destroy($subdomain)
-    {
-        $tenant = DB::connection('central')->table('tenants')->where('subdomain', $subdomain)->first();
-
-        if (!$tenant) {
-            return response()->json(['message' => 'Tenant not found.'], 404);
-        }
-
-        $uuid = $tenant->database_name;
-        $isolationEnabled = (bool) config('tenancy.database_isolation_enabled', false);
-
-        DB::beginTransaction();
-
-        try {
-            // Delete central registry mapping
-            DB::connection('central')->table('tenants')->where('subdomain', $subdomain)->delete();
-
-            if ($isolationEnabled && $uuid) {
-                // Drop database
-                DB::connection('central')->statement("DROP DATABASE IF EXISTS `{$uuid}`");
-            } else {
-                // Delete tenant on default connection
-                if (Schema::hasTable('tenants')) {
-                    Tenant::where('domain', $subdomain)->delete();
-                }
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Tenant deleted successfully.',
-            ]);
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'message' => 'Failed to delete tenant: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
 }
