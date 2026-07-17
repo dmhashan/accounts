@@ -57,5 +57,12 @@ return [
         'key' => env('GEMINI_API_KEY'),
     ],
 
+    'openwa' => [
+        'api_key' => env('OPENWA_API_KEY'),
+        'session_id' => env('OPENWA_SESSION_ID'),
+        'base_url' => env('OPENWA_BASE_URL'),
+    ],
+
+
 ];
 

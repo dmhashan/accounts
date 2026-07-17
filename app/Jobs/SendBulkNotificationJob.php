@@ -119,14 +119,43 @@ class SendBulkNotificationJob implements ShouldQueue
     private function sendSmsInChunks(BulkNotification $notification, SmsService $smsService, int $tenantId): void
     {
         $notification->recipients()
+            ->with('member')
             ->whereNotNull('phone_number')
             ->where('phone_number', '!=', '')
             ->orderBy('id')
             ->chunkById(500, function ($recipients) use ($notification, $smsService, $tenantId): void {
-                $contacts = $recipients->pluck('phone_number')->filter()->values()->all();
+                $smsContacts = [];
+                $whatsappContacts = [];
 
-                if ($contacts !== []) {
-                    $smsService->sendBulk($contacts, $notification->message, $tenantId);
+                foreach ($recipients as $recipient) {
+                    $member = $recipient->member;
+                    $phone = $recipient->phone_number;
+
+                    $allowWhatsapp = $member ? (bool) $member->allow_whatsapp : true;
+                    $allowSms = $member ? (bool) $member->allow_sms : true;
+                    $whatsappNumber = ($member && $member->whatsapp_number) ? $member->whatsapp_number : $phone;
+
+                    if ($allowWhatsapp) {
+                        $whatsappContacts[] = [
+                            'whatsapp_number' => $whatsappNumber,
+                            'phone_number' => $allowSms ? $phone : null,
+                        ];
+                    } elseif ($allowSms) {
+                        $smsContacts[] = $phone;
+                    }
+                }
+
+                // Send WhatsApp first, and fallback to SMS for failed ones
+                foreach ($whatsappContacts as $contactInfo) {
+                    $success = $smsService->sendWhatsappOnly($contactInfo['whatsapp_number'], $notification->message);
+
+                    if (!$success && $contactInfo['phone_number']) {
+                        $smsContacts[] = $contactInfo['phone_number'];
+                    }
+                }
+
+                if ($smsContacts !== []) {
+                    $smsService->sendBulkSmsOnly($smsContacts, $notification->message, $tenantId);
                 }
             }, 'id');
     }

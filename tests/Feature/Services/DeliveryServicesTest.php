@@ -9,6 +9,7 @@ use App\Mail\RealProfitReportMail;
 use App\Services\SmsService;
 use App\Services\TenantConfigurationService;
 use App\Services\TenantMailService;
+use App\Services\WhatsappService;
 use Illuminate\Support\Facades\Http;
 use Tests\Feature\Api\ApiRouteTestCase;
 
@@ -16,6 +17,11 @@ class DeliveryServicesTest extends ApiRouteTestCase
 {
     public function testSmsServiceUsesTenantCredentialsForSingleAndBulkMessages(): void
     {
+        config([
+            'services.openwa.api_key' => null,
+            'services.openwa.session_id' => null,
+            'services.openwa.base_url' => null,
+        ]);
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.sms.user_id' => 'tenant-user',
             'notifications.sms.api_key' => 'tenant-key',
@@ -44,10 +50,13 @@ class DeliveryServicesTest extends ApiRouteTestCase
     public function testSmsServiceHandlesMissingCredentialsEmptyContactsAndApiFailures(): void
     {
         config([
+            'services.openwa.api_key' => null,
+            'services.openwa.session_id' => null,
+            'services.openwa.base_url' => null,
             'services.smslenz.user_id' => null,
             'services.smslenz.api_key' => null,
         ]);
-        $sms = new SmsService(app(TenantConfigurationService::class));
+        $sms = new SmsService(app(TenantConfigurationService::class), app(WhatsappService::class));
 
         $this->assertFalse($sms->send('94700000001', 'No credentials'));
         $this->assertSame(
@@ -62,7 +71,7 @@ class DeliveryServicesTest extends ApiRouteTestCase
         Http::fake([
             '*' => Http::response(['success' => false], 422),
         ]);
-        $sms = new SmsService(app(TenantConfigurationService::class));
+        $sms = new SmsService(app(TenantConfigurationService::class), app(WhatsappService::class));
 
         $this->assertFalse($sms->send('94700000001', 'Rejected'));
         $this->assertSame(

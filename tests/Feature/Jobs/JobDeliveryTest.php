@@ -40,7 +40,11 @@ class JobDeliveryTest extends ApiRouteTestCase
             'notifications.inapp.enabled' => '1',
         ]);
         $sms = \Mockery::mock(SmsService::class);
-        $sms->shouldReceive('send')
+        $sms->shouldReceive('sendWhatsappOnly')
+            ->once()
+            ->with($member->phone_number, 'Delivery body')
+            ->andReturnFalse();
+        $sms->shouldReceive('sendSmsOnly')
             ->once()
             ->with($member->phone_number, 'Delivery body', $this->tenant->id)
             ->andReturnTrue();
@@ -86,7 +90,11 @@ class JobDeliveryTest extends ApiRouteTestCase
             'phone_number' => $member->phone_number,
         ]);
         $sms = \Mockery::mock(SmsService::class);
-        $sms->shouldReceive('sendBulk')
+        $sms->shouldReceive('sendWhatsappOnly')
+            ->once()
+            ->with($member->phone_number, 'Bulk body')
+            ->andReturnFalse();
+        $sms->shouldReceive('sendBulkSmsOnly')
             ->once()
             ->with([$member->phone_number], 'Bulk body', $this->tenant->id)
             ->andReturn(['success' => true, 'campaign_id' => 'campaign-1']);

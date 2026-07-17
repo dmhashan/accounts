@@ -60,11 +60,27 @@ class SendMemberNotificationJob implements ShouldQueue
 
     private function sendSms(Member $member, SmsService $smsService): void
     {
-        if (!$member->allow_sms || !$member->phone_number) {
+        $phone = $member->phone_number;
+
+        if (!$phone) {
             return;
         }
 
-        $smsService->send($member->phone_number, $this->body, $this->tenantId);
+        $allowWhatsapp = (bool) $member->allow_whatsapp;
+        $allowSms = (bool) $member->allow_sms;
+        $whatsappNumber = $member->whatsapp_number ?: $phone;
+
+        if ($allowWhatsapp) {
+            $success = $smsService->sendWhatsappOnly($whatsappNumber, $this->body);
+
+            if ($success) {
+                return;
+            }
+        }
+
+        if ($allowSms) {
+            $smsService->sendSmsOnly($phone, $this->body, $this->tenantId);
+        }
     }
 
     private function sendEmail(Member $member, TenantMailService $tenantMail): void

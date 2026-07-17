@@ -20,6 +20,7 @@ class SmsService
 
     public function __construct(
         private readonly TenantConfigurationService $tenantConfig,
+        private readonly WhatsappService $whatsappService,
     ) {
         $this->envUserId = config('services.smslenz.user_id');
         $this->envApiKey = config('services.smslenz.api_key');
@@ -27,35 +28,47 @@ class SmsService
     }
 
     /**
-     * Resolve SMS credentials for a tenant.
-     * Tenant-stored values take precedence; env values are used as fallback.
-     *
-     * @return array{userId: string|null, apiKey: string|null, senderId: string}
+     * Send a notification trying WhatsApp first, and falling back to SMS if it fails.
      */
-    private function credentials(?int $tenantId): array
+    public function send(string $contact, string $message, ?int $tenantId = null): bool
     {
-        if ($tenantId !== null) {
-            $cfg = $this->tenantConfig->all($tenantId);
-
-            return [
-                'userId' => ($cfg['notifications.sms.user_id'] ?? '') ?: $this->envUserId,
-                'apiKey' => ($cfg['notifications.sms.api_key'] ?? '') ?: $this->envApiKey,
-                'senderId' => ($cfg['notifications.sms.sender_id'] ?? '') ?: $this->envSenderId,
-            ];
+        if ($this->sendWhatsappOnly($contact, $message)) {
+            return true;
         }
 
-        return [
-            'userId' => $this->envUserId,
-            'apiKey' => $this->envApiKey,
-            'senderId' => $this->envSenderId,
-        ];
+        return $this->sendSmsOnly($contact, $message, $tenantId);
     }
 
     /**
-     * Send an SMS message. Returns true on success, false on failure.
-     * Failures are logged but never throw — SMS sending must not block core flows.
+     * Send bulk notifications trying WhatsApp first, and falling back to SMS for failed ones.
      */
-    public function send(string $contact, string $message, ?int $tenantId = null): bool
+    public function sendBulk(array $contacts, string $message, ?int $tenantId = null): array
+    {
+        if (empty($contacts)) {
+            return ['success' => false, 'campaign_id' => null];
+        }
+
+        $result = $this->whatsappService->sendBulk($contacts, $message);
+
+        if (!empty($result['failed'])) {
+            return $this->sendBulkSmsOnly($result['failed'], $message, $tenantId);
+        }
+
+        return ['success' => true, 'campaign_id' => null];
+    }
+
+    /**
+     * Send message via WhatsApp only.
+     */
+    public function sendWhatsappOnly(string $contact, string $message): bool
+    {
+        return $this->whatsappService->send($contact, $message);
+    }
+
+    /**
+     * Send message via SMS only.
+     */
+    public function sendSmsOnly(string $contact, string $message, ?int $tenantId = null): bool
     {
         ['userId' => $userId, 'apiKey' => $apiKey, 'senderId' => $senderId] = $this->credentials($tenantId);
 
@@ -100,14 +113,9 @@ class SmsService
     }
 
     /**
-     * Send a bulk SMS to multiple recipients via the SMSlenz bulk API.
-     *
-     * Returns an array with 'success' (bool) and 'campaign_id' (string|null).
-     * Failures are logged but never throw.
-     *
-     * @param  string[]  $contacts  E.164-formatted phone numbers
+     * Send bulk messages via SMS only.
      */
-    public function sendBulk(array $contacts, string $message, ?int $tenantId = null): array
+    public function sendBulkSmsOnly(array $contacts, string $message, ?int $tenantId = null): array
     {
         ['userId' => $userId, 'apiKey' => $apiKey, 'senderId' => $senderId] = $this->credentials($tenantId);
 
@@ -150,5 +158,30 @@ class SmsService
         }
 
         return ['success' => false, 'campaign_id' => null];
+    }
+
+    /**
+     * Resolve SMS credentials for a tenant.
+     * Tenant-stored values take precedence; env values are used as fallback.
+     *
+     * @return array{userId: string|null, apiKey: string|null, senderId: string}
+     */
+    private function credentials(?int $tenantId): array
+    {
+        if ($tenantId !== null) {
+            $cfg = $this->tenantConfig->all($tenantId);
+
+            return [
+                'userId' => ($cfg['notifications.sms.user_id'] ?? '') ?: $this->envUserId,
+                'apiKey' => ($cfg['notifications.sms.api_key'] ?? '') ?: $this->envApiKey,
+                'senderId' => ($cfg['notifications.sms.sender_id'] ?? '') ?: $this->envSenderId,
+            ];
+        }
+
+        return [
+            'userId' => $this->envUserId,
+            'apiKey' => $this->envApiKey,
+            'senderId' => $this->envSenderId,
+        ];
     }
 }
