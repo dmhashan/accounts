@@ -13,11 +13,14 @@ class WhatsappService
 
     private readonly ?string $baseUrl;
 
+    private readonly int $timeout;
+
     public function __construct()
     {
         $this->apiKey = config('services.openwa.api_key');
         $this->sessionId = config('services.openwa.session_id');
         $this->baseUrl = config('services.openwa.base_url') ? rtrim((string) config('services.openwa.base_url'), '/') : null;
+        $this->timeout = (int) config('services.openwa.timeout', 5);
     }
 
     /**
@@ -51,13 +54,14 @@ class WhatsappService
         $url = "{$this->baseUrl}/api/sessions/{$this->sessionId}/messages/send-text";
 
         try {
-            $response = Http::withHeaders([
-                'X-API-Key' => $this->apiKey,
-                'Content-Type' => 'application/json',
-            ])->post($url, [
-                'chatId' => $chatId,
-                'text' => $message,
-            ]);
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ])->post($url, [
+                    'chatId' => $chatId,
+                    'text' => $message,
+                ]);
 
             if ($response->successful()) {
                 $body = $response->json();
