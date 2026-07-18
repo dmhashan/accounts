@@ -58,6 +58,10 @@ class ConfigurationApiController extends Controller
             'notifications.sms.user_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notifications.sms.api_key' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notifications.sms.sender_id' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'notifications.whatsapp.enabled' => ['sometimes', 'in:0,1'],
+            'notifications.whatsapp.api_key' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'notifications.whatsapp.session_id' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'notifications.whatsapp.base_url' => ['sometimes', 'nullable', 'string', 'max:255'],
 
             // Biometric device
             'biometric.enabled' => ['sometimes', 'in:0,1'],

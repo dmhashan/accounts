@@ -39,11 +39,8 @@
 
         <!-- Phone -->
         <AppFormField label="Phone Number" optional>
-          <AppFormInput
-            v-model.trim="form.phone_number"
-            type="tel"
-            placeholder="e.g. 0771234567"
-            autocomplete="off"
+          <AppFormPhoneInput
+            v-model="form.phone_number"
           />
           <p v-if="errors.phone_number" class="mt-1 text-xs text-red-600 dark:text-red-400">
             {{ errors.phone_number }}
@@ -96,6 +93,7 @@ import { reactive, ref } from 'vue';
 import { X } from 'lucide-vue-next';
 import AppFormField from './forms/AppFormField.vue';
 import AppFormInput from './forms/AppFormInput.vue';
+import AppFormPhoneInput from './forms/AppFormPhoneInput.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const emit = defineEmits(['close', 'created']);

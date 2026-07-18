@@ -118,12 +118,23 @@ class SendBulkNotificationJob implements ShouldQueue
 
     private function sendSmsInChunks(BulkNotification $notification, SmsService $smsService, int $tenantId): void
     {
+        $tenantConfig = app(TenantConfigurationService::class);
+        $cfg = $tenantConfig->all($tenantId);
+        $whatsappEnabled = ($cfg['notifications.whatsapp.enabled'] ?? '0') === '1';
+        $smsEnabled = ($cfg['notifications.sms.enabled'] ?? '0') === '1';
+
+        Log::debug('SendBulkNotificationJob: Initializing sendSmsInChunks.', [
+            'tenant_id' => $tenantId,
+            'whatsappEnabled' => $whatsappEnabled,
+            'smsEnabled' => $smsEnabled,
+        ]);
+
         $notification->recipients()
             ->with('member')
             ->whereNotNull('phone_number')
             ->where('phone_number', '!=', '')
             ->orderBy('id')
-            ->chunkById(500, function ($recipients) use ($notification, $smsService, $tenantId): void {
+            ->chunkById(500, function ($recipients) use ($notification, $smsService, $tenantId, $whatsappEnabled, $smsEnabled): void {
                 $smsContacts = [];
                 $whatsappContacts = [];
 
@@ -131,8 +142,8 @@ class SendBulkNotificationJob implements ShouldQueue
                     $member = $recipient->member;
                     $phone = $recipient->phone_number;
 
-                    $allowWhatsapp = $member ? (bool) $member->allow_whatsapp : true;
-                    $allowSms = $member ? (bool) $member->allow_sms : true;
+                    $allowWhatsapp = $whatsappEnabled && ($member ? (bool) $member->allow_whatsapp : true);
+                    $allowSms = $smsEnabled && ($member ? (bool) $member->allow_sms : true);
                     $whatsappNumber = ($member && $member->whatsapp_number) ? $member->whatsapp_number : $phone;
 
                     if ($allowWhatsapp) {
@@ -145,16 +156,38 @@ class SendBulkNotificationJob implements ShouldQueue
                     }
                 }
 
+                Log::debug('SendBulkNotificationJob: Chunk categorized.', [
+                    'whatsappContactsCount' => count($whatsappContacts),
+                    'smsContactsCount' => count($smsContacts),
+                ]);
+
                 // Send WhatsApp first, and fallback to SMS for failed ones
                 foreach ($whatsappContacts as $contactInfo) {
-                    $success = $smsService->sendWhatsappOnly($contactInfo['whatsapp_number'], $notification->message);
+                    Log::debug('SendBulkNotificationJob: Attempting WhatsApp send for recipient.', [
+                        'whatsapp_number' => $contactInfo['whatsapp_number'],
+                    ]);
+                    $success = $smsService->sendWhatsappOnly($contactInfo['whatsapp_number'], $notification->message, $tenantId);
 
-                    if (!$success && $contactInfo['phone_number']) {
-                        $smsContacts[] = $contactInfo['phone_number'];
+                    if (!$success) {
+                        Log::warning('SendBulkNotificationJob: WhatsApp send failed for recipient.', [
+                            'whatsapp_number' => $contactInfo['whatsapp_number'],
+                            'hasSmsFallback' => (bool) $contactInfo['phone_number'],
+                        ]);
+
+                        if ($contactInfo['phone_number']) {
+                            $smsContacts[] = $contactInfo['phone_number'];
+                        }
+                    } else {
+                        Log::info('SendBulkNotificationJob: WhatsApp send succeeded for recipient.', [
+                            'whatsapp_number' => $contactInfo['whatsapp_number'],
+                        ]);
                     }
                 }
 
                 if ($smsContacts !== []) {
+                    Log::debug('SendBulkNotificationJob: Dispatching fallback/direct bulk SMS.', [
+                        'contactsCount' => count($smsContacts),
+                    ]);
                     $smsService->sendBulkSmsOnly($smsContacts, $notification->message, $tenantId);
                 }
             }, 'id');

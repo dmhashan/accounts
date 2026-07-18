@@ -59,7 +59,7 @@
               <AppFormInput v-model="form.email" type="email" />
             </AppFormField>
             <AppFormField label="Phone Number" required>
-              <AppFormInput v-model="form.phone_number" required />
+              <AppFormPhoneInput v-model="form.phone_number" required />
             </AppFormField>
             <div class="md:col-span-2 flex flex-col sm:flex-row gap-4">
               <label class="flex items-center gap-3 cursor-pointer select-none group">
@@ -107,7 +107,7 @@
               optional
               class="md:col-span-2"
             >
-              <AppFormInput v-model="form.whatsapp_number" placeholder="e.g. +94771234567" />
+              <AppFormPhoneInput v-model="form.whatsapp_number" />
               <p class="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
                 Provide a separate WhatsApp number if different from mobile
               </p>
@@ -190,6 +190,7 @@ import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormPhoneInput from '../components/forms/AppFormPhoneInput.vue';
 import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';

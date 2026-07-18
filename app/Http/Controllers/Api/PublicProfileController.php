@@ -53,7 +53,7 @@ class PublicProfileController extends Controller
         Cache::put($cacheKey, $otp, now()->addMinutes(10));
 
         $profileUrl = $this->memberPortalUrl->urlForTenant($tenant);
-        app(SmsService::class)->send($phone, "Your {$tenant->name} verification code is: {$otp}. Access your profile: {$profileUrl}");
+        app(SmsService::class)->send($phone, "Your {$tenant->name} verification code is: {$otp}. Access your profile: {$profileUrl}", $tenant->id);
 
         return response()->json(['message' => 'OTP sent successfully.']);
     }

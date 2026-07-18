@@ -338,7 +338,7 @@
             <AppFormInput v-model="regForm.email" placeholder="Email" :disabled="!regEditTarget" />
           </AppFormField>
           <AppFormField label="Phone" optional>
-            <AppFormInput v-model="regForm.phone" placeholder="Phone" :disabled="!regEditTarget" />
+            <AppFormPhoneInput v-model="regForm.phone" :disabled="!regEditTarget" />
           </AppFormField>
         </div>
 
@@ -560,6 +560,7 @@ import AppPagination from '../components/AppPagination.vue';
 import AppSearchField from '../components/AppSearchField.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormPhoneInput from '../components/forms/AppFormPhoneInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 import AppSearchableDropdown from '../components/forms/AppSearchableDropdown.vue';
 

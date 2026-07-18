@@ -264,6 +264,84 @@
                 </div>
               </Transition>
             </div>
+
+            <!-- WhatsApp Notifications -->
+            <div class="px-4 md:px-6 py-4 space-y-4">
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+                    <MessageCircle class="w-4 h-4 text-teal-600 dark:text-teal-400" :stroke-width="2" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium" style="color: var(--text-strong)">
+                      WhatsApp Notifications
+                    </p>
+                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                      Send notifications via WhatsApp &mdash; powered by OpenWA
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="form['notifications.whatsapp.enabled'] === '1'"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                  :class="form['notifications.whatsapp.enabled'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                  @click="toggle('notifications.whatsapp.enabled')"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                    :class="form['notifications.whatsapp.enabled'] === '1' ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+
+              <!-- WhatsApp fields -->
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-1"
+              >
+                <div v-if="form['notifications.whatsapp.enabled'] === '1'" class="ml-0 md:ml-12 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                  <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                    OpenWA Configuration
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <AppFormField label="Base URL">
+                      <AppFormInput
+                        v-model="form['notifications.whatsapp.base_url']"
+                        type="text"
+                        placeholder="e.g. http://localhost:2785"
+                        maxlength="255"
+                        autocomplete="off"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="API Key">
+                      <AppFormInput
+                        v-model="form['notifications.whatsapp.api_key']"
+                        type="password"
+                        placeholder="••••••••"
+                        maxlength="255"
+                        autocomplete="new-password"
+                      />
+                    </AppFormField>
+
+                    <AppFormField label="Session ID" class="sm:col-span-2">
+                      <AppFormInput
+                        v-model="form['notifications.whatsapp.session_id']"
+                        type="text"
+                        placeholder="e.g. default"
+                        maxlength="255"
+                      />
+                    </AppFormField>
+                  </div>
+                </div>
+              </Transition>
+            </div>
           </div>
 
           <!-- Save button -->
@@ -410,7 +488,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { Bell, BellRing, ChevronDown, ChevronUp, Mail, MessageSquare, Plus, Ruler, Trash2 } from 'lucide-vue-next';
+import { Bell, BellRing, ChevronDown, ChevronUp, Mail, MessageSquare, MessageCircle, Plus, Ruler, Trash2 } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -436,6 +514,10 @@ const form = ref({
     'notifications.sms.user_id': '',
     'notifications.sms.api_key': '',
     'notifications.sms.sender_id': '',
+    'notifications.whatsapp.enabled': '0',
+    'notifications.whatsapp.api_key': '',
+    'notifications.whatsapp.session_id': '',
+    'notifications.whatsapp.base_url': '',
     'general.member_notifications': '{}',
     'body_measurements.fields': '[]',
 });

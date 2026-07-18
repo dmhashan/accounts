@@ -35,6 +35,9 @@ class WhatsappNotificationTest extends ApiRouteTestCase
         $this->assertSame('94771234567@c.us', $wa->formatNumber('94771234567'));
         $this->assertSame('94771234567@c.us', $wa->formatNumber('+94 (77) 123-4567'));
         $this->assertSame('94771234567@c.us', $wa->formatNumber('94771234567@c.us'));
+        $this->assertSame('94779600845@c.us', $wa->formatNumber('0779600845'));
+        $this->assertSame('94779600845@c.us', $wa->formatNumber('779600845'));
+        $this->assertSame('94779600845@c.us', $wa->formatNumber('0779600845@c.us'));
     }
 
     public function testWhatsappSendsSuccessfully(): void
@@ -88,6 +91,7 @@ class WhatsappNotificationTest extends ApiRouteTestCase
 
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.sms.enabled' => '1',
+            'notifications.whatsapp.enabled' => '1',
         ]);
 
         (new SendMemberNotificationJob(
@@ -124,6 +128,7 @@ class WhatsappNotificationTest extends ApiRouteTestCase
 
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.sms.enabled' => '1',
+            'notifications.whatsapp.enabled' => '1',
         ]);
 
         (new SendMemberNotificationJob(
@@ -185,6 +190,7 @@ class WhatsappNotificationTest extends ApiRouteTestCase
 
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.sms.enabled' => '1',
+            'notifications.whatsapp.enabled' => '1',
         ]);
 
         (new SendBulkNotificationJob($notification->id))
@@ -199,6 +205,37 @@ class WhatsappNotificationTest extends ApiRouteTestCase
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'send-bulk-sms') && $request['contacts'] === ['94700000002'];
+        });
+    }
+
+    public function testWhatsappUsesTenantSpecificCredentials(): void
+    {
+        config([
+            'services.openwa.api_key' => null,
+            'services.openwa.session_id' => null,
+            'services.openwa.base_url' => null,
+        ]);
+
+        Http::fake([
+            'http://tenant-wa-host/api/sessions/tenant-wa-session/messages/send-text' => Http::response([
+                'messageId' => 'wa-msg-tenant-123',
+            ], 201),
+        ]);
+
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'notifications.whatsapp.enabled' => '1',
+            'notifications.whatsapp.api_key' => 'tenant-wa-key',
+            'notifications.whatsapp.session_id' => 'tenant-wa-session',
+            'notifications.whatsapp.base_url' => 'http://tenant-wa-host',
+        ]);
+
+        $wa = app(WhatsappService::class);
+        $this->assertTrue($wa->send('94771234567', 'Tenant specific WA message', $this->tenant->id));
+
+        Http::assertSent(function ($request) {
+            return $request->hasHeader('X-API-Key', 'tenant-wa-key')
+                && $request['chatId'] === '94771234567@c.us'
+                && $request['text'] === 'Tenant specific WA message';
         });
     }
 }

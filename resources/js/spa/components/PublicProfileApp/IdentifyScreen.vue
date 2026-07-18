@@ -30,16 +30,10 @@
 
         <form class="space-y-4" @submit.prevent="$emit('submit')">
           <div>
-            <label class="member-auth-label block text-xs font-semibold mb-1.5 uppercase tracking-wide">Mobile Number</label>
-            <input
-              :value="modelValue"
-              type="tel"
-              inputmode="tel"
-              placeholder="e.g. 0771234567"
-              class="member-auth-input rounded-2xl px-4 py-3.5 text-sm font-medium"
-              autocomplete="tel"
-              required
-              @input="$emit('update:modelValue', $event.target.value)"
+            <AppFormPhoneInput
+              :model-value="modelValue"
+              :disabled="isLoading"
+              @update:model-value="$emit('update:modelValue', $event)"
             />
           </div>
           <button
@@ -58,6 +52,7 @@
 
 <script setup>
 import { Phone } from 'lucide-vue-next';
+import AppFormPhoneInput from '../forms/AppFormPhoneInput.vue';
 defineProps({
     tenantName:    { type: String, default: '' },
     tenantLogoUrl: { type: String, default: null },

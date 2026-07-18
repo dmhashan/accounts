@@ -26,7 +26,7 @@
             <AppFormInput v-model="form.email" type="email" />
           </AppFormField>
           <AppFormField label="Phone" optional>
-            <AppFormInput v-model="form.phone" type="text" />
+            <AppFormPhoneInput v-model="form.phone" />
           </AppFormField>
           <AppFormField label="NIC" optional>
             <AppFormInput v-model="form.nic" type="text" />
@@ -64,7 +64,7 @@
             <AppFormInput v-model="form.emergency_contact_name" type="text" />
           </AppFormField>
           <AppFormField label="Emergency contact phone" optional>
-            <AppFormInput v-model="form.emergency_contact_phone" type="text" />
+            <AppFormPhoneInput v-model="form.emergency_contact_phone" />
           </AppFormField>
           <AppFormField label="Pay method" required>
             <AppFormSelect v-model="form.pay_method" required>
@@ -115,6 +115,7 @@ import { useRoute, useRouter } from 'vue-router';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormPhoneInput from '../components/forms/AppFormPhoneInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 import { apiRequest } from '../composables/useApiClient';

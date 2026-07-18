@@ -7,20 +7,48 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsappService
 {
-    private readonly ?string $apiKey;
+    private readonly ?string $envApiKey;
 
-    private readonly ?string $sessionId;
+    private readonly ?string $envSessionId;
 
-    private readonly ?string $baseUrl;
+    private readonly ?string $envBaseUrl;
 
     private readonly int $timeout;
 
-    public function __construct()
+    public function __construct(
+        private readonly TenantConfigurationService $tenantConfig,
+    ) {
+        $this->envApiKey = config('services.openwa.api_key');
+        $this->envSessionId = config('services.openwa.session_id');
+        $this->envBaseUrl = config('services.openwa.base_url') ? rtrim((string) config('services.openwa.base_url'), '/') : null;
+        $this->timeout = (int) config('services.openwa.timeout', 15);
+    }
+
+    /**
+     * Resolve WhatsApp credentials for a tenant.
+     * Tenant-stored values take precedence; env values are used as fallback.
+     *
+     * @return array{apiKey: string|null, sessionId: string|null, baseUrl: string|null}
+     */
+    private function credentials(?int $tenantId): array
     {
-        $this->apiKey = config('services.openwa.api_key');
-        $this->sessionId = config('services.openwa.session_id');
-        $this->baseUrl = config('services.openwa.base_url') ? rtrim((string) config('services.openwa.base_url'), '/') : null;
-        $this->timeout = (int) config('services.openwa.timeout', 5);
+        Log::debug('WhatsappService: Resolving credentials.', ['tenantId' => $tenantId]);
+
+        if ($tenantId !== null) {
+            $cfg = $this->tenantConfig->all($tenantId);
+
+            return [
+                'apiKey' => ($cfg['notifications.whatsapp.api_key'] ?? '') ?: $this->envApiKey,
+                'sessionId' => ($cfg['notifications.whatsapp.session_id'] ?? '') ?: $this->envSessionId,
+                'baseUrl' => ($cfg['notifications.whatsapp.base_url'] ?? '') ? rtrim((string) $cfg['notifications.whatsapp.base_url'], '/') : $this->envBaseUrl,
+            ];
+        }
+
+        return [
+            'apiKey' => $this->envApiKey,
+            'sessionId' => $this->envSessionId,
+            'baseUrl' => $this->envBaseUrl,
+        ];
     }
 
     /**
@@ -28,12 +56,19 @@ class WhatsappService
      */
     public function formatNumber(string $number): string
     {
+        // Remove @c.us if present
+        if (str_ends_with($number, '@c.us')) {
+            $number = substr($number, 0, -5);
+        }
+
         // Strip non-digits
         $clean = preg_replace('/\D/', '', $number);
 
-        // If it already ends with @c.us, keep it, else append @c.us
-        if (str_ends_with($number, '@c.us')) {
-            return $number;
+        // Normalize Sri Lankan local format to international format
+        if (str_starts_with($clean, '0')) {
+            $clean = '94' . substr($clean, 1);
+        } elseif (strlen($clean) === 9 && str_starts_with($clean, '7')) {
+            $clean = '94' . $clean;
         }
 
         return "{$clean}@c.us";
@@ -42,21 +77,29 @@ class WhatsappService
     /**
      * Send a WhatsApp text message. Returns true on success, false on failure.
      */
-    public function send(string $contact, string $message): bool
+    public function send(string $contact, string $message, ?int $tenantId = null): bool
     {
-        if (!$this->apiKey || !$this->sessionId || !$this->baseUrl) {
+        ['apiKey' => $apiKey, 'sessionId' => $sessionId, 'baseUrl' => $baseUrl] = $this->credentials($tenantId);
+
+        if (!$apiKey || !$sessionId || !$baseUrl) {
             Log::warning('WhatsappService: API key, session ID, or base URL is not configured.');
 
             return false;
         }
 
         $chatId = $this->formatNumber($contact);
-        $url = "{$this->baseUrl}/api/sessions/{$this->sessionId}/messages/send-text";
+        $url = "{$baseUrl}/api/sessions/{$sessionId}/messages/send-text";
+
+        Log::debug('WhatsappService: Attempting to send WhatsApp message.', [
+            'url' => $url,
+            'chatId' => $chatId,
+            'apiKeyMasked' => substr((string) $apiKey, 0, 4) . '...',
+        ]);
 
         try {
             $response = Http::timeout($this->timeout)
                 ->withHeaders([
-                    'X-API-Key' => $this->apiKey,
+                    'X-API-Key' => $apiKey,
                     'Content-Type' => 'application/json',
                 ])->post($url, [
                     'chatId' => $chatId,
@@ -93,13 +136,13 @@ class WhatsappService
      * @param  string[]  $contacts
      * @return array{succeeded: string[], failed: string[]}
      */
-    public function sendBulk(array $contacts, string $message): array
+    public function sendBulk(array $contacts, string $message, ?int $tenantId = null): array
     {
         $succeeded = [];
         $failed = [];
 
         foreach ($contacts as $contact) {
-            if ($this->send($contact, $message)) {
+            if ($this->send($contact, $message, $tenantId)) {
                 $succeeded[] = $contact;
             } else {
                 $failed[] = $contact;

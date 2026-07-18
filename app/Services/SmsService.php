@@ -32,7 +32,7 @@ class SmsService
      */
     public function send(string $contact, string $message, ?int $tenantId = null): bool
     {
-        if ($this->sendWhatsappOnly($contact, $message)) {
+        if ($this->sendWhatsappOnly($contact, $message, $tenantId)) {
             return true;
         }
 
@@ -48,7 +48,7 @@ class SmsService
             return ['success' => false, 'campaign_id' => null];
         }
 
-        $result = $this->whatsappService->sendBulk($contacts, $message);
+        $result = $this->whatsappService->sendBulk($contacts, $message, $tenantId);
 
         if (!empty($result['failed'])) {
             return $this->sendBulkSmsOnly($result['failed'], $message, $tenantId);
@@ -60,9 +60,9 @@ class SmsService
     /**
      * Send message via WhatsApp only.
      */
-    public function sendWhatsappOnly(string $contact, string $message): bool
+    public function sendWhatsappOnly(string $contact, string $message, ?int $tenantId = null): bool
     {
-        return $this->whatsappService->send($contact, $message);
+        return $this->whatsappService->send($contact, $message, $tenantId);
     }
 
     /**

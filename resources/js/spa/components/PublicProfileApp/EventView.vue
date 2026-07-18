@@ -292,12 +292,9 @@
 
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">Phone</label>
-              <input
+              <AppFormPhoneInput
                 v-model="form.phone"
-                type="tel"
-                maxlength="30"
-                class="pp-input"
-                :readonly="!!memberMeta"
+                :disabled="!!memberMeta"
               />
             </div>
 
@@ -415,6 +412,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { X, Calendar, MapPin, Check, Plus } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
+import AppFormPhoneInput from '../forms/AppFormPhoneInput.vue';
 
 const route = useRoute();
 const slug  = computed(() => route.params.slug);

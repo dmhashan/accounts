@@ -96,11 +96,8 @@
                 </AppFormField>
 
                 <AppFormField label="Contact Number" optional>
-                  <AppFormInput
+                  <AppFormPhoneInput
                     v-model="form.phone"
-                    type="tel"
-                    maxlength="50"
-                    placeholder="+94 77 123 4567"
                   />
                 </AppFormField>
 
@@ -328,6 +325,7 @@ import { Check, ImageIcon, Monitor, Moon, Sun, Upload, Trash2 } from 'lucide-vue
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AppFormPhoneInput from '../components/forms/AppFormPhoneInput.vue';
 import AppFormTextarea from '../components/forms/AppFormTextarea.vue';
 import AvatarCropModal from '../components/AvatarCropModal.vue';
 import MemberReachableConfigFields from '../components/settings/MemberReachableConfigFields.vue';
