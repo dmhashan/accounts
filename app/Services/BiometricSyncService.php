@@ -818,6 +818,7 @@ class BiometricSyncService
             $maxResults = 50;
             $hasMore = true;
             $lastProcessedAuthAt = null;
+            $lastPersistedAuthAt = null;
 
             while ($hasMore) {
                 $result = $driver->getAccessEvents($startTime, $endTime, $offset, $maxResults);
@@ -861,6 +862,13 @@ class BiometricSyncService
                 $numMatches = $acsEvent['numOfMatches'] ?? count($infoList);
                 $offset += $numMatches;
                 $hasMore = $morePages && $numMatches > 0;
+
+                if ($lastProcessedAuthAt && (!$lastPersistedAuthAt || $lastProcessedAuthAt->timestamp !== $lastPersistedAuthAt->timestamp)) {
+                    $this->config->updateBatch($tenantId, [
+                        'biometric.access_events_sync_from' => $lastProcessedAuthAt->format('Y-m-d\TH:i'),
+                    ]);
+                    $lastPersistedAuthAt = $lastProcessedAuthAt;
+                }
             }
 
             $this->writeLogSafely([
@@ -884,7 +892,7 @@ class BiometricSyncService
                 $cursorToPersist = $syncToAt;
             }
 
-            if ($cursorToPersist) {
+            if ($cursorToPersist && (!$lastPersistedAuthAt || $cursorToPersist->timestamp !== $lastPersistedAuthAt->timestamp)) {
                 $this->config->updateBatch($tenantId, [
                     'biometric.access_events_sync_from' => $cursorToPersist->format('Y-m-d\TH:i'),
                 ]);
