@@ -916,15 +916,26 @@
                         {{ formatDateTime(job.failed_at) }}
                       </td>
                       <td class="px-4 py-2.5 text-right">
-                        <button
-                          type="button"
-                          class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 transition-colors"
-                          :disabled="retryingJobId === job.id"
-                          @click="retryFailedJob(job)"
-                        >
-                          <RotateCcw class="w-3.5 h-3.5" :class="retryingJobId === job.id ? 'animate-spin' : ''" :stroke-width="2" />
-                          {{ retryingJobId === job.id ? 'Requeuing…' : 'Retry' }}
-                        </button>
+                        <div class="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 transition-colors"
+                            :disabled="retryingJobId === job.id || deletingJobId === job.id"
+                            @click="retryFailedJob(job)"
+                          >
+                            <RotateCcw class="w-3.5 h-3.5" :class="retryingJobId === job.id ? 'animate-spin' : ''" :stroke-width="2" />
+                            {{ retryingJobId === job.id ? 'Requeuing…' : 'Retry' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-200 dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-800 px-3 py-1.5 text-xs font-medium text-secondary-700 dark:text-secondary-300 disabled:opacity-50 transition-colors"
+                            :disabled="retryingJobId === job.id || deletingJobId === job.id"
+                            @click="deleteFailedJob(job)"
+                          >
+                            <Trash2 class="w-3.5 h-3.5" :stroke-width="2" />
+                            {{ deletingJobId === job.id ? 'Dropping…' : 'Drop' }}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -1043,6 +1054,7 @@ import {
   X,
   ZoomIn,
     Zap,
+    Trash2,
 } from 'lucide-vue-next';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -1115,6 +1127,7 @@ const queueFailedJobs    = ref([]);
 const queueStatusMessage = ref('');
 const queueStatusError   = ref('');
 const retryingJobId      = ref(null);
+const deletingJobId      = ref(null);
 const queuePendingMeta   = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
 const queueFailedMeta    = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
 
@@ -1394,6 +1407,23 @@ async function retryFailedJob(job) {
     queueStatusError.value = err?.response?.data?.message || 'Failed to requeue biometric job.';
   } finally {
     retryingJobId.value = null;
+  }
+}
+
+async function deleteFailedJob(job) {
+  if (!job?.id) return;
+  if (!confirm('Are you sure you want to drop this failed job?')) return;
+  deletingJobId.value = job.id;
+  queueStatusMessage.value = '';
+  queueStatusError.value = '';
+  try {
+    const res = await apiRequest(`/api/settings/biometric/failed-jobs/${job.id}`, { method: 'DELETE' });
+    queueStatusMessage.value = res.message || 'Failed biometric job dropped.';
+    await loadQueueStatus(queueFailedMeta.value.current_page || 1);
+  } catch (err) {
+    queueStatusError.value = err?.response?.data?.message || 'Failed to drop biometric job.';
+  } finally {
+    deletingJobId.value = null;
   }
 }
 

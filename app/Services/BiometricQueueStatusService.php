@@ -57,6 +57,17 @@ class BiometricQueueStatusService
         return Artisan::call('queue:retry', ['id' => [$id]]) === 0;
     }
 
+    public function deleteFailedJob(Tenant $tenant, string $id): bool
+    {
+        $job = $this->findFailedJobForTenant($tenant, $id);
+
+        if (!$job) {
+            return false;
+        }
+
+        return app('queue.failer')->forget($id);
+    }
+
     public function queueName(): string
     {
         return (string) config('queue.biometric_queue', 'biometric');

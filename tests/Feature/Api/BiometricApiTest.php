@@ -223,4 +223,86 @@ class BiometricApiTest extends ApiRouteTestCase
             ->assertJsonPath('counts.success', 1)
             ->assertJsonPath('data.0.person_name', $member->name);
     }
+
+    public function testFailedJobsCanBeRetriedAndDropped(): void
+    {
+        $this->actingAsUser(['settings.manage']);
+
+        // Mock queue.failer
+        $failer = \Mockery::mock(\Illuminate\Queue\Failed\FailedJobProviderInterface::class);
+        $this->app->instance('queue.failer', $failer);
+
+        $dummyJob = (object) [
+            'id' => '12345',
+            'connection' => 'database',
+            'queue' => 'biometric',
+            'payload' => json_encode([
+                'displayName' => 'App\\Jobs\\SyncBiometricMemberJob',
+                'tenant_domain' => $this->tenant->domain,
+                'data' => [
+                    'commandName' => 'App\\Jobs\\SyncBiometricMemberJob',
+                    'command' => serialize(new \stdClass),
+                ],
+            ]),
+            'failed_at' => now()->toDateTimeString(),
+            'exception' => 'Some exception',
+        ];
+
+        $otherDummyJob = (object) [
+            'id' => '67890',
+            'connection' => 'database',
+            'queue' => 'biometric',
+            'payload' => json_encode([
+                'displayName' => 'App\\Jobs\\SyncBiometricMemberJob',
+                'tenant_domain' => 'other-tenant.com',
+                'data' => [
+                    'commandName' => 'App\\Jobs\\SyncBiometricMemberJob',
+                    'command' => serialize(new \stdClass),
+                ],
+            ]),
+            'failed_at' => now()->toDateTimeString(),
+            'exception' => 'Some exception',
+        ];
+
+        // 1. Test queue status retrieves failed jobs
+        $failer->shouldReceive('all')->once()->andReturn([$dummyJob, $otherDummyJob]);
+
+        $this->getJson('/api/settings/biometric/queue-status')
+            ->assertOk()
+            ->assertJsonPath('failed_count', 1)
+            ->assertJsonPath('failed.0.id', '12345');
+
+        // 2. Test retrying job
+        $failer->shouldReceive('find')->with('12345')->once()->andReturn($dummyJob);
+        \Illuminate\Support\Facades\Artisan::shouldReceive('call')
+            ->once()
+            ->with('queue:retry', ['id' => ['12345']])
+            ->andReturn(0);
+
+        $this->postJson('/api/settings/biometric/failed-jobs/12345/retry')
+            ->assertOk()
+            ->assertJsonPath('message', 'Failed biometric job requeued.');
+
+        // 3. Test dropping job
+        $failer->shouldReceive('find')->with('12345')->once()->andReturn($dummyJob);
+        $failer->shouldReceive('forget')->with('12345')->once()->andReturn(true);
+
+        $this->deleteJson('/api/settings/biometric/failed-jobs/12345')
+            ->assertOk()
+            ->assertJsonPath('message', 'Failed biometric job dropped.');
+
+        // 4. Test dropping non-existent job
+        $failer->shouldReceive('find')->with('99999')->once()->andReturn(null);
+
+        $this->deleteJson('/api/settings/biometric/failed-jobs/99999')
+            ->assertStatus(404)
+            ->assertJsonPath('message', 'Failed biometric job not found.');
+
+        // 5. Test dropping other tenant's job
+        $failer->shouldReceive('find')->with('67890')->once()->andReturn($otherDummyJob);
+
+        $this->deleteJson('/api/settings/biometric/failed-jobs/67890')
+            ->assertStatus(404)
+            ->assertJsonPath('message', 'Failed biometric job not found.');
+    }
 }

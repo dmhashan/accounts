@@ -507,6 +507,21 @@ class BiometricApiController extends Controller
         return response()->json(['message' => 'Failed biometric job requeued.']);
     }
 
+    /**
+     * DELETE /api/settings/biometric/failed-jobs/{failedJob}
+     */
+    public function deleteFailedJob(string $failedJob): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        if (!$this->queueStatus->deleteFailedJob($tenant, $failedJob)) {
+            return response()->json(['message' => 'Failed biometric job not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Failed biometric job dropped.']);
+    }
+
     // -------------------------------------------------------------------------
     // Real-time webhook management
     // -------------------------------------------------------------------------
