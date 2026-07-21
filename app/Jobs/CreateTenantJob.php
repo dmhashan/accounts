@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Tenant;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 class CreateTenantJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public const RESERVED_SUBDOMAINS = ['portal', 'admin', 'www', 'mail', 'api', 'central', 'system'];
 
     public string $jobId;
 
@@ -83,6 +86,16 @@ class CreateTenantJob implements ShouldQueue
 
             if (empty($subdomain) || empty($name)) {
                 throw new \InvalidArgumentException('Tenant name and domain are required.');
+            }
+
+            if (in_array($subdomain, self::RESERVED_SUBDOMAINS, true)) {
+                throw new \InvalidArgumentException("The subdomain '{$subdomain}' is reserved and cannot be used.");
+            }
+
+            $alreadyExists = DB::connection($centralConnection)->table('tenants')->where('subdomain', $subdomain)->exists();
+
+            if ($alreadyExists) {
+                throw new \InvalidArgumentException("The subdomain '{$subdomain}' has already been taken.");
             }
             $updateStep('validate', 'completed');
 
@@ -156,7 +169,7 @@ class CreateTenantJob implements ShouldQueue
                 $updateStep('finalize', 'processing');
 
                 if (Schema::hasTable('tenants')) {
-                    \App\Models\Tenant::updateOrCreate(
+                    Tenant::updateOrCreate(
                         ['domain' => $subdomain],
                         [
                             'name' => $name,
@@ -172,18 +185,27 @@ class CreateTenantJob implements ShouldQueue
         } catch (\Throwable $e) {
             Log::error("CreateTenantJob failed for {$subdomain}: " . $e->getMessage());
 
+            // REVERT: Clean up all provisioned resources on failure
             if ($isolationEnabled && isset($uuid)) {
                 try {
                     DB::connection($centralConnection)->statement("DROP DATABASE IF EXISTS `{$uuid}`");
                 } catch (\Throwable $cleanupErr) {
-                    // Ignore
+                    // Ignore drop error
                 }
             }
 
             try {
                 DB::connection($centralConnection)->table('tenants')->where('subdomain', $subdomain)->delete();
             } catch (\Throwable $cleanupErr) {
-                // Ignore
+                // Ignore cleanup error
+            }
+
+            try {
+                if (Schema::hasTable('tenants')) {
+                    Tenant::where('domain', $subdomain)->delete();
+                }
+            } catch (\Throwable $cleanupErr) {
+                // Ignore cleanup error
             }
 
             $failedStepKey = 'validate';

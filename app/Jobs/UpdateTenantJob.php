@@ -76,6 +76,14 @@ class UpdateTenantJob implements ShouldQueue
         $tenant = DB::connection($centralConnection)->table('tenants')->where('subdomain', $subdomain)->first();
         $isolationEnabled = (bool) config('tenancy.database_isolation_enabled', false);
 
+        // Backup original state for revert capability
+        $originalState = $tenant ? [
+            'name' => $tenant->name,
+            'email' => $tenant->email,
+            'phone' => $tenant->phone,
+            'is_active' => $tenant->is_active ?? true,
+        ] : null;
+
         try {
             // Step 1: validate
             $updateStep('validate', 'processing');
@@ -144,11 +152,50 @@ class UpdateTenantJob implements ShouldQueue
 
             // Step 4: finalize
             $updateStep('finalize', 'processing');
-            // Flush any cache if needed
             $updateStep('finalize', 'completed');
 
         } catch (\Throwable $e) {
             Log::error("UpdateTenantJob failed for {$subdomain}: " . $e->getMessage());
+
+            // REVERT: Rollback central and isolated tenant records back to original state
+            if ($originalState) {
+                try {
+                    DB::connection($centralConnection)->table('tenants')->where('subdomain', $subdomain)->update([
+                        'name' => $originalState['name'],
+                        'email' => $originalState['email'],
+                        'phone' => $originalState['phone'],
+                        'is_active' => $originalState['is_active'],
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Throwable $revertErr) {
+                    // Ignore revert error
+                }
+
+                if ($isolationEnabled && !empty($tenant->database_name)) {
+                    try {
+                        DB::connection('tenant')->table('tenants')->where('tenant_uuid', $tenant->database_name)->update([
+                            'name' => $originalState['name'],
+                            'email' => $originalState['email'],
+                            'phone' => $originalState['phone'],
+                            'updated_at' => now(),
+                        ]);
+                    } catch (\Throwable $revertErr) {
+                        // Ignore revert error
+                    }
+                } else {
+                    try {
+                        if (Schema::hasTable('tenants')) {
+                            Tenant::where('domain', $subdomain)->update([
+                                'name' => $originalState['name'],
+                                'email' => $originalState['email'],
+                                'phone' => $originalState['phone'],
+                            ]);
+                        }
+                    } catch (\Throwable $revertErr) {
+                        // Ignore revert error
+                    }
+                }
+            }
 
             $failedStepKey = 'validate';
 
