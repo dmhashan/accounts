@@ -1,37 +1,41 @@
 <template>
-    <section>
-        <FlashAlert v-if="successMessage" :message="successMessage" tone="success" />
+  <section>
+    <FlashAlert v-if="successMessage" :message="successMessage" tone="success" />
 
-        <div class="bg-gradient-to-r from-primary-500 to-primary-700 rounded-2xl shadow-xl overflow-hidden mb-6">
-            <div class="px-6 md:px-8 py-8 md:py-12 text-white">
-                <h2 class="text-2xl md:text-3xl font-bold">Welcome back, {{ userName }}! 👋</h2>
-                <p class="mt-2 text-primary-100 text-sm md:text-base">You're logged into {{ tenantName }}</p>
-            </div>
-        </div>
+    <div class="bg-gradient-to-r from-primary-500 to-primary-700 rounded-2xl shadow-xl overflow-hidden mb-6">
+      <div class="px-6 md:px-8 py-8 md:py-12 text-white">
+        <h2 class="text-2xl md:text-3xl font-bold">
+          Welcome back, {{ userName }}! 👋
+        </h2>
+        <p class="mt-2 text-primary-100 text-sm md:text-base">
+          You're logged into {{ tenantName }}
+        </p>
+      </div>
+    </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            <InfoCard
-                title="Tenant"
-                :value="tenantName"
-                :subtitle="`ID: #${tenantId}`"
-                icon="tenant"
-            />
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <InfoCard
+        title="Tenant"
+        :value="tenantName"
+        :subtitle="`ID: #${tenantId}`"
+        icon="tenant"
+      />
 
-            <InfoCard
-                title="Domain"
-                :value="fullDomain"
-                :subtitle="`Subdomain: ${tenantDomain}`"
-                icon="domain"
-            />
+      <InfoCard
+        title="Domain"
+        :value="fullDomain"
+        :subtitle="`Subdomain: ${tenantDomain}`"
+        icon="domain"
+      />
 
-            <InfoCard
-                title="Account"
-                :value="userEmail"
-                :subtitle="`Tenant User ID: #${userId}`"
-                icon="account"
-            />
-        </div>
-    </section>
+      <InfoCard
+        title="Account"
+        :value="userEmail"
+        :subtitle="`Tenant User ID: #${userId}`"
+        icon="account"
+      />
+    </div>
+  </section>
 </template>
 
 <script setup>

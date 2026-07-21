@@ -1,19 +1,19 @@
 <template>
-    <div
-        class="shrink-0 overflow-hidden flex items-center justify-center"
-        :class="[sizeClass, shapeClass, bgClass]"
-    >
-        <img
-            v-if="src && !imgFailed"
-            :src="src"
-            :alt="initials"
-            class="w-full h-full object-cover"
-            @error="imgFailed = true"
-        />
-        <span v-else :class="textClass" class="font-bold text-white select-none leading-none">
-            {{ initials || '?' }}
-        </span>
-    </div>
+  <div
+    class="shrink-0 overflow-hidden flex items-center justify-center"
+    :class="[sizeClass, shapeClass, bgClass]"
+  >
+    <img
+      v-if="src && !imgFailed"
+      :src="src"
+      :alt="initials"
+      class="w-full h-full object-cover"
+      @error="imgFailed = true"
+    />
+    <span v-else :class="textClass" class="font-bold text-white select-none leading-none">
+      {{ initials || '?' }}
+    </span>
+  </div>
 </template>
 
 <script setup>

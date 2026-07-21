@@ -103,6 +103,22 @@
           <button class="px-3.5 py-2 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/20 rounded-lg text-xs font-semibold cursor-pointer transition-all" @click="openEditModal">
             Edit Profile
           </button>
+          <button v-if="!tenant.is_active" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-md shadow-rose-500/20 flex items-center gap-1.5" @click="promptDeleteTenant">
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            Delete Tenant
+          </button>
         </div>
       </div>
 
@@ -614,6 +630,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Step-Wise Progress Modal -->
+    <TenantProgressModal
+      :show="progressModal.show"
+      :job-id="progressModal.jobId"
+      :subdomain="progressModal.subdomain"
+      :operation="progressModal.operation"
+      @close="onProgressModalClose"
+      @complete="onProgressModalComplete"
+    />
   </div>
   <div v-else class="py-8 text-center text-slate-400">
     Loading tenant details...
@@ -624,8 +650,12 @@
 import { ref, reactive, onMounted, inject, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/usePortalApi';
+import TenantProgressModal from '../components/TenantProgressModal.vue';
 
 export default {
+  components: {
+    TenantProgressModal,
+  },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -634,6 +664,13 @@ export default {
     const tenant = ref(null);
     const members = ref({ total_count: 0, recent: [] });
     const users = ref({ total_count: 0, recent: [] });
+
+    const progressModal = reactive({
+      show: false,
+      jobId: '',
+      subdomain: '',
+      operation: 'update',
+    });
 
     const maxTrendCount = computed(() => {
       if (!members.value?.trends) return 1;
@@ -720,7 +757,7 @@ export default {
 
       otpModal.onVerifySuccess = async (otpCode) => {
         try {
-          await apiRequest(`/tenants/${tenant.value.subdomain}`, {
+          const res = await apiRequest(`/tenants/${tenant.value.subdomain}`, {
             method: 'put',
             headers: { 'X-Portal-OTP': otpCode },
             data: {
@@ -730,10 +767,12 @@ export default {
               is_active: tenant.value.is_active,
             }
           });
-          showToast('Tenant profile updated successfully.');
           editModal.show = false;
           otpModal.show = false;
-          fetchTenantDetails();
+          progressModal.jobId = res.job_id;
+          progressModal.subdomain = res.subdomain;
+          progressModal.operation = 'update';
+          progressModal.show = true;
         } catch (err) {
           const errorMsg = err.response?.data?.message || 'Failed to update tenant details.';
           if (err.response?.status === 422 && !err.response?.data?.otp_required) {
@@ -758,7 +797,7 @@ export default {
 
       otpModal.onVerifySuccess = async (otpCode) => {
         try {
-          await apiRequest(`/tenants/${tenant.value.subdomain}`, {
+          const res = await apiRequest(`/tenants/${tenant.value.subdomain}`, {
             method: 'put',
             headers: { 'X-Portal-OTP': otpCode },
             data: {
@@ -768,15 +807,58 @@ export default {
               is_active: nextStatus,
             }
           });
-          showToast(nextStatus ? 'Tenant has been activated successfully!' : 'Tenant has been temporarily suspended/blocked.');
           otpModal.show = false;
-          fetchTenantDetails();
+          progressModal.jobId = res.job_id;
+          progressModal.subdomain = res.subdomain;
+          progressModal.operation = 'update';
+          progressModal.show = true;
         } catch (err) {
           otpModal.error = err.response?.data?.message || 'Failed to change tenant status.';
         }
       };
     };
 
+    const promptDeleteTenant = () => {
+      otpModal.show = true;
+      otpModal.codeSent = false;
+      otpModal.code = '';
+      otpModal.error = null;
+      otpModal.debugCode = null;
+
+      otpModal.onVerifySuccess = async (otpCode) => {
+        try {
+          const res = await apiRequest(`/tenants/${tenant.value.subdomain}`, {
+            method: 'delete',
+            headers: { 'X-Portal-OTP': otpCode },
+          });
+          otpModal.show = false;
+          progressModal.jobId = res.job_id;
+          progressModal.subdomain = res.subdomain;
+          progressModal.operation = 'delete';
+          progressModal.show = true;
+        } catch (err) {
+          otpModal.error = err.response?.data?.message || 'Failed to request tenant deletion.';
+        }
+      };
+    };
+
+    const onProgressModalClose = () => {
+      progressModal.show = false;
+      if (progressModal.operation === 'delete') {
+        router.push('/tenants');
+      } else {
+        fetchTenantDetails();
+      }
+    };
+
+    const onProgressModalComplete = () => {
+      if (progressModal.operation === 'delete') {
+        showToast('Tenant permanently deleted.');
+        router.push('/tenants');
+      } else {
+        fetchTenantDetails();
+      }
+    };
 
     const sendActionOtp = async () => {
       otpModal.loading = true;
@@ -820,15 +902,19 @@ export default {
       editModal,
       editForm,
       otpModal,
+      progressModal,
       openEditModal,
       submitEditForm,
       promptToggleStatus,
+      promptDeleteTenant,
       sendActionOtp,
       confirmActionWithOtp,
       copied,
       copyCommandText,
       maxTrendCount,
       loginsPoints,
+      onProgressModalClose,
+      onProgressModalComplete,
     };
   }
 };

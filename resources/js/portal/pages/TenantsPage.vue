@@ -275,6 +275,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Step-Wise Progress Modal -->
+    <TenantProgressModal
+      :show="progressModal.show"
+      :job-id="progressModal.jobId"
+      :subdomain="progressModal.subdomain"
+      :operation="progressModal.operation"
+      @close="onProgressModalClose"
+      @complete="onProgressModalComplete"
+    />
   </div>
 </template>
 
@@ -282,8 +292,12 @@
 import { ref, reactive, onMounted, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { apiRequest } from '../composables/usePortalApi';
+import TenantProgressModal from '../components/TenantProgressModal.vue';
 
 export default {
+  components: {
+    TenantProgressModal,
+  },
   setup() {
     const tenants = ref([]);
     const search = ref('');
@@ -313,6 +327,13 @@ export default {
       domain: '',
       email: '',
       phone: '',
+    });
+
+    const progressModal = reactive({
+      show: false,
+      jobId: '',
+      subdomain: '',
+      operation: 'create',
     });
 
     // Reusable Action OTP Modal State
@@ -384,7 +405,7 @@ export default {
       otpModal.onVerifySuccess = async (otpCode) => {
         try {
           if (modal.mode === 'create') {
-            await apiRequest('/tenants', {
+            const res = await apiRequest('/tenants', {
               method: 'post',
               headers: { 'X-Portal-OTP': otpCode },
               data: {
@@ -394,9 +415,14 @@ export default {
                 phone: form.phone,
               }
             });
-            showToast('Tenant successfully registered and database initialized!');
+            modal.show = false;
+            otpModal.show = false;
+            progressModal.jobId = res.job_id;
+            progressModal.subdomain = res.subdomain;
+            progressModal.operation = 'create';
+            progressModal.show = true;
           } else {
-            await apiRequest(`/tenants/${modal.subdomain}`, {
+            const res = await apiRequest(`/tenants/${modal.subdomain}`, {
               method: 'put',
               headers: { 'X-Portal-OTP': otpCode },
               data: {
@@ -405,16 +431,16 @@ export default {
                 phone: form.phone,
               }
             });
-            showToast('Tenant profile updated successfully.');
+            modal.show = false;
+            otpModal.show = false;
+            progressModal.jobId = res.job_id;
+            progressModal.subdomain = res.subdomain;
+            progressModal.operation = 'update';
+            progressModal.show = true;
           }
-          modal.show = false;
-          otpModal.show = false;
-          fetchTenants(pagination.current_page);
         } catch (err) {
-          // If error is field validation, let the user know. If it is OTP error, middleware caught it.
           const errorMsg = err.response?.data?.message || 'Failed to save tenant information.';
           if (err.response?.status === 422 && !err.response?.data?.otp_required) {
-            // Re-route error to forms
             modal.show = true;
             otpModal.show = false;
             showToast(errorMsg, 'error');
@@ -423,6 +449,15 @@ export default {
           }
         }
       };
+    };
+
+    const onProgressModalClose = () => {
+      progressModal.show = false;
+      fetchTenants(pagination.current_page);
+    };
+
+    const onProgressModalComplete = () => {
+      fetchTenants(pagination.current_page);
     };
 
     // Request Action OTP (Mutating Edit Verification)
@@ -469,6 +504,7 @@ export default {
       modal,
       form,
       otpModal,
+      progressModal,
       fetchTenants,
       changePage,
       openCreateModal,
@@ -477,6 +513,8 @@ export default {
       sendActionOtp,
       confirmActionWithOtp,
       viewTenant,
+      onProgressModalClose,
+      onProgressModalComplete,
     };
   }
 };

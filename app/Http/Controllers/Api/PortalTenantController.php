@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -373,110 +372,41 @@ class PortalTenantController extends Controller
             ], 422);
         }
 
-        $uuid = (string) Str::uuid();
-        $isolationEnabled = (bool) config('tenancy.database_isolation_enabled', false);
+        $jobId = (string) Str::uuid();
+        $steps = [
+            ['key' => 'validate', 'title' => 'Validation & Subdomain Check', 'description' => 'Validating request payload and subdomain reservation', 'status' => 'pending'],
+            ['key' => 'central_registry', 'title' => 'Central Registry Setup', 'description' => 'Creating tenant record in central database registry', 'status' => 'pending'],
+            ['key' => 'create_database', 'title' => 'Database Provisioning', 'description' => 'Provisioning isolated MySQL database schema', 'status' => 'pending'],
+            ['key' => 'migrate_database', 'title' => 'Database Migrations', 'description' => 'Executing database migrations for tenant schema', 'status' => 'pending'],
+            ['key' => 'seed_database', 'title' => 'Initial Data Seeding', 'description' => 'Seeding default roles, permissions, and settings', 'status' => 'pending'],
+            ['key' => 'finalize', 'title' => 'Finalize Tenant Setup', 'description' => 'Registering details in tenant database and completing setup', 'status' => 'pending'],
+        ];
 
-        DB::beginTransaction();
-
-        try {
-            // 1. Create central tenant registry row
-            DB::connection('central')->table('tenants')->insert([
-                'subdomain' => $subdomain,
-                'database_name' => $uuid,
+        DB::connection('central')->table('tenant_operation_jobs')->insert([
+            'id' => $jobId,
+            'tenant_subdomain' => $subdomain,
+            'operation' => 'create',
+            'status' => 'pending',
+            'current_step' => 0,
+            'total_steps' => count($steps),
+            'steps' => json_encode($steps),
+            'payload' => json_encode([
                 'name' => $validated['name'],
+                'domain' => $subdomain,
                 'email' => $validated['email'] ?? null,
                 'phone' => $validated['phone'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-            if ($isolationEnabled) {
-                // 2. Create isolated database
-                DB::connection('central')->statement("CREATE DATABASE `{$uuid}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        \App\Jobs\CreateTenantJob::dispatch($jobId);
 
-                // 3. Configure temporary tenant connection configuration
-                $centralConnectionConfig = config('database.connections.central');
-                $tenantConfig = $centralConnectionConfig;
-                $tenantConfig['database'] = $uuid;
-                $tenantConfig['url'] = null;
-                config(['database.connections.tenant' => $tenantConfig]);
-
-                DB::purge('tenant');
-                DB::reconnect('tenant');
-
-                // 4. Run tenant migrations on the newly created database
-                $migrationPath = config('tenancy.tenant_migrations_path', 'database/migrations/tenant');
-                Artisan::call('migrate', [
-                    '--database' => 'tenant',
-                    '--path' => [$migrationPath],
-                    '--force' => true,
-                    '--no-interaction' => true,
-                ]);
-
-                // 5. Run tenant seeders (RoleSeeder)
-                Artisan::call('db:seed', [
-                    '--database' => 'tenant',
-                    '--class' => 'Database\\Seeders\\RoleSeeder',
-                    '--force' => true,
-                    '--no-interaction' => true,
-                ]);
-
-                // 6. Insert tenant row inside the isolated database itself
-                DB::connection('tenant')->table('tenants')->insert([
-                    'name' => $validated['name'],
-                    'domain' => $subdomain,
-                    'tenant_uuid' => $uuid,
-                    'email' => $validated['email'] ?? null,
-                    'phone' => $validated['phone'] ?? null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            } else {
-                // In bypass / single-database mode, we just write to tenants on default connection if table exists
-                if (Schema::hasTable('tenants')) {
-                    Tenant::updateOrCreate(
-                        ['domain' => $subdomain],
-                        [
-                            'name' => $validated['name'],
-                            'tenant_uuid' => $uuid,
-                            'email' => $validated['email'] ?? null,
-                            'phone' => $validated['phone'] ?? null,
-                        ],
-                    );
-                }
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Tenant created successfully.',
-                'tenant' => [
-                    'subdomain' => $subdomain,
-                    'database_name' => $uuid,
-                    'name' => $validated['name'],
-                    'email' => $validated['email'] ?? null,
-                    'phone' => $validated['phone'] ?? null,
-                ],
-            ], 201);
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            if ($isolationEnabled) {
-                // Clean up database if created
-                try {
-                    DB::connection('central')->statement("DROP DATABASE IF EXISTS `{$uuid}`");
-                } catch (\Throwable $cleanupError) {
-                    // Ignore cleanup error
-                }
-            }
-
-            return response()->json([
-                'message' => 'Failed to create tenant: ' . $e->getMessage(),
-            ], 500);
-        } finally {
-            DB::purge('tenant');
-        }
+        return response()->json([
+            'message' => 'Tenant creation queued.',
+            'job_id' => $jobId,
+            'subdomain' => $subdomain,
+        ], 202);
     }
 
     /**
@@ -497,76 +427,123 @@ class PortalTenantController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        $uuid = $tenant->database_name;
-        $isolationEnabled = (bool) config('tenancy.database_isolation_enabled', false);
+        $jobId = (string) Str::uuid();
+        $steps = [
+            ['key' => 'validate', 'title' => 'Validation', 'description' => 'Validating updated parameters', 'status' => 'pending'],
+            ['key' => 'central_registry', 'title' => 'Central Registry Sync', 'description' => 'Updating central tenant registry record', 'status' => 'pending'],
+            ['key' => 'tenant_database', 'title' => 'Isolated Database Sync', 'description' => 'Synchronizing details to tenant database', 'status' => 'pending'],
+            ['key' => 'finalize', 'title' => 'Finalize Update', 'description' => 'Refreshing tenant status cache and finishing update', 'status' => 'pending'],
+        ];
 
-        DB::beginTransaction();
-
-        try {
-            // Update central registry
-            $updateData = [
+        DB::connection('central')->table('tenant_operation_jobs')->insert([
+            'id' => $jobId,
+            'tenant_subdomain' => $subdomain,
+            'operation' => 'update',
+            'status' => 'pending',
+            'current_step' => 0,
+            'total_steps' => count($steps),
+            'steps' => json_encode($steps),
+            'payload' => json_encode([
                 'name' => $validated['name'],
                 'email' => $validated['email'] ?? null,
                 'phone' => $validated['phone'] ?? null,
-                'updated_at' => now(),
-            ];
+                'is_active' => $validated['is_active'] ?? null,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-            if (isset($validated['is_active'])) {
-                $updateData['is_active'] = (bool) $validated['is_active'];
-            }
+        \App\Jobs\UpdateTenantJob::dispatch($jobId);
 
-            DB::connection('central')->table('tenants')->where('subdomain', $subdomain)->update($updateData);
+        return response()->json([
+            'message' => 'Tenant update queued.',
+            'job_id' => $jobId,
+            'subdomain' => $subdomain,
+        ], 202);
+    }
 
-            if ($isolationEnabled && $uuid) {
-                // Update isolated database's tenant row
-                $centralConnectionConfig = config('database.connections.central');
-                $tenantConfig = $centralConnectionConfig;
-                $tenantConfig['database'] = $uuid;
-                $tenantConfig['url'] = null;
-                config(['database.connections.tenant' => $tenantConfig]);
+    /**
+     * Delete tenant.
+     */
+    public function destroy($subdomain)
+    {
+        $tenant = DB::connection('central')->table('tenants')->where('subdomain', $subdomain)->first();
 
-                DB::purge('tenant');
-                DB::reconnect('tenant');
-
-                // Check if table tenants exists in the isolated database
-                $tableExists = DB::connection('tenant')->selectOne(
-                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tenants'",
-                    [$uuid],
-                );
-
-                if ($tableExists) {
-                    DB::connection('tenant')->table('tenants')->where('tenant_uuid', $uuid)->update([
-                        'name' => $validated['name'],
-                        'email' => $validated['email'] ?? null,
-                        'phone' => $validated['phone'] ?? null,
-                        'updated_at' => now(),
-                    ]);
-                }
-            } else {
-                // Update on default connection
-                if (Schema::hasTable('tenants')) {
-                    Tenant::where('domain', $subdomain)->update([
-                        'name' => $validated['name'],
-                        'email' => $validated['email'] ?? null,
-                        'phone' => $validated['phone'] ?? null,
-                    ]);
-                }
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Tenant updated successfully.',
-            ]);
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'message' => 'Failed to update tenant: ' . $e->getMessage(),
-            ], 500);
-        } finally {
-            DB::purge('tenant');
+        if (!$tenant) {
+            return response()->json(['message' => 'Tenant not found.'], 404);
         }
+
+        if ($tenant->is_active) {
+            return response()->json([
+                'message' => 'Cannot delete active tenant. You must suspend/block the tenant first.',
+            ], 422);
+        }
+
+        $jobId = (string) Str::uuid();
+        $steps = [
+            ['key' => 'validate', 'title' => 'Eligibility Check', 'description' => 'Validating tenant suspension status', 'status' => 'pending'],
+            ['key' => 'drop_database', 'title' => 'Drop Database', 'description' => 'Dropping isolated database schema for tenant', 'status' => 'pending'],
+            ['key' => 'local_cleanup', 'title' => 'Local Cleanup', 'description' => 'Removing local tenant representations', 'status' => 'pending'],
+            ['key' => 'central_registry', 'title' => 'Central Registry Cleanup', 'description' => 'Removing tenant entry from central registry database', 'status' => 'pending'],
+        ];
+
+        DB::connection('central')->table('tenant_operation_jobs')->insert([
+            'id' => $jobId,
+            'tenant_subdomain' => $subdomain,
+            'operation' => 'delete',
+            'status' => 'pending',
+            'current_step' => 0,
+            'total_steps' => count($steps),
+            'steps' => json_encode($steps),
+            'payload' => json_encode(['subdomain' => $subdomain]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        \App\Jobs\DeleteTenantJob::dispatch($jobId);
+
+        return response()->json([
+            'message' => 'Tenant deletion queued.',
+            'job_id' => $jobId,
+            'subdomain' => $subdomain,
+        ], 202);
+    }
+
+    /**
+     * Fetch job status by job ID.
+     */
+    public function getJobStatus($jobId)
+    {
+        $job = DB::connection('central')->table('tenant_operation_jobs')->where('id', $jobId)->first();
+
+        if (!$job) {
+            return response()->json(['message' => 'Job not found.'], 404);
+        }
+
+        $steps = json_decode($job->steps, true) ?: [];
+        $totalSteps = count($steps);
+        $completedSteps = 0;
+
+        foreach ($steps as $step) {
+            if (($step['status'] ?? '') === 'completed') {
+                $completedSteps++;
+            }
+        }
+
+        $progressPercentage = $totalSteps > 0 ? round(($completedSteps / $totalSteps) * 100) : 0;
+
+        return response()->json([
+            'id' => $job->id,
+            'tenant_subdomain' => $job->tenant_subdomain,
+            'operation' => $job->operation,
+            'status' => $job->status,
+            'current_step' => $job->current_step,
+            'total_steps' => $job->total_steps,
+            'progress_percentage' => $progressPercentage,
+            'steps' => $steps,
+            'error_message' => $job->error_message,
+            'created_at' => $job->created_at,
+            'updated_at' => $job->updated_at,
+        ]);
     }
 }

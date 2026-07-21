@@ -39,7 +39,7 @@ class PrepareCentralDatabaseCommand extends Command
         ]);
         $this->line(\Illuminate\Support\Facades\Artisan::output());
 
-        foreach (['tenants', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'sessions', 'portal_users'] as $table) {
+        foreach (['tenants', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'sessions', 'portal_users', 'tenant_operation_jobs'] as $table) {
             if (!$schema->hasTable($table)) {
                 throw new \RuntimeException("Central table [{$table}] was not created.");
             }

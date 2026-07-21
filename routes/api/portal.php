@@ -16,11 +16,12 @@ Route::middleware(['auth:portal'])->group(function () {
     Route::get('/auth/me', [PortalAuthController::class, 'me']);
     Route::post('/auth/action-otp', [PortalAuthController::class, 'requestActionOtp']);
     Route::get('/dashboard/stats', [PortalTenantController::class, 'dashboardStats']);
+    Route::get('tenants/jobs/{jobId}', [PortalTenantController::class, 'getJobStatus']);
     Route::get('tenants/{tenant}', [PortalTenantController::class, 'show']);
 
     // Mutating actions are checked by VerifyPortalOtp middleware
     Route::middleware([VerifyPortalOtp::class])->group(function () {
-        Route::apiResource('tenants', PortalTenantController::class)->except(['show', 'destroy']);
+        Route::apiResource('tenants', PortalTenantController::class)->except(['show']);
         Route::apiResource('users', PortalUserController::class)->except(['show']);
     });
 });
