@@ -17,10 +17,14 @@ Route::middleware(['auth:portal'])->group(function () {
     Route::post('/auth/action-otp', [PortalAuthController::class, 'requestActionOtp']);
     Route::get('/dashboard/stats', [PortalTenantController::class, 'dashboardStats']);
     Route::get('tenants/jobs/{jobId}', [PortalTenantController::class, 'getJobStatus']);
+    Route::get('tenants/{tenant}/users', [PortalTenantController::class, 'getTenantUsers']);
     Route::get('tenants/{tenant}', [PortalTenantController::class, 'show']);
 
     // Mutating actions are checked by VerifyPortalOtp middleware
     Route::middleware([VerifyPortalOtp::class])->group(function () {
+        Route::post('tenants/{tenant}/users', [PortalTenantController::class, 'storeTenantUser']);
+        Route::put('tenants/{tenant}/users/{userId}', [PortalTenantController::class, 'updateTenantUser']);
+        Route::delete('tenants/{tenant}/users/{userId}', [PortalTenantController::class, 'deleteTenantUser']);
         Route::apiResource('tenants', PortalTenantController::class)->except(['show']);
         Route::apiResource('users', PortalUserController::class)->except(['show']);
     });

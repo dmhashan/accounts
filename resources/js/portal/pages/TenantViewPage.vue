@@ -144,7 +144,7 @@
                 Tenant Deletion Guidelines
               </h4>
               <p class="text-xs text-rose-600 dark:text-rose-400/80">
-                This tenant is inactive. To permanently delete it, drop its isolated database, and purge all records, run the following Artisan command in your host terminal:
+                This tenant is inactive. You can permanently delete it using the button above or by running the following Artisan command:
               </p>
               <div class="mt-3 flex items-center justify-between gap-4 bg-slate-950 dark:bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 dark:border-slate-800/80 font-mono text-xs text-slate-300">
                 <span>php artisan tenants:delete {{ tenant.subdomain }}</span>
@@ -163,15 +163,13 @@
 
     <!-- Tab View -->
     <div class="space-y-4">
-      <!-- Tab Headers -->
+      <!-- Tab Headers (No Count Badges) -->
       <div class="border-b border-slate-200 dark:border-slate-800 flex gap-6">
         <button :class="activeTab === 'members' ? 'border-indigo-500 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700'" class="pb-3 border-b-2 text-sm font-semibold transition-all cursor-pointer" @click="activeTab = 'members'">
           Member Summary
-          <span class="ml-1.5 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-xs font-bold">{{ members.total_count }}</span>
         </button>
         <button :class="activeTab === 'users' ? 'border-indigo-500 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700'" class="pb-3 border-b-2 text-sm font-semibold transition-all cursor-pointer" @click="activeTab = 'users'">
           User Summary
-          <span class="ml-1.5 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-xs font-bold">{{ users.total_count }}</span>
         </button>
       </div>
 
@@ -179,60 +177,15 @@
       <div class="bg-white/70 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl shadow-sm overflow-hidden">
         <!-- Members Tab -->
         <div v-if="activeTab === 'members'" class="space-y-6 p-6">
-          <!-- Key Metrics Grid -->
+          <!-- Key Metrics Grid (Active, Inactive, Temporary) -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Metric 1: Total Registered -->
-            <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex flex-col justify-between space-y-3">
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Members</span>
-                  <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1">
-                    {{ members.total_count }}
-                  </h3>
-                </div>
-                <div class="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
-                  <svg
-                    class="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-              
-              <!-- Active / Inactive / Temporary Breakdown -->
-              <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-[10px] font-bold uppercase tracking-wider">
-                <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Active: {{ members.active_count ?? 0 }}</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Inactive: {{ members.inactive_count ?? 0 }}</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  <span>Temporary: {{ members.temp_count ?? 0 }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Metric 2: Monthly Signups -->
+            <!-- Metric 1: Active Member Count -->
             <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
               <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">New This Month</span>
-                <div class="flex items-baseline gap-2 mt-1">
-                  <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white">
-                    {{ members.new_this_month ?? 0 }}
-                  </h3>
-                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Member Count</span>
+                <h3 class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+                  {{ members.active_count ?? 0 }}
+                </h3>
               </div>
               <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
                 <svg
@@ -245,54 +198,70 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
               </div>
             </div>
 
-            <!-- Metric 3: Active Status (Circular Gauge) -->
+            <!-- Metric 2: Inactive Member Count -->
             <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
               <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Member Retention</span>
-                <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1">
-                  {{ members.retention_rate ?? '100.0' }}%
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Inactive Member Count</span>
+                <h3 class="text-2xl font-extrabold text-slate-700 dark:text-slate-300 mt-1">
+                  {{ members.inactive_count ?? 0 }}
                 </h3>
               </div>
-              <div class="relative w-12 h-12 flex items-center justify-center">
-                <svg class="w-12 h-12 transform -rotate-90">
-                  <circle
-                    cx="24"
-                    cy="24"
-                    r="18"
-                    class="stroke-slate-200 dark:stroke-slate-800"
-                    stroke-width="3"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="24"
-                    cy="24"
-                    r="18"
-                    class="stroke-indigo-600 dark:stroke-indigo-400"
-                    stroke-width="3"
-                    stroke-dasharray="113"
-                    :stroke-dashoffset="113 - (113 * (members.retention_rate ?? 100) / 100)"
+              <div class="p-2.5 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 rounded-lg">
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
                     stroke-linecap="round"
-                    fill="transparent"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
                   />
                 </svg>
-                <span class="absolute text-[10px] font-bold text-indigo-600 dark:text-indigo-400">{{ Math.round(members.retention_rate ?? 100) }}%</span>
+              </div>
+            </div>
+
+            <!-- Metric 3: Temporary Member Count -->
+            <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Temporary Member Count</span>
+                <h3 class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
+                  {{ members.temp_count ?? 0 }}
+                </h3>
+              </div>
+              <div class="p-2.5 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-lg">
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
               </div>
             </div>
           </div>
 
-          <!-- Trend Chart (SVG Bar Chart) -->
+          <!-- Trend Chart (12 Months SVG Bar Chart) -->
           <div class="bg-slate-50/30 dark:bg-slate-950/20 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-5">
             <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">
-              Member Registration Trend (Last 6 Months)
+              Member Registration Trend (Last 12 Months)
             </h4>
             
-            <div class="h-44 flex items-end justify-between gap-2 px-4 pb-2 border-b border-slate-200 dark:border-slate-800 relative">
+            <div class="h-44 flex items-end justify-between gap-1 px-2 pb-2 border-b border-slate-200 dark:border-slate-800 relative">
               <div class="absolute inset-x-0 bottom-1/4 border-b border-slate-100 dark:border-slate-800/50 pointer-events-none" />
               <div class="absolute inset-x-0 bottom-2/4 border-b border-slate-100 dark:border-slate-800/50 pointer-events-none" />
               <div class="absolute inset-x-0 bottom-3/4 border-b border-slate-100 dark:border-slate-800/50 pointer-events-none" />
@@ -304,30 +273,55 @@
               >
                 <div 
                   class="w-full rounded-t-md transition-all duration-300"
-                  :class="index === 5 ? 'bg-indigo-600 group-hover:bg-indigo-500 shadow-lg shadow-indigo-500/20' : 'bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-500/40'"
-                  :style="{ height: `${Math.max(10, Math.min(130, (t.count / Math.max(1, maxTrendCount)) * 130))}px` }" 
+                  :class="index === ((members.trends || []).length - 1) ? 'bg-indigo-600 group-hover:bg-indigo-500 shadow-lg shadow-indigo-500/20' : 'bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-500/40'"
+                  :style="{ height: `${Math.max(8, Math.min(130, (t.count / Math.max(1, maxTrendCount)) * 130))}px` }" 
                 />
-                <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all">
+                <div class="absolute -top-6 text-[10px] font-bold opacity-0 group-hover:opacity-100 bg-slate-950 text-white px-1.5 py-0.5 rounded transition-all pointer-events-none whitespace-nowrap">
                   {{ t.count }}
                 </div>
               </div>
             </div>
-            <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400 mt-2 px-4">
-              <span v-for="(t, index) in (members.trends || [])" :key="index">{{ t.label }}</span>
+            <div class="flex justify-between text-[9px] font-bold uppercase text-slate-400 mt-2 px-1">
+              <span v-for="(t, index) in (members.trends || [])" :key="index" class="flex-1 text-center truncate">{{ t.label }}</span>
             </div>
           </div>
         </div>
 
         <!-- Users Tab -->
         <div v-if="activeTab === 'users'" class="space-y-6 p-6">
-          <!-- Key Metrics Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Metric 1: Total Staff -->
+          <!-- Key Metrics Grid (Active User Count & Total User Count) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Metric 1: Active User Count -->
             <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
               <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Staff</span>
-                <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1">
-                  {{ users.total_count }}
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active User Count</span>
+                <h3 class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+                  {{ users.active_count ?? 0 }}
+                </h3>
+              </div>
+              <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Metric 2: Total User Count -->
+            <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total User Count</span>
+                <h3 class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-1">
+                  {{ users.total_count ?? 0 }}
                 </h3>
               </div>
               <div class="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
@@ -341,164 +335,139 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                   />
                 </svg>
-              </div>
-            </div>
-
-            <!-- Metric 2: Staff Split (Progress bar) -->
-            <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex flex-col justify-center space-y-2">
-              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Staff Split</span>
-              <div class="space-y-1">
-                <div class="flex items-center justify-between text-[10px] font-bold">
-                  <span class="text-slate-500">Trainers ({{ users.staff_split?.trainers_count ?? 0 }}) / Other ({{ users.staff_split?.other_count ?? 0 }})</span>
-                  <span class="text-slate-700 dark:text-slate-300">{{ users.staff_split?.trainers_percentage ?? '0.0' }}%</span>
-                </div>
-                <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-indigo-600 h-1.5 rounded-full" :style="{ width: `${users.staff_split?.trainers_percentage ?? 0}%` }" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Metric 3: Active Status (Circular Gauge) -->
-            <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Access Security</span>
-                <h3 class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1">
-                  {{ users.access_security ?? '100.0' }}%
-                </h3>
-              </div>
-              <div class="relative w-12 h-12 flex items-center justify-center">
-                <svg class="w-12 h-12 transform -rotate-90">
-                  <circle
-                    cx="24"
-                    cy="24"
-                    r="18"
-                    class="stroke-slate-200 dark:stroke-slate-800"
-                    stroke-width="3"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="24"
-                    cy="24"
-                    r="18"
-                    class="stroke-emerald-500"
-                    stroke-width="3"
-                    stroke-dasharray="113"
-                    :stroke-dashoffset="113 - (113 * (users.access_security ?? 100) / 100)"
-                    stroke-linecap="round"
-                    fill="transparent"
-                  />
-                </svg>
-                <span class="absolute text-[10px] font-bold text-emerald-500">{{ Math.round(users.access_security ?? 100) }}%</span>
               </div>
             </div>
           </div>
 
-          <!-- Weekly Activity Chart (SVG Spline Path) -->
-          <div class="bg-slate-50/30 dark:bg-slate-950/20 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-5">
-            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">
-              Staff Activity (Logins Over Last 7 Days)
-            </h4>
-            
-            <div class="h-32 w-full relative">
-              <svg viewBox="0 0 700 130" class="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient
-                    id="areaGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3" />
-                    <stop offset="100%" stop-color="#6366f1" stop-opacity="0" />
-                  </linearGradient>
-                </defs>
-                <line
-                  x1="0"
-                  y1="32.5"
-                  x2="700"
-                  y2="32.5"
-                  stroke="rgba(100,116,139,0.1)"
-                  stroke-width="1"
-                />
-                <line
-                  x1="0"
-                  y1="65"
-                  x2="700"
-                  y2="65"
-                  stroke="rgba(100,116,139,0.1)"
-                  stroke-width="1"
-                />
-                <line
-                  x1="0"
-                  y1="97.5"
-                  x2="700"
-                  y2="97.5"
-                  stroke="rgba(100,116,139,0.1)"
-                  stroke-width="1"
-                />
-                
-                <polygon
-                  :points="`0,130 ${loginsPoints.map(p => `${p.x},${p.y}`).join(' ')} 700,130`"
-                  fill="url(#areaGradient)"
-                />
-                <polyline
-                  :points="loginsPoints.map(p => `${p.x},${p.y}`).join(' ')"
-                  fill="none"
-                  stroke="#6366f1"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                
-                <g v-for="(p, index) in loginsPoints" :key="index" class="group/point">
-                  <circle
-                    :cx="p.x"
-                    :cy="p.y"
-                    r="4.5"
-                    fill="#6366f1"
-                    stroke="#ffffff"
-                    stroke-width="1.5"
-                  />
-                  <!-- Hover tooltip on dots -->
-                  <g class="opacity-0 group-hover/point:opacity-100 transition-opacity pointer-events-none">
-                    <rect
-                      :x="p.x - 20"
-                      :y="p.y - 30"
-                      width="40"
-                      height="20"
-                      rx="4"
-                      fill="#0f172a"
-                    />
-                    <text
-                      :x="p.x"
-                      :y="p.y - 17"
-                      fill="#ffffff"
-                      font-size="10"
-                      font-weight="bold"
-                      text-anchor="middle"
-                    >
-                      {{ p.count }}
-                    </text>
-                  </g>
-                </g>
-              </svg>
+          <!-- Tenant System Users Header & Search -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+            <div>
+              <h4 class="text-base font-bold text-slate-900 dark:text-white">
+                Tenant System Users
+              </h4>
+              <p class="text-xs text-slate-500">
+                Manage administrators, staff, trainers, and user access roles for this tenant.
+              </p>
             </div>
-            <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400 mt-2 px-1">
-              <span v-for="(p, index) in loginsPoints" :key="index">{{ p.label }}</span>
+            <div class="flex items-center gap-3">
+              <input 
+                v-model="tenantUserSearch" 
+                type="text" 
+                placeholder="Search user name or email..."
+                class="px-3.5 py-1.5 bg-slate-100/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-lg text-xs outline-none transition-all w-48 sm:w-64"
+                @input="fetchTenantUsers(1)"
+              />
+              <button class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-indigo-500/20 flex items-center gap-1.5 cursor-pointer whitespace-nowrap" @click="openCreateUserModal">
+                <svg
+                  class="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add User
+              </button>
+            </div>
+          </div>
+
+          <!-- Tenant Users Table -->
+          <div class="bg-white/50 dark:bg-slate-950/30 border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-slate-950/50">
+                    <th class="px-4 py-3">
+                      User Name
+                    </th>
+                    <th class="px-4 py-3">
+                      Email Address
+                    </th>
+                    <th class="px-4 py-3">
+                      Role
+                    </th>
+                    <th class="px-4 py-3">
+                      Status
+                    </th>
+                    <th class="px-4 py-3 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  <tr v-if="tenantUsersLoading && tenantUsers.length === 0">
+                    <td colspan="5" class="px-4 py-6 text-center text-slate-400">
+                      Loading tenant users...
+                    </td>
+                  </tr>
+                  <tr v-else-if="tenantUsers.length === 0">
+                    <td colspan="5" class="px-4 py-6 text-center text-slate-400">
+                      No users found for this tenant.
+                    </td>
+                  </tr>
+                  <tr v-for="u in tenantUsers" :key="u.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
+                    <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">
+                      {{ u.name }}
+                    </td>
+                    <td class="px-4 py-3 text-slate-500 dark:text-slate-400">
+                      {{ u.email }}
+                    </td>
+                    <td class="px-4 py-3">
+                      <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded text-[11px] font-semibold border border-indigo-100/50 dark:border-indigo-900/30">
+                        {{ u.role_name || 'Staff' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" :class="u.is_active ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400'">
+                        <span class="w-1.5 h-1.5 rounded-full" :class="u.is_active ? 'bg-emerald-500' : 'bg-rose-500'" />
+                        {{ u.is_active ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-right space-x-1.5">
+                      <button class="px-2.5 py-1 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/30 rounded text-[11px] font-semibold cursor-pointer transition-all" @click="openEditUserModal(u)">
+                        Edit
+                      </button>
+                      <button class="px-2.5 py-1 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-[11px] font-semibold cursor-pointer transition-all" @click="toggleUserStatus(u)">
+                        {{ u.is_active ? 'Deactivate' : 'Activate' }}
+                      </button>
+                      <button class="px-2.5 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 rounded text-[11px] font-semibold cursor-pointer transition-all" @click="deleteUser(u)">
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div v-if="tenantUsersPagination.total > tenantUsersPagination.per_page" class="px-4 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <span class="text-[11px] text-slate-500">Page {{ tenantUsersPagination.current_page }} of {{ tenantUsersPagination.last_page }}</span>
+              <div class="flex gap-1.5">
+                <button :disabled="tenantUsersPagination.current_page === 1" class="px-2.5 py-1 border border-slate-200 dark:border-slate-800 rounded text-[11px] font-semibold disabled:opacity-40 cursor-pointer" @click="fetchTenantUsers(tenantUsersPagination.current_page - 1)">
+                  Previous
+                </button>
+                <button :disabled="tenantUsersPagination.current_page === tenantUsersPagination.last_page" class="px-2.5 py-1 border border-slate-200 dark:border-slate-800 rounded text-[11px] font-semibold disabled:opacity-40 cursor-pointer" @click="fetchTenantUsers(tenantUsersPagination.current_page + 1)">
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Edit Profile Modal -->
+    <!-- Edit Tenant Profile Modal -->
     <div v-if="editModal.show" class="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6 relative">
-        <h3 class="text-lg font-bold mb-4">
+        <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">
           Edit Tenant Profile
         </h3>
         
@@ -536,6 +505,89 @@
 
           <div class="flex justify-end gap-2 pt-4">
             <button type="button" class="px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium rounded-lg transition-all cursor-pointer" @click="editModal.show = false">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-all cursor-pointer">
+              Continue
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add/Edit Tenant User Modal -->
+    <div v-if="userModal.show" class="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6 relative">
+        <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">
+          {{ userModal.mode === 'create' ? 'Add New Tenant User' : 'Edit Tenant User' }}
+        </h3>
+        
+        <form class="space-y-4" @submit.prevent="submitUserForm">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Full Name</label>
+            <input
+              v-model="userForm.name"
+              type="text"
+              required
+              placeholder="e.g. John Doe"
+              class="w-full px-3.5 py-2 bg-slate-100/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Email Address</label>
+            <input
+              v-model="userForm.email"
+              type="email"
+              required
+              placeholder="e.g. user@gym.com"
+              class="w-full px-3.5 py-2 bg-slate-100/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              Password {{ userModal.mode === 'edit' ? '(Leave blank to keep unchanged)' : '' }}
+            </label>
+            <input
+              v-model="userForm.password"
+              type="password"
+              :required="userModal.mode === 'create'"
+              placeholder="Minimum 6 characters"
+              class="w-full px-3.5 py-2 bg-slate-100/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">User Role</label>
+            <select
+              v-model="userForm.role_id"
+              required
+              class="w-full px-3.5 py-2 bg-slate-100/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all dark:bg-slate-900"
+            >
+              <option value="" disabled>
+                Select Role
+              </option>
+              <option v-for="r in tenantRoles" :key="r.id" :value="r.id">
+                {{ r.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2 pt-1">
+            <input
+              id="user_is_active"
+              v-model="userForm.is_active"
+              type="checkbox"
+              class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300 dark:border-slate-700"
+            />
+            <label for="user_is_active" class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Active User Account
+            </label>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" class="px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium rounded-lg transition-all cursor-pointer" @click="userModal.show = false">
               Cancel
             </button>
             <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-all cursor-pointer">
@@ -647,7 +699,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, inject, computed } from 'vue';
+import { ref, reactive, onMounted, inject, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/usePortalApi';
 import TenantProgressModal from '../components/TenantProgressModal.vue';
@@ -663,7 +715,33 @@ export default {
 
     const tenant = ref(null);
     const members = ref({ total_count: 0, recent: [] });
-    const users = ref({ total_count: 0, recent: [] });
+    const users = ref({ total_count: 0, active_count: 0, recent: [] });
+
+    // Tenant Users management state
+    const tenantUsers = ref([]);
+    const tenantRoles = ref([]);
+    const tenantUserSearch = ref('');
+    const tenantUsersLoading = ref(false);
+    const tenantUsersPagination = reactive({
+      current_page: 1,
+      last_page: 1,
+      total: 0,
+      per_page: 10,
+    });
+
+    const userModal = reactive({
+      show: false,
+      mode: 'create', // create | edit
+      userId: null,
+    });
+
+    const userForm = reactive({
+      name: '',
+      email: '',
+      password: '',
+      role_id: '',
+      is_active: true,
+    });
 
     const progressModal = reactive({
       show: false,
@@ -675,26 +753,6 @@ export default {
     const maxTrendCount = computed(() => {
       if (!members.value?.trends) return 1;
       return Math.max(...members.value.trends.map(t => t.count), 1);
-    });
-
-    const loginsPoints = computed(() => {
-      const activity = users.value?.activity || [];
-      if (activity.length === 0) {
-        return Array.from({ length: 7 }, (_, i) => ({
-          x: (i * 700) / 6,
-          y: 120,
-          label: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-          count: 0
-        }));
-      }
-      const counts = activity.map(a => a.count);
-      const maxCount = Math.max(...counts, 1);
-      return activity.map((a, i) => ({
-        x: (i * 700) / 6,
-        y: 120 - (a.count / maxCount) * 110,
-        label: a.label,
-        count: a.count
-      }));
     });
     
     const activeTab = ref('members'); // members | users
@@ -739,6 +797,142 @@ export default {
         showToast('Failed to load tenant details.', 'error');
         router.push('/tenants');
       }
+    };
+
+    const fetchTenantUsers = async (page = 1) => {
+      tenantUsersLoading.value = true;
+      try {
+        const res = await apiRequest(`/tenants/${route.params.subdomain}/users`, {
+          params: { page, search: tenantUserSearch.value }
+        });
+        tenantUsers.value = res.users?.data || [];
+        tenantUsersPagination.current_page = res.users?.current_page || 1;
+        tenantUsersPagination.last_page = res.users?.last_page || 1;
+        tenantUsersPagination.total = res.users?.total || 0;
+        tenantUsersPagination.per_page = res.users?.per_page || 10;
+        tenantRoles.value = res.roles || [];
+      } catch {
+        // Ignore fetch error if tenant user table empty
+      } finally {
+        tenantUsersLoading.value = false;
+      }
+    };
+
+    const openCreateUserModal = () => {
+      userModal.mode = 'create';
+      userModal.userId = null;
+      userForm.name = '';
+      userForm.email = '';
+      userForm.password = '';
+      userForm.role_id = tenantRoles.value.length > 0 ? tenantRoles.value[0].id : '';
+      userForm.is_active = true;
+      userModal.show = true;
+    };
+
+    const openEditUserModal = (u) => {
+      userModal.mode = 'edit';
+      userModal.userId = u.id;
+      userForm.name = u.name;
+      userForm.email = u.email;
+      userForm.password = '';
+      userForm.role_id = u.role_id || (tenantRoles.value.length > 0 ? tenantRoles.value[0].id : '');
+      userForm.is_active = Boolean(u.is_active);
+      userModal.show = true;
+    };
+
+    const submitUserForm = () => {
+      otpModal.show = true;
+      otpModal.codeSent = false;
+      otpModal.code = '';
+      otpModal.error = null;
+      otpModal.debugCode = null;
+
+      otpModal.onVerifySuccess = async (otpCode) => {
+        try {
+          if (userModal.mode === 'create') {
+            await apiRequest(`/tenants/${route.params.subdomain}/users`, {
+              method: 'post',
+              headers: { 'X-Portal-OTP': otpCode },
+              data: { ...userForm }
+            });
+            showToast('Tenant user created successfully.');
+          } else {
+            await apiRequest(`/tenants/${route.params.subdomain}/users/${userModal.userId}`, {
+              method: 'put',
+              headers: { 'X-Portal-OTP': otpCode },
+              data: { ...userForm }
+            });
+            showToast('Tenant user updated successfully.');
+          }
+          userModal.show = false;
+          otpModal.show = false;
+          fetchTenantUsers(tenantUsersPagination.current_page);
+          fetchTenantDetails();
+        } catch (err) {
+          const errorMsg = err.response?.data?.message || 'Failed to save tenant user.';
+          if (err.response?.status === 422 && !err.response?.data?.otp_required) {
+            userModal.show = true;
+            otpModal.show = false;
+            showToast(errorMsg, 'error');
+          } else {
+            otpModal.error = errorMsg;
+          }
+        }
+      };
+    };
+
+    const toggleUserStatus = (u) => {
+      otpModal.show = true;
+      otpModal.codeSent = false;
+      otpModal.code = '';
+      otpModal.error = null;
+      otpModal.debugCode = null;
+
+      const nextStatus = !u.is_active;
+
+      otpModal.onVerifySuccess = async (otpCode) => {
+        try {
+          await apiRequest(`/tenants/${route.params.subdomain}/users/${u.id}`, {
+            method: 'put',
+            headers: { 'X-Portal-OTP': otpCode },
+            data: {
+              name: u.name,
+              email: u.email,
+              role_id: u.role_id,
+              is_active: nextStatus,
+            }
+          });
+          showToast(nextStatus ? 'User activated successfully.' : 'User deactivated.');
+          otpModal.show = false;
+          fetchTenantUsers(tenantUsersPagination.current_page);
+          fetchTenantDetails();
+        } catch (err) {
+          otpModal.error = err.response?.data?.message || 'Failed to update user status.';
+        }
+      };
+    };
+
+    const deleteUser = (u) => {
+      otpModal.show = true;
+      otpModal.codeSent = false;
+      otpModal.code = '';
+      otpModal.error = null;
+      otpModal.debugCode = null;
+
+      otpModal.onVerifySuccess = async (otpCode) => {
+        try {
+          await apiRequest(`/tenants/${route.params.subdomain}/users/${u.id}`, {
+            method: 'delete',
+            headers: { 'X-Portal-OTP': otpCode },
+          });
+          showToast('User deleted successfully.');
+          otpModal.show = false;
+          fetchTenantUsers(tenantUsersPagination.current_page);
+          fetchTenantDetails();
+        } catch (err) {
+          otpModal.error = err.response?.data?.message || 'Failed to delete user.';
+        }
+      };
     };
 
     const openEditModal = () => {
@@ -892,7 +1086,16 @@ export default {
       otpModal.loading = false;
     };
 
-    onMounted(fetchTenantDetails);
+    watch(activeTab, (newTab) => {
+      if (newTab === 'users') {
+        fetchTenantUsers();
+      }
+    });
+
+    onMounted(() => {
+      fetchTenantDetails();
+      fetchTenantUsers();
+    });
 
     return {
       tenant,
@@ -903,6 +1106,19 @@ export default {
       editForm,
       otpModal,
       progressModal,
+      tenantUsers,
+      tenantRoles,
+      tenantUserSearch,
+      tenantUsersLoading,
+      tenantUsersPagination,
+      userModal,
+      userForm,
+      fetchTenantUsers,
+      openCreateUserModal,
+      openEditUserModal,
+      submitUserForm,
+      toggleUserStatus,
+      deleteUser,
       openEditModal,
       submitEditForm,
       promptToggleStatus,
@@ -912,7 +1128,6 @@ export default {
       copied,
       copyCommandText,
       maxTrendCount,
-      loginsPoints,
       onProgressModalClose,
       onProgressModalComplete,
     };

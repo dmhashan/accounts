@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class PortalTenantController extends Controller
@@ -48,6 +47,36 @@ class PortalTenantController extends Controller
     }
 
     /**
+     * Helper to set up tenant database connection.
+     */
+    private function setupTenantConnection(string $subdomain): array
+    {
+        $tenant = DB::connection('central')->table('tenants')->where('subdomain', $subdomain)->first();
+
+        if (!$tenant) {
+            throw new \RuntimeException('Tenant not found.');
+        }
+
+        $isolationEnabled = (bool) config('tenancy.database_isolation_enabled', false);
+        $uuid = $tenant->database_name;
+
+        if ($isolationEnabled && $uuid) {
+            $centralConfig = config('database.connections.central');
+            $tenantConfig = $centralConfig;
+            $tenantConfig['database'] = $uuid;
+            $tenantConfig['url'] = null;
+            config(['database.connections.tenant' => $tenantConfig]);
+
+            DB::purge('tenant');
+            DB::reconnect('tenant');
+
+            return ['connection' => 'tenant', 'tenant' => $tenant, 'is_isolated' => true];
+        }
+
+        return ['connection' => config('database.default', 'mysql'), 'tenant' => $tenant, 'is_isolated' => false];
+    }
+
+    /**
      * Show detailed tenant overview.
      */
     public function show($subdomain)
@@ -71,6 +100,7 @@ class PortalTenantController extends Controller
 
         $userSummary = [
             'total_count' => 0,
+            'active_count' => 0,
             'recent' => [],
         ];
 
@@ -106,24 +136,16 @@ class PortalTenantController extends Controller
                         ->get(['name', 'email', 'phone_number', 'joined_date', 'is_active'])
                         ->toArray();
 
-                    // Calculate Member Summary enhancements
-                    $memberSummary['new_this_month'] = DB::connection('tenant')->table('members')
-                        ->where('created_at', '>=', now()->startOfMonth())
-                        ->count();
-
-                    $totalMembers = $memberSummary['total_count'];
-                    $activeMembers = DB::connection('tenant')->table('members')->where('is_active', true)->count();
-                    $memberSummary['retention_rate'] = $totalMembers > 0 ? round(($activeMembers / $totalMembers) * 100, 1) : 100.0;
-
-                    $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+                    // Calculate Member Registration Trend for last 12 months
+                    $twelveMonthsAgo = now()->subMonths(11)->startOfMonth();
                     $registrations = DB::connection('tenant')->table('members')
-                        ->where('created_at', '>=', $sixMonthsAgo)
+                        ->where('created_at', '>=', $twelveMonthsAgo)
                         ->pluck('created_at')
                         ->map(fn ($date) => \Carbon\Carbon::parse($date));
 
                     $trends = [];
 
-                    for ($i = 5; $i >= 0; $i--) {
+                    for ($i = 11; $i >= 0; $i--) {
                         $monthDate = now()->subMonths($i);
                         $monthKey = $monthDate->format('Y-m');
                         $monthLabel = $monthDate->format('M');
@@ -144,71 +166,13 @@ class PortalTenantController extends Controller
 
                 if ($usersExists) {
                     $userSummary['total_count'] = DB::connection('tenant')->table('users')->count();
+                    $userSummary['active_count'] = DB::connection('tenant')->table('users')->where('is_active', true)->count();
                     $userSummary['recent'] = DB::connection('tenant')->table('users')
                         ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
                         ->orderBy('users.created_at', 'desc')
                         ->limit(5)
                         ->get(['users.name', 'users.email', 'roles.name as role_name', 'users.is_active'])
                         ->toArray();
-
-                    // Calculate User Summary enhancements
-                    $trainersCount = 0;
-                    $otherCount = 0;
-                    $rolesList = DB::connection('tenant')->table('users')
-                        ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
-                        ->get(['roles.slug', 'roles.name']);
-
-                    foreach ($rolesList as $r) {
-                        $slug = strtolower($r->slug ?? '');
-                        $name = strtolower($r->name ?? '');
-
-                        if (str_contains($slug, 'trainer') || str_contains($slug, 'coach') ||
-                            str_contains($name, 'trainer') || str_contains($name, 'coach')) {
-                            $trainersCount++;
-                        } else {
-                            $otherCount++;
-                        }
-                    }
-                    $totalStaff = $trainersCount + $otherCount;
-                    $userSummary['staff_split'] = [
-                        'trainers_percentage' => $totalStaff > 0 ? round(($trainersCount / $totalStaff) * 100, 1) : 0.0,
-                        'trainers_count' => $trainersCount,
-                        'other_count' => $otherCount,
-                    ];
-
-                    $activeStaff = DB::connection('tenant')->table('users')->where('is_active', true)->count();
-                    $verifiedStaff = DB::connection('tenant')->table('users')->where('is_active', true)->whereNotNull('email_verified_at')->count();
-                    $userSummary['access_security'] = $activeStaff > 0 ? round(($verifiedStaff / $activeStaff) * 100, 1) : 100.0;
-
-                    // Logins activity logs over last 7 days
-                    $logins = collect();
-                    $auditLogsExists = DB::connection('tenant')->selectOne(
-                        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'audit_logs'",
-                        [$uuid],
-                    );
-
-                    if ($auditLogsExists) {
-                        $sevenDaysAgo = now()->subDays(6)->startOfDay();
-                        $logins = DB::connection('tenant')->table('audit_logs')
-                            ->where('action', 'user.login')
-                            ->where('created_at', '>=', $sevenDaysAgo)
-                            ->pluck('created_at')
-                            ->map(fn ($date) => \Carbon\Carbon::parse($date));
-                    }
-
-                    $activity = [];
-
-                    for ($i = 6; $i >= 0; $i--) {
-                        $dayDate = now()->subDays($i);
-                        $dayKey = $dayDate->format('Y-m-d');
-                        $dayLabel = $dayDate->format('D');
-                        $count = $logins->filter(fn ($date) => $date->format('Y-m-d') === $dayKey)->count();
-                        $activity[] = [
-                            'label' => $dayLabel,
-                            'count' => $count,
-                        ];
-                    }
-                    $userSummary['activity'] = $activity;
                 }
             } else {
                 // Query default connection using tenant domain mapping
@@ -229,24 +193,15 @@ class PortalTenantController extends Controller
                         ->get(['name', 'email', 'phone_number', 'joined_date', 'is_active'])
                         ->toArray();
 
-                    // Calculate Member Summary enhancements
-                    $memberSummary['new_this_month'] = DB::table('members')->where('tenant_id', $localTenant->id)
-                        ->where('created_at', '>=', now()->startOfMonth())
-                        ->count();
-
-                    $totalMembers = $memberSummary['total_count'];
-                    $activeMembers = DB::table('members')->where('tenant_id', $localTenant->id)->where('is_active', true)->count();
-                    $memberSummary['retention_rate'] = $totalMembers > 0 ? round(($activeMembers / $totalMembers) * 100, 1) : 100.0;
-
-                    $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+                    $twelveMonthsAgo = now()->subMonths(11)->startOfMonth();
                     $registrations = DB::table('members')->where('tenant_id', $localTenant->id)
-                        ->where('created_at', '>=', $sixMonthsAgo)
+                        ->where('created_at', '>=', $twelveMonthsAgo)
                         ->pluck('created_at')
                         ->map(fn ($date) => \Carbon\Carbon::parse($date));
 
                     $trends = [];
 
-                    for ($i = 5; $i >= 0; $i--) {
+                    for ($i = 11; $i >= 0; $i--) {
                         $monthDate = now()->subMonths($i);
                         $monthKey = $monthDate->format('Y-m');
                         $monthLabel = $monthDate->format('M');
@@ -259,6 +214,7 @@ class PortalTenantController extends Controller
                     $memberSummary['trends'] = $trends;
 
                     $userSummary['total_count'] = DB::table('users')->where('tenant_id', $localTenant->id)->count();
+                    $userSummary['active_count'] = DB::table('users')->where('tenant_id', $localTenant->id)->where('is_active', true)->count();
                     $userSummary['recent'] = DB::table('users')
                         ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
                         ->where('users.tenant_id', $localTenant->id)
@@ -266,60 +222,6 @@ class PortalTenantController extends Controller
                         ->limit(5)
                         ->get(['users.name', 'users.email', 'roles.name as role_name', 'users.is_active'])
                         ->toArray();
-
-                    // Calculate User Summary enhancements
-                    $trainersCount = 0;
-                    $otherCount = 0;
-                    $rolesList = DB::table('users')->where('users.tenant_id', $localTenant->id)
-                        ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
-                        ->get(['roles.slug', 'roles.name']);
-
-                    foreach ($rolesList as $r) {
-                        $slug = strtolower($r->slug ?? '');
-                        $name = strtolower($r->name ?? '');
-
-                        if (str_contains($slug, 'trainer') || str_contains($slug, 'coach') ||
-                            str_contains($name, 'trainer') || str_contains($name, 'coach')) {
-                            $trainersCount++;
-                        } else {
-                            $otherCount++;
-                        }
-                    }
-                    $totalStaff = $trainersCount + $otherCount;
-                    $userSummary['staff_split'] = [
-                        'trainers_percentage' => $totalStaff > 0 ? round(($trainersCount / $totalStaff) * 100, 1) : 0.0,
-                        'trainers_count' => $trainersCount,
-                        'other_count' => $otherCount,
-                    ];
-
-                    $activeStaff = DB::table('users')->where('tenant_id', $localTenant->id)->where('is_active', true)->count();
-                    $verifiedStaff = DB::table('users')->where('tenant_id', $localTenant->id)->where('is_active', true)->whereNotNull('email_verified_at')->count();
-                    $userSummary['access_security'] = $activeStaff > 0 ? round(($verifiedStaff / $activeStaff) * 100, 1) : 100.0;
-
-                    $logins = collect();
-
-                    if (Schema::hasTable('audit_logs')) {
-                        $sevenDaysAgo = now()->subDays(6)->startOfDay();
-                        $logins = DB::table('audit_logs')->where('tenant_id', $localTenant->id)
-                            ->where('action', 'user.login')
-                            ->where('created_at', '>=', $sevenDaysAgo)
-                            ->pluck('created_at')
-                            ->map(fn ($date) => \Carbon\Carbon::parse($date));
-                    }
-
-                    $activity = [];
-
-                    for ($i = 6; $i >= 0; $i--) {
-                        $dayDate = now()->subDays($i);
-                        $dayKey = $dayDate->format('Y-m-d');
-                        $dayLabel = $dayDate->format('D');
-                        $count = $logins->filter(fn ($date) => $date->format('Y-m-d') === $dayKey)->count();
-                        $activity[] = [
-                            'label' => $dayLabel,
-                            'count' => $count,
-                        ];
-                    }
-                    $userSummary['activity'] = $activity;
                 }
             }
         } catch (\Throwable $e) {
@@ -333,6 +235,207 @@ class PortalTenantController extends Controller
             'members' => $memberSummary,
             'users' => $userSummary,
         ]);
+    }
+
+    /**
+     * Get paginated tenant users and available roles.
+     */
+    public function getTenantUsers(Request $request, $subdomain)
+    {
+        $info = $this->setupTenantConnection($subdomain);
+        $conn = $info['connection'];
+        $localTenant = $info['tenant'];
+
+        try {
+            $query = DB::connection($conn)->table('users')
+                ->leftJoin('roles', 'users.role_id', '=', 'roles.id');
+
+            if (!$info['is_isolated'] && $localTenant) {
+                $query->where('users.tenant_id', $localTenant->id);
+            }
+
+            if ($search = $request->query('search')) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('users.name', 'like', "%{$search}%")
+                        ->orWhere('users.email', 'like', "%{$search}%");
+                });
+            }
+
+            $users = $query->orderBy('users.created_at', 'desc')
+                ->select([
+                    'users.id',
+                    'users.name',
+                    'users.email',
+                    'users.role_id',
+                    'users.is_active',
+                    'users.created_at',
+                    'roles.name as role_name',
+                ])
+                ->paginate(10);
+
+            $roles = DB::connection($conn)->table('roles')->get(['id', 'name', 'slug']);
+
+            return response()->json([
+                'users' => $users,
+                'roles' => $roles,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to fetch tenant users: ' . $e->getMessage()], 500);
+        } finally {
+            DB::purge('tenant');
+        }
+    }
+
+    /**
+     * Store new user for tenant.
+     */
+    public function storeTenantUser(Request $request, $subdomain)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'password' => 'required|string|min:6',
+            'role_id' => 'required|integer',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $info = $this->setupTenantConnection($subdomain);
+        $conn = $info['connection'];
+        $localTenant = $info['tenant'];
+
+        try {
+            $emailExistsQuery = DB::connection($conn)->table('users')->where('email', $validated['email']);
+
+            if (!$info['is_isolated'] && $localTenant) {
+                $emailExistsQuery->where('tenant_id', $localTenant->id);
+            }
+
+            if ($emailExistsQuery->exists()) {
+                return response()->json([
+                    'message' => 'The email has already been taken in this tenant account.',
+                    'errors' => ['email' => ['This email is already in use.']],
+                ], 422);
+            }
+
+            $insertData = [
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+                'role_id' => $validated['role_id'],
+                'is_active' => $validated['is_active'] ?? true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            if (!$info['is_isolated'] && $localTenant) {
+                $insertData['tenant_id'] = $localTenant->id;
+            }
+
+            DB::connection($conn)->table('users')->insert($insertData);
+
+            return response()->json(['message' => 'Tenant user created successfully.'], 201);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to create tenant user: ' . $e->getMessage()], 500);
+        } finally {
+            DB::purge('tenant');
+        }
+    }
+
+    /**
+     * Update existing user for tenant.
+     */
+    public function updateTenantUser(Request $request, $subdomain, $userId)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'role_id' => 'required|integer',
+            'is_active' => 'nullable|boolean',
+            'password' => 'nullable|string|min:6',
+        ]);
+
+        $info = $this->setupTenantConnection($subdomain);
+        $conn = $info['connection'];
+        $localTenant = $info['tenant'];
+
+        try {
+            $query = DB::connection($conn)->table('users')->where('id', $userId);
+
+            if (!$info['is_isolated'] && $localTenant) {
+                $query->where('tenant_id', $localTenant->id);
+            }
+            $user = $query->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found.'], 404);
+            }
+
+            $emailExistsQuery = DB::connection($conn)->table('users')
+                ->where('email', $validated['email'])
+                ->where('id', '!=', $userId);
+
+            if (!$info['is_isolated'] && $localTenant) {
+                $emailExistsQuery->where('tenant_id', $localTenant->id);
+            }
+
+            if ($emailExistsQuery->exists()) {
+                return response()->json([
+                    'message' => 'The email has already been taken in this tenant account.',
+                    'errors' => ['email' => ['This email is already in use.']],
+                ], 422);
+            }
+
+            $updateData = [
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'role_id' => $validated['role_id'],
+                'is_active' => isset($validated['is_active']) ? (bool) $validated['is_active'] : $user->is_active,
+                'updated_at' => now(),
+            ];
+
+            if (!empty($validated['password'])) {
+                $updateData['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
+            }
+
+            DB::connection($conn)->table('users')->where('id', $userId)->update($updateData);
+
+            return response()->json(['message' => 'Tenant user updated successfully.']);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to update tenant user: ' . $e->getMessage()], 500);
+        } finally {
+            DB::purge('tenant');
+        }
+    }
+
+    /**
+     * Delete user for tenant.
+     */
+    public function deleteTenantUser(Request $request, $subdomain, $userId)
+    {
+        $info = $this->setupTenantConnection($subdomain);
+        $conn = $info['connection'];
+        $localTenant = $info['tenant'];
+
+        try {
+            $query = DB::connection($conn)->table('users')->where('id', $userId);
+
+            if (!$info['is_isolated'] && $localTenant) {
+                $query->where('tenant_id', $localTenant->id);
+            }
+            $user = $query->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found.'], 404);
+            }
+
+            DB::connection($conn)->table('users')->where('id', $userId)->delete();
+
+            return response()->json(['message' => 'Tenant user deleted successfully.']);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to delete tenant user: ' . $e->getMessage()], 500);
+        } finally {
+            DB::purge('tenant');
+        }
     }
 
     /**
