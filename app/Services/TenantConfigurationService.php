@@ -30,10 +30,6 @@ class TenantConfigurationService
         'notifications.sms.user_id' => ['SMS User ID',                  ''],
         'notifications.sms.api_key' => ['SMS API Key',                  ''],
         'notifications.sms.sender_id' => ['SMS Sender ID',                ''],
-        'notifications.whatsapp.enabled' => ['WhatsApp Notifications',      '0'],
-        'notifications.whatsapp.api_key' => ['WhatsApp API Key',            ''],
-        'notifications.whatsapp.session_id' => ['WhatsApp Session ID',      ''],
-        'notifications.whatsapp.base_url' => ['WhatsApp Base URL',          ''],
 
         // General display preferences
         'general.date_format' => ['Date Format', DateFormat::DayMonYear->value],
@@ -79,10 +75,7 @@ class TenantConfigurationService
 
         return array_values(array_filter($requested, function (string $channel) use ($cfg, $map): bool {
             if ($channel === 'sms') {
-                $smsEnabled = ($cfg['notifications.sms.enabled'] ?? '0') === '1';
-                $whatsappEnabled = ($cfg['notifications.whatsapp.enabled'] ?? '0') === '1';
-
-                return $smsEnabled || $whatsappEnabled;
+                return ($cfg['notifications.sms.enabled'] ?? '0') === '1';
             }
 
             // If the key isn't in the map (unknown channel), allow it through

@@ -64,7 +64,4 @@ return [
         'timeout' => (int) env('OPENWA_TIMEOUT', 15),
     ],
 
-
-
 ];
-

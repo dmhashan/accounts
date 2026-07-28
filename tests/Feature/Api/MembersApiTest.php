@@ -351,17 +351,6 @@ class MembersApiTest extends ApiRouteTestCase
             'notifications.inapp.enabled' => '1',
             'general.member_notifications' => json_encode([
                 'member_login_url' => 'https://members.test/login',
-                'whatsapp_group_url' => 'https://chat.whatsapp.com/general',
-                'whatsapp_groups' => [
-                    [
-                        'name' => 'Specific Members',
-                        'url' => 'https://chat.whatsapp.com/female',
-                        'rules' => [
-                            ['field' => 'gender', 'operator' => 'equals', 'value' => 'male'],
-                            ['boolean' => 'or', 'field' => 'email', 'operator' => 'equals', 'value' => 'nimali@example.com'],
-                        ],
-                    ],
-                ],
             ]),
         ]);
 
@@ -378,7 +367,7 @@ class MembersApiTest extends ApiRouteTestCase
             ->first();
 
         $this->assertNotNull($notification);
-        $this->assertSame("Hi Nimali Perera, welcome to Test Gym\n\nLogin: https://members.test/login\n\nWhatsApp: https://chat.whatsapp.com/general, https://chat.whatsapp.com/female\nLet's begin your fitness journey!", $notification->body);
+        $this->assertSame("Hi Nimali Perera, welcome to Test Gym\n\nLogin: https://members.test/login\nLet's begin your fitness journey!", $notification->body);
     }
 
     public function testMemberMilestoneServiceSendsBirthdayNotification(): void

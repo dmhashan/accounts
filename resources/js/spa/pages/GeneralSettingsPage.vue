@@ -361,9 +361,27 @@ const timeFormatOptions = ref([]);
 const memberNotificationsSaving = ref(false);
 const memberReachableConfig = ref({
     member_login_url: '',
-    whatsapp_group_url: '',
-    whatsapp_groups: [],
 });
+
+function parseMemberReachableConfig(raw) {
+    try {
+        const config = JSON.parse(raw || '{}') || {};
+
+        return {
+            member_login_url: config.member_login_url || '',
+        };
+    } catch {
+        return {
+            member_login_url: '',
+        };
+    }
+}
+
+function serializeMemberNotificationConfig() {
+    return JSON.stringify({
+        member_login_url: memberReachableConfig.value.member_login_url || '',
+    });
+}
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const formatPreview = computed(() => {
@@ -502,34 +520,6 @@ async function saveMemberNotifications() {
     } finally {
         memberNotificationsSaving.value = false;
     }
-}
-
-function parseMemberReachableConfig(raw) {
-    try {
-        const config = JSON.parse(raw || '{}') || {};
-
-        return {
-            member_login_url: config.member_login_url || '',
-            whatsapp_group_url: config.whatsapp_group_url || '',
-            whatsapp_groups: Array.isArray(config.whatsapp_groups) ? config.whatsapp_groups : [],
-        };
-    } catch {
-        return {
-            member_login_url: '',
-            whatsapp_group_url: '',
-            whatsapp_groups: [],
-        };
-    }
-}
-
-function serializeMemberNotificationConfig() {
-    return JSON.stringify({
-        member_login_url: memberReachableConfig.value.member_login_url || '',
-        whatsapp_group_url: memberReachableConfig.value.whatsapp_group_url || '',
-        whatsapp_groups: Array.isArray(memberReachableConfig.value.whatsapp_groups)
-            ? memberReachableConfig.value.whatsapp_groups
-            : [],
-    });
 }
 
 async function submit() {

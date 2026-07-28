@@ -190,7 +190,7 @@ class AutomatedMemberNotificationService
     }
 
     /**
-     * @return array{member_login_url?: string, whatsapp_group_url?: string, whatsapp_groups?: array<int, mixed>}
+     * @return array{member_login_url?: string}
      */
     public function notificationConfig(int $tenantId): array
     {
@@ -213,45 +213,9 @@ class AutomatedMemberNotificationService
             $lines[] = 'Login: ' . $loginUrl;
         }
 
-        $whatsappUrls = $this->applicableWhatsappUrls($member, $config);
-
-        if ($whatsappUrls !== []) {
-            $lines[] = '';
-            $lines[] = 'WhatsApp: ' . implode(', ', $whatsappUrls);
-        }
-
         $lines[] = "Let's begin your fitness journey!";
 
         return implode("\n", $lines);
-    }
-
-    /**
-     * @return string[]
-     */
-    private function applicableWhatsappUrls(Member $member, array $config): array
-    {
-        $urls = [];
-        $defaultUrl = trim((string) ($config['whatsapp_group_url'] ?? ''));
-
-        if ($defaultUrl !== '') {
-            $urls[] = $defaultUrl;
-        }
-
-        foreach (($config['whatsapp_groups'] ?? []) as $group) {
-            if (!is_array($group)) {
-                continue;
-            }
-
-            $url = trim((string) ($group['url'] ?? ''));
-
-            if ($url === '' || !$this->matchesRules($member, $group['rules'] ?? [])) {
-                continue;
-            }
-
-            $urls[] = $url;
-        }
-
-        return array_values(array_unique($urls));
     }
 
     private function matchesRules(Member $member, mixed $rules): bool

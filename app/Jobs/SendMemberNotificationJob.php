@@ -67,43 +67,17 @@ class SendMemberNotificationJob implements ShouldQueue
         }
 
         $cfg = $tenantConfig->all($this->tenantId);
-        $whatsappEnabled = ($cfg['notifications.whatsapp.enabled'] ?? '0') === '1';
         $smsEnabled = ($cfg['notifications.sms.enabled'] ?? '0') === '1';
-
-        $allowWhatsapp = $whatsappEnabled && (bool) $member->allow_whatsapp;
         $allowSms = $smsEnabled && (bool) $member->allow_sms;
-        $whatsappNumber = $member->whatsapp_number ?: $phone;
 
-        Log::debug('SendMemberNotificationJob: Evaluating channels for recipient.', [
+        Log::debug('SendMemberNotificationJob: Evaluating SMS channel for recipient.', [
             'member_id' => $member->id,
-            'whatsappEnabled' => $whatsappEnabled,
             'smsEnabled' => $smsEnabled,
-            'allowWhatsapp' => (bool) $member->allow_whatsapp,
             'allowSms' => (bool) $member->allow_sms,
         ]);
 
-        if ($allowWhatsapp) {
-            Log::debug('SendMemberNotificationJob: Attempting WhatsApp message.', [
-                'member_id' => $member->id,
-                'whatsapp_number' => $whatsappNumber,
-            ]);
-            $success = $smsService->sendWhatsappOnly($whatsappNumber, $this->body, $this->tenantId);
-
-            if ($success) {
-                Log::info('SendMemberNotificationJob: WhatsApp message sent successfully.', [
-                    'member_id' => $member->id,
-                ]);
-
-                return;
-            }
-
-            Log::warning('SendMemberNotificationJob: WhatsApp message failed; falling back to SMS if allowed.', [
-                'member_id' => $member->id,
-            ]);
-        }
-
         if ($allowSms) {
-            Log::debug('SendMemberNotificationJob: Attempting fallback/direct SMS message.', [
+            Log::debug('SendMemberNotificationJob: Attempting SMS message.', [
                 'member_id' => $member->id,
                 'phone_number' => $phone,
             ]);

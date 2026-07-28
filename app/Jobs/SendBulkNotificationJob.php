@@ -120,72 +120,42 @@ class SendBulkNotificationJob implements ShouldQueue
     {
         $tenantConfig = app(TenantConfigurationService::class);
         $cfg = $tenantConfig->all($tenantId);
-        $whatsappEnabled = ($cfg['notifications.whatsapp.enabled'] ?? '0') === '1';
         $smsEnabled = ($cfg['notifications.sms.enabled'] ?? '0') === '1';
 
         Log::debug('SendBulkNotificationJob: Initializing sendSmsInChunks.', [
             'tenant_id' => $tenantId,
-            'whatsappEnabled' => $whatsappEnabled,
             'smsEnabled' => $smsEnabled,
         ]);
+
+        if (!$smsEnabled) {
+            return;
+        }
 
         $notification->recipients()
             ->with('member')
             ->whereNotNull('phone_number')
             ->where('phone_number', '!=', '')
             ->orderBy('id')
-            ->chunkById(500, function ($recipients) use ($notification, $smsService, $tenantId, $whatsappEnabled, $smsEnabled): void {
+            ->chunkById(500, function ($recipients) use ($notification, $smsService, $tenantId): void {
                 $smsContacts = [];
-                $whatsappContacts = [];
 
                 foreach ($recipients as $recipient) {
                     $member = $recipient->member;
                     $phone = $recipient->phone_number;
 
-                    $allowWhatsapp = $whatsappEnabled && ($member ? (bool) $member->allow_whatsapp : true);
-                    $allowSms = $smsEnabled && ($member ? (bool) $member->allow_sms : true);
-                    $whatsappNumber = ($member && $member->whatsapp_number) ? $member->whatsapp_number : $phone;
+                    $allowSms = $member ? (bool) $member->allow_sms : true;
 
-                    if ($allowWhatsapp) {
-                        $whatsappContacts[] = [
-                            'whatsapp_number' => $whatsappNumber,
-                            'phone_number' => $allowSms ? $phone : null,
-                        ];
-                    } elseif ($allowSms) {
+                    if ($allowSms) {
                         $smsContacts[] = $phone;
                     }
                 }
 
                 Log::debug('SendBulkNotificationJob: Chunk categorized.', [
-                    'whatsappContactsCount' => count($whatsappContacts),
                     'smsContactsCount' => count($smsContacts),
                 ]);
 
-                // Send WhatsApp first, and fallback to SMS for failed ones
-                foreach ($whatsappContacts as $contactInfo) {
-                    Log::debug('SendBulkNotificationJob: Attempting WhatsApp send for recipient.', [
-                        'whatsapp_number' => $contactInfo['whatsapp_number'],
-                    ]);
-                    $success = $smsService->sendWhatsappOnly($contactInfo['whatsapp_number'], $notification->message, $tenantId);
-
-                    if (!$success) {
-                        Log::warning('SendBulkNotificationJob: WhatsApp send failed for recipient.', [
-                            'whatsapp_number' => $contactInfo['whatsapp_number'],
-                            'hasSmsFallback' => (bool) $contactInfo['phone_number'],
-                        ]);
-
-                        if ($contactInfo['phone_number']) {
-                            $smsContacts[] = $contactInfo['phone_number'];
-                        }
-                    } else {
-                        Log::info('SendBulkNotificationJob: WhatsApp send succeeded for recipient.', [
-                            'whatsapp_number' => $contactInfo['whatsapp_number'],
-                        ]);
-                    }
-                }
-
                 if ($smsContacts !== []) {
-                    Log::debug('SendBulkNotificationJob: Dispatching fallback/direct bulk SMS.', [
+                    Log::debug('SendBulkNotificationJob: Dispatching bulk SMS.', [
                         'contactsCount' => count($smsContacts),
                     ]);
                     $smsService->sendBulkSmsOnly($smsContacts, $notification->message, $tenantId);

@@ -20,7 +20,6 @@ class SmsService
 
     public function __construct(
         private readonly TenantConfigurationService $tenantConfig,
-        private readonly WhatsappService $whatsappService,
     ) {
         $this->envUserId = config('services.smslenz.user_id');
         $this->envApiKey = config('services.smslenz.api_key');
@@ -28,41 +27,19 @@ class SmsService
     }
 
     /**
-     * Send a notification trying WhatsApp first, and falling back to SMS if it fails.
+     * Send a notification via SMS.
      */
     public function send(string $contact, string $message, ?int $tenantId = null): bool
     {
-        if ($this->sendWhatsappOnly($contact, $message, $tenantId)) {
-            return true;
-        }
-
         return $this->sendSmsOnly($contact, $message, $tenantId);
     }
 
     /**
-     * Send bulk notifications trying WhatsApp first, and falling back to SMS for failed ones.
+     * Send bulk notifications via SMS.
      */
     public function sendBulk(array $contacts, string $message, ?int $tenantId = null): array
     {
-        if (empty($contacts)) {
-            return ['success' => false, 'campaign_id' => null];
-        }
-
-        $result = $this->whatsappService->sendBulk($contacts, $message, $tenantId);
-
-        if (!empty($result['failed'])) {
-            return $this->sendBulkSmsOnly($result['failed'], $message, $tenantId);
-        }
-
-        return ['success' => true, 'campaign_id' => null];
-    }
-
-    /**
-     * Send message via WhatsApp only.
-     */
-    public function sendWhatsappOnly(string $contact, string $message, ?int $tenantId = null): bool
-    {
-        return $this->whatsappService->send($contact, $message, $tenantId);
+        return $this->sendBulkSmsOnly($contacts, $message, $tenantId);
     }
 
     /**

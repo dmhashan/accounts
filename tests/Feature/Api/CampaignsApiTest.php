@@ -165,10 +165,6 @@ class CampaignsApiTest extends ApiRouteTestCase
                     $row['constant_value'] = '1';
                 }
 
-                if ($row['field'] === 'allow_whatsapp') {
-                    $row['constant_value'] = '1';
-                }
-
                 return $row;
             })
             ->values()

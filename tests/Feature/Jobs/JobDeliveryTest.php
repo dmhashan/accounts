@@ -36,15 +36,10 @@ class JobDeliveryTest extends ApiRouteTestCase
         $member = $this->createMember();
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.sms.enabled' => '1',
-            'notifications.whatsapp.enabled' => '1',
             'notifications.email.enabled' => '1',
             'notifications.inapp.enabled' => '1',
         ]);
         $sms = \Mockery::mock(SmsService::class);
-        $sms->shouldReceive('sendWhatsappOnly')
-            ->once()
-            ->with($member->phone_number, 'Delivery body', $this->tenant->id)
-            ->andReturnFalse();
         $sms->shouldReceive('sendSmsOnly')
             ->once()
             ->with($member->phone_number, 'Delivery body', $this->tenant->id)
@@ -76,7 +71,6 @@ class JobDeliveryTest extends ApiRouteTestCase
         $creator = $this->createUser();
         app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
             'notifications.sms.enabled' => '1',
-            'notifications.whatsapp.enabled' => '1',
             'notifications.email.enabled' => '1',
             'notifications.inapp.enabled' => '1',
         ]);
@@ -92,10 +86,6 @@ class JobDeliveryTest extends ApiRouteTestCase
             'phone_number' => $member->phone_number,
         ]);
         $sms = \Mockery::mock(SmsService::class);
-        $sms->shouldReceive('sendWhatsappOnly')
-            ->once()
-            ->with($member->phone_number, 'Bulk body', $this->tenant->id)
-            ->andReturnFalse();
         $sms->shouldReceive('sendBulkSmsOnly')
             ->once()
             ->with([$member->phone_number], 'Bulk body', $this->tenant->id)
