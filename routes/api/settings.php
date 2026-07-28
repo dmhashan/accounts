@@ -21,6 +21,11 @@ Route::middleware(['auth', 'permission:settings.configuration,settings.manage'])
     Route::get('/settings/configuration', [ConfigurationApiController::class, 'index']);
     Route::get('/settings/configuration/format-options', [ConfigurationApiController::class, 'formatOptions']);
     Route::put('/settings/configuration', [ConfigurationApiController::class, 'update']);
+
+    // OpenWA Integration
+    Route::post('/settings/openwa/test-connection', [App\Http\Controllers\Api\OpenWaApiController::class, 'testConnection']);
+    Route::post('/settings/openwa/groups/compare', [App\Http\Controllers\Api\OpenWaApiController::class, 'compareGroup']);
+    Route::post('/settings/openwa/groups/sync', [App\Http\Controllers\Api\OpenWaApiController::class, 'syncGroup']);
 });
 
 Route::middleware(['auth', 'permission:settings.biometric,settings.manage'])->group(function () {

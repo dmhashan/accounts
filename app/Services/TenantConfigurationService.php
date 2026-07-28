@@ -37,6 +37,11 @@ class TenantConfigurationService
         'general.color_theme' => ['Color Theme', 'crimson'],
         'general.color_mode' => ['Default Color Mode', 'system'],
         'general.member_notifications' => ['Member Notification Rules', '{}'],
+        'general.openwa_enabled' => ['OpenWA Integration Enabled', '0'],
+        'general.openwa_url' => ['OpenWA Server URL', ''],
+        'general.openwa_api_key' => ['OpenWA API Key', ''],
+        'general.openwa_session_id' => ['OpenWA Session ID', ''],
+        'general.openwa_groups' => ['OpenWA Rule-Based Groups', '[]'],
         self::BODY_MEASUREMENT_FIELDS_KEY => ['Body Measurement Fields', self::BODY_MEASUREMENT_FIELDS_DEFAULT_JSON],
 
         // Biometric device integration
