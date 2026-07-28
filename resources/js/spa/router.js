@@ -30,6 +30,7 @@ const RealProfitReportPage = () => import('./pages/RealProfitReportPage.vue');
 const MemberAnalysisReportPage = () => import('./pages/reports/MemberAnalysisReport.vue');
 const SettingsPage = () => import('./pages/SettingsPage.vue');
 const GeneralSettingsPage = () => import('./pages/GeneralSettingsPage.vue');
+const MemberReachableSettingsPage = () => import('./pages/MemberReachableSettingsPage.vue');
 const LegacyToolsPage = () => import('./pages/LegacyToolsPage.vue');
 const ConfigurationPage = () => import('./pages/ConfigurationPage.vue');
 const BiometricSettingsPage = () => import('./pages/BiometricSettingsPage.vue');
@@ -138,6 +139,7 @@ const routes = [
     { path: '/settings', component: SettingsPage, meta: { title: 'Settings' } },
     { path: '/settings/users', component: SettingsPage, meta: { title: 'Users' } },
     { path: '/settings/general', component: GeneralSettingsPage, meta: { title: 'General Settings' } },
+    { path: '/settings/member-reachable', component: MemberReachableSettingsPage, meta: { title: 'Member Reachable Configurations' } },
     { path: '/settings/roles', component: SettingsPage, meta: { title: 'Roles Settings' } },
     { path: '/settings/accounts', component: AccountsPage, meta: { title: 'Accounts' } },
     { path: '/settings/accounts/new', component: AccountFormPage, meta: { title: 'New Account' } },

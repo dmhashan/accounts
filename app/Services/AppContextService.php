@@ -96,6 +96,7 @@ class AppContextService
 
                 'settings' => $this->hasAnyPermission($user, ['settings.manage', 'settings.configuration', 'settings.biometric', 'settings.legacy_tools']),
                 'settingsGeneral' => $this->hasAnyPermission($user, ['settings.manage']),
+                'settingsMemberReachable' => $this->hasAnyPermission($user, ['settings.manage']),
                 'settingsConfiguration' => $this->hasAnyPermission($user, ['settings.configuration', 'settings.manage']),
                 'settingsBiometric' => $this->hasAnyPermission($user, ['settings.biometric', 'settings.manage']),
                 'settingsLegacyTools' => $this->hasAnyPermission($user, ['settings.legacy_tools', 'settings.manage']),
