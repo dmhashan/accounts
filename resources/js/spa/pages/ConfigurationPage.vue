@@ -444,6 +444,8 @@ const bodyMeasurementFields = ref([]);
 
 const memberReachableConfig = ref({
     member_login_url: '',
+    whatsapp_group_url: '',
+    whatsapp_groups: [],
 });
 
 function toggle(key) {
@@ -552,11 +554,15 @@ function parseMemberReachableConfig(raw) {
         const config = JSON.parse(raw || '{}') || {};
 
         return {
-            member_login_url: config.member_login_url || '',
+            member_login_url: config.whatsapp_group_url ? (config.member_login_url || '') : (config.member_login_url || ''),
+            whatsapp_group_url: config.whatsapp_group_url || '',
+            whatsapp_groups: Array.isArray(config.whatsapp_groups) ? config.whatsapp_groups : [],
         };
     } catch {
         return {
             member_login_url: '',
+            whatsapp_group_url: '',
+            whatsapp_groups: [],
         };
     }
 }
@@ -564,6 +570,10 @@ function parseMemberReachableConfig(raw) {
 function serializeMemberNotificationConfig() {
     return JSON.stringify({
         member_login_url: memberReachableConfig.value.member_login_url || '',
+        whatsapp_group_url: memberReachableConfig.value.whatsapp_group_url || '',
+        whatsapp_groups: Array.isArray(memberReachableConfig.value.whatsapp_groups)
+            ? memberReachableConfig.value.whatsapp_groups
+            : [],
     });
 }
 
