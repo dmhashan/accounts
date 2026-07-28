@@ -427,6 +427,47 @@ class MembersApiTest extends ApiRouteTestCase
         ]);
     }
 
+    public function testRuleBasedWhatsAppGroupMatchingForGenderPlanAndStatusSwitches(): void
+    {
+        $plan = \App\Models\PaymentPlan::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Gold VIP Plan',
+            'duration_value' => 1,
+            'duration_unit' => 'month',
+            'price' => 5000,
+            'is_active' => true,
+        ]);
+
+        $member = $this->createMember(null, [
+            'gender' => 'female',
+            'payment_plan_id' => $plan->id,
+            'is_active' => true,
+            'is_verified' => false,
+            'is_temp' => false,
+        ]);
+
+        $service = app(AutomatedMemberNotificationService::class);
+        $reflection = new \ReflectionClass($service);
+        $method = $reflection->getMethod('matchesRules');
+        $method->setAccessible(true);
+
+        // Rule 1: Gender = female (dropdown value)
+        $rulesGender = [['field' => 'gender', 'operator' => 'equals', 'value' => 'female']];
+        $this->assertTrue($method->invoke($service, $member, $rulesGender));
+
+        // Rule 2: Payment Plan = plan id (dropdown value)
+        $rulesPlan = [['field' => 'payment_plan_id', 'operator' => 'equals', 'value' => (string) $plan->id]];
+        $this->assertTrue($method->invoke($service, $member, $rulesPlan));
+
+        // Rule 3: Active status switch = '1' (active)
+        $rulesActive = [['field' => 'is_active', 'operator' => 'equals', 'value' => '1']];
+        $this->assertTrue($method->invoke($service, $member, $rulesActive));
+
+        // Rule 4: Verified status switch = '0' (unverified)
+        $rulesVerified = [['field' => 'is_verified', 'operator' => 'equals', 'value' => '0']];
+        $this->assertTrue($method->invoke($service, $member, $rulesVerified));
+    }
+
     public function testMembersUpdateRouteUpdatesMember(): void
     {
         $this->actingAsUser(['users.view', 'users.edit']);

@@ -253,13 +253,22 @@ class AutomatedMemberNotificationService
 
     private function matchesRule(mixed $actual, string $operator, mixed $expected): bool
     {
-        $actualValue = strtolower(trim((string) $actual));
+        if (is_bool($actual)) {
+            $actualValue = $actual ? '1' : '0';
+            $expectedBool = filter_var($expected, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $expectedValue = $expectedBool !== null
+                ? ($expectedBool ? '1' : '0')
+                : (in_array(strtolower(trim((string) $expected)), ['1', 'true', 'yes'], true) ? '1' : '0');
+        } else {
+            $actualValue = strtolower(trim((string) $actual));
+            $expectedValue = strtolower(trim((string) $expected));
+        }
 
         return match ($operator) {
-            'not_equals' => $actualValue !== strtolower(trim((string) $expected)),
+            'not_equals' => $actualValue !== $expectedValue,
             'in' => in_array($actualValue, array_map(fn ($value) => strtolower(trim((string) $value)), (array) $expected), true),
             'not_in' => !in_array($actualValue, array_map(fn ($value) => strtolower(trim((string) $value)), (array) $expected), true),
-            default => $actualValue === strtolower(trim((string) $expected)),
+            default => $actualValue === $expectedValue,
         };
     }
 

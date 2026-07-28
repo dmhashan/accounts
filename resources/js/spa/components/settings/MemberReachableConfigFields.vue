@@ -102,7 +102,7 @@
               <AppFormSelect
                 :id="`member-reachable-rule-field-${rule.id}`"
                 v-model="rule.field"
-                @change="emitChange"
+                @change="onFieldChange(rule)"
               >
                 <option v-for="column in memberColumns" :key="column.value" :value="column.value">
                   {{ column.label }}
@@ -111,11 +111,60 @@
             </AppFormField>
 
             <AppFormField label="Column Value" :for-id="`member-reachable-rule-value-${rule.id}`">
+              <!-- Gender Dropdown -->
+              <AppFormSelect
+                v-if="rule.field === 'gender'"
+                :id="`member-reachable-rule-value-${rule.id}`"
+                v-model="rule.value"
+                @change="emitChange"
+              >
+                <option value="">
+                  Select gender
+                </option>
+                <option value="male">
+                  Male
+                </option>
+                <option value="female">
+                  Female
+                </option>
+                <option value="other">
+                  Other
+                </option>
+              </AppFormSelect>
+
+              <!-- Payment Plan Dropdown -->
+              <AppFormSelect
+                v-else-if="rule.field === 'payment_plan_id'"
+                :id="`member-reachable-rule-value-${rule.id}`"
+                v-model="rule.value"
+                :disabled="loadingPlans"
+                @change="emitChange"
+              >
+                <option value="">
+                  {{ loadingPlans ? 'Loading plans...' : 'Select payment plan' }}
+                </option>
+                <option v-for="plan in paymentPlans" :key="plan.id" :value="String(plan.id)">
+                  {{ plan.name }}
+                </option>
+              </AppFormSelect>
+
+              <!-- Status Switch (Active / Verified / Temp) -->
+              <AppFormSwitch
+                v-else-if="['is_active', 'is_verified', 'is_temp'].includes(rule.field)"
+                :id="`member-reachable-rule-value-${rule.id}`"
+                :model-value="rule.value === '1' || rule.value === 'true' || rule.value === true"
+                :true-label="getSwitchLabels(rule.field).trueLabel"
+                :false-label="getSwitchLabels(rule.field).falseLabel"
+                @update:model-value="val => { rule.value = val ? '1' : '0'; emitChange(); }"
+              />
+
+              <!-- Fallback Text Input -->
               <AppFormInput
+                v-else
                 :id="`member-reachable-rule-value-${rule.id}`"
                 v-model="rule.value"
                 type="text"
-                placeholder="male"
+                placeholder="Enter value"
                 maxlength="255"
                 @input="emitChange"
               />
@@ -146,11 +195,13 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { Plus, Trash2 } from 'lucide-vue-next';
 import AppFormField from '../forms/AppFormField.vue';
 import AppFormInput from '../forms/AppFormInput.vue';
 import AppFormSelect from '../forms/AppFormSelect.vue';
+import AppFormSwitch from '../forms/AppFormSwitch.vue';
+import { apiRequest } from '../../composables/useApiClient';
 
 const props = defineProps({
     modelValue: { type: Object, default: () => ({}) },
@@ -161,12 +212,27 @@ const emit = defineEmits(['update:modelValue']);
 const memberColumns = [
     { value: 'gender', label: 'Gender' },
     { value: 'email', label: 'Email' },
-    { value: 'payment_plan_id', label: 'Payment Plan ID' },
+    { value: 'payment_plan_id', label: 'Payment Plan' },
     { value: 'is_active', label: 'Active Status' },
     { value: 'is_verified', label: 'Verified Status' },
     { value: 'is_temp', label: 'Temporary Status' },
     { value: 'address', label: 'Address' },
 ];
+
+const paymentPlans = ref([]);
+const loadingPlans = ref(false);
+
+async function fetchPaymentPlans() {
+    loadingPlans.value = true;
+    try {
+        const response = await apiRequest('/api/payment-plans');
+        paymentPlans.value = response.data || [];
+    } catch {
+        paymentPlans.value = [];
+    } finally {
+        loadingPlans.value = false;
+    }
+}
 
 let nextId = 1;
 let lastEmittedSnapshot = '';
@@ -185,6 +251,40 @@ watch(
     },
     { deep: true },
 );
+
+onMounted(() => {
+    fetchPaymentPlans();
+});
+
+function getSwitchLabels(field) {
+    switch (field) {
+        case 'is_active':
+            return { trueLabel: 'Active', falseLabel: 'Inactive' };
+        case 'is_verified':
+            return { trueLabel: 'Verified', falseLabel: 'Unverified' };
+        case 'is_temp':
+            return { trueLabel: 'Temporary', falseLabel: 'Permanent' };
+        default:
+            return { trueLabel: 'Yes', falseLabel: 'No' };
+    }
+}
+
+function onFieldChange(rule) {
+    if (rule.field === 'gender') {
+        if (!['male', 'female', 'other'].includes(rule.value)) {
+            rule.value = 'male';
+        }
+    } else if (rule.field === 'payment_plan_id') {
+        if (!paymentPlans.value.some(p => String(p.id) === String(rule.value))) {
+            rule.value = paymentPlans.value.length > 0 ? String(paymentPlans.value[0].id) : '';
+        }
+    } else if (['is_active', 'is_verified', 'is_temp'].includes(rule.field)) {
+        if (!['1', '0'].includes(String(rule.value))) {
+            rule.value = '1';
+        }
+    }
+    emitChange();
+}
 
 function normalizeConfig(config) {
     return {
@@ -281,3 +381,4 @@ function snapshotConfig(config) {
     });
 }
 </script>
+
