@@ -76,7 +76,7 @@ Business rules:
 - A full member is normally verified and has a complete profile.
 - A temporary member is used for walk-ins or incomplete profiles.
 - Members may have a default payment plan and a tenant-specific member price.
-- Members can choose or be configured for SMS, WhatsApp, and email contact preferences.
+- Members can choose or be configured for SMS, WhatsApp, and email contact preferences (with messaging delivery handled through SMS and email).
 - Members created from public campaigns are saved as unverified until authorized staff review and verify them.
 
 ### Payments, Plans, Wallets, and Vouchers
