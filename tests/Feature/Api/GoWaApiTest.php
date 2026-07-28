@@ -1,0 +1,138 @@
+<?php
+
+namespace Tests\Feature\Api;
+
+use App\Models\Member;
+use Illuminate\Support\Facades\Http;
+
+class GoWaApiTest extends ApiRouteTestCase
+{
+    public function testCanSaveAndRetrieveGoWaConfiguration(): void
+    {
+        $this->actingAsUser(['settings.configuration', 'settings.manage']);
+
+        $goWaGroups = [
+            [
+                'group_id' => '120363023456789012@g.us',
+                'rules' => [
+                    ['boolean' => 'and', 'field' => 'gender', 'value' => 'male'],
+                ],
+            ],
+        ];
+
+        $this->putJson('/api/settings/configuration', [
+            'general.gowa_enabled' => '1',
+            'general.gowa_url' => 'http://76.13.212.71:32769',
+            'general.gowa_api_key' => 'secret_key_123',
+            'general.gowa_session_id' => 'device_1',
+            'general.gowa_groups' => json_encode($goWaGroups),
+        ])->assertOk();
+
+        $data = $this->getJson('/api/settings/configuration')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('1', $data['general.gowa_enabled']);
+        $this->assertSame('http://76.13.212.71:32769', $data['general.gowa_url']);
+        $this->assertSame('secret_key_123', $data['general.gowa_api_key']);
+        $this->assertSame('device_1', $data['general.gowa_session_id']);
+    }
+
+    public function testTestConnectionEndpointWithMockedGoWaAppInfo(): void
+    {
+        $this->actingAsUser(['settings.configuration', 'settings.manage']);
+
+        Http::fake([
+            'http://76.13.212.71:32769/app/info' => Http::response([
+                'code' => 200,
+                'message' => 'success',
+                'data' => [
+                    'version' => 'v9.0.0',
+                    'device_os_name' => 'GOWA',
+                    'max_file_size' => 52428800,
+                    'max_image_size' => 20971520,
+                    'max_video_size' => 104857600,
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/api/settings/gowa/test-connection', [
+            'url' => 'http://76.13.212.71:32769',
+            'api_key' => 'secret',
+            'session_id' => 'device_1',
+        ])->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Connected to GoWA server (v9.0.0, GOWA).');
+    }
+
+    public function testCompareGroupEvaluatesRulesAndComparesWithGoWaParticipants(): void
+    {
+        $this->actingAsUser(['settings.configuration', 'settings.manage']);
+
+        $this->createMember(null, [
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'gender' => 'male',
+            'phone_number' => '0771112222',
+            'is_active' => true,
+        ]);
+
+        $this->createMember(null, [
+            'first_name' => 'Jane',
+            'last_name' => 'Smith',
+            'gender' => 'female',
+            'phone_number' => '0773334444',
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'http://76.13.212.71:32769/group/info*' => Http::response([
+                'code' => 200,
+                'data' => [
+                    'participants' => [
+                        ['id' => '94771112222@s.whatsapp.net'], // John Doe already in group
+                        ['id' => '94779998888@s.whatsapp.net'], // Non-system member in group
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->postJson('/api/settings/gowa/groups/compare', [
+            'url' => 'http://76.13.212.71:32769',
+            'api_key' => 'secret',
+            'session_id' => 'device_1',
+            'group' => [
+                'group_id' => '120363023456789012@g.us',
+                'rules' => [
+                    ['boolean' => 'and', 'field' => 'gender', 'value' => 'male'],
+                ],
+            ],
+        ])->assertOk();
+
+        $response->assertJsonPath('success', true)
+            ->assertJsonPath('matching_system_count', 1)
+            ->assertJsonPath('gowa_participants_count', 2)
+            ->assertJsonPath('to_add_count', 0)
+            ->assertJsonPath('to_remove_count', 1);
+    }
+
+    public function testSyncGroupPerformsBulkAddAndRemove(): void
+    {
+        $this->actingAsUser(['settings.configuration', 'settings.manage']);
+
+        Http::fake([
+            'http://76.13.212.71:32769/group/participants' => Http::response(['code' => 200, 'message' => 'success'], 200),
+        ]);
+
+        $this->postJson('/api/settings/gowa/groups/sync', [
+            'url' => 'http://76.13.212.71:32769',
+            'api_key' => 'secret',
+            'session_id' => 'device_1',
+            'group_id' => '120363023456789012@g.us',
+            'action' => 'add',
+            'phones' => ['0771112222'],
+        ])->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('added.0', '0771112222');
+    }
+}

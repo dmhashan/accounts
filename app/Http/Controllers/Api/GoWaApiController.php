@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\OpenWaService;
+use App\Services\GoWaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class OpenWaApiController extends Controller
+class GoWaApiController extends Controller
 {
     public function __construct(
-        private readonly OpenWaService $openWaService,
+        private readonly GoWaService $goWaService,
     ) {}
 
     /**
-     * Test connection to OpenWA server instance.
+     * Test connection to GoWA server instance via GET /app/info.
      */
     public function testConnection(Request $request): JsonResponse
     {
@@ -24,7 +24,7 @@ class OpenWaApiController extends Controller
             'session_id' => ['nullable', 'string'],
         ]);
 
-        $result = $this->openWaService->testConnection(
+        $result = $this->goWaService->testConnection(
             $validated['url'],
             $validated['api_key'] ?? null,
             $validated['session_id'] ?? null,
@@ -34,7 +34,7 @@ class OpenWaApiController extends Controller
     }
 
     /**
-     * Compare system members against OpenWA group members.
+     * Compare system members against GoWA group members.
      */
     public function compareGroup(Request $request): JsonResponse
     {
@@ -47,7 +47,7 @@ class OpenWaApiController extends Controller
             'group.rules' => ['sometimes', 'array'],
         ]);
 
-        $result = $this->openWaService->compareMembers(
+        $result = $this->goWaService->compareMembers(
             $validated['group'],
             $validated['url'],
             $validated['api_key'] ?? null,
@@ -58,7 +58,7 @@ class OpenWaApiController extends Controller
     }
 
     /**
-     * Execute bulk add or remove action for an OpenWA group.
+     * Execute bulk add or remove action for a GoWA group.
      */
     public function syncGroup(Request $request): JsonResponse
     {
@@ -73,7 +73,7 @@ class OpenWaApiController extends Controller
         ]);
 
         if ($validated['action'] === 'add') {
-            $result = $this->openWaService->addParticipants(
+            $result = $this->goWaService->addParticipants(
                 $validated['url'],
                 $validated['group_id'],
                 $validated['phones'],
@@ -81,7 +81,7 @@ class OpenWaApiController extends Controller
                 $validated['session_id'] ?? null,
             );
         } else {
-            $result = $this->openWaService->removeParticipants(
+            $result = $this->goWaService->removeParticipants(
                 $validated['url'],
                 $validated['group_id'],
                 $validated['phones'],

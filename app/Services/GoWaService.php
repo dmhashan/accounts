@@ -7,88 +7,103 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class OpenWaService
+class GoWaService
 {
     /**
-     * Test connection to OpenWA server instance.
+     * Test connection to GoWA server instance via GET /app/info.
      */
     public function testConnection(string $url, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
-        $session = $sessionId ?: 'default';
 
         try {
-            $response = $this->httpClient($apiKey)
+            // First check GoWA official endpoint GET /app/info
+            $response = $this->httpClient($apiKey, $sessionId)
+                ->timeout(8)
+                ->get("{$url}/app/info");
+
+            if ($response->successful()) {
+                $body = $response->json();
+                $data = $body['data'] ?? $body;
+                $version = $data['version'] ?? 'v9.0.0';
+                $osName = $data['device_os_name'] ?? 'GOWA';
+
+                return [
+                    'success' => true,
+                    'message' => "Connected to GoWA server ({$version}, {$osName}).",
+                    'data' => $data,
+                ];
+            }
+
+            // Fallback check with /health or /getHOST
+            $healthResp = $this->httpClient($apiKey, $sessionId)
                 ->timeout(8)
                 ->get("{$url}/health");
 
-            if ($response->successful()) {
+            if ($healthResp->successful()) {
                 return [
                     'success' => true,
-                    'message' => 'Connected to OpenWA server successfully.',
-                    'data' => $response->json() ?? [],
-                ];
-            }
-
-            // Fallback check with session check endpoint
-            $sessionResp = $this->httpClient($apiKey)
-                ->timeout(8)
-                ->post("{$url}/api/{$session}/check-connection-state");
-
-            if ($sessionResp->successful()) {
-                return [
-                    'success' => true,
-                    'message' => 'Connected to OpenWA session successfully.',
-                    'data' => $sessionResp->json() ?? [],
+                    'message' => 'Connected to GoWA server successfully.',
+                    'data' => $healthResp->json() ?? [],
                 ];
             }
 
             return [
                 'success' => false,
-                'message' => 'OpenWA server returned error status: ' . ($response->status() ?: $sessionResp->status()),
+                'message' => 'GoWA server returned error status: ' . ($response->status() ?: $healthResp->status()),
             ];
         } catch (\Throwable $e) {
-            Log::warning('OpenWA connection test failed', ['error' => $e->getMessage()]);
+            Log::warning('GoWA connection test failed', ['error' => $e->getMessage()]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to reach OpenWA server: ' . $e->getMessage(),
+                'message' => 'Failed to reach GoWA server: ' . $e->getMessage(),
             ];
         }
     }
 
     /**
-     * Get participants in an OpenWA group.
+     * Get participants in a GoWA group via GET /group/info or GET /group/members.
      */
     public function getGroupParticipants(string $url, string $groupId, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
-        $session = $sessionId ?: 'default';
 
         try {
-            // Try standard OpenWA endpoint getGroupMembers / getGroupMembersId
-            $response = $this->httpClient($apiKey)
+            // Primary GoWA endpoint: GET /group/info?group_id={groupId}
+            $response = $this->httpClient($apiKey, $sessionId)
                 ->timeout(10)
-                ->post("{$url}/api/{$session}/getGroupMembers", [
-                    'groupId' => $groupId,
+                ->get("{$url}/group/info", [
+                    'group_id' => $groupId,
                 ]);
 
             if (!$response->successful()) {
-                $response = $this->httpClient($apiKey)
+                // Alternative GoWA endpoint: GET /group/members?group_id={groupId}
+                $response = $this->httpClient($apiKey, $sessionId)
                     ->timeout(10)
-                    ->post("{$url}/api/{$session}/getGroupMembersId", [
+                    ->get("{$url}/group/members", [
+                        'group_id' => $groupId,
+                    ]);
+            }
+
+            if (!$response->successful()) {
+                // Legacy fallback: POST /api/{session}/getGroupMembers
+                $session = $sessionId ?: 'default';
+                $response = $this->httpClient($apiKey, $sessionId)
+                    ->timeout(10)
+                    ->post("{$url}/api/{$session}/getGroupMembers", [
                         'groupId' => $groupId,
                     ]);
             }
 
             if ($response->successful()) {
-                $data = $response->json();
+                $body = $response->json();
+                $data = $body['data'] ?? $body['response'] ?? $body['result'] ?? $body;
 
-                // Extract participant list / objects
                 $rawList = [];
 
                 if (is_array($data)) {
-                    $rawList = isset($data['response']) ? $data['response'] : (isset($data['result']) ? $data['result'] : $data);
+                    $rawList = $data['participants'] ?? $data['members'] ?? (isset($data[0]) ? $data : []);
                 }
 
                 $participants = [];
@@ -100,7 +115,7 @@ class OpenWaService
                         if (is_string($item)) {
                             $phone = $item;
                         } elseif (is_array($item)) {
-                            $phone = $item['id']['_serialized'] ?? $item['id'] ?? $item['user'] ?? $item['phone'] ?? null;
+                            $phone = $item['id']['_serialized'] ?? $item['id'] ?? $item['user'] ?? $item['phone'] ?? $item['jid'] ?? null;
                         }
 
                         if ($phone) {
@@ -124,11 +139,11 @@ class OpenWaService
 
             return [
                 'success' => false,
-                'message' => 'Failed to fetch OpenWA group participants (HTTP ' . $response->status() . ')',
+                'message' => 'Failed to fetch GoWA group participants (HTTP ' . $response->status() . ')',
                 'participants' => [],
             ];
         } catch (\Throwable $e) {
-            Log::error('OpenWA getGroupParticipants error', ['error' => $e->getMessage()]);
+            Log::error('GoWA getGroupParticipants error', ['error' => $e->getMessage()]);
 
             return [
                 'success' => false,
@@ -139,39 +154,55 @@ class OpenWaService
     }
 
     /**
-     * Add participant(s) to an OpenWA group.
+     * Add participant(s) to a GoWA group via POST /group/participants.
      */
     public function addParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
-        $session = $sessionId ?: 'default';
+        $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $phones);
+
+        try {
+            $response = $this->httpClient($apiKey, $sessionId)
+                ->timeout(12)
+                ->post("{$url}/group/participants", [
+                    'group_id' => $groupId,
+                    'participants' => $formattedPhones,
+                ]);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'added' => $phones,
+                    'failed' => [],
+                ];
+            }
+        } catch (\Throwable $e) {
+            Log::warning('GoWA addParticipants primary endpoint failed', ['error' => $e->getMessage()]);
+        }
+
+        // Fallback per-phone add
         $added = [];
         $failed = [];
+        $session = $sessionId ?: 'default';
 
         foreach ($phones as $phone) {
-            $formattedPhone = $this->formatForOpenWa($phone);
+            $formatted = $this->formatForGoWa($phone);
 
             try {
-                $response = $this->httpClient($apiKey)
+                $resp = $this->httpClient($apiKey, $sessionId)
                     ->timeout(10)
                     ->post("{$url}/api/{$session}/addParticipant", [
                         'groupId' => $groupId,
-                        'participant' => $formattedPhone,
+                        'participant' => $formatted,
                     ]);
 
-                if ($response->successful()) {
+                if ($resp->successful()) {
                     $added[] = $phone;
                 } else {
-                    $failed[] = [
-                        'phone' => $phone,
-                        'reason' => 'HTTP ' . $response->status(),
-                    ];
+                    $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
                 }
             } catch (\Throwable $e) {
-                $failed[] = [
-                    'phone' => $phone,
-                    'reason' => $e->getMessage(),
-                ];
+                $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
             }
         }
 
@@ -183,39 +214,55 @@ class OpenWaService
     }
 
     /**
-     * Remove participant(s) from an OpenWA group.
+     * Remove participant(s) from a GoWA group via POST /group/participants/remove.
      */
     public function removeParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
-        $session = $sessionId ?: 'default';
+        $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $phones);
+
+        try {
+            $response = $this->httpClient($apiKey, $sessionId)
+                ->timeout(12)
+                ->post("{$url}/group/participants/remove", [
+                    'group_id' => $groupId,
+                    'participants' => $formattedPhones,
+                ]);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'removed' => $phones,
+                    'failed' => [],
+                ];
+            }
+        } catch (\Throwable $e) {
+            Log::warning('GoWA removeParticipants primary endpoint failed', ['error' => $e->getMessage()]);
+        }
+
+        // Fallback per-phone remove
         $removed = [];
         $failed = [];
+        $session = $sessionId ?: 'default';
 
         foreach ($phones as $phone) {
-            $formattedPhone = $this->formatForOpenWa($phone);
+            $formatted = $this->formatForGoWa($phone);
 
             try {
-                $response = $this->httpClient($apiKey)
+                $resp = $this->httpClient($apiKey, $sessionId)
                     ->timeout(10)
                     ->post("{$url}/api/{$session}/removeParticipant", [
                         'groupId' => $groupId,
-                        'participant' => $formattedPhone,
+                        'participant' => $formatted,
                     ]);
 
-                if ($response->successful()) {
+                if ($resp->successful()) {
                     $removed[] = $phone;
                 } else {
-                    $failed[] = [
-                        'phone' => $phone,
-                        'reason' => 'HTTP ' . $response->status(),
-                    ];
+                    $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
                 }
             } catch (\Throwable $e) {
-                $failed[] = [
-                    'phone' => $phone,
-                    'reason' => $e->getMessage(),
-                ];
+                $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
             }
         }
 
@@ -239,7 +286,6 @@ class OpenWaService
 
         $query = Member::query();
 
-        // Evaluate rule items
         $query->where(function ($mainQuery) use ($rules) {
             foreach ($rules as $index => $rule) {
                 $boolean = strtolower($rule['boolean'] ?? 'and') === 'or' ? 'or' : 'and';
@@ -302,7 +348,7 @@ class OpenWaService
     }
 
     /**
-     * Compare system members matching rules against OpenWA group participants.
+     * Compare system members matching rules against GoWA group participants.
      */
     public function compareMembers(array $groupRuleConfig, string $url, ?string $apiKey = null, ?string $sessionId = null): array
     {
@@ -316,24 +362,24 @@ class OpenWaService
         }
 
         $systemMembers = $this->evaluateMatchingMembers($groupRuleConfig);
-        $openwaResult = $this->getGroupParticipants($url, $groupId, $apiKey, $sessionId);
+        $gowaResult = $this->getGroupParticipants($url, $groupId, $apiKey, $sessionId);
 
-        if (!$openwaResult['success']) {
+        if (!$gowaResult['success']) {
             return [
                 'success' => false,
-                'message' => $openwaResult['message'] ?? 'Failed to get OpenWA group members.',
+                'message' => $gowaResult['message'] ?? 'Failed to get GoWA group members.',
                 'matching_system_members' => $systemMembers->values()->toArray(),
-                'openwa_participants' => [],
+                'gowa_participants' => [],
                 'to_add' => [],
                 'to_remove' => [],
             ];
         }
 
-        $openwaParticipants = $openwaResult['participants'];
-        $openwaNormalizedMap = [];
+        $gowaParticipants = $gowaResult['participants'];
+        $gowaNormalizedMap = [];
 
-        foreach ($openwaParticipants as $p) {
-            $openwaNormalizedMap[$p['normalized']] = $p['raw'];
+        foreach ($gowaParticipants as $p) {
+            $gowaNormalizedMap[$p['normalized']] = $p['raw'];
         }
 
         $systemNormalizedMap = [];
@@ -342,19 +388,19 @@ class OpenWaService
             $systemNormalizedMap[$m['normalized_phone']] = $m;
         }
 
-        // System members to add (in system matching list, not in OpenWA group)
+        // System members to add (in system matching list, not in GoWA group)
         $toAdd = [];
 
         foreach ($systemMembers as $m) {
-            if (!isset($openwaNormalizedMap[$m['normalized_phone']])) {
+            if (!isset($gowaNormalizedMap[$m['normalized_phone']])) {
                 $toAdd[] = $m;
             }
         }
 
-        // OpenWA members to remove (in OpenWA group, not in system matching list)
+        // GoWA members to remove (in GoWA group, not in system matching list)
         $toRemove = [];
 
-        foreach ($openwaParticipants as $p) {
+        foreach ($gowaParticipants as $p) {
             if (!isset($systemNormalizedMap[$p['normalized']])) {
                 $toRemove[] = [
                     'raw_phone' => $p['raw'],
@@ -367,20 +413,20 @@ class OpenWaService
             'success' => true,
             'group_id' => $groupId,
             'matching_system_count' => $systemMembers->count(),
-            'openwa_participants_count' => count($openwaParticipants),
+            'gowa_participants_count' => count($gowaParticipants),
             'to_add_count' => count($toAdd),
             'to_remove_count' => count($toRemove),
             'matching_system_members' => $systemMembers->values()->toArray(),
-            'openwa_participants' => array_values($openwaParticipants),
+            'gowa_participants' => array_values($gowaParticipants),
             'to_add' => $toAdd,
             'to_remove' => $toRemove,
         ];
     }
 
     /**
-     * Create pre-configured HTTP client for OpenWA API requests.
+     * Create pre-configured HTTP client for GoWA API requests.
      */
-    private function httpClient(?string $apiKey = null)
+    private function httpClient(?string $apiKey = null, ?string $sessionId = null)
     {
         $client = Http::acceptJson();
 
@@ -388,6 +434,12 @@ class OpenWaService
             $client = $client->withHeaders([
                 'api_key' => $apiKey,
                 'Authorization' => "Bearer {$apiKey}",
+            ]);
+        }
+
+        if (!empty($sessionId)) {
+            $client = $client->withHeaders([
+                'X-Device-Id' => $sessionId,
             ]);
         }
 
@@ -403,7 +455,6 @@ class OpenWaService
             return null;
         }
 
-        // Remove suffix like @c.us or @g.us
         $parts = explode('@', $number);
         $clean = preg_replace('/\D/', '', $parts[0]);
 
@@ -411,7 +462,6 @@ class OpenWaService
             return null;
         }
 
-        // Standardize local 077... -> 9477...
         if (str_starts_with($clean, '0')) {
             $clean = '94' . substr($clean, 1);
         }
@@ -420,12 +470,12 @@ class OpenWaService
     }
 
     /**
-     * Format phone for OpenWA API (e.g. 94771234567@c.us).
+     * Format phone for GoWA API (e.g. 94771234567@s.whatsapp.net or 94771234567@c.us).
      */
-    public function formatForOpenWa(?string $number): string
+    public function formatForGoWa(?string $number): string
     {
         $normalized = $this->normalizePhone($number);
 
-        return $normalized ? "{$normalized}@c.us" : (string) $number;
+        return $normalized ? "{$normalized}@s.whatsapp.net" : (string) $number;
     }
 }

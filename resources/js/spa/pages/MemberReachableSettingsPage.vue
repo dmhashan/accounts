@@ -30,11 +30,11 @@
           <button
             type="button"
             class="pb-3 text-sm font-semibold transition-colors relative flex items-center gap-2"
-            :class="activeTab === 'openwa' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-secondary-500 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200'"
-            @click="activeTab = 'openwa'"
+            :class="activeTab === 'gowa' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-secondary-500 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200'"
+            @click="activeTab = 'gowa'"
           >
-            OpenWA Integration
-            <span v-if="openWaConfig.enabled === '1' || openWaConfig.enabled === true || openWaConfig.enabled === 'true'" class="w-2 h-2 rounded-full bg-green-500 inline-block" />
+            GoWA Integration
+            <span v-if="goWaConfig.enabled === '1' || goWaConfig.enabled === true || goWaConfig.enabled === 'true'" class="w-2 h-2 rounded-full bg-green-500 inline-block" />
           </button>
         </div>
 
@@ -48,9 +48,9 @@
             <MemberReachableConfigFields v-model="memberReachableConfig" />
           </div>
 
-          <!-- Tab 2: OpenWA Integration -->
-          <div v-show="activeTab === 'openwa'">
-            <OpenWaConfigFields v-model="openWaConfig" />
+          <!-- Tab 2: GoWA Integration -->
+          <div v-show="activeTab === 'gowa'">
+            <GoWaConfigFields v-model="goWaConfig" />
           </div>
 
           <!-- Save Button -->
@@ -74,7 +74,7 @@
 import { onMounted, ref } from 'vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import MemberReachableConfigFields from '../components/settings/MemberReachableConfigFields.vue';
-import OpenWaConfigFields from '../components/settings/OpenWaConfigFields.vue';
+import GoWaConfigFields from '../components/settings/GoWaConfigFields.vue';
 import { apiRequest } from '../composables/useApiClient';
 
 const activeTab = ref('manual');
@@ -90,7 +90,7 @@ const memberReachableConfig = ref({
     whatsapp_groups: [],
 });
 
-const openWaConfig = ref({
+const goWaConfig = ref({
     enabled: '0',
     url: '',
     api_key: '',
@@ -115,7 +115,7 @@ function parseMemberReachableConfig(raw) {
     };
 }
 
-function parseOpenWaGroups(raw) {
+function parseGoWaGroups(raw) {
     try {
         const parsed = JSON.parse(raw || '[]');
         return Array.isArray(parsed) ? parsed : [];
@@ -134,9 +134,9 @@ function serializeMemberNotificationConfig() {
     });
 }
 
-function serializeOpenWaGroups() {
+function serializeGoWaGroups() {
     return JSON.stringify(
-        Array.isArray(openWaConfig.value.groups) ? openWaConfig.value.groups : []
+        Array.isArray(goWaConfig.value.groups) ? goWaConfig.value.groups : []
     );
 }
 
@@ -148,12 +148,12 @@ async function load() {
         const cfg = response.data || {};
         memberReachableConfig.value = parseMemberReachableConfig(cfg['general.member_notifications']);
 
-        openWaConfig.value = {
-            enabled: cfg['general.openwa_enabled'] || '0',
-            url: cfg['general.openwa_url'] || '',
-            api_key: cfg['general.openwa_api_key'] || '',
-            session_id: cfg['general.openwa_session_id'] || '',
-            groups: parseOpenWaGroups(cfg['general.openwa_groups']),
+        goWaConfig.value = {
+            enabled: cfg['general.gowa_enabled'] || cfg['general.openwa_enabled'] || '0',
+            url: cfg['general.gowa_url'] || cfg['general.openwa_url'] || '',
+            api_key: cfg['general.gowa_api_key'] || cfg['general.openwa_api_key'] || '',
+            session_id: cfg['general.gowa_session_id'] || cfg['general.openwa_session_id'] || '',
+            groups: parseGoWaGroups(cfg['general.gowa_groups'] || cfg['general.openwa_groups']),
         };
     } catch {
         loadError.value = 'Failed to load member reachable settings.';
@@ -171,11 +171,11 @@ async function saveAllSettings() {
             method: 'put',
             data: {
                 'general.member_notifications': serializeMemberNotificationConfig(),
-                'general.openwa_enabled': openWaConfig.value.enabled === '1' || openWaConfig.value.enabled === true || openWaConfig.value.enabled === 'true' ? '1' : '0',
-                'general.openwa_url': openWaConfig.value.url || '',
-                'general.openwa_api_key': openWaConfig.value.api_key || '',
-                'general.openwa_session_id': openWaConfig.value.session_id || '',
-                'general.openwa_groups': serializeOpenWaGroups(),
+                'general.gowa_enabled': goWaConfig.value.enabled === '1' || goWaConfig.value.enabled === true || goWaConfig.value.enabled === 'true' ? '1' : '0',
+                'general.gowa_url': goWaConfig.value.url || '',
+                'general.gowa_api_key': goWaConfig.value.api_key || '',
+                'general.gowa_session_id': goWaConfig.value.session_id || '',
+                'general.gowa_groups': serializeGoWaGroups(),
             },
         });
         successMessage.value = 'Settings saved successfully.';

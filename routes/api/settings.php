@@ -22,10 +22,10 @@ Route::middleware(['auth', 'permission:settings.configuration,settings.manage'])
     Route::get('/settings/configuration/format-options', [ConfigurationApiController::class, 'formatOptions']);
     Route::put('/settings/configuration', [ConfigurationApiController::class, 'update']);
 
-    // OpenWA Integration
-    Route::post('/settings/openwa/test-connection', [App\Http\Controllers\Api\OpenWaApiController::class, 'testConnection']);
-    Route::post('/settings/openwa/groups/compare', [App\Http\Controllers\Api\OpenWaApiController::class, 'compareGroup']);
-    Route::post('/settings/openwa/groups/sync', [App\Http\Controllers\Api\OpenWaApiController::class, 'syncGroup']);
+    // GoWA Integration
+    Route::post('/settings/gowa/test-connection', [App\Http\Controllers\Api\GoWaApiController::class, 'testConnection']);
+    Route::post('/settings/gowa/groups/compare', [App\Http\Controllers\Api\GoWaApiController::class, 'compareGroup']);
+    Route::post('/settings/gowa/groups/sync', [App\Http\Controllers\Api\GoWaApiController::class, 'syncGroup']);
 });
 
 Route::middleware(['auth', 'permission:settings.biometric,settings.manage'])->group(function () {

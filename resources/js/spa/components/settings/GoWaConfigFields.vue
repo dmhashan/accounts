@@ -4,15 +4,15 @@
     <div class="flex items-center justify-between rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-900/30">
       <div>
         <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">
-          Enable OpenWA Integration
+          Enable GoWA Integration
         </h4>
         <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
-          Connect to an OpenWA REST API server to automate WhatsApp group memberships based on rules.
+          Connect to a GoWA (Go WhatsApp Web Multi-Device) server to automate WhatsApp group memberships.
         </p>
       </div>
 
       <AppFormSwitch
-        id="openwa-enabled-switch"
+        id="gowa-enabled-switch"
         :model-value="localConfig.enabled === '1' || localConfig.enabled === true || localConfig.enabled === 'true'"
         true-label="Enabled"
         false-label="Disabled"
@@ -27,7 +27,7 @@
         <div class="flex items-center justify-between">
           <h4 class="text-sm font-semibold text-secondary-900 dark:text-white flex items-center gap-2">
             <Radio class="w-4 h-4 text-primary-600 dark:text-primary-400" />
-            OpenWA Server Configuration
+            GoWA Server Configuration
           </h4>
 
           <button
@@ -49,34 +49,34 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <AppFormField label="OpenWA Server URL" for-id="openwa-url" required>
+          <AppFormField label="GoWA Server URL" for-id="gowa-url" required>
             <AppFormInput
-              id="openwa-url"
+              id="gowa-url"
               v-model="localConfig.url"
               type="url"
-              placeholder="http://localhost:8080"
+              placeholder="http://76.13.212.71:32769"
               maxlength="500"
               @input="emitChange"
             />
           </AppFormField>
 
-          <AppFormField label="API Key" for-id="openwa-api-key" optional>
+          <AppFormField label="API Key / Auth Token" for-id="gowa-api-key" optional>
             <AppFormInput
-              id="openwa-api-key"
+              id="gowa-api-key"
               v-model="localConfig.api_key"
               type="password"
-              placeholder="Optional API Key"
+              placeholder="Optional Basic Auth / Token"
               maxlength="255"
               @input="emitChange"
             />
           </AppFormField>
 
-          <AppFormField label="Session ID" for-id="openwa-session-id" optional>
+          <AppFormField label="Device ID / Session ID" for-id="gowa-session-id" optional>
             <AppFormInput
-              id="openwa-session-id"
+              id="gowa-session-id"
               v-model="localConfig.session_id"
               type="text"
-              placeholder="default"
+              placeholder="Optional Device ID (X-Device-Id)"
               maxlength="255"
               @input="emitChange"
             />
@@ -89,10 +89,10 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h4 class="text-sm font-semibold text-secondary-900 dark:text-white">
-              Rule-Based OpenWA Groups
+              Rule-Based GoWA Groups
             </h4>
             <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
-              Map OpenWA WhatsApp Group IDs to system member criteria for bulk synchronization.
+              Map GoWA WhatsApp Group JIDs to system member criteria for bulk synchronization.
             </p>
           </div>
 
@@ -102,12 +102,12 @@
             @click="addGroup"
           >
             <Plus class="w-4 h-4" />
-            Add OpenWA Group
+            Add GoWA Group
           </button>
         </div>
 
         <div v-if="localConfig.groups.length === 0" class="rounded-lg border border-dashed border-secondary-300 dark:border-secondary-700 p-4 text-sm text-secondary-500 dark:text-secondary-400 text-center">
-          No OpenWA rule-based WhatsApp groups configured yet.
+          No GoWA rule-based WhatsApp groups configured yet.
         </div>
 
         <div
@@ -117,9 +117,9 @@
         >
           <!-- Group ID Input & Remove Button -->
           <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
-            <AppFormField label="OpenWA WhatsApp Group ID / JID" :for-id="`openwa-group-id-${group.id}`" required>
+            <AppFormField label="GoWA WhatsApp Group ID / JID" :for-id="`gowa-group-id-${group.id}`" required>
               <AppFormInput
-                :id="`openwa-group-id-${group.id}`"
+                :id="`gowa-group-id-${group.id}`"
                 v-model="group.group_id"
                 type="text"
                 placeholder="120363023456789012@g.us"
@@ -151,10 +151,10 @@
             >
               <AppFormField
                 :label="ruleIndex === 0 ? 'Join' : 'AND / OR'"
-                :for-id="`openwa-rule-boolean-${rule.id}`"
+                :for-id="`gowa-rule-boolean-${rule.id}`"
               >
                 <AppFormSelect
-                  :id="`openwa-rule-boolean-${rule.id}`"
+                  :id="`gowa-rule-boolean-${rule.id}`"
                   v-model="rule.boolean"
                   :disabled="ruleIndex === 0"
                   @change="emitChange"
@@ -168,9 +168,9 @@
                 </AppFormSelect>
               </AppFormField>
 
-              <AppFormField label="Member Column" :for-id="`openwa-rule-field-${rule.id}`">
+              <AppFormField label="Member Column" :for-id="`gowa-rule-field-${rule.id}`">
                 <AppFormSelect
-                  :id="`openwa-rule-field-${rule.id}`"
+                  :id="`gowa-rule-field-${rule.id}`"
                   v-model="rule.field"
                   @change="onFieldChange(rule)"
                 >
@@ -180,10 +180,10 @@
                 </AppFormSelect>
               </AppFormField>
 
-              <AppFormField label="Column Value" :for-id="`openwa-rule-value-${rule.id}`">
+              <AppFormField label="Column Value" :for-id="`gowa-rule-value-${rule.id}`">
                 <AppFormSelect
                   v-if="rule.field === 'gender'"
-                  :id="`openwa-rule-value-${rule.id}`"
+                  :id="`gowa-rule-value-${rule.id}`"
                   v-model="rule.value"
                   @change="emitChange"
                 >
@@ -203,7 +203,7 @@
 
                 <AppFormSelect
                   v-else-if="rule.field === 'payment_plan_id'"
-                  :id="`openwa-rule-value-${rule.id}`"
+                  :id="`gowa-rule-value-${rule.id}`"
                   v-model="rule.value"
                   :disabled="loadingPlans"
                   @change="emitChange"
@@ -218,7 +218,7 @@
 
                 <AppFormSwitch
                   v-else-if="['is_active', 'is_verified', 'is_temp'].includes(rule.field)"
-                  :id="`openwa-rule-value-${rule.id}`"
+                  :id="`gowa-rule-value-${rule.id}`"
                   :model-value="rule.value === '1' || rule.value === 'true' || rule.value === true"
                   :true-label="getSwitchLabels(rule.field).trueLabel"
                   :false-label="getSwitchLabels(rule.field).falseLabel"
@@ -227,7 +227,7 @@
 
                 <AppFormInput
                   v-else
-                  :id="`openwa-rule-value-${rule.id}`"
+                  :id="`gowa-rule-value-${rule.id}`"
                   v-model="rule.value"
                   type="text"
                   placeholder="Enter value"
@@ -264,7 +264,7 @@
                   Member Comparison &amp; Bulk Actions
                 </h5>
                 <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
-                  Compare system members matching rules against actual OpenWA group participants.
+                  Compare system members matching rules against actual GoWA group participants.
                 </p>
               </div>
 
@@ -293,8 +293,8 @@
                 </div>
 
                 <div class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-3 text-center">
-                  <span class="block text-xs text-secondary-500 dark:text-secondary-400 font-medium">OpenWA Group</span>
-                  <span class="text-lg font-bold text-secondary-900 dark:text-white">{{ group.comparison.openwa_participants_count }}</span>
+                  <span class="block text-xs text-secondary-500 dark:text-secondary-400 font-medium">GoWA Group</span>
+                  <span class="text-lg font-bold text-secondary-900 dark:text-white">{{ group.comparison.gowa_participants_count }}</span>
                 </div>
 
                 <div class="rounded-lg border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/20 p-3 text-center">
@@ -408,7 +408,7 @@ onMounted(() => {
 
 async function testConnection() {
     if (!localConfig.url) {
-        connectionStatus.value = { success: false, message: 'Please enter OpenWA Server URL first.' };
+        connectionStatus.value = { success: false, message: 'Please enter GoWA Server URL first.' };
         return;
     }
 
@@ -416,7 +416,7 @@ async function testConnection() {
     connectionStatus.value = null;
 
     try {
-        const response = await apiRequest('/api/settings/openwa/test-connection', {
+        const response = await apiRequest('/api/settings/gowa/test-connection', {
             method: 'post',
             data: {
                 url: localConfig.url,
@@ -424,11 +424,11 @@ async function testConnection() {
                 session_id: localConfig.session_id,
             },
         });
-        connectionStatus.value = { success: true, message: response.message || 'Connected successfully to OpenWA.' };
+        connectionStatus.value = { success: true, message: response.message || 'Connected successfully to GoWA.' };
     } catch (error) {
         connectionStatus.value = {
             success: false,
-            message: error?.response?.data?.message || error?.message || 'Failed to connect to OpenWA server.',
+            message: error?.response?.data?.message || error?.message || 'Failed to connect to GoWA server.',
         };
     } finally {
         testingConnection.value = false;
@@ -443,7 +443,7 @@ async function compareGroup(group) {
     group.syncResult = null;
 
     try {
-        const response = await apiRequest('/api/settings/openwa/groups/compare', {
+        const response = await apiRequest('/api/settings/gowa/groups/compare', {
             method: 'post',
             data: {
                 url: localConfig.url,
@@ -480,7 +480,7 @@ async function syncAction(group, action) {
     group.syncResult = null;
 
     try {
-        const response = await apiRequest('/api/settings/openwa/groups/sync', {
+        const response = await apiRequest('/api/settings/gowa/groups/sync', {
             method: 'post',
             data: {
                 url: localConfig.url,
