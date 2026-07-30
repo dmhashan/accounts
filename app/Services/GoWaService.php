@@ -69,6 +69,7 @@ class GoWaService
     {
         $url = rtrim($url, '/');
         $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
+        $primaryErrorMessage = null;
 
         try {
             // Primary GoWA endpoint: GET /group/info?group_id={groupId}
@@ -79,6 +80,9 @@ class GoWaService
                 ]);
 
             if (!$response->successful()) {
+                $errBody = $response->json();
+                $primaryErrorMessage = $errBody['message'] ?? null;
+
                 // Alternative GoWA endpoint: GET /group/members?group_id={groupId}
                 $response = $this->httpClient($apiKey, $sessionId)
                     ->timeout(10)
@@ -138,9 +142,12 @@ class GoWaService
                 ];
             }
 
+            $errBody = $response->json();
+            $errMsg = $primaryErrorMessage ?? $errBody['message'] ?? ('HTTP ' . $response->status());
+
             return [
                 'success' => false,
-                'message' => 'Failed to fetch GoWA group participants (HTTP ' . $response->status() . ')',
+                'message' => 'Failed to fetch GoWA group participants: ' . $errMsg,
                 'participants' => [],
             ];
         } catch (\Throwable $e) {
@@ -551,14 +558,10 @@ class GoWaService
     }
 
     /**
-     * Resolve valid GoWA device ID if a phone JID or empty session ID was provided.
+     * Resolve valid GoWA device ID if a phone JID or invalid session ID was provided.
      */
     public function resolveDeviceId(string $url, ?string $apiKey = null, ?string $sessionId = null): ?string
     {
-        if (!empty($sessionId) && !str_contains($sessionId, '@')) {
-            return $sessionId;
-        }
-
         try {
             $resp = $this->httpClient($apiKey)->timeout(5)->get(rtrim($url, '/') . '/devices');
 
@@ -566,6 +569,14 @@ class GoWaService
                 $devices = $resp->json()['results'] ?? [];
 
                 if (is_array($devices) && !empty($devices)) {
+                    if (!empty($sessionId)) {
+                        foreach ($devices as $dev) {
+                            if (($dev['id'] ?? '') === $sessionId) {
+                                return $sessionId;
+                            }
+                        }
+                    }
+
                     foreach ($devices as $dev) {
                         if (($dev['state'] ?? '') === 'connected' && !empty($dev['id'])) {
                             return $dev['id'];
