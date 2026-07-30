@@ -183,13 +183,13 @@ class GoWaService
             }
         }
 
-        // Process valid phones in chunks (10 at a time) to prevent one bad number from breaking a giant batch,
-        // and avoid huge sequential fallback loops that trigger 504 Gateway Timeouts.
-        $chunks = array_chunk($validPhones, 10);
+        // Process valid phones in small chunks (3 at a time with 3s delay) to humanize additions
+        // and prevent WhatsApp Business anti-spam mechanisms from revoking the multi-device session.
+        $chunks = array_chunk($validPhones, 3);
 
         foreach ($chunks as $index => $chunk) {
             if ($index > 0) {
-                sleep(1);
+                sleep(3);
             }
 
             $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
@@ -229,7 +229,11 @@ class GoWaService
             }
 
             // Fallback per-phone add for numbers in this chunk only
-            foreach ($chunk as $phone) {
+            foreach ($chunk as $fIdx => $phone) {
+                if ($fIdx > 0) {
+                    sleep(2);
+                }
+
                 $formatted = $this->formatForGoWa($phone);
 
                 try {
@@ -290,12 +294,12 @@ class GoWaService
             }
         }
 
-        // Process valid phones in chunks (10 at a time) to prevent timeouts and isolate failures.
-        $chunks = array_chunk($validPhones, 10);
+        // Process valid phones in small chunks (3 at a time with 3s delay) to humanize removals.
+        $chunks = array_chunk($validPhones, 3);
 
         foreach ($chunks as $index => $chunk) {
             if ($index > 0) {
-                sleep(1);
+                sleep(3);
             }
 
             $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
@@ -335,7 +339,11 @@ class GoWaService
             }
 
             // Fallback per-phone remove for numbers in this chunk only
-            foreach ($chunk as $phone) {
+            foreach ($chunk as $fIdx => $phone) {
+                if ($fIdx > 0) {
+                    sleep(2);
+                }
+
                 $formatted = $this->formatForGoWa($phone);
 
                 try {
