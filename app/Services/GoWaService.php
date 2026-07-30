@@ -736,32 +736,48 @@ class GoWaService
             }
         }
 
-        // Look up member contact details in system database for non-matching participants
-        $toRemoveNormalizedPhones = array_column($toRemoveRaw, 'normalized_phone');
-        $systemMemberLookup = [];
+        // Look up member contact details in system database for non-matching participants using 9-digit suffix matching
+        $toRemoveRaw = $toRemoveRaw;
+        $suffixes = [];
 
-        if (!empty($toRemoveNormalizedPhones)) {
+        foreach ($toRemoveRaw as $item) {
+            $digits = preg_replace('/\D/', '', explode('@', $item['normalized_phone'])[0]);
+
+            if (strlen($digits) >= 7) {
+                $suffixes[] = substr($digits, -9);
+            }
+        }
+        $suffixes = array_values(array_unique(array_filter($suffixes)));
+
+        $lookupBySuffix = [];
+
+        if (!empty($suffixes)) {
+            // Query ALL members in database (not restricted to active members)
             $matchedDbMembers = Member::query()
-                ->where(function ($q) use ($toRemoveNormalizedPhones) {
-                    $q->whereIn('phone_number', $toRemoveNormalizedPhones)
-                        ->orWhereIn('whatsapp_number', $toRemoveNormalizedPhones);
+                ->where(function ($q) use ($suffixes) {
+                    foreach ($suffixes as $suf) {
+                        $q->orWhere('phone_number', 'like', "%{$suf}")
+                            ->orWhere('whatsapp_number', 'like', "%{$suf}");
+                    }
                 })
                 ->get(['id', 'name', 'phone_number', 'whatsapp_number']);
 
             foreach ($matchedDbMembers as $dbMember) {
-                $p1 = $this->normalizePhone($dbMember->phone_number);
-                $p2 = $this->normalizePhone($dbMember->whatsapp_number);
+                $p1Digits = preg_replace('/\D/', '', (string) $dbMember->phone_number);
+                $p2Digits = preg_replace('/\D/', '', (string) $dbMember->whatsapp_number);
 
-                if ($p1) {
-                    $systemMemberLookup[$p1] = [
+                if (strlen($p1Digits) >= 7) {
+                    $s1 = substr($p1Digits, -9);
+                    $lookupBySuffix[$s1] = [
                         'id' => $dbMember->id,
                         'name' => (string) $dbMember->name,
                         'phone' => $dbMember->phone_number,
                     ];
                 }
 
-                if ($p2) {
-                    $systemMemberLookup[$p2] = [
+                if (strlen($p2Digits) >= 7) {
+                    $s2 = substr($p2Digits, -9);
+                    $lookupBySuffix[$s2] = [
                         'id' => $dbMember->id,
                         'name' => (string) $dbMember->name,
                         'phone' => $dbMember->whatsapp_number,
@@ -774,7 +790,10 @@ class GoWaService
 
         foreach ($toRemoveRaw as $item) {
             $norm = $item['normalized_phone'];
-            $memberInfo = $systemMemberLookup[$norm] ?? null;
+            $digits = preg_replace('/\D/', '', explode('@', $norm)[0]);
+            $suf = strlen($digits) >= 7 ? substr($digits, -9) : $digits;
+
+            $memberInfo = $lookupBySuffix[$suf] ?? null;
 
             $toRemove[] = [
                 'raw_phone' => $item['raw_phone'],

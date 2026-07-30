@@ -450,7 +450,17 @@
                       </div>
                       <div>
                         <div class="font-medium text-secondary-900 dark:text-white flex items-center gap-1.5">
-                          <span>{{ item.name || item.raw_phone || item.normalized_phone }}</span>
+                          <router-link
+                            v-if="item.member_id"
+                            :to="{ name: 'members.view', params: { id: item.member_id } }"
+                            target="_blank"
+                            class="font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+                          >
+                            <span>{{ item.name }}</span>
+                            <ExternalLink class="w-3 h-3 shrink-0" />
+                          </router-link>
+                          <span v-else>{{ item.name || item.raw_phone || item.normalized_phone }}</span>
+
                           <span v-if="item.is_system_member" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-sans">
                             System Member
                           </span>
@@ -490,7 +500,7 @@
 
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue';
-import { Plus, Trash2, Plug, RefreshCw, Radio, CheckCircle2, AlertCircle, Users, UserPlus, UserMinus, Link } from 'lucide-vue-next';
+import { Plus, Trash2, Plug, RefreshCw, Radio, CheckCircle2, AlertCircle, Users, UserPlus, UserMinus, Link, ExternalLink } from 'lucide-vue-next';
 import AppFormField from '../forms/AppFormField.vue';
 import AppFormInput from '../forms/AppFormInput.vue';
 import AppFormSelect from '../forms/AppFormSelect.vue';
