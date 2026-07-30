@@ -365,23 +365,85 @@ class GoWaService
                     if ($status === 'success' || empty($results)) {
                         $added[] = $phone;
                     } else {
-                        $failed[] = ['phone' => $phone, 'reason' => $firstRes['message'] ?? 'Failed to add participant'];
+                        $msg = $firstRes['message'] ?? 'Failed to add participant';
+                        $isPrivacy = $this->isPrivacyError($msg);
+
+                        $failed[] = [
+                            'phone' => $phone,
+                            'reason' => $isPrivacy ? 'User privacy settings block direct addition. Group Invite Link required.' : $msg,
+                            'is_privacy_restricted' => $isPrivacy,
+                        ];
                     }
                 } else {
                     $errBody = $response->json();
                     $errMsg = $errBody['message'] ?? ('HTTP ' . $response->status());
-                    $failed[] = ['phone' => $phone, 'reason' => $errMsg];
+                    $isPrivacy = $this->isPrivacyError($errMsg, $response->status());
+
+                    $failed[] = [
+                        'phone' => $phone,
+                        'reason' => $isPrivacy ? 'User privacy settings block direct addition. Group Invite Link required.' : $errMsg,
+                        'is_privacy_restricted' => $isPrivacy,
+                    ];
                 }
             } catch (\Throwable $e) {
                 $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
             }
         }
 
+        $inviteLink = $this->getGroupInviteLink($url, $groupId, $apiKey, $sessionId);
+
         return [
             'success' => count($failed) === 0 || count($added) > 0,
             'added' => $added,
             'failed' => $failed,
+            'invite_link' => $inviteLink,
         ];
+    }
+
+    /**
+     * Get WhatsApp group invite link via GET /group/invite-link?group_id={groupId}.
+     */
+    public function getGroupInviteLink(string $url, string $groupId, ?string $apiKey = null, ?string $sessionId = null): ?string
+    {
+        $url = rtrim($url, '/');
+        $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
+
+        try {
+            $response = $this->httpClient($apiKey, $sessionId)
+                ->timeout(8)
+                ->get("{$url}/group/invite-link", [
+                    'group_id' => $groupId,
+                ]);
+
+            if ($response->successful()) {
+                $body = $response->json();
+                $results = $body['results'] ?? $body['data'] ?? [];
+
+                return $results['invite_link'] ?? $results['url'] ?? null;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('GoWA getGroupInviteLink failed', ['error' => $e->getMessage()]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if an error message/status indicates a WhatsApp privacy restriction.
+     */
+    private function isPrivacyError(string $message, int $statusCode = 0): bool
+    {
+        $lower = strtolower($message);
+
+        return $statusCode === 403
+            || $statusCode === 408
+            || str_contains($lower, 'privacy')
+            || str_contains($lower, 'invite')
+            || str_contains($lower, 'cannot add')
+            || str_contains($lower, 'can\'t add')
+            || str_contains($lower, 'setting')
+            || str_contains($lower, 'permission')
+            || str_contains($lower, 'restrict');
     }
 
     /**
@@ -651,9 +713,12 @@ class GoWaService
             }
         }
 
+        $inviteLink = $this->getGroupInviteLink($url, $groupId, $apiKey, $sessionId);
+
         return [
             'success' => true,
             'group_id' => $groupId,
+            'invite_link' => $inviteLink,
             'matching_system_count' => $systemMembers->count(),
             'gowa_participants_count' => count($gowaParticipants),
             'to_add_count' => count($toAdd),

@@ -309,6 +309,29 @@
                 </div>
               </div>
 
+              <!-- Group Invite Link Banner -->
+              <div v-if="group.comparison.invite_link" class="rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50/40 dark:bg-primary-900/20 p-2.5 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 overflow-hidden">
+                  <Link class="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
+                  <span class="text-secondary-700 dark:text-secondary-300 font-medium shrink-0">Group Invite Link:</span>
+                  <a
+                    :href="group.comparison.invite_link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-mono text-primary-600 dark:text-primary-400 hover:underline truncate"
+                  >
+                    {{ group.comparison.invite_link }}
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  class="px-2.5 py-1 rounded bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 text-[11px] font-medium transition-colors shrink-0 ml-2"
+                  @click="copyInviteLink(group, group.comparison.invite_link)"
+                >
+                  {{ group.copiedLink ? 'Copied!' : 'Copy Link' }}
+                </button>
+              </div>
+
               <!-- Sync Feedback Banner -->
               <div v-if="group.syncResult" class="text-xs rounded-lg p-3 flex items-center justify-between" :class="group.syncResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'">
                 <span>{{ group.syncResult.message }}</span>
@@ -464,7 +487,7 @@
 
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue';
-import { Plus, Trash2, Plug, RefreshCw, Radio, CheckCircle2, AlertCircle, Users, UserPlus, UserMinus } from 'lucide-vue-next';
+import { Plus, Trash2, Plug, RefreshCw, Radio, CheckCircle2, AlertCircle, Users, UserPlus, UserMinus, Link } from 'lucide-vue-next';
 import AppFormField from '../forms/AppFormField.vue';
 import AppFormInput from '../forms/AppFormInput.vue';
 import AppFormSelect from '../forms/AppFormSelect.vue';
@@ -675,6 +698,13 @@ async function syncSingleMember(group, action, memberItem) {
     } finally {
         memberItem.loading = false;
     }
+}
+
+function copyInviteLink(group, link) {
+    if (!link) return;
+    navigator.clipboard.writeText(link);
+    group.copiedLink = true;
+    setTimeout(() => { group.copiedLink = false; }, 2000);
 }
 
 function getSwitchLabels(field) {
