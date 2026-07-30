@@ -127,9 +127,21 @@ class GoWaService
                             $normalized = $this->normalizePhone($phone);
 
                             if ($normalized) {
+                                $isAdmin = false;
+
+                                if (is_array($item)) {
+                                    $isAdmin = (bool) (
+                                        ($item['IsAdmin'] ?? false) ||
+                                        ($item['is_admin'] ?? false) ||
+                                        ($item['IsSuperAdmin'] ?? false) ||
+                                        ($item['is_super_admin'] ?? false)
+                                    );
+                                }
+
                                 $participants[] = [
                                     'raw' => $phone,
                                     'normalized' => $normalized,
+                                    'is_admin' => $isAdmin,
                                 ];
                             }
                         }
@@ -162,7 +174,64 @@ class GoWaService
     }
 
     /**
-     * Add participant(s) to a GoWA group via POST /group/participants.
+     * Check if a phone number has a registered WhatsApp account.
+     */
+    public function checkUserRegistered(string $url, string $phone, ?string $apiKey = null, ?string $sessionId = null): bool
+    {
+        $url = rtrim($url, '/');
+        $formatted = $this->formatForGoWa($phone);
+        $cleanDigits = $this->normalizePhone($phone);
+
+        try {
+            $response = $this->httpClient($apiKey, $sessionId)
+                ->timeout(6)
+                ->get("{$url}/user/check", [
+                    'phone' => $formatted,
+                ]);
+
+            if (!$response->successful() && $cleanDigits) {
+                $response = $this->httpClient($apiKey, $sessionId)
+                    ->timeout(6)
+                    ->get("{$url}/user/check", [
+                        'phone' => $cleanDigits,
+                    ]);
+            }
+
+            if ($response->successful()) {
+                $body = $response->json();
+                $data = $body['results'] ?? $body['data'] ?? $body;
+
+                if (is_array($data)) {
+                    if (isset($data['is_registered'])) {
+                        return (bool) $data['is_registered'];
+                    }
+
+                    if (isset($data['registered'])) {
+                        return (bool) $data['registered'];
+                    }
+
+                    if (isset($data['on_whatsapp'])) {
+                        return (bool) $data['on_whatsapp'];
+                    }
+
+                    if (isset($data['is_valid'])) {
+                        return (bool) $data['is_valid'];
+                    }
+                }
+
+                $code = strtoupper($body['code'] ?? '');
+
+                return $code === 'SUCCESS' || $code === '200' || !empty($data);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('GoWA checkUserRegistered error', ['phone' => $phone, 'error' => $e->getMessage()]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Add participant(s) to a GoWA group one by one, checking WhatsApp account existence first.
      */
     public function addParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
@@ -175,7 +244,6 @@ class GoWaService
         foreach ($phones as $p) {
             $norm = $this->normalizePhone($p);
 
-            // Valid international phones (like 94771234567) are 10 to 15 digits
             if (!$norm || strlen($norm) < 10 || strlen($norm) > 15) {
                 $failed[] = ['phone' => $p, 'reason' => 'Invalid phone number format'];
             } else {
@@ -183,86 +251,49 @@ class GoWaService
             }
         }
 
-        // Process valid phones in small chunks (3 at a time with 3s delay) to humanize additions
-        // and prevent WhatsApp Business anti-spam mechanisms from revoking the multi-device session.
-        $chunks = array_chunk($validPhones, 3);
-
-        foreach ($chunks as $index => $chunk) {
+        // Process additions ONE BY ONE
+        foreach ($validPhones as $index => $phone) {
             if ($index > 0) {
-                sleep(3);
+                sleep(2); // 2s humanized delay between additions
             }
 
-            $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
+            // Check if phone number has a registered WhatsApp account
+            $isRegistered = $this->checkUserRegistered($url, $phone, $apiKey, $sessionId);
+
+            if (!$isRegistered) {
+                $failed[] = ['phone' => $phone, 'reason' => 'Phone number does not have a registered WhatsApp account'];
+                Log::info('GoWA addParticipants: Skipped non-WhatsApp number', ['phone' => $phone]);
+                continue;
+            }
+
+            $formatted = $this->formatForGoWa($phone);
 
             try {
                 $response = $this->httpClient($apiKey, $sessionId)
-                    ->timeout(12)
+                    ->timeout(10)
                     ->post("{$url}/group/participants", [
                         'group_id' => $groupId,
-                        'participants' => $formattedPhones,
+                        'participants' => [$formatted],
                     ]);
 
                 if ($response->successful()) {
                     $body = $response->json();
                     $results = $body['results'] ?? [];
+                    $firstRes = $results[0] ?? [];
+                    $status = $firstRes['status'] ?? 'success';
 
-                    if (is_array($results) && count($results) === count($chunk)) {
-                        foreach ($chunk as $idx => $phone) {
-                            $resItem = $results[$idx] ?? [];
-                            $status = $resItem['status'] ?? 'success';
-
-                            if ($status === 'success') {
-                                $added[] = $phone;
-                            } else {
-                                $failed[] = ['phone' => $phone, 'reason' => $resItem['message'] ?? 'Failed to add participant'];
-                            }
-                        }
+                    if ($status === 'success' || empty($results)) {
+                        $added[] = $phone;
                     } else {
-                        foreach ($chunk as $phone) {
-                            $added[] = $phone;
-                        }
+                        $failed[] = ['phone' => $phone, 'reason' => $firstRes['message'] ?? 'Failed to add participant'];
                     }
-                    continue;
+                } else {
+                    $errBody = $response->json();
+                    $errMsg = $errBody['message'] ?? ('HTTP ' . $response->status());
+                    $failed[] = ['phone' => $phone, 'reason' => $errMsg];
                 }
             } catch (\Throwable $e) {
-                Log::warning('GoWA addParticipants chunk failed', ['error' => $e->getMessage()]);
-            }
-
-            // Fallback per-phone add for numbers in this chunk only
-            foreach ($chunk as $fIdx => $phone) {
-                if ($fIdx > 0) {
-                    sleep(2);
-                }
-
-                $formatted = $this->formatForGoWa($phone);
-
-                try {
-                    $resp = $this->httpClient($apiKey, $sessionId)
-                        ->timeout(5)
-                        ->post("{$url}/group/participants", [
-                            'group_id' => $groupId,
-                            'participants' => [$formatted],
-                        ]);
-
-                    if ($resp->successful()) {
-                        $body = $resp->json();
-                        $results = $body['results'] ?? [];
-                        $firstRes = $results[0] ?? [];
-                        $status = $firstRes['status'] ?? 'success';
-
-                        if ($status === 'success' || empty($results)) {
-                            $added[] = $phone;
-                        } else {
-                            $failed[] = ['phone' => $phone, 'reason' => $firstRes['message'] ?? 'Failed to add participant'];
-                        }
-                    } else {
-                        $errBody = $resp->json();
-                        $errMsg = $errBody['message'] ?? ('HTTP ' . $resp->status());
-                        $failed[] = ['phone' => $phone, 'reason' => $errMsg];
-                    }
-                } catch (\Throwable $e) {
-                    $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
-                }
+                $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
             }
         }
 
@@ -275,6 +306,7 @@ class GoWaService
 
     /**
      * Remove participant(s) from a GoWA group via POST /group/participants/remove.
+     * Protects group admins from being removed.
      */
     public function removeParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
@@ -284,17 +316,32 @@ class GoWaService
         $failed = [];
         $validPhones = [];
 
+        // Fetch current group participants to identify and protect admins
+        $gowaResult = $this->getGroupParticipants($url, $groupId, $apiKey, $sessionId);
+        $adminMap = [];
+
+        if ($gowaResult['success']) {
+            foreach ($gowaResult['participants'] as $gp) {
+                if (!empty($gp['is_admin'])) {
+                    $adminMap[$gp['normalized']] = true;
+                }
+            }
+        }
+
         foreach ($phones as $p) {
             $norm = $this->normalizePhone($p);
 
             if (!$norm || strlen($norm) < 10 || strlen($norm) > 15) {
                 $failed[] = ['phone' => $p, 'reason' => 'Invalid phone number format'];
+            } elseif (isset($adminMap[$norm])) {
+                $failed[] = ['phone' => $p, 'reason' => 'Cannot remove group admin'];
+                Log::info('GoWA removeParticipants: Protected group admin from removal', ['phone' => $p]);
             } else {
                 $validPhones[] = $p;
             }
         }
 
-        // Process valid phones in small chunks (3 at a time with 3s delay) to humanize removals.
+        // Process removals in small chunks (3 at a time with 3s delay)
         $chunks = array_chunk($validPhones, 3);
 
         foreach ($chunks as $index => $chunk) {
@@ -507,10 +554,15 @@ class GoWaService
             }
         }
 
-        // GoWA members to remove (in GoWA group, not in system matching list)
+        // GoWA members to remove (in GoWA group, not in system matching list, and not an admin)
         $toRemove = [];
 
         foreach ($gowaParticipants as $p) {
+            // Protect group admins from being flagged for removal
+            if (!empty($p['is_admin'])) {
+                continue;
+            }
+
             if (!isset($systemNormalizedMap[$p['normalized']])) {
                 $toRemove[] = [
                     'raw_phone' => $p['raw'],

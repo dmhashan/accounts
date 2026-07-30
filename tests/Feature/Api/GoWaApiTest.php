@@ -157,4 +157,35 @@ class GoWaApiTest extends ApiRouteTestCase
 
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SyncGoWaGroupJob::class);
     }
+
+    public function testGroupAdminsAreProtectedFromRemoval(): void
+    {
+        $this->actingAsUser(['settings.configuration', 'settings.manage']);
+
+        Http::fake([
+            'http://76.13.212.71:32769/group/info*' => Http::response([
+                'code' => 200,
+                'results' => [
+                    'Participants' => [
+                        [
+                            'PhoneNumber' => '94779998888@s.whatsapp.net',
+                            'IsAdmin' => true,
+                        ],
+                        [
+                            'PhoneNumber' => '94776665555@s.whatsapp.net',
+                            'IsAdmin' => false,
+                        ],
+                    ],
+                ],
+            ], 200),
+            'http://76.13.212.71:32769/group/participants/remove' => Http::response(['code' => 200, 'message' => 'success'], 200),
+        ]);
+
+        $service = app(\App\Services\GoWaService::class);
+        $result = $service->removeParticipants('http://76.13.212.71:32769', '120363023456789012@g.us', ['0779998888', '0776665555'], 'secret', 'device_1');
+
+        $this->assertContains('0776665555', $result['removed']);
+        $this->assertNotContains('0779998888', $result['removed']);
+        $this->assertEquals('Cannot remove group admin', $result['failed'][0]['reason']);
+    }
 }
