@@ -85,7 +85,7 @@ const routes = [
     { path: '/members/temp', component: MembersPage, meta: { title: 'Temp Members' } },
     { path: '/members/new', component: MemberFormPage, meta: { title: 'New Member' } },
     { path: '/members/:id/edit', component: MemberFormPage, meta: { title: 'Edit Member' } },
-    { path: '/members/:id', component: MemberViewPage, meta: { title: 'Member Profile' } },
+    { path: '/members/:id', name: 'members.view', component: MemberViewPage, meta: { title: 'Member Profile' } },
     { path: '/roles', component: RolesPage, meta: { title: 'Roles' } },
     { path: '/roles/new', component: RoleCreatePage, meta: { title: 'New Role' } },
     { path: '/roles/:id', component: RoleViewPage, meta: { title: 'Role' } },

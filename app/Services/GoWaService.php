@@ -796,11 +796,12 @@ class GoWaService
             $memberInfo = $lookupBySuffix[$suf] ?? null;
 
             $toRemove[] = [
+                'id' => $memberInfo['id'] ?? null,
+                'member_id' => $memberInfo['id'] ?? null,
+                'name' => !empty($memberInfo['name']) ? $memberInfo['name'] : null,
+                'phone' => $memberInfo['phone'] ?? null,
                 'raw_phone' => $item['raw_phone'],
                 'normalized_phone' => $norm,
-                'member_id' => $memberInfo['id'] ?? null,
-                'name' => $memberInfo['name'] ?? null,
-                'phone' => $memberInfo['phone'] ?? null,
                 'is_system_member' => !empty($memberInfo),
             ];
         }
