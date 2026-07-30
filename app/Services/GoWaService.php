@@ -159,55 +159,95 @@ class GoWaService
     public function addParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
-        $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $phones);
-
-        try {
-            $response = $this->httpClient($apiKey, $sessionId)
-                ->timeout(12)
-                ->post("{$url}/group/participants", [
-                    'group_id' => $groupId,
-                    'participants' => $formattedPhones,
-                ]);
-
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'added' => $phones,
-                    'failed' => [],
-                ];
-            }
-        } catch (\Throwable $e) {
-            Log::warning('GoWA addParticipants primary endpoint failed', ['error' => $e->getMessage()]);
-        }
-
-        // Fallback per-phone add
         $added = [];
         $failed = [];
-        $session = $sessionId ?: 'default';
 
-        foreach ($phones as $phone) {
-            $formatted = $this->formatForGoWa($phone);
+        // Process in chunks (10 at a time) to prevent one bad number from breaking a giant batch,
+        // and avoid huge sequential fallback loops that trigger 504 Gateway Timeouts.
+        $chunks = array_chunk($phones, 10);
+
+        foreach ($chunks as $chunk) {
+            $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
 
             try {
-                $resp = $this->httpClient($apiKey, $sessionId)
-                    ->timeout(10)
-                    ->post("{$url}/api/{$session}/addParticipant", [
-                        'groupId' => $groupId,
-                        'participant' => $formatted,
+                $response = $this->httpClient($apiKey, $sessionId)
+                    ->timeout(15)
+                    ->post("{$url}/group/participants", [
+                        'group_id' => $groupId,
+                        'participants' => $formattedPhones,
                     ]);
 
-                if ($resp->successful()) {
-                    $added[] = $phone;
-                } else {
-                    $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
+                if ($response->successful()) {
+                    $body = $response->json();
+                    $results = $body['results'] ?? [];
+
+                    if (is_array($results) && count($results) === count($chunk)) {
+                        foreach ($chunk as $idx => $phone) {
+                            $resItem = $results[$idx] ?? [];
+                            $status = $resItem['status'] ?? 'success';
+
+                            if ($status === 'success') {
+                                $added[] = $phone;
+                            } else {
+                                $failed[] = ['phone' => $phone, 'reason' => $resItem['message'] ?? 'Failed to add participant'];
+                            }
+                        }
+                    } else {
+                        foreach ($chunk as $phone) {
+                            $added[] = $phone;
+                        }
+                    }
+                    continue;
                 }
             } catch (\Throwable $e) {
-                $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
+                Log::warning('GoWA addParticipants chunk failed', ['error' => $e->getMessage()]);
+            }
+
+            // Fallback per-phone add for numbers in this chunk only
+            $session = $sessionId ?: 'default';
+
+            foreach ($chunk as $phone) {
+                $formatted = $this->formatForGoWa($phone);
+
+                try {
+                    $resp = $this->httpClient($apiKey, $sessionId)
+                        ->timeout(6)
+                        ->post("{$url}/group/participants", [
+                            'group_id' => $groupId,
+                            'participants' => [$formatted],
+                        ]);
+
+                    if (!$resp->successful()) {
+                        $resp = $this->httpClient($apiKey, $sessionId)
+                            ->timeout(6)
+                            ->post("{$url}/api/{$session}/addParticipant", [
+                                'groupId' => $groupId,
+                                'participant' => $formatted,
+                            ]);
+                    }
+
+                    if ($resp->successful()) {
+                        $body = $resp->json();
+                        $results = $body['results'] ?? [];
+                        $firstRes = $results[0] ?? [];
+                        $status = $firstRes['status'] ?? 'success';
+
+                        if ($status === 'success' || empty($results)) {
+                            $added[] = $phone;
+                        } else {
+                            $failed[] = ['phone' => $phone, 'reason' => $firstRes['message'] ?? 'Failed to add participant'];
+                        }
+                    } else {
+                        $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
+                    }
+                } catch (\Throwable $e) {
+                    $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
+                }
             }
         }
 
         return [
-            'success' => count($failed) === 0,
+            'success' => count($failed) === 0 || count($added) > 0,
             'added' => $added,
             'failed' => $failed,
         ];
@@ -219,55 +259,94 @@ class GoWaService
     public function removeParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
-        $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $phones);
-
-        try {
-            $response = $this->httpClient($apiKey, $sessionId)
-                ->timeout(12)
-                ->post("{$url}/group/participants/remove", [
-                    'group_id' => $groupId,
-                    'participants' => $formattedPhones,
-                ]);
-
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'removed' => $phones,
-                    'failed' => [],
-                ];
-            }
-        } catch (\Throwable $e) {
-            Log::warning('GoWA removeParticipants primary endpoint failed', ['error' => $e->getMessage()]);
-        }
-
-        // Fallback per-phone remove
         $removed = [];
         $failed = [];
-        $session = $sessionId ?: 'default';
 
-        foreach ($phones as $phone) {
-            $formatted = $this->formatForGoWa($phone);
+        // Process in chunks (10 at a time) to prevent timeouts and isolate failures.
+        $chunks = array_chunk($phones, 10);
+
+        foreach ($chunks as $chunk) {
+            $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
 
             try {
-                $resp = $this->httpClient($apiKey, $sessionId)
-                    ->timeout(10)
-                    ->post("{$url}/api/{$session}/removeParticipant", [
-                        'groupId' => $groupId,
-                        'participant' => $formatted,
+                $response = $this->httpClient($apiKey, $sessionId)
+                    ->timeout(15)
+                    ->post("{$url}/group/participants/remove", [
+                        'group_id' => $groupId,
+                        'participants' => $formattedPhones,
                     ]);
 
-                if ($resp->successful()) {
-                    $removed[] = $phone;
-                } else {
-                    $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
+                if ($response->successful()) {
+                    $body = $response->json();
+                    $results = $body['results'] ?? [];
+
+                    if (is_array($results) && count($results) === count($chunk)) {
+                        foreach ($chunk as $idx => $phone) {
+                            $resItem = $results[$idx] ?? [];
+                            $status = $resItem['status'] ?? 'success';
+
+                            if ($status === 'success') {
+                                $removed[] = $phone;
+                            } else {
+                                $failed[] = ['phone' => $phone, 'reason' => $resItem['message'] ?? 'Failed to remove participant'];
+                            }
+                        }
+                    } else {
+                        foreach ($chunk as $phone) {
+                            $removed[] = $phone;
+                        }
+                    }
+                    continue;
                 }
             } catch (\Throwable $e) {
-                $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
+                Log::warning('GoWA removeParticipants chunk failed', ['error' => $e->getMessage()]);
+            }
+
+            // Fallback per-phone remove for numbers in this chunk only
+            $session = $sessionId ?: 'default';
+
+            foreach ($chunk as $phone) {
+                $formatted = $this->formatForGoWa($phone);
+
+                try {
+                    $resp = $this->httpClient($apiKey, $sessionId)
+                        ->timeout(6)
+                        ->post("{$url}/group/participants/remove", [
+                            'group_id' => $groupId,
+                            'participants' => [$formatted],
+                        ]);
+
+                    if (!$resp->successful()) {
+                        $resp = $this->httpClient($apiKey, $sessionId)
+                            ->timeout(6)
+                            ->post("{$url}/api/{$session}/removeParticipant", [
+                                'groupId' => $groupId,
+                                'participant' => $formatted,
+                            ]);
+                    }
+
+                    if ($resp->successful()) {
+                        $body = $resp->json();
+                        $results = $body['results'] ?? [];
+                        $firstRes = $results[0] ?? [];
+                        $status = $firstRes['status'] ?? 'success';
+
+                        if ($status === 'success' || empty($results)) {
+                            $removed[] = $phone;
+                        } else {
+                            $failed[] = ['phone' => $phone, 'reason' => $firstRes['message'] ?? 'Failed to remove participant'];
+                        }
+                    } else {
+                        $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
+                    }
+                } catch (\Throwable $e) {
+                    $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
+                }
             }
         }
 
         return [
-            'success' => count($failed) === 0,
+            'success' => count($failed) === 0 || count($removed) > 0,
             'removed' => $removed,
             'failed' => $failed,
         ];
