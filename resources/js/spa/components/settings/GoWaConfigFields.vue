@@ -492,10 +492,16 @@ async function syncAction(group, action) {
             },
         });
 
-        const successCount = action === 'add' ? (response.added?.length || 0) : (response.removed?.length || 0);
+        const isAsync = Boolean(response.async);
+        const successCount = isAsync
+            ? (response.queued_count || phones.length)
+            : (action === 'add' ? (response.added?.length || 0) : (response.removed?.length || 0));
+
         group.syncResult = {
             success: response.success,
-            message: `Bulk ${action} completed: ${successCount} member(s) processed.`,
+            message: isAsync
+                ? (response.message || `Bulk ${action} queued in background for ${successCount} member(s).`)
+                : `Bulk ${action} completed: ${successCount} member(s) processed.`,
         };
 
         // Re-run comparison to refresh numbers

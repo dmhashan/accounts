@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncGoWaGroupJob;
 use App\Services\GoWaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -70,7 +71,32 @@ class GoWaApiController extends Controller
             'action' => ['required', 'in:add,remove'],
             'phones' => ['required', 'array', 'min:1'],
             'phones.*' => ['required', 'string'],
+            'async' => ['sometimes', 'boolean'],
         ]);
+
+        $async = $validated['async'] ?? (count($validated['phones']) > 15);
+        $tenantId = app()->bound('tenant') ? (int) app('tenant')->id : null;
+
+        if ($async) {
+            SyncGoWaGroupJob::dispatchForTenant(
+                $tenantId,
+                $validated['url'],
+                $validated['group_id'],
+                $validated['action'],
+                $validated['phones'],
+                $validated['api_key'] ?? null,
+                $validated['session_id'] ?? null,
+            );
+
+            return response()->json([
+                'success' => true,
+                'async' => true,
+                'message' => 'Group sync operation queued for background processing.',
+                'action' => $validated['action'],
+                'group_id' => $validated['group_id'],
+                'queued_count' => count($validated['phones']),
+            ], 202);
+        }
 
         if ($validated['action'] === 'add') {
             $result = $this->goWaService->addParticipants(

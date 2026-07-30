@@ -129,8 +129,32 @@ class GoWaApiTest extends ApiRouteTestCase
             'group_id' => '120363023456789012@g.us',
             'action' => 'add',
             'phones' => ['0771112222'],
+            'async' => false,
         ])->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('added.0', '0771112222');
+    }
+
+    public function testSyncGroupDispatchesJobWhenAsyncOrLargePayload(): void
+    {
+        $this->actingAsUser(['settings.configuration', 'settings.manage']);
+
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $phones = array_map(fn ($i) => "07710000{$i}", range(10, 30));
+
+        $this->postJson('/api/settings/gowa/groups/sync', [
+            'url' => 'http://76.13.212.71:32769',
+            'api_key' => 'secret',
+            'session_id' => 'device_1',
+            'group_id' => '120363023456789012@g.us',
+            'action' => 'add',
+            'phones' => $phones,
+        ])->assertStatus(202)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('async', true)
+            ->assertJsonPath('queued_count', count($phones));
+
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SyncGoWaGroupJob::class);
     }
 }
