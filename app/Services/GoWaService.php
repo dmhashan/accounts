@@ -697,7 +697,7 @@ class GoWaService
         }
 
         // GoWA members to remove (in GoWA group, not in system matching list, and not an admin)
-        $toRemove = [];
+        $toRemoveRaw = [];
 
         foreach ($gowaParticipants as $p) {
             // Protect group admins from being flagged for removal
@@ -706,11 +706,61 @@ class GoWaService
             }
 
             if (!isset($systemNormalizedMap[$p['normalized']])) {
-                $toRemove[] = [
+                $toRemoveRaw[] = [
                     'raw_phone' => $p['raw'],
                     'normalized_phone' => $p['normalized'],
                 ];
             }
+        }
+
+        // Look up member contact details in system database for non-matching participants
+        $toRemoveNormalizedPhones = array_column($toRemoveRaw, 'normalized_phone');
+        $systemMemberLookup = [];
+
+        if (!empty($toRemoveNormalizedPhones)) {
+            $matchedDbMembers = Member::query()
+                ->where(function ($q) use ($toRemoveNormalizedPhones) {
+                    $q->whereIn('phone_number', $toRemoveNormalizedPhones)
+                        ->orWhereIn('whatsapp_number', $toRemoveNormalizedPhones);
+                })
+                ->get(['id', 'name', 'phone_number', 'whatsapp_number']);
+
+            foreach ($matchedDbMembers as $dbMember) {
+                $p1 = $this->normalizePhone($dbMember->phone_number);
+                $p2 = $this->normalizePhone($dbMember->whatsapp_number);
+
+                if ($p1) {
+                    $systemMemberLookup[$p1] = [
+                        'id' => $dbMember->id,
+                        'name' => (string) $dbMember->name,
+                        'phone' => $dbMember->phone_number,
+                    ];
+                }
+
+                if ($p2) {
+                    $systemMemberLookup[$p2] = [
+                        'id' => $dbMember->id,
+                        'name' => (string) $dbMember->name,
+                        'phone' => $dbMember->whatsapp_number,
+                    ];
+                }
+            }
+        }
+
+        $toRemove = [];
+
+        foreach ($toRemoveRaw as $item) {
+            $norm = $item['normalized_phone'];
+            $memberInfo = $systemMemberLookup[$norm] ?? null;
+
+            $toRemove[] = [
+                'raw_phone' => $item['raw_phone'],
+                'normalized_phone' => $norm,
+                'member_id' => $memberInfo['id'] ?? null,
+                'name' => $memberInfo['name'] ?? null,
+                'phone' => $memberInfo['phone'] ?? null,
+                'is_system_member' => !empty($memberInfo),
+            ];
         }
 
         $inviteLink = $this->getGroupInviteLink($url, $groupId, $apiKey, $sessionId);

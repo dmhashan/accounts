@@ -445,15 +445,18 @@
                     class="flex items-center justify-between p-2.5 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 text-xs"
                   >
                     <div class="flex items-center gap-3">
-                      <div class="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold flex items-center justify-center text-xs">
-                        #
+                      <div class="w-7 h-7 rounded-full font-semibold flex items-center justify-center text-xs" :class="item.is_system_member ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-400'">
+                        {{ item.name ? item.name.charAt(0).toUpperCase() : '#' }}
                       </div>
                       <div>
-                        <div class="font-mono text-secondary-900 dark:text-white font-medium">
-                          {{ item.raw_phone || item.normalized_phone }}
+                        <div class="font-medium text-secondary-900 dark:text-white flex items-center gap-1.5">
+                          <span>{{ item.name || item.raw_phone || item.normalized_phone }}</span>
+                          <span v-if="item.is_system_member" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-sans">
+                            System Member
+                          </span>
                         </div>
-                        <div class="text-secondary-500 dark:text-secondary-400 text-[11px]">
-                          Non-matching group participant
+                        <div class="text-secondary-500 dark:text-secondary-400 font-mono text-[11px]">
+                          {{ item.raw_phone || item.normalized_phone }}
                         </div>
                       </div>
                     </div>
