@@ -70,16 +70,14 @@ class GoWaApiTest extends ApiRouteTestCase
         $this->actingAsUser(['settings.configuration', 'settings.manage']);
 
         $this->createMember(null, [
-            'first_name' => 'John',
-            'last_name' => 'Doe',
+            'name' => 'John Doe',
             'gender' => 'male',
             'phone_number' => '0771112222',
             'is_active' => true,
         ]);
 
         $this->createMember(null, [
-            'first_name' => 'Jane',
-            'last_name' => 'Smith',
+            'name' => 'Jane Smith',
             'gender' => 'female',
             'phone_number' => '0773334444',
             'is_active' => true,

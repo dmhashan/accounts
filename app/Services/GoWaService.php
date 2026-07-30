@@ -332,13 +332,13 @@ class GoWaService
             }
         });
 
-        return $query->get(['id', 'first_name', 'last_name', 'phone_number', 'whatsapp_number', 'allow_whatsapp'])
+        return $query->get(['id', 'name', 'phone_number', 'whatsapp_number', 'allow_whatsapp'])
             ->map(function ($m) {
                 $waPhone = $m->whatsapp_number ?: $m->phone_number;
 
                 return [
                     'id' => $m->id,
-                    'name' => trim($m->first_name . ' ' . $m->last_name),
+                    'name' => (string) $m->name,
                     'phone' => $waPhone,
                     'normalized_phone' => $this->normalizePhone($waPhone),
                     'allow_whatsapp' => (bool) $m->allow_whatsapp,
