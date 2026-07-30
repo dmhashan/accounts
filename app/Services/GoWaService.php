@@ -187,7 +187,11 @@ class GoWaService
         // and avoid huge sequential fallback loops that trigger 504 Gateway Timeouts.
         $chunks = array_chunk($validPhones, 10);
 
-        foreach ($chunks as $chunk) {
+        foreach ($chunks as $index => $chunk) {
+            if ($index > 0) {
+                sleep(1);
+            }
+
             $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
 
             try {
@@ -289,7 +293,11 @@ class GoWaService
         // Process valid phones in chunks (10 at a time) to prevent timeouts and isolate failures.
         $chunks = array_chunk($validPhones, 10);
 
-        foreach ($chunks as $chunk) {
+        foreach ($chunks as $index => $chunk) {
+            if ($index > 0) {
+                sleep(1);
+            }
+
             $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
 
             try {
