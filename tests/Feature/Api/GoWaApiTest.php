@@ -125,7 +125,22 @@ class GoWaApiTest extends ApiRouteTestCase
         $this->actingAsUser(['settings.configuration', 'settings.manage']);
 
         Http::fake([
-            'http://76.13.212.71:32769/group/participants' => Http::response(['code' => 200, 'message' => 'success'], 200),
+            'http://76.13.212.71:32769/devices' => Http::response([
+                'code' => 'SUCCESS',
+                'results' => [['id' => 'device_1', 'state' => 'connected', 'jid' => '94779998888@s.whatsapp.net']],
+            ], 200),
+            'http://76.13.212.71:32769/user/check*' => Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['is_registered' => true],
+            ], 200),
+            'http://76.13.212.71:32769/group/invite-link*' => Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['invite_link' => 'https://chat.whatsapp.com/TEST_INVITE'],
+            ], 200),
+            'http://76.13.212.71:32769/send/message' => Http::response([
+                'code' => 'SUCCESS',
+                'message' => 'Message sent',
+            ], 200),
         ]);
 
         $this->postJson('/api/settings/gowa/groups/sync', [
@@ -193,5 +208,39 @@ class GoWaApiTest extends ApiRouteTestCase
         $this->assertContains('0776665555', $result['removed']);
         $this->assertNotContains('0779998888', $result['removed']);
         $this->assertEquals('Cannot remove group admin', $result['failed'][0]['reason']);
+    }
+
+    public function testAddParticipantsSendsGroupInviteLinkMessage(): void
+    {
+        Http::fake([
+            'http://76.13.212.71:32769/devices' => Http::response([
+                'code' => 'SUCCESS',
+                'results' => [['id' => 'device_1', 'state' => 'connected', 'jid' => '94779998888@s.whatsapp.net']],
+            ], 200),
+            'http://76.13.212.71:32769/user/check*' => Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['is_registered' => true],
+            ], 200),
+            'http://76.13.212.71:32769/group/invite-link*' => Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['invite_link' => 'https://chat.whatsapp.com/TEST_INVITE'],
+            ], 200),
+            'http://76.13.212.71:32769/send/message' => Http::response([
+                'code' => 'SUCCESS',
+                'message' => 'Message sent',
+            ], 200),
+        ]);
+
+        $service = app(\App\Services\GoWaService::class);
+        $result = $service->addParticipants('http://76.13.212.71:32769', '120363023456789012@g.us', ['+94771234567'], 'secret', 'device_1');
+
+        $this->assertTrue($result['success']);
+        $this->assertContains('+94771234567', $result['added']);
+        $this->assertEquals('https://chat.whatsapp.com/TEST_INVITE', $result['invite_link']);
+
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            return $request->url() === 'http://76.13.212.71:32769/send/message'
+                && str_contains($request['message'], 'https://chat.whatsapp.com/TEST_INVITE');
+        });
     }
 }

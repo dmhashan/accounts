@@ -331,10 +331,24 @@ class GoWaService
             }
         }
 
-        // Process additions ONE BY ONE
+        // Retrieve group invite link
+        $inviteLink = $this->getGroupInviteLink($url, $groupId, $apiKey, $sessionId);
+
+        if (!$inviteLink) {
+            return [
+                'success' => false,
+                'added' => [],
+                'failed' => array_map(fn ($p) => [
+                    'phone' => $p,
+                    'reason' => 'Failed to retrieve WhatsApp Group Invite Link from GoWA server.',
+                ], $validPhones),
+            ];
+        }
+
+        // Send group invite link via direct WhatsApp message ONE BY ONE
         foreach ($validPhones as $index => $phone) {
             if ($index > 0) {
-                sleep(2); // 2s humanized delay between additions
+                sleep(2); // 2s humanized delay between direct messages
             }
 
             // Check if phone number has a registered WhatsApp account
@@ -346,58 +360,67 @@ class GoWaService
                 continue;
             }
 
-            $formatted = $this->formatForGoWa($phone);
+            $message = "Hi! You are invited to join our WhatsApp group. Please click this link to join: {$inviteLink}";
+            $sendRes = $this->sendMessage($url, $phone, $message, $apiKey, $sessionId);
 
-            try {
-                $response = $this->httpClient($apiKey, $sessionId)
-                    ->timeout(10)
-                    ->post("{$url}/group/participants", [
-                        'group_id' => $groupId,
-                        'participants' => [$formatted],
-                    ]);
-
-                if ($response->successful()) {
-                    $body = $response->json();
-                    $results = $body['results'] ?? [];
-                    $firstRes = $results[0] ?? [];
-                    $status = $firstRes['status'] ?? 'success';
-
-                    if ($status === 'success' || empty($results)) {
-                        $added[] = $phone;
-                    } else {
-                        $msg = $firstRes['message'] ?? 'Failed to add participant';
-                        $isPrivacy = $this->isPrivacyError($msg);
-
-                        $failed[] = [
-                            'phone' => $phone,
-                            'reason' => $isPrivacy ? 'User privacy settings block direct addition. Group Invite Link required.' : $msg,
-                            'is_privacy_restricted' => $isPrivacy,
-                        ];
-                    }
-                } else {
-                    $errBody = $response->json();
-                    $errMsg = $errBody['message'] ?? ('HTTP ' . $response->status());
-                    $isPrivacy = $this->isPrivacyError($errMsg, $response->status());
-
-                    $failed[] = [
-                        'phone' => $phone,
-                        'reason' => $isPrivacy ? 'User privacy settings block direct addition. Group Invite Link required.' : $errMsg,
-                        'is_privacy_restricted' => $isPrivacy,
-                    ];
-                }
-            } catch (\Throwable $e) {
-                $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
+            if ($sendRes['success'] ?? false) {
+                $added[] = $phone;
+                Log::info('GoWA addParticipants: Sent group invite link PM', ['phone' => $phone, 'invite_link' => $inviteLink]);
+            } else {
+                $failed[] = [
+                    'phone' => $phone,
+                    'reason' => $sendRes['message'] ?? 'Failed to send WhatsApp invite message via PM',
+                ];
             }
         }
 
-        $inviteLink = $this->getGroupInviteLink($url, $groupId, $apiKey, $sessionId);
-
         return [
-            'success' => count($failed) === 0 || count($added) > 0,
+            'success' => count($added) > 0 || count($failed) === 0,
             'added' => $added,
             'failed' => $failed,
             'invite_link' => $inviteLink,
         ];
+    }
+
+    /**
+     * Send a direct WhatsApp text message via POST /send/message.
+     */
+    public function sendMessage(string $url, string $phone, string $message, ?string $apiKey = null, ?string $sessionId = null): array
+    {
+        $url = rtrim($url, '/');
+        $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
+        $formatted = $this->formatForGoWa($phone);
+
+        try {
+            $response = $this->httpClient($apiKey, $sessionId)
+                ->timeout(10)
+                ->post("{$url}/send/message", [
+                    'phone' => $formatted,
+                    'message' => $message,
+                ]);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'message' => 'Direct WhatsApp message sent successfully.',
+                    'data' => $response->json(),
+                ];
+            }
+
+            $errBody = $response->json();
+
+            return [
+                'success' => false,
+                'message' => $errBody['message'] ?? ('HTTP ' . $response->status()),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('GoWA sendMessage error', ['phone' => $phone, 'error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 
     /**
