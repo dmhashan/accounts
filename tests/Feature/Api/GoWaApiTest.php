@@ -54,6 +54,12 @@ class GoWaApiTest extends ApiRouteTestCase
                     'max_video_size' => 104857600,
                 ],
             ], 200),
+            'http://76.13.212.71:32769/devices' => Http::response([
+                'code' => 'SUCCESS',
+                'results' => [
+                    ['id' => 'device_1', 'state' => 'connected', 'jid' => '94779998888@s.whatsapp.net'],
+                ],
+            ], 200),
         ]);
 
         $this->postJson('/api/settings/gowa/test-connection', [
@@ -62,7 +68,7 @@ class GoWaApiTest extends ApiRouteTestCase
             'session_id' => 'device_1',
         ])->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Connected to GoWA server (v9.0.0, GOWA).');
+            ->assertJsonPath('message', "Connected to GoWA server (v9.0.0, GOWA). WhatsApp device 'device_1' is ACTIVE (connected).");
     }
 
     public function testCompareGroupEvaluatesRulesAndComparesWithGoWaParticipants(): void

@@ -28,10 +28,25 @@ class GoWaService
                 $version = $data['version'] ?? 'v9.0.0';
                 $osName = $data['device_os_name'] ?? $data['os'] ?? 'GOWA';
 
+                $devStatus = $this->getDeviceStatus($url, $apiKey, $sessionId);
+                $deviceState = $devStatus['state'];
+                $deviceId = $devStatus['device_id'];
+                $isConnected = $devStatus['connected'];
+
+                if (!$isConnected && $deviceId) {
+                    return [
+                        'success' => false,
+                        'message' => "GoWA server is online ({$version}), but WhatsApp device '{$deviceId}' is NOT PAIRED ({$deviceState}). Please scan QR code in your GoWA dashboard (http://76.13.212.71:32769/#/) to connect WhatsApp.",
+                        'data' => $data,
+                        'device_state' => $deviceState,
+                    ];
+                }
+
                 return [
                     'success' => true,
-                    'message' => "Connected to GoWA server ({$version}, {$osName}).",
+                    'message' => "Connected to GoWA server ({$version}, {$osName}). WhatsApp device '{$deviceId}' is ACTIVE ({$deviceState}).",
                     'data' => $data,
+                    'device_state' => $deviceState,
                 ];
             }
 
@@ -63,12 +78,63 @@ class GoWaService
     }
 
     /**
+     * Inspect WhatsApp device connection status on GoWA server.
+     */
+    public function getDeviceStatus(string $url, ?string $apiKey = null, ?string $sessionId = null): array
+    {
+        $url = rtrim($url, '/');
+        $deviceId = $this->resolveDeviceId($url, $apiKey, $sessionId);
+
+        try {
+            $resp = $this->httpClient($apiKey, $sessionId)->timeout(5)->get("{$url}/devices");
+
+            if ($resp->successful()) {
+                $devices = $resp->json()['results'] ?? [];
+
+                if (is_array($devices) && !empty($devices)) {
+                    foreach ($devices as $dev) {
+                        if (($dev['id'] ?? '') === $deviceId || empty($deviceId)) {
+                            $st = strtolower($dev['state'] ?? '');
+                            $hasJid = !empty($dev['jid']);
+                            $isConnected = ($st === 'connected' || $st === 'logged_in') && $hasJid;
+
+                            $statusLabel = $isConnected ? 'connected' : ($hasJid ? $dev['state'] : 'not paired yet');
+
+                            return [
+                                'connected' => $isConnected,
+                                'device_id' => $dev['id'] ?? $deviceId,
+                                'state' => $statusLabel,
+                                'jid' => $dev['jid'] ?? null,
+                            ];
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::debug('GoWA getDeviceStatus failed', ['error' => $e->getMessage()]);
+        }
+
+        return ['connected' => true, 'device_id' => $deviceId, 'state' => 'unknown', 'jid' => null];
+    }
+
+    /**
      * Get participants in a GoWA group via GET /group/info or GET /group/members.
      */
     public function getGroupParticipants(string $url, string $groupId, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
         $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
+
+        $devStatus = $this->getDeviceStatus($url, $apiKey, $sessionId);
+
+        if (!$devStatus['connected']) {
+            return [
+                'success' => false,
+                'message' => "WhatsApp device '{$devStatus['device_id']}' is DISCONNECTED ({$devStatus['state']}) on GoWA server. Please click Pair in your GoWA dashboard to connect WhatsApp.",
+                'participants' => [],
+            ];
+        }
+
         $primaryErrorMessage = null;
 
         try {
@@ -237,6 +303,20 @@ class GoWaService
     {
         $url = rtrim($url, '/');
         $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
+
+        $devStatus = $this->getDeviceStatus($url, $apiKey, $sessionId);
+
+        if (!$devStatus['connected']) {
+            return [
+                'success' => false,
+                'added' => [],
+                'failed' => array_map(fn ($p) => [
+                    'phone' => $p,
+                    'reason' => "WhatsApp device '{$devStatus['device_id']}' is DISCONNECTED ({$devStatus['state']}) on GoWA server. Please pair/scan QR code in your GoWA dashboard.",
+                ], $phones),
+            ];
+        }
+
         $added = [];
         $failed = [];
         $validPhones = [];

@@ -74,7 +74,7 @@ class GoWaApiController extends Controller
             'async' => ['sometimes', 'boolean'],
         ]);
 
-        $async = $validated['async'] ?? (count($validated['phones']) > 15);
+        $async = $validated['async'] ?? true;
         $tenantId = app()->bound('tenant') ? (int) app('tenant')->id : null;
 
         if ($async) {
@@ -88,13 +88,17 @@ class GoWaApiController extends Controller
                 $validated['session_id'] ?? null,
             );
 
+            $count = count($validated['phones']);
+            $targetLabel = $count === 1 ? ($validated['phones'][0]) : ("{$count} member(s)");
+
             return response()->json([
                 'success' => true,
                 'async' => true,
-                'message' => 'Group sync operation queued for background processing.',
+                'message' => "Group {$validated['action']} action queued in background for {$targetLabel}.",
                 'action' => $validated['action'],
                 'group_id' => $validated['group_id'],
-                'queued_count' => count($validated['phones']),
+                'queued_count' => $count,
+                'phones' => $validated['phones'],
             ], 202);
         }
 

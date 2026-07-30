@@ -284,8 +284,9 @@
               {{ group.compareError }}
             </div>
 
-            <!-- Comparison Results Summary -->
-            <div v-if="group.comparison" class="space-y-3 mt-2">
+            <!-- Comparison Results & Interactive Action Lists -->
+            <div v-if="group.comparison" class="space-y-4 mt-3">
+              <!-- Summary Count Cards -->
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 p-3 text-center">
                   <span class="block text-xs text-secondary-500 dark:text-secondary-400 font-medium">Matching System</span>
@@ -297,42 +298,161 @@
                   <span class="text-lg font-bold text-secondary-900 dark:text-white">{{ group.comparison.gowa_participants_count }}</span>
                 </div>
 
-                <div class="rounded-lg border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/20 p-3 text-center">
+                <div class="rounded-lg border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/20 p-3 text-center cursor-pointer" @click="group.activeTab = 'add'">
                   <span class="block text-xs text-green-700 dark:text-green-300 font-medium">To Add</span>
                   <span class="text-lg font-bold text-green-700 dark:text-green-300">+{{ group.comparison.to_add_count }}</span>
                 </div>
 
-                <div class="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-3 text-center">
+                <div class="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-3 text-center cursor-pointer" @click="group.activeTab = 'remove'">
                   <span class="block text-xs text-amber-700 dark:text-amber-300 font-medium">To Remove</span>
                   <span class="text-lg font-bold text-amber-700 dark:text-amber-300">-{{ group.comparison.to_remove_count }}</span>
                 </div>
               </div>
 
-              <!-- Action buttons -->
-              <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium disabled:opacity-50 transition-colors"
-                  :disabled="group.syncing || group.comparison.to_add_count === 0"
-                  @click="syncAction(group, 'add')"
-                >
-                  <UserPlus class="w-3.5 h-3.5" />
-                  Bulk Add Missing ({{ group.comparison.to_add_count }})
-                </button>
-
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium disabled:opacity-50 transition-colors"
-                  :disabled="group.syncing || group.comparison.to_remove_count === 0"
-                  @click="syncAction(group, 'remove')"
-                >
-                  <UserMinus class="w-3.5 h-3.5" />
-                  Bulk Remove Non-Matching ({{ group.comparison.to_remove_count }})
-                </button>
+              <!-- Sync Feedback Banner -->
+              <div v-if="group.syncResult" class="text-xs rounded-lg p-3 flex items-center justify-between" :class="group.syncResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'">
+                <span>{{ group.syncResult.message }}</span>
               </div>
 
-              <div v-if="group.syncResult" class="text-xs rounded-lg p-2.5" :class="group.syncResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'">
-                {{ group.syncResult.message }}
+              <!-- Action List Tab Header & Bulk Actions -->
+              <div class="border-b border-secondary-200 dark:border-secondary-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 pb-1">
+                <div class="flex gap-4">
+                  <button
+                    type="button"
+                    class="pb-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5"
+                    :class="(group.activeTab || 'add') === 'add' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:text-secondary-400'"
+                    @click="group.activeTab = 'add'"
+                  >
+                    <UserPlus class="w-3.5 h-3.5" />
+                    Missing Members to Add ({{ group.comparison.to_add_count }})
+                  </button>
+
+                  <button
+                    type="button"
+                    class="pb-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5"
+                    :class="group.activeTab === 'remove' ? 'border-amber-600 text-amber-600 dark:text-amber-400' : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:text-secondary-400'"
+                    @click="group.activeTab = 'remove'"
+                  >
+                    <UserMinus class="w-3.5 h-3.5" />
+                    Non-Matching to Remove ({{ group.comparison.to_remove_count }})
+                  </button>
+                </div>
+
+                <div v-if="(group.activeTab || 'add') === 'add'">
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium disabled:opacity-50 transition-colors"
+                    :disabled="group.syncing || group.comparison.to_add_count === 0"
+                    @click="syncAction(group, 'add')"
+                  >
+                    <UserPlus class="w-3.5 h-3.5" />
+                    Bulk Add All Missing ({{ group.comparison.to_add_count }})
+                  </button>
+                </div>
+
+                <div v-else>
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium disabled:opacity-50 transition-colors"
+                    :disabled="group.syncing || group.comparison.to_remove_count === 0"
+                    @click="syncAction(group, 'remove')"
+                  >
+                    <UserMinus class="w-3.5 h-3.5" />
+                    Bulk Remove All Extra ({{ group.comparison.to_remove_count }})
+                  </button>
+                </div>
+              </div>
+
+              <!-- Missing Members To Add List (One-by-One Queue Actions) -->
+              <div v-if="(group.activeTab || 'add') === 'add'" class="space-y-2">
+                <div v-if="group.comparison.to_add.length === 0" class="text-xs text-secondary-500 dark:text-secondary-400 py-4 text-center border border-dashed border-secondary-200 dark:border-secondary-700 rounded-lg">
+                  All matching system members are already in this WhatsApp group!
+                </div>
+
+                <div v-else class="max-h-80 overflow-y-auto space-y-2 pr-1">
+                  <div
+                    v-for="member in group.comparison.to_add"
+                    :key="member.id || member.phone"
+                    class="flex items-center justify-between p-2.5 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 text-xs"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div class="w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold flex items-center justify-center text-xs">
+                        {{ (member.name || 'M').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-secondary-900 dark:text-white">
+                          {{ member.name || 'Member' }}
+                        </div>
+                        <div class="text-secondary-500 dark:text-secondary-400 font-mono text-[11px]">
+                          {{ member.phone }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <span v-if="member.statusText" class="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        {{ member.statusText }}
+                      </span>
+
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white font-medium text-xs disabled:opacity-50 transition-colors"
+                        :disabled="member.loading || member.queued"
+                        @click="syncSingleMember(group, 'add', member)"
+                      >
+                        <RefreshCw v-if="member.loading" class="w-3 h-3 animate-spin" />
+                        <UserPlus v-else class="w-3 h-3" />
+                        {{ member.queued ? 'Queued' : (member.loading ? 'Queuing...' : 'Add Member (Queue)') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Non-Matching Members To Remove List (One-by-One Queue Actions) -->
+              <div v-else class="space-y-2">
+                <div v-if="group.comparison.to_remove.length === 0" class="text-xs text-secondary-500 dark:text-secondary-400 py-4 text-center border border-dashed border-secondary-200 dark:border-secondary-700 rounded-lg">
+                  No extra non-matching members in this WhatsApp group!
+                </div>
+
+                <div v-else class="max-h-80 overflow-y-auto space-y-2 pr-1">
+                  <div
+                    v-for="item in group.comparison.to_remove"
+                    :key="item.raw_phone || item.normalized_phone"
+                    class="flex items-center justify-between p-2.5 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 text-xs"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div class="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold flex items-center justify-center text-xs">
+                        #
+                      </div>
+                      <div>
+                        <div class="font-mono text-secondary-900 dark:text-white font-medium">
+                          {{ item.raw_phone || item.normalized_phone }}
+                        </div>
+                        <div class="text-secondary-500 dark:text-secondary-400 text-[11px]">
+                          Non-matching group participant
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <span v-if="item.statusText" class="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        {{ item.statusText }}
+                      </span>
+
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs disabled:opacity-50 transition-colors"
+                        :disabled="item.loading || item.queued"
+                        @click="syncSingleMember(group, 'remove', item)"
+                      >
+                        <RefreshCw v-if="item.loading" class="w-3 h-3 animate-spin" />
+                        <UserMinus v-else class="w-3 h-3" />
+                        {{ item.queued ? 'Queued' : (item.loading ? 'Queuing...' : 'Remove Member (Queue)') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -513,6 +633,47 @@ async function syncAction(group, action) {
         };
     } finally {
         group.syncing = false;
+    }
+}
+
+async function syncSingleMember(group, action, memberItem) {
+    const phone = action === 'add'
+        ? (memberItem.phone || memberItem.raw_phone)
+        : (memberItem.raw_phone || memberItem.normalized_phone);
+
+    if (!phone || !group.group_id) return;
+
+    memberItem.loading = true;
+
+    try {
+        const response = await apiRequest('/api/settings/gowa/groups/sync', {
+            method: 'post',
+            data: {
+                url: localConfig.url,
+                api_key: localConfig.api_key,
+                session_id: localConfig.session_id,
+                group_id: group.group_id,
+                action,
+                phones: [phone],
+                async: true,
+            },
+        });
+
+        memberItem.queued = true;
+        memberItem.statusText = 'Queued in Queue Job';
+
+        group.syncResult = {
+            success: true,
+            message: response.message || `Queued ${action} for ${phone} in background queue job.`,
+        };
+    } catch (error) {
+        memberItem.statusText = 'Failed to queue';
+        group.syncResult = {
+            success: false,
+            message: error?.response?.data?.message || error?.message || `Failed to queue ${action} for ${phone}.`,
+        };
+    } finally {
+        memberItem.loading = false;
     }
 }
 
