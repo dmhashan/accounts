@@ -68,6 +68,7 @@ class GoWaService
     public function getGroupParticipants(string $url, string $groupId, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
+        $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
 
         try {
             // Primary GoWA endpoint: GET /group/info?group_id={groupId}
@@ -159,19 +160,32 @@ class GoWaService
     public function addParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
+        $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
         $added = [];
         $failed = [];
+        $validPhones = [];
 
-        // Process in chunks (10 at a time) to prevent one bad number from breaking a giant batch,
+        foreach ($phones as $p) {
+            $norm = $this->normalizePhone($p);
+
+            // Valid international phones (like 94771234567) are 10 to 15 digits
+            if (!$norm || strlen($norm) < 10 || strlen($norm) > 15) {
+                $failed[] = ['phone' => $p, 'reason' => 'Invalid phone number format'];
+            } else {
+                $validPhones[] = $p;
+            }
+        }
+
+        // Process valid phones in chunks (10 at a time) to prevent one bad number from breaking a giant batch,
         // and avoid huge sequential fallback loops that trigger 504 Gateway Timeouts.
-        $chunks = array_chunk($phones, 10);
+        $chunks = array_chunk($validPhones, 10);
 
         foreach ($chunks as $chunk) {
             $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
 
             try {
                 $response = $this->httpClient($apiKey, $sessionId)
-                    ->timeout(15)
+                    ->timeout(12)
                     ->post("{$url}/group/participants", [
                         'group_id' => $groupId,
                         'participants' => $formattedPhones,
@@ -204,27 +218,16 @@ class GoWaService
             }
 
             // Fallback per-phone add for numbers in this chunk only
-            $session = $sessionId ?: 'default';
-
             foreach ($chunk as $phone) {
                 $formatted = $this->formatForGoWa($phone);
 
                 try {
                     $resp = $this->httpClient($apiKey, $sessionId)
-                        ->timeout(6)
+                        ->timeout(5)
                         ->post("{$url}/group/participants", [
                             'group_id' => $groupId,
                             'participants' => [$formatted],
                         ]);
-
-                    if (!$resp->successful()) {
-                        $resp = $this->httpClient($apiKey, $sessionId)
-                            ->timeout(6)
-                            ->post("{$url}/api/{$session}/addParticipant", [
-                                'groupId' => $groupId,
-                                'participant' => $formatted,
-                            ]);
-                    }
 
                     if ($resp->successful()) {
                         $body = $resp->json();
@@ -238,7 +241,9 @@ class GoWaService
                             $failed[] = ['phone' => $phone, 'reason' => $firstRes['message'] ?? 'Failed to add participant'];
                         }
                     } else {
-                        $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
+                        $errBody = $resp->json();
+                        $errMsg = $errBody['message'] ?? ('HTTP ' . $resp->status());
+                        $failed[] = ['phone' => $phone, 'reason' => $errMsg];
                     }
                 } catch (\Throwable $e) {
                     $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
@@ -259,18 +264,30 @@ class GoWaService
     public function removeParticipants(string $url, string $groupId, array $phones, ?string $apiKey = null, ?string $sessionId = null): array
     {
         $url = rtrim($url, '/');
+        $sessionId = $this->resolveDeviceId($url, $apiKey, $sessionId);
         $removed = [];
         $failed = [];
+        $validPhones = [];
 
-        // Process in chunks (10 at a time) to prevent timeouts and isolate failures.
-        $chunks = array_chunk($phones, 10);
+        foreach ($phones as $p) {
+            $norm = $this->normalizePhone($p);
+
+            if (!$norm || strlen($norm) < 10 || strlen($norm) > 15) {
+                $failed[] = ['phone' => $p, 'reason' => 'Invalid phone number format'];
+            } else {
+                $validPhones[] = $p;
+            }
+        }
+
+        // Process valid phones in chunks (10 at a time) to prevent timeouts and isolate failures.
+        $chunks = array_chunk($validPhones, 10);
 
         foreach ($chunks as $chunk) {
             $formattedPhones = array_map(fn ($p) => $this->formatForGoWa($p), $chunk);
 
             try {
                 $response = $this->httpClient($apiKey, $sessionId)
-                    ->timeout(15)
+                    ->timeout(12)
                     ->post("{$url}/group/participants/remove", [
                         'group_id' => $groupId,
                         'participants' => $formattedPhones,
@@ -303,27 +320,16 @@ class GoWaService
             }
 
             // Fallback per-phone remove for numbers in this chunk only
-            $session = $sessionId ?: 'default';
-
             foreach ($chunk as $phone) {
                 $formatted = $this->formatForGoWa($phone);
 
                 try {
                     $resp = $this->httpClient($apiKey, $sessionId)
-                        ->timeout(6)
+                        ->timeout(5)
                         ->post("{$url}/group/participants/remove", [
                             'group_id' => $groupId,
                             'participants' => [$formatted],
                         ]);
-
-                    if (!$resp->successful()) {
-                        $resp = $this->httpClient($apiKey, $sessionId)
-                            ->timeout(6)
-                            ->post("{$url}/api/{$session}/removeParticipant", [
-                                'groupId' => $groupId,
-                                'participant' => $formatted,
-                            ]);
-                    }
 
                     if ($resp->successful()) {
                         $body = $resp->json();
@@ -337,7 +343,9 @@ class GoWaService
                             $failed[] = ['phone' => $phone, 'reason' => $firstRes['message'] ?? 'Failed to remove participant'];
                         }
                     } else {
-                        $failed[] = ['phone' => $phone, 'reason' => 'HTTP ' . $resp->status()];
+                        $errBody = $resp->json();
+                        $errMsg = $errBody['message'] ?? ('HTTP ' . $resp->status());
+                        $failed[] = ['phone' => $phone, 'reason' => $errMsg];
                     }
                 } catch (\Throwable $e) {
                     $failed[] = ['phone' => $phone, 'reason' => $e->getMessage()];
@@ -540,6 +548,40 @@ class GoWaService
         }
 
         return $client;
+    }
+
+    /**
+     * Resolve valid GoWA device ID if a phone JID or empty session ID was provided.
+     */
+    public function resolveDeviceId(string $url, ?string $apiKey = null, ?string $sessionId = null): ?string
+    {
+        if (!empty($sessionId) && !str_contains($sessionId, '@')) {
+            return $sessionId;
+        }
+
+        try {
+            $resp = $this->httpClient($apiKey)->timeout(5)->get(rtrim($url, '/') . '/devices');
+
+            if ($resp->successful()) {
+                $devices = $resp->json()['results'] ?? [];
+
+                if (is_array($devices) && !empty($devices)) {
+                    foreach ($devices as $dev) {
+                        if (($dev['state'] ?? '') === 'connected' && !empty($dev['id'])) {
+                            return $dev['id'];
+                        }
+                    }
+
+                    if (!empty($devices[0]['id'])) {
+                        return $devices[0]['id'];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::debug('Failed to resolve GoWA device ID', ['error' => $e->getMessage()]);
+        }
+
+        return $sessionId;
     }
 
     /**
