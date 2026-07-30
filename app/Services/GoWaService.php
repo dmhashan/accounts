@@ -24,9 +24,9 @@ class GoWaService
 
             if ($response->successful()) {
                 $body = $response->json();
-                $data = $body['data'] ?? $body;
+                $data = $body['results'] ?? $body['data'] ?? $body['response'] ?? $body['result'] ?? $body;
                 $version = $data['version'] ?? 'v9.0.0';
-                $osName = $data['device_os_name'] ?? 'GOWA';
+                $osName = $data['device_os_name'] ?? $data['os'] ?? 'GOWA';
 
                 return [
                     'success' => true,
@@ -98,12 +98,12 @@ class GoWaService
 
             if ($response->successful()) {
                 $body = $response->json();
-                $data = $body['data'] ?? $body['response'] ?? $body['result'] ?? $body;
+                $data = $body['results'] ?? $body['data'] ?? $body['response'] ?? $body['result'] ?? $body;
 
                 $rawList = [];
 
                 if (is_array($data)) {
-                    $rawList = $data['participants'] ?? $data['members'] ?? (isset($data[0]) ? $data : []);
+                    $rawList = $data['participants'] ?? $data['Participants'] ?? $data['members'] ?? $data['Members'] ?? (isset($data[0]) ? $data : []);
                 }
 
                 $participants = [];
@@ -115,7 +115,7 @@ class GoWaService
                         if (is_string($item)) {
                             $phone = $item;
                         } elseif (is_array($item)) {
-                            $phone = $item['id']['_serialized'] ?? $item['id'] ?? $item['user'] ?? $item['phone'] ?? $item['jid'] ?? null;
+                            $phone = $item['PhoneNumber'] ?? $item['phone_number'] ?? $item['phone'] ?? $item['id']['_serialized'] ?? $item['id'] ?? $item['user'] ?? (isset($item['JID']) && str_contains($item['JID'], '@s.whatsapp.net') ? $item['JID'] : null) ?? $item['jid'] ?? null;
                         }
 
                         if ($phone) {
@@ -431,15 +431,32 @@ class GoWaService
         $client = Http::acceptJson();
 
         if (!empty($apiKey)) {
-            $client = $client->withHeaders([
-                'api_key' => $apiKey,
-                'Authorization' => "Bearer {$apiKey}",
-            ]);
+            if (str_starts_with($apiKey, 'Basic ') || str_starts_with($apiKey, 'Bearer ')) {
+                $client = $client->withHeaders([
+                    'Authorization' => $apiKey,
+                    'api_key' => $apiKey,
+                ]);
+            } elseif (str_contains($apiKey, ':')) {
+                [$user, $pass] = explode(':', $apiKey, 2);
+                $client = $client->withBasicAuth($user, $pass)
+                    ->withHeaders([
+                        'api_key' => $pass,
+                        'X-Api-Key' => $pass,
+                    ]);
+            } else {
+                $client = $client->withBasicAuth('admin', $apiKey)
+                    ->withHeaders([
+                        'api_key' => $apiKey,
+                        'X-Api-Key' => $apiKey,
+                    ]);
+            }
         }
 
         if (!empty($sessionId)) {
             $client = $client->withHeaders([
                 'X-Device-Id' => $sessionId,
+                'session_id' => $sessionId,
+                'session' => $sessionId,
             ]);
         }
 
