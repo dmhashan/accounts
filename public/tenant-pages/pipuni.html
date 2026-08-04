@@ -689,7 +689,7 @@
             line-height: 1.6;
         }
 
-        /* ===== PRICING & MEMBERSHIP (UPDATED - SINGLE STANDARD PLAN) ===== */
+        /* ===== PRICING & MEMBERSHIP SECTION ===== */
         .pricing-wrap {
             max-width: 840px;
             margin: 0 auto;
@@ -837,61 +837,6 @@
             font-weight: 800;
         }
 
-        /* ===== SCHEDULE TIMETABLE (UPDATED - TUE, THU, SAT) ===== */
-        .schedule-table-wrap {
-            background: var(--bg-card);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-            max-width: 960px;
-            margin: 0 auto;
-        }
-
-        table.schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        .schedule-table th {
-            background: rgba(233, 30, 99, 0.18);
-            font-family: var(--font-heading);
-            font-size: 15px;
-            font-weight: 800;
-            color: #fff;
-            padding: 20px 28px;
-            border-bottom: 1px solid var(--border-pink);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .schedule-table td {
-            padding: 22px 28px;
-            border-bottom: 1px solid var(--border-light);
-            font-size: 15px;
-            color: var(--text-muted);
-        }
-
-        .schedule-table tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
-            color: #fff;
-        }
-
-        .class-badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: var(--radius-full);
-            font-size: 12.5px;
-            font-weight: 700;
-        }
-
-        .badge-zumba { background: rgba(233, 30, 99, 0.2); color: #ff4081; border: 1px solid rgba(233, 30, 99, 0.4); }
-        .badge-aerobics { background: rgba(156, 39, 176, 0.2); color: #e040fb; border: 1px solid rgba(156, 39, 176, 0.4); }
-        .badge-bollywood { background: rgba(255, 152, 0, 0.2); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.4); }
-        .badge-traditional { background: rgba(0, 188, 212, 0.2); color: #4dd0e1; border: 1px solid rgba(0, 188, 212, 0.4); }
-        .badge-freestyle { background: rgba(76, 175, 80, 0.2); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.4); }
-
         /* ===== FOOTER ===== */
         .footer {
             background: #07020c;
@@ -1013,10 +958,6 @@
             .footer-grid {
                 grid-template-columns: 1fr;
             }
-            .schedule-table th, .schedule-table td {
-                padding: 14px 16px;
-                font-size: 13.5px;
-            }
         }
     </style>
 </head>
@@ -1038,7 +979,6 @@
                 <li><a href="#programs">Programs</a></li>
                 <li><a href="#pillars">Benefits</a></li>
                 <li><a href="#pricing">Pricing</a></li>
-                <li><a href="#schedule">Schedule</a></li>
             </ul>
 
             <div class="nav-actions">
@@ -1068,8 +1008,8 @@
                 </p>
 
                 <div class="hero-ctas">
-                    <a href="#schedule" class="btn btn-primary">
-                        View Class Schedule
+                    <a href="#programs" class="btn btn-primary">
+                        Explore Programs
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
                     <a href="#pricing" class="btn btn-secondary">
@@ -1087,8 +1027,8 @@
                         <span>Monthly Fee</span>
                     </div>
                     <div class="stat-card-mini">
-                        <strong>Tue, Thu, Sat</strong>
-                        <span>Class Days</span>
+                        <strong>5+ Styles</strong>
+                        <span>Dance & Fitness</span>
                     </div>
                 </div>
             </div>
@@ -1121,7 +1061,7 @@
             <div class="ticker-item"><span>BOLLYWOOD DANCE</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>TRADITIONAL FUSION</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>FREESTYLE RHYTHM</span> <div class="ticker-dot"></div></div>
-            <div class="ticker-item"><span>TUESDAY • THURSDAY • SATURDAY</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>MOVE STRONGER LIVE BETTER</span> <div class="ticker-dot"></div></div>
 
             <!-- Repeated for seamless loop -->
             <div class="ticker-item"><span>ZUMBA FITNESS</span> <div class="ticker-dot"></div></div>
@@ -1129,7 +1069,7 @@
             <div class="ticker-item"><span>BOLLYWOOD DANCE</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>TRADITIONAL FUSION</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>FREESTYLE RHYTHM</span> <div class="ticker-dot"></div></div>
-            <div class="ticker-item"><span>TUESDAY • THURSDAY • SATURDAY</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>MOVE STRONGER LIVE BETTER</span> <div class="ticker-dot"></div></div>
         </div>
     </div>
 
@@ -1288,7 +1228,7 @@
                     <div class="single-pricing-card">
                         <span class="plan-badge">Recurring Membership</span>
                         <h3 class="plan-name">Monthly Fee</h3>
-                        <p class="plan-subtitle">Full access for Tuesday, Thursday & Saturday sessions</p>
+                        <p class="plan-subtitle">Full access to dance & fitness sessions</p>
 
                         <div class="price-box">
                             <div class="price-val">LKR 3,000 <small>/ month</small></div>
@@ -1301,11 +1241,11 @@
                             </li>
                             <li>
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                Morning (10-11 AM) or Evening (7-8 PM) Slots
+                                Professional Instructor Guidance
                             </li>
                             <li>
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                Professional Instructor Guidance
+                                Online Member Portal Dashboard
                             </li>
                         </ul>
                     </div>
@@ -1332,46 +1272,6 @@
         </div>
     </section>
 
-    <!-- ===== SCHEDULE TIMETABLE (TUE, THU, SAT ONLY) ===== -->
-    <section class="section" id="schedule">
-        <div class="container">
-            <div class="title-block text-center reveal">
-                <div class="section-tag">Class Timetable</div>
-                <h2 class="section-title gradient-text">Class Schedule</h2>
-                <p class="section-desc">Sessions take place on <strong>Tuesday, Thursday, and Saturday</strong> with morning and evening options.</p>
-            </div>
-
-            <div class="schedule-table-wrap reveal">
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th>Day</th>
-                            <th>Morning Session (10:00 AM - 11:00 AM)</th>
-                            <th>Evening Session (7:00 PM - 8:00 PM)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Tuesday</strong></td>
-                            <td><span class="class-badge badge-zumba">Zumba Fitness</span></td>
-                            <td><span class="class-badge badge-aerobics">Aerobics & Core Workout</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Thursday</strong></td>
-                            <td><span class="class-badge badge-bollywood">Bollywood Beats</span></td>
-                            <td><span class="class-badge badge-zumba">Zumba Cardio Party</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Saturday</strong></td>
-                            <td><span class="class-badge badge-traditional">Traditional Dance Fusion</span></td>
-                            <td><span class="class-badge badge-freestyle">Freestyle Rhythm Groove</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-
     <!-- ===== FOOTER ===== -->
     <footer class="footer">
         <div class="container">
@@ -1394,7 +1294,6 @@
                         <li><a href="#programs">Programs</a></li>
                         <li><a href="#pillars">Benefits</a></li>
                         <li><a href="#pricing">Pricing</a></li>
-                        <li><a href="#schedule">Schedule</a></li>
                     </ul>
                 </div>
 
