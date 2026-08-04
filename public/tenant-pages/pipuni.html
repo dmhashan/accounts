@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pipuni's Dance & Fitness — Move Stronger, Live Better</title>
-    <meta name="description" content="Join Pipuni's Dance & Fitness Studio for Zumba, Aerobics, Bollywood, Traditional & Freestyle Dance. Admission Fee Rs 1,500 | Monthly Fee Rs 3,000." />
+    <meta name="description" content="Join Pipuni's Dance & Fitness Studio for Zumba, Aerobics, Bollywood, Traditional & Freestyle Dance. Admission Fee LKR 1,500 | Monthly Fee LKR 3,000." />
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <style>
-        /* ===== DESIGN SYSTEM & COLORED PALETTE (FROM PIPUNI POSTER) ===== */
+        /* ===== DESIGN SYSTEM & COLOR PALETTE (FROM PIPUNI POSTER) ===== */
         :root {
             --bg-dark: #0c0414;
             --bg-card: #150826;
@@ -252,7 +252,7 @@
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 32px;
+            gap: 36px;
             list-style: none;
         }
 
@@ -631,7 +631,7 @@
             color: var(--text-subtle);
         }
 
-        /* ===== THE 4 PILLARS (POSTER BENEFIT CARDS) ===== */
+        /* ===== THE 4 PILLARS ===== */
         .pillars-section {
             background: linear-gradient(180deg, var(--bg-dark) 0%, #150628 50%, var(--bg-dark) 100%);
         }
@@ -689,71 +689,68 @@
             line-height: 1.6;
         }
 
-        /* ===== PRICING & MEMBERSHIP ===== */
-        .pricing-grid {
+        /* ===== PRICING & MEMBERSHIP (UPDATED - SINGLE STANDARD PLAN) ===== */
+        .pricing-wrap {
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        .pricing-cards-row {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-            align-items: stretch;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 40px;
         }
 
-        .pricing-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-lg);
-            padding: 40px 32px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .pricing-card.popular {
+        .single-pricing-card {
             background: linear-gradient(180deg, #240a3b 0%, #170729 100%);
             border: 2px solid var(--pink-primary);
+            border-radius: var(--radius-lg);
+            padding: 40px;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5), 0 0 35px var(--pink-glow);
-            transform: scale(1.04);
+            position: relative;
+            transition: transform 0.3s ease;
         }
 
-        .popular-badge {
-            position: absolute;
-            top: -16px;
-            left: 50%;
-            transform: translateX(-50%);
+        .single-pricing-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .plan-badge {
+            display: inline-block;
             background: linear-gradient(90deg, var(--pink-primary), var(--pink-bright));
             color: #fff;
             font-size: 11px;
             font-weight: 800;
-            padding: 6px 20px;
+            padding: 5px 16px;
             border-radius: var(--radius-full);
             text-transform: uppercase;
             letter-spacing: 1.5px;
+            margin-bottom: 16px;
             box-shadow: 0 4px 15px var(--pink-glow);
         }
 
         .plan-name {
             font-family: var(--font-heading);
-            font-size: 22px;
+            font-size: 26px;
             font-weight: 800;
             margin-bottom: 8px;
             color: #fff;
         }
 
         .plan-subtitle {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-subtle);
             margin-bottom: 24px;
         }
 
         .price-box {
-            margin-bottom: 30px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 24px;
         }
 
         .price-val {
             font-family: var(--font-heading);
-            font-size: 44px;
+            font-size: 46px;
             font-weight: 900;
             color: #fff;
             line-height: 1;
@@ -765,25 +762,13 @@
             color: var(--text-subtle);
         }
 
-        .price-detail-tag {
-            display: inline-block;
-            margin-top: 10px;
-            font-size: 12.5px;
-            color: var(--pink-light);
-            font-weight: 700;
-            background: rgba(233, 30, 99, 0.1);
-            padding: 4px 12px;
-            border-radius: var(--radius-full);
-        }
-
         .plan-features {
             list-style: none;
-            margin-bottom: 36px;
-            flex-grow: 1;
+            margin-top: 24px;
         }
 
         .plan-features li {
-            font-size: 14px;
+            font-size: 14.5px;
             color: var(--text-muted);
             margin-bottom: 14px;
             display: flex;
@@ -803,8 +788,7 @@
             background: linear-gradient(135deg, rgba(233, 30, 99, 0.12), rgba(123, 44, 191, 0.15));
             border: 1px dashed var(--pink-primary);
             border-radius: var(--radius-md);
-            padding: 24px 30px;
-            margin-top: 50px;
+            padding: 28px 36px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -814,14 +798,14 @@
 
         .fee-info h4 {
             font-family: var(--font-heading);
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 800;
             color: #fff;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .fee-info p {
-            font-size: 14px;
+            font-size: 14.5px;
             color: var(--text-muted);
         }
 
@@ -833,7 +817,7 @@
         .fee-chip {
             background: var(--bg-dark);
             border: 1px solid var(--surface-glass-border);
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: var(--radius-sm);
             text-align: center;
         }
@@ -848,18 +832,20 @@
 
         .fee-chip strong {
             font-family: var(--font-heading);
-            font-size: 20px;
+            font-size: 22px;
             color: var(--pink-light);
             font-weight: 800;
         }
 
-        /* ===== SCHEDULE TIMETABLE ===== */
+        /* ===== SCHEDULE TIMETABLE (UPDATED - TUE, THU, SAT) ===== */
         .schedule-table-wrap {
             background: var(--bg-card);
             border: 1px solid var(--border-light);
             border-radius: var(--radius-md);
             overflow: hidden;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            max-width: 960px;
+            margin: 0 auto;
         }
 
         table.schedule-table {
@@ -869,21 +855,21 @@
         }
 
         .schedule-table th {
-            background: rgba(233, 30, 99, 0.15);
+            background: rgba(233, 30, 99, 0.18);
             font-family: var(--font-heading);
             font-size: 15px;
             font-weight: 800;
             color: #fff;
-            padding: 18px 24px;
+            padding: 20px 28px;
             border-bottom: 1px solid var(--border-pink);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .schedule-table td {
-            padding: 18px 24px;
+            padding: 22px 28px;
             border-bottom: 1px solid var(--border-light);
-            font-size: 14px;
+            font-size: 15px;
             color: var(--text-muted);
         }
 
@@ -894,9 +880,9 @@
 
         .class-badge {
             display: inline-block;
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: var(--radius-full);
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 700;
         }
 
@@ -905,140 +891,6 @@
         .badge-bollywood { background: rgba(255, 152, 0, 0.2); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.4); }
         .badge-traditional { background: rgba(0, 188, 212, 0.2); color: #4dd0e1; border: 1px solid rgba(0, 188, 212, 0.4); }
         .badge-freestyle { background: rgba(76, 175, 80, 0.2); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.4); }
-
-        /* ===== BANK TRANSFER & PAYMENTS ===== */
-        .payment-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        .payment-card {
-            background: var(--bg-card);
-            border: 1px solid var(--surface-glass-border);
-            border-radius: var(--radius-md);
-            padding: 36px;
-            position: relative;
-        }
-
-        .payment-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .payment-icon-bg {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--pink-primary), var(--purple-primary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: #fff;
-        }
-
-        .bank-details-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: var(--radius-sm);
-            padding: 20px;
-            margin-top: 16px;
-        }
-
-        .bank-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-
-        .bank-row:last-child { margin-bottom: 0; }
-
-        .bank-row span { color: var(--text-subtle); }
-        .bank-row strong { color: #fff; font-weight: 700; }
-        .bank-acc-num { font-family: monospace; font-size: 18px; color: var(--pink-light) !important; letter-spacing: 1px; }
-
-        /* ===== ENROLLMENT FORM SECTION ===== */
-        .enroll-section {
-            background: linear-gradient(135deg, #1b0730 0%, #0c0414 100%);
-            border-top: 1px solid var(--border-pink);
-            border-bottom: 1px solid var(--border-pink);
-        }
-
-        .enroll-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.1fr;
-            gap: 50px;
-            align-items: center;
-        }
-
-        .enroll-form {
-            background: var(--bg-card);
-            border: 1px solid var(--surface-glass-border);
-            border-radius: var(--radius-lg);
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--pink-glow);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 14px 18px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: var(--radius-sm);
-            color: #fff;
-            font-family: var(--font-body);
-            font-size: 15px;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        .form-control:focus {
-            border-color: var(--pink-primary);
-            box-shadow: 0 0 15px var(--pink-glow);
-            background: rgba(0, 0, 0, 0.6);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .calc-box {
-            background: rgba(233, 30, 99, 0.1);
-            border: 1px dashed var(--pink-primary);
-            padding: 16px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .calc-total {
-            font-family: var(--font-heading);
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--pink-bright);
-        }
 
         /* ===== FOOTER ===== */
         .footer {
@@ -1132,16 +984,7 @@
             .pillars-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-            .pricing-grid {
-                grid-template-columns: 1fr;
-            }
-            .pricing-card.popular {
-                transform: scale(1);
-            }
-            .payment-grid {
-                grid-template-columns: 1fr;
-            }
-            .enroll-grid {
+            .pricing-cards-row {
                 grid-template-columns: 1fr;
             }
             .footer-grid {
@@ -1167,11 +1010,12 @@
             .pillars-grid {
                 grid-template-columns: 1fr;
             }
-            .form-row {
-                grid-template-columns: 1fr;
-            }
             .footer-grid {
                 grid-template-columns: 1fr;
+            }
+            .schedule-table th, .schedule-table td {
+                padding: 14px 16px;
+                font-size: 13.5px;
             }
         }
     </style>
@@ -1195,12 +1039,10 @@
                 <li><a href="#pillars">Benefits</a></li>
                 <li><a href="#pricing">Pricing</a></li>
                 <li><a href="#schedule">Schedule</a></li>
-                <li><a href="#payments">Bank Transfer</a></li>
             </ul>
 
             <div class="nav-actions">
-                <a href="#enroll" class="btn btn-primary" style="padding: 10px 22px; font-size: 13px;">Join Now</a>
-                <a href="/login" class="btn btn-secondary" style="padding: 10px 18px; font-size: 13px;">Portal Login</a>
+                <a href="/login" class="btn btn-primary" style="padding: 10px 24px; font-size: 13px;">Portal Login</a>
                 <button class="mobile-toggle" aria-label="Toggle Menu" onclick="toggleMobileNav()">☰</button>
             </div>
         </div>
@@ -1226,8 +1068,8 @@
                 </p>
 
                 <div class="hero-ctas">
-                    <a href="#enroll" class="btn btn-primary">
-                        Start Your Journey
+                    <a href="#schedule" class="btn btn-primary">
+                        View Class Schedule
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
                     <a href="#pricing" class="btn btn-secondary">
@@ -1245,8 +1087,8 @@
                         <span>Monthly Fee</span>
                     </div>
                     <div class="stat-card-mini">
-                        <strong>5+ Styles</strong>
-                        <span>Dance & Fitness</span>
+                        <strong>Tue, Thu, Sat</strong>
+                        <span>Class Days</span>
                     </div>
                 </div>
             </div>
@@ -1279,7 +1121,7 @@
             <div class="ticker-item"><span>BOLLYWOOD DANCE</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>TRADITIONAL FUSION</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>FREESTYLE RHYTHM</span> <div class="ticker-dot"></div></div>
-            <div class="ticker-item"><span>MOVE STRONGER LIVE BETTER</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>TUESDAY • THURSDAY • SATURDAY</span> <div class="ticker-dot"></div></div>
 
             <!-- Repeated for seamless loop -->
             <div class="ticker-item"><span>ZUMBA FITNESS</span> <div class="ticker-dot"></div></div>
@@ -1287,7 +1129,7 @@
             <div class="ticker-item"><span>BOLLYWOOD DANCE</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>TRADITIONAL FUSION</span> <div class="ticker-dot"></div></div>
             <div class="ticker-item"><span>FREESTYLE RHYTHM</span> <div class="ticker-dot"></div></div>
-            <div class="ticker-item"><span>MOVE STRONGER LIVE BETTER</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>TUESDAY • THURSDAY • SATURDAY</span> <div class="ticker-dot"></div></div>
         </div>
     </div>
 
@@ -1410,140 +1252,93 @@
         <div class="container">
             <div class="title-block text-center reveal">
                 <div class="section-tag">Simple & Transparent Fees</div>
-                <h2 class="section-title gradient-text">Membership Plans</h2>
-                <p class="section-desc">Get unlimited access to all dance and fitness sessions with our affordable membership structure.</p>
+                <h2 class="section-title gradient-text">Membership Pricing</h2>
+                <p class="section-desc">Affordable and straightforward payment structure for all dance and fitness sessions.</p>
             </div>
 
-            <div class="pricing-grid">
-                <!-- Standard Plan -->
-                <div class="pricing-card reveal">
-                    <h3 class="plan-name">Standard Monthly</h3>
-                    <p class="plan-subtitle">Ideal for ongoing monthly practice</p>
+            <div class="pricing-wrap reveal">
+                <div class="pricing-cards-row">
+                    <!-- Admission Fee Card -->
+                    <div class="single-pricing-card">
+                        <span class="plan-badge">One-Time Payment</span>
+                        <h3 class="plan-name">Admission Fee</h3>
+                        <p class="plan-subtitle">Required once upon initial registration</p>
 
-                    <div class="price-box">
-                        <div class="price-val">LKR 3,000 <small>/ month</small></div>
-                        <span class="price-detail-tag">+ LKR 1,500 One-time Admission</span>
+                        <div class="price-box">
+                            <div class="price-val">LKR 1,500 <small>/ one-time</small></div>
+                        </div>
+
+                        <ul class="plan-features">
+                            <li>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                Official Studio Member Registration
+                            </li>
+                            <li>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                Member Profile & Attendance System
+                            </li>
+                            <li>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                Welcome Studio Orientation
+                            </li>
+                        </ul>
                     </div>
 
-                    <ul class="plan-features">
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Access to all 5 Dance & Aerobics Styles
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Morning & Evening Class Slots
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Professional Instructor Guidance
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Online Member Portal Access
-                        </li>
-                    </ul>
+                    <!-- Monthly Fee Card -->
+                    <div class="single-pricing-card">
+                        <span class="plan-badge">Recurring Membership</span>
+                        <h3 class="plan-name">Monthly Fee</h3>
+                        <p class="plan-subtitle">Full access for Tuesday, Thursday & Saturday sessions</p>
 
-                    <a href="#enroll" class="btn btn-secondary">Select Monthly Plan</a>
-                </div>
+                        <div class="price-box">
+                            <div class="price-val">LKR 3,000 <small>/ month</small></div>
+                        </div>
 
-                <!-- Popular Plan (Quarterly Pass) -->
-                <div class="pricing-card popular reveal">
-                    <div class="popular-badge">Most Popular</div>
-                    <h3 class="plan-name">3-Month Dance Pass</h3>
-                    <p class="plan-subtitle">Best value for dedicated dancers</p>
-
-                    <div class="price-box">
-                        <div class="price-val">LKR 8,500 <small>/ 3 months</small></div>
-                        <span class="price-detail-tag">Save LKR 2,000 + Includes Admission</span>
+                        <ul class="plan-features">
+                            <li>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                Access to All 5 Dance & Fitness Styles
+                            </li>
+                            <li>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                Morning (10-11 AM) or Evening (7-8 PM) Slots
+                            </li>
+                            <li>
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                Professional Instructor Guidance
+                            </li>
+                        </ul>
                     </div>
-
-                    <ul class="plan-features">
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Full Admission Fee Included FREE
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Unlimited Access to All Dance Sessions
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Priority Booking for Weekend Workshops
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Pipuni's Studio Towel Included
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Member Portal & Attendance Tracking
-                        </li>
-                    </ul>
-
-                    <a href="#enroll" class="btn btn-primary">Join 3-Month Plan</a>
                 </div>
 
-                <!-- 6 Month Plan -->
-                <div class="pricing-card reveal">
-                    <h3 class="plan-name">6-Month Transformation</h3>
-                    <p class="plan-subtitle">Long-term fitness & dance mastery</p>
-
-                    <div class="price-box">
-                        <div class="price-val">LKR 16,500 <small>/ 6 months</small></div>
-                        <span class="price-detail-tag">Free Admission + VIP Perks</span>
+                <!-- Fee Summary Banner -->
+                <div class="fee-breakdown-banner">
+                    <div class="fee-info">
+                        <h4>First Month Total Payment</h4>
+                        <p>New members pay LKR 1,500 (Admission Fee) + LKR 3,000 (First Month Fee) = <strong>LKR 4,500 Total</strong>.</p>
                     </div>
-
-                    <ul class="plan-features">
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Zero Admission Fee
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Unlimited Zumba & Aerobics Access
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            1-on-1 Dance Choreography Coaching
-                        </li>
-                        <li>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Free Official Studio T-shirt
-                        </li>
-                    </ul>
-
-                    <a href="#enroll" class="btn btn-secondary">Select 6-Month Plan</a>
-                </div>
-            </div>
-
-            <!-- Fee Summary Banner -->
-            <div class="fee-breakdown-banner reveal">
-                <div class="fee-info">
-                    <h4>First Time Registration Breakdown</h4>
-                    <p>New members pay a one-time admission fee of LKR 1,500 + initial monthly fee of LKR 3,000.</p>
-                </div>
-                <div class="fee-tags">
-                    <div class="fee-chip">
-                        <label>One-Time Admission</label>
-                        <strong>LKR 1,500</strong>
-                    </div>
-                    <div class="fee-chip">
-                        <label>Monthly Subscription</label>
-                        <strong>LKR 3,000</strong>
+                    <div class="fee-tags">
+                        <div class="fee-chip">
+                            <label>Admission</label>
+                            <strong>LKR 1,500</strong>
+                        </div>
+                        <div class="fee-chip">
+                            <label>Monthly Fee</label>
+                            <strong>LKR 3,000</strong>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ===== SCHEDULE TIMETABLE ===== -->
+    <!-- ===== SCHEDULE TIMETABLE (TUE, THU, SAT ONLY) ===== -->
     <section class="section" id="schedule">
         <div class="container">
             <div class="title-block text-center reveal">
-                <div class="section-tag">Weekly Timetable</div>
+                <div class="section-tag">Class Timetable</div>
                 <h2 class="section-title gradient-text">Class Schedule</h2>
-                <p class="section-desc">Convenient morning and evening sessions designed to fit your busy daily routine.</p>
+                <p class="section-desc">Sessions take place on <strong>Tuesday, Thursday, and Saturday</strong> with morning and evening options.</p>
             </div>
 
             <div class="schedule-table-wrap reveal">
@@ -1551,177 +1346,28 @@
                     <thead>
                         <tr>
                             <th>Day</th>
-                            <th>Morning Session (7:30 AM - 9:00 AM)</th>
-                            <th>Evening Session (5:30 PM - 7:00 PM)</th>
+                            <th>Morning Session (10:00 AM - 11:00 AM)</th>
+                            <th>Evening Session (7:00 PM - 8:00 PM)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong>Monday</strong></td>
-                            <td><span class="class-badge badge-zumba">Zumba Fitness</span></td>
-                            <td><span class="class-badge badge-aerobics">Aerobics Workout</span></td>
-                        </tr>
-                        <tr>
                             <td><strong>Tuesday</strong></td>
-                            <td><span class="class-badge badge-bollywood">Bollywood Beats</span></td>
-                            <td><span class="class-badge badge-zumba">Zumba Cardio</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Wednesday</strong></td>
-                            <td><span class="class-badge badge-aerobics">Aerobics & Core</span></td>
-                            <td><span class="class-badge badge-traditional">Traditional Dance</span></td>
+                            <td><span class="class-badge badge-zumba">Zumba Fitness</span></td>
+                            <td><span class="class-badge badge-aerobics">Aerobics & Core Workout</span></td>
                         </tr>
                         <tr>
                             <td><strong>Thursday</strong></td>
-                            <td><span class="class-badge badge-freestyle">Freestyle Fusion</span></td>
-                            <td><span class="class-badge badge-zumba">Zumba Fitness</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Friday</strong></td>
-                            <td><span class="class-badge badge-zumba">Zumba Party</span></td>
-                            <td><span class="class-badge badge-bollywood">Bollywood Dance</span></td>
+                            <td><span class="class-badge badge-bollywood">Bollywood Beats</span></td>
+                            <td><span class="class-badge badge-zumba">Zumba Cardio Party</span></td>
                         </tr>
                         <tr>
                             <td><strong>Saturday</strong></td>
-                            <td><span class="class-badge badge-traditional">Traditional Masterclass</span></td>
-                            <td><span class="class-badge badge-freestyle">Weekend Groove</span></td>
+                            <td><span class="class-badge badge-traditional">Traditional Dance Fusion</span></td>
+                            <td><span class="class-badge badge-freestyle">Freestyle Rhythm Groove</span></td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== BANK TRANSFER & PAYMENTS ===== -->
-    <section class="section" id="payments">
-        <div class="container">
-            <div class="title-block text-center reveal">
-                <div class="section-tag">Easy Online Payments</div>
-                <h2 class="section-title purple-gradient-text">Bank Transfer Details</h2>
-                <p class="section-desc">You can easily pay your admission and monthly fees via direct bank deposit or online bank transfer.</p>
-            </div>
-
-            <div class="payment-grid reveal">
-                <div class="payment-card">
-                    <div class="payment-header">
-                        <div class="payment-icon-bg">🏦</div>
-                        <div>
-                            <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; color:#fff;">Hatton National Bank (HNB)</h3>
-                            <p style="font-size: 13px; color: var(--text-subtle);">Direct Bank Transfer</p>
-                        </div>
-                    </div>
-                    <div class="bank-details-box">
-                        <div class="bank-row">
-                            <span>Account Name:</span>
-                            <strong>Pipuni Dance & Fitness</strong>
-                        </div>
-                        <div class="bank-row">
-                            <span>Account Number:</span>
-                            <strong class="bank-acc-num">0860 2032 1406</strong>
-                        </div>
-                        <div class="bank-row">
-                            <span>Branch:</span>
-                            <strong>Main Branch</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="payment-card">
-                    <div class="payment-header">
-                        <div class="payment-icon-bg">💳</div>
-                        <div>
-                            <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; color:#fff;">Commercial Bank</h3>
-                            <p style="font-size: 13px; color: var(--text-subtle);">Alternative Bank Account</p>
-                        </div>
-                    </div>
-                    <div class="bank-details-box">
-                        <div class="bank-row">
-                            <span>Account Name:</span>
-                            <strong>Pipuni Dance & Fitness</strong>
-                        </div>
-                        <div class="bank-row">
-                            <span>Account Number:</span>
-                            <strong class="bank-acc-num">8000 1425 9901</strong>
-                        </div>
-                        <div class="bank-row">
-                            <span>Branch:</span>
-                            <strong>Main Branch</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== ENROLLMENT FORM SECTION ===== -->
-    <section class="section enroll-section" id="enroll">
-        <div class="container enroll-grid">
-            <div class="enroll-info reveal">
-                <div class="section-tag">Join Today</div>
-                <h2 class="section-title gradient-text">Ready to Move & Dance?</h2>
-                <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 24px; line-height: 1.7;">
-                    Fill out the registration form to enroll in Pipuni's Dance & Fitness. Once submitted, our team will confirm your registration and guide you to your first dance session!
-                </p>
-
-                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--surface-glass-border); padding: 20px; border-radius: var(--radius-md); margin-bottom: 20px;">
-                    <div style="font-weight: 700; color: var(--pink-light); margin-bottom: 8px;">📍 Studio Location</div>
-                    <div style="color: var(--text-muted); font-size: 14px;">Pipuni's Dance Studio, Main Street</div>
-                </div>
-
-                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--surface-glass-border); padding: 20px; border-radius: var(--radius-md);">
-                    <div style="font-weight: 700; color: var(--pink-light); margin-bottom: 8px;">📞 Contact & Inquiries</div>
-                    <div style="color: var(--text-muted); font-size: 14px;">Phone: +94 77 123 4567 | WhatsApp Supported</div>
-                </div>
-            </div>
-
-            <div class="enroll-form reveal">
-                <h3 style="font-family: var(--font-heading); font-size: 24px; font-weight: 800; color:#fff; margin-bottom: 20px;">Member Registration</h3>
-                
-                <form id="registrationForm" onsubmit="handleRegister(event)">
-                    <div class="form-group">
-                        <label for="fullName">Full Name</label>
-                        <input type="text" id="fullName" class="form-control" placeholder="Enter your full name" required />
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="phoneNumber">Mobile Number</label>
-                            <input type="tel" id="phoneNumber" class="form-control" placeholder="07X XXXXXXX" required />
-                        </div>
-                        <div class="form-group">
-                            <label for="preferredStyle">Preferred Dance Style</label>
-                            <select id="preferredStyle" class="form-control" required>
-                                <option value="zumba">Zumba Fitness</option>
-                                <option value="aerobics">Aerobics</option>
-                                <option value="bollywood">Bollywood Beats</option>
-                                <option value="traditional">Traditional Dance</option>
-                                <option value="freestyle">Freestyle Fusion</option>
-                                <option value="all">All Access Pass</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="planChoice">Selected Membership Package</label>
-                        <select id="planChoice" class="form-control" onchange="updateCalc()" required>
-                            <option value="monthly">Monthly Pass (Admission LKR 1,500 + Monthly LKR 3,000)</option>
-                            <option value="quarterly">3-Month Pass (LKR 8,500 - Free Admission)</option>
-                            <option value="semiannual">6-Month Pass (LKR 16,500 - Free Admission)</option>
-                        </select>
-                    </div>
-
-                    <div class="calc-box">
-                        <div>
-                            <span style="font-size: 12px; color: var(--text-subtle); font-weight: 700; display: block; text-transform: uppercase;">Total Initial Payment:</span>
-                            <span id="calcBreakdown" style="font-size: 13px; color: var(--text-muted);">Admission LKR 1,500 + Monthly LKR 3,000</span>
-                        </div>
-                        <div class="calc-total" id="calcTotal">LKR 4,500</div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px;">
-                        Submit & Reserve Slot
-                    </button>
-                </form>
             </div>
         </div>
     </section>
@@ -1765,8 +1411,8 @@
 
                 <div class="footer-col">
                     <h5>Member Access</h5>
-                    <p style="color: var(--text-subtle); font-size: 13.5px; margin-bottom: 16px;">Registered members can access their dashboard to manage subscriptions and view schedules.</p>
-                    <a href="/login" class="btn btn-secondary" style="padding: 10px 20px; font-size: 13px; width: 100%;">Member Portal Login</a>
+                    <p style="color: var(--text-subtle); font-size: 13.5px; margin-bottom: 16px;">Registered members can log into their portal to view attendance and subscription status.</p>
+                    <a href="/login" class="btn btn-primary" style="padding: 12px 24px; font-size: 13px; width: 100%;">Member Portal Login</a>
                 </div>
             </div>
 
@@ -1807,33 +1453,6 @@
                 navLinks.style.padding = '20px 0';
                 navLinks.style.borderBottom = '1px solid var(--border-pink)';
             }
-        }
-
-        // Calculation total on plan selection
-        function updateCalc() {
-            const choice = document.getElementById('planChoice').value;
-            const breakdown = document.getElementById('calcBreakdown');
-            const total = document.getElementById('calcTotal');
-
-            if (choice === 'monthly') {
-                breakdown.innerText = 'Admission LKR 1,500 + Monthly LKR 3,000';
-                total.innerText = 'LKR 4,500';
-            } else if (choice === 'quarterly') {
-                breakdown.innerText = '3 Months VIP Pass (Free Admission Included)';
-                total.innerText = 'LKR 8,500';
-            } else if (choice === 'semiannual') {
-                breakdown.innerText = '6 Months Transformation (Free Admission Included)';
-                total.innerText = 'LKR 16,500';
-            }
-        }
-
-        // Form submission handling
-        function handleRegister(e) {
-            e.preventDefault();
-            const name = document.getElementById('fullName').value;
-            alert('Thank you, ' + name + '! Your registration request has been received. Our team will contact you shortly to confirm your first class session.');
-            document.getElementById('registrationForm').reset();
-            updateCalc();
         }
 
         // Intersection Observer for Scroll Animations
