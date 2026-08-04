@@ -28,8 +28,10 @@ class MemberService
 
     public function meta(): array
     {
+        $tenantId = app()->bound('tenant') && app('tenant') ? (int) app('tenant')->id : 0;
+
         return [
-            'generated_member_id' => Member::generateBiometricMemberId(0), // preview only
+            'generated_member_id' => Member::generateBiometricMemberId($tenantId),
         ];
     }
 

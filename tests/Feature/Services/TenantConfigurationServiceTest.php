@@ -34,4 +34,45 @@ class TenantConfigurationServiceTest extends ApiRouteTestCase
             'value' => 'forest',
         ]);
     }
+
+    public function testConfigurableMemberAndBiometricIdGeneration(): void
+    {
+        $service = app(TenantConfigurationService::class);
+        $service->updateBatch($this->tenant->id, [
+            'member.id_prefix' => 'MEM-',
+            'member.id_next_number' => '100',
+            'member.id_padding' => '4',
+            'biometric.id_same_as_member_id' => '0',
+            'biometric.id_prefix' => 'BIO-',
+            'biometric.id_next_number' => '500',
+            'biometric.id_padding' => '4',
+        ]);
+
+        $next = \App\Models\Member::generateNextIds($this->tenant->id);
+
+        $this->assertSame('MEM-0100', $next['next_member_id']);
+        $this->assertSame('BIO-0500', $next['next_biometric_id']);
+    }
+
+    public function testBackfillMemberAndBiometricIdConfigurationsMigration(): void
+    {
+        $this->createMember(attributes: ['biometric_member_id' => 'GYM-0010']);
+        $this->createMember(attributes: ['biometric_member_id' => 'GYM-0042']);
+
+        $migration = require database_path('migrations/tenant/2026_08_04_210000_backfill_member_and_biometric_id_configurations.php');
+        $migration->up();
+
+        $this->assertDatabaseHas('tenant_configurations', [
+            'key' => 'member.id_prefix',
+            'value' => 'GYM-',
+        ]);
+        $this->assertDatabaseHas('tenant_configurations', [
+            'key' => 'member.id_next_number',
+            'value' => '43',
+        ]);
+        $this->assertDatabaseHas('tenant_configurations', [
+            'key' => 'member.id_padding',
+            'value' => '4',
+        ]);
+    }
 }

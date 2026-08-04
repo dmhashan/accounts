@@ -20,9 +20,14 @@ class ConfigurationApiController extends Controller
     public function index(): JsonResponse
     {
         $tenant = app('tenant');
+        $all = $this->service->all($tenant->id);
+        $next = \App\Models\Member::generateNextIds($tenant->id);
 
         return response()->json([
-            'data' => $this->service->all($tenant->id),
+            'data' => array_merge($all, [
+                '_next_member_id' => $next['next_member_id'],
+                '_next_biometric_id' => $next['next_biometric_id'],
+            ]),
         ]);
     }
 
@@ -79,6 +84,16 @@ class ConfigurationApiController extends Controller
             'biometric.webhook_server_host' => ['sometimes', 'nullable', 'string', 'max:255'],
             'biometric.webhook_server_port' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
             'biometric.access_events_sync_from' => ['sometimes', 'nullable', 'date'],
+
+            // Member ID & Biometric ID format preferences
+            'member.id_prefix' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'member.id_next_number' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'member.id_padding' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10'],
+            'member.id_auto_generate' => ['sometimes', 'in:0,1'],
+            'biometric.id_prefix' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'biometric.id_next_number' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'biometric.id_padding' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10'],
+            'biometric.id_same_as_member_id' => ['sometimes', 'in:0,1'],
         ]);
 
         $tenant = app('tenant');
@@ -103,9 +118,14 @@ class ConfigurationApiController extends Controller
             ]);
         }
 
+        $next = \App\Models\Member::generateNextIds($tenant->id);
+
         return response()->json([
             'message' => 'Configuration saved successfully.',
-            'data' => $data,
+            'data' => array_merge($data, [
+                '_next_member_id' => $next['next_member_id'],
+                '_next_biometric_id' => $next['next_biometric_id'],
+            ]),
         ]);
     }
 }

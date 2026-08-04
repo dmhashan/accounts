@@ -286,6 +286,164 @@
           </div>
         </div>
 
+        <!-- Member & Biometric ID Format Card -->
+        <div class="app-surface rounded-2xl overflow-hidden mt-4">
+          <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <IdCard class="w-5 h-5 text-primary-500 flex-shrink-0" :stroke-width="2" />
+              <div>
+                <h2 class="text-base font-semibold" style="color: var(--text-strong)">
+                  Member & Biometric ID Formatting
+                </h2>
+                <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                  Configure automatic member ID generation rules and device biometric IDs
+                </p>
+              </div>
+            </div>
+
+            <!-- Live Preview Badges -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                <span class="text-secondary-500 dark:text-secondary-400">Next Member ID:</span>
+                <span class="font-mono font-bold">{{ previewNextMemberId }}</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                <span class="text-secondary-500 dark:text-secondary-400">Next Biometric ID:</span>
+                <span class="font-mono font-bold">{{ previewNextBiometricId }}</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="p-4 md:p-6 space-y-6">
+            <!-- Member ID Format Section -->
+            <div>
+              <h3 class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                Member ID Configuration
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <AppFormField label="ID Prefix" help="e.g. MEM-, GYM- (leave empty for none)">
+                  <AppFormInput
+                    v-model="form['member.id_prefix']"
+                    type="text"
+                    placeholder="MEM-"
+                    maxlength="20"
+                  />
+                </AppFormField>
+
+                <AppFormField label="Starting Sequence Number" help="Starting sequence number">
+                  <AppFormInput
+                    v-model="form['member.id_next_number']"
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                  />
+                </AppFormField>
+
+                <AppFormField label="Zero Padding Digits" help="e.g. 4 digits → 0001">
+                  <AppFormInput
+                    v-model="form['member.id_padding']"
+                    type="number"
+                    min="0"
+                    max="10"
+                    placeholder="4"
+                  />
+                </AppFormField>
+              </div>
+            </div>
+
+            <!-- Biometric ID Format Section -->
+            <div class="border-t border-secondary-100 dark:border-secondary-800 pt-5">
+              <div class="flex items-center justify-between gap-4 mb-4">
+                <div>
+                  <h3 class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide">
+                    Biometric Hardware ID Configuration
+                  </h3>
+                  <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                    How member IDs are mapped to physical attendance terminals
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label class="text-xs font-medium text-secondary-700 dark:text-secondary-300">
+                    Same as Member ID
+                  </label>
+                  <button
+                    type="button"
+                    role="switch"
+                    :aria-checked="form['biometric.id_same_as_member_id'] === '1'"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                    :class="form['biometric.id_same_as_member_id'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                    @click="toggle('biometric.id_same_as_member_id')"
+                  >
+                    <span
+                      class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                      :class="form['biometric.id_same_as_member_id'] === '1' ? 'translate-x-6' : 'translate-x-1'"
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Custom Biometric ID settings when same_as_member_id is '0' -->
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-1"
+              >
+                <div v-if="form['biometric.id_same_as_member_id'] !== '1'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                  <AppFormField label="Biometric ID Prefix">
+                    <AppFormInput
+                      v-model="form['biometric.id_prefix']"
+                      type="text"
+                      placeholder="BIO-"
+                      maxlength="20"
+                    />
+                  </AppFormField>
+
+                  <AppFormField label="Biometric Next Number">
+                    <AppFormInput
+                      v-model="form['biometric.id_next_number']"
+                      type="number"
+                      min="1"
+                      placeholder="1"
+                    />
+                  </AppFormField>
+
+                  <AppFormField label="Biometric Zero Padding">
+                    <AppFormInput
+                      v-model="form['biometric.id_padding']"
+                      type="number"
+                      min="0"
+                      max="10"
+                      placeholder="4"
+                    />
+                  </AppFormField>
+                </div>
+              </Transition>
+            </div>
+          </div>
+
+          <!-- Save Button Footer -->
+          <div class="px-4 md:px-6 py-4 border-t border-secondary-200/70 dark:border-secondary-700/70 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div v-if="saveError" class="flex-1 text-sm text-red-600 dark:text-red-400">
+              {{ saveError }}
+            </div>
+            <div v-else-if="successMessage" class="flex-1 text-sm text-green-600 dark:text-green-400">
+              {{ successMessage }}
+            </div>
+            <div v-else class="flex-1" />
+            <button
+              type="button"
+              class="w-full sm:w-auto px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              :disabled="submitting"
+              @click="save"
+            >
+              {{ submitting ? 'Saving…' : 'Save Configuration' }}
+            </button>
+          </div>
+        </div>
+
         <!-- Body measurements card -->
         <div class="app-surface rounded-2xl overflow-hidden mt-4">
           <div class="px-4 md:px-6 py-4 border-b border-secondary-200/70 dark:border-secondary-700/70 flex items-center justify-between gap-3">
@@ -409,8 +567,8 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
-import { Bell, BellRing, ChevronDown, ChevronUp, Mail, MessageSquare, Plus, Ruler, Trash2 } from 'lucide-vue-next';
+import { computed, onMounted, ref } from 'vue';
+import { Bell, BellRing, ChevronDown, ChevronUp, IdCard, Mail, MessageSquare, Plus, Ruler, Trash2 } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -438,6 +596,33 @@ const form = ref({
     'notifications.sms.sender_id': '',
     'general.member_notifications': '{}',
     'body_measurements.fields': '[]',
+    'member.id_prefix': '',
+    'member.id_next_number': '1',
+    'member.id_padding': '4',
+    'member.id_auto_generate': '1',
+    'biometric.id_prefix': '',
+    'biometric.id_next_number': '1',
+    'biometric.id_padding': '4',
+    'biometric.id_same_as_member_id': '1',
+});
+
+const previewNextMemberId = computed(() => {
+    const prefix = form.value['member.id_prefix'] || '';
+    const num = parseInt(form.value['member.id_next_number'] || '1', 10) || 1;
+    const padding = Math.max(0, Math.min(10, parseInt(form.value['member.id_padding'] || '4', 10) || 0));
+    const padded = padding > 0 ? String(num).padStart(padding, '0') : String(num);
+    return `${prefix}${padded}`;
+});
+
+const previewNextBiometricId = computed(() => {
+    if (form.value['biometric.id_same_as_member_id'] === '1') {
+        return previewNextMemberId.value;
+    }
+    const prefix = form.value['biometric.id_prefix'] || '';
+    const num = parseInt(form.value['biometric.id_next_number'] || '1', 10) || 1;
+    const padding = Math.max(0, Math.min(10, parseInt(form.value['biometric.id_padding'] || '4', 10) || 0));
+    const padded = padding > 0 ? String(num).padStart(padding, '0') : String(num);
+    return `${prefix}${padded}`;
 });
 
 const bodyMeasurementFields = ref([]);

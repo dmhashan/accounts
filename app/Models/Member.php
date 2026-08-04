@@ -80,31 +80,61 @@ class Member extends Model
     }
 
     /**
-     * Generate the next numeric biometric_member_id for a tenant.
-     * Finds the highest existing purely-numeric ID for the tenant and returns max+1.
+     * Generate the next member ID and biometric ID based on tenant configuration settings.
+     *
+     * @return array{next_member_id: string, next_biometric_id: string}
      */
-    public static function generateBiometricMemberId(int $tenantId): string
+    public static function generateNextIds(int $tenantId): array
     {
-        $driver = \DB::getDriverName();
-        $query = self::whereNotNull('biometric_member_id');
+        /** @var \App\Services\TenantConfigurationService $configService */
+        $configService = app(\App\Services\TenantConfigurationService::class);
+        $config = $tenantId > 0 ? $configService->all($tenantId) : [];
 
-        if ($driver === 'mysql') {
-            $max = (int) $query
-                ->whereRaw("biometric_member_id REGEXP '^[0-9]+$'")
-                ->selectRaw('MAX(CAST(biometric_member_id AS UNSIGNED)) as max_id')
-                ->value('max_id');
-        } else {
-            // SQLite/Postgres-portable: filter numeric in PHP
-            $ids = $query->pluck('biometric_member_id')->all();
-            $max = 0;
+        $prefix = (string) ($config['member.id_prefix'] ?? '');
+        $startNum = max(1, (int) ($config['member.id_next_number'] ?? 1));
+        $padding = max(0, min(10, (int) ($config['member.id_padding'] ?? 4)));
 
-            foreach ($ids as $id) {
-                if (ctype_digit((string) $id)) {
-                    $max = max($max, (int) $id);
-                }
+        $sameAsMember = ($config['biometric.id_same_as_member_id'] ?? '1') === '1';
+        $bioPrefix = (string) ($config['biometric.id_prefix'] ?? '');
+        $bioStartNum = max(1, (int) ($config['biometric.id_next_number'] ?? 1));
+        $bioPadding = max(0, min(10, (int) ($config['biometric.id_padding'] ?? 4)));
+
+        // Determine max existing sequence in DB
+        $ids = self::whereNotNull('biometric_member_id')->pluck('biometric_member_id')->all();
+
+        $maxSeq = 0;
+
+        foreach ($ids as $id) {
+            if (preg_match('/([0-9]+)$/', (string) $id, $m)) {
+                $maxSeq = max($maxSeq, (int) $m[1]);
             }
         }
 
-        return (string) ($max + 1);
+        $nextMemberSeq = max($startNum, $maxSeq + 1);
+        $paddedMemberSeq = $padding > 0 ? str_pad((string) $nextMemberSeq, $padding, '0', STR_PAD_LEFT) : (string) $nextMemberSeq;
+        $nextMemberId = $prefix . $paddedMemberSeq;
+
+        if ($sameAsMember) {
+            $nextBiometricId = $nextMemberId;
+        } else {
+            $nextBioSeq = max($bioStartNum, $maxSeq + 1);
+            $paddedBioSeq = $bioPadding > 0 ? str_pad((string) $nextBioSeq, $bioPadding, '0', STR_PAD_LEFT) : (string) $nextBioSeq;
+            $nextBiometricId = $bioPrefix . $paddedBioSeq;
+        }
+
+        return [
+            'next_member_id' => $nextMemberId,
+            'next_biometric_id' => $nextBiometricId,
+        ];
+    }
+
+    /**
+     * Generate the next numeric/formatted biometric_member_id for a tenant.
+     */
+    public static function generateBiometricMemberId(int $tenantId): string
+    {
+        $next = self::generateNextIds($tenantId);
+
+        return $next['next_member_id'];
     }
 }
