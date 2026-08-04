@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pipuni's Dance & Fitness — Move Stronger, Live Better</title>
+    <meta name="description" content="Join Pipuni's Dance & Fitness Studio for Zumba, Aerobics, Bollywood, Traditional & Freestyle Dance. Admission Fee Rs 1,500 | Monthly Fee Rs 3,000." />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ===== DESIGN SYSTEM & COLORED PALETTE (FROM PIPUNI POSTER) ===== */
+        :root {
+            --bg-dark: #0c0414;
+            --bg-card: #150826;
+            --bg-card-hover: #1f0b38;
+            --surface-glass: rgba(255, 255, 255, 0.035);
+            --surface-glass-border: rgba(233, 30, 99, 0.25);
+            --surface-pink-glass: rgba(233, 30, 99, 0.08);
+
+            --pink-primary: #e91e63;
+            --pink-light: #ff4081;
+            --pink-bright: #ff1493;
+            --pink-glow: rgba(233, 30, 99, 0.45);
+
+            --purple-primary: #7b2cbf;
+            --purple-deep: #3c096c;
+            --purple-light: #9d4edd;
+            --purple-glow: rgba(156, 39, 176, 0.4);
+
+            --text-main: #ffffff;
+            --text-muted: #d0c4e8;
+            --text-subtle: #9c8eb9;
+
+            --border-light: rgba(255, 255, 255, 0.08);
+            --border-pink: rgba(233, 30, 99, 0.3);
+
+            --radius-sm: 10px;
+            --radius-md: 18px;
+            --radius-lg: 28px;
+            --radius-full: 9999px;
+
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Noise Texture Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* ===== LAYOUT & UTILITIES ===== */
+        .container {
+            width: min(92%, 1140px);
+            margin: 0 auto;
+        }
+
+        .section {
+            padding: 90px 0;
+            position: relative;
+        }
+
+        .text-center { text-align: center; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 0%, #ff80ab 50%, var(--pink-primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .purple-gradient-text {
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--purple-light) 60%, var(--pink-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 18px;
+            background: rgba(233, 30, 99, 0.12);
+            border: 1px solid var(--border-pink);
+            border-radius: var(--radius-full);
+            color: var(--pink-light);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 18px;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 17px;
+            max-width: 620px;
+            margin: 0 auto 50px;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 32px;
+            border-radius: var(--radius-full);
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--pink-primary) 0%, var(--purple-primary) 100%);
+            color: #fff;
+            box-shadow: 0 8px 25px var(--pink-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 14px 35px var(--pink-glow);
+            background: linear-gradient(135deg, var(--pink-bright) 0%, var(--purple-light) 100%);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            border: 1px solid var(--surface-glass-border);
+            backdrop-filter: blur(12px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(233, 30, 99, 0.15);
+            border-color: var(--pink-primary);
+            transform: translateY(-3px);
+            color: #fff;
+        }
+
+        /* ===== HEADER & NAVIGATION ===== */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(12, 4, 20, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(233, 30, 99, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .header.scrolled {
+            background: rgba(12, 4, 20, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 80px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: var(--font-heading);
+            font-weight: 900;
+            font-size: 24px;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pink-primary), var(--purple-primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 20px;
+            box-shadow: 0 0 18px var(--pink-glow);
+        }
+
+        .logo-text span {
+            color: var(--pink-light);
+            font-size: 13px;
+            display: block;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-top: -4px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--pink-light);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--pink-primary);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            min-height: 100vh;
+            padding-top: 130px;
+            padding-bottom: 80px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background: 
+                linear-gradient(135deg, rgba(12, 4, 20, 0.88) 0%, rgba(26, 8, 44, 0.75) 50%, rgba(12, 4, 20, 0.92) 100%),
+                url('/tenant-pages/img/pipuni_background_1.jpg') center/cover no-repeat;
+            z-index: 1;
+            transform: scale(1.02);
+            filter: contrast(1.05) brightness(0.9);
+        }
+
+        .hero-glow-1 {
+            position: absolute;
+            top: 10%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--pink-glow) 0%, transparent 70%);
+            z-index: 2;
+            pointer-events: none;
+            animation: floatGlow 10s ease-in-out infinite alternate;
+        }
+
+        .hero-glow-2 {
+            position: absolute;
+            bottom: 5%;
+            right: -10%;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, var(--purple-glow) 0%, transparent 70%);
+            z-index: 2;
+            pointer-events: none;
+            animation: floatGlow 12s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes floatGlow {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, 30px) scale(1.1); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 5;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 22px;
+            background: rgba(233, 30, 99, 0.15);
+            border: 1px solid rgba(233, 30, 99, 0.4);
+            border-radius: var(--radius-full);
+            color: #ff80ab;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-title {
+            font-family: var(--font-heading);
+            font-size: clamp(44px, 6vw, 76px);
+            font-weight: 900;
+            line-height: 1.05;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-title span.highlight {
+            color: var(--pink-bright);
+            text-shadow: 0 0 25px rgba(255, 20, 147, 0.6);
+        }
+
+        .hero-sub {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 36px;
+            line-height: 1.7;
+            max-width: 560px;
+        }
+
+        .hero-ctas {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 44px;
+        }
+
+        .hero-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-card-mini strong {
+            font-family: var(--font-heading);
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            display: block;
+            line-height: 1;
+        }
+
+        .stat-card-mini span {
+            font-size: 12px;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* Hero Image Poster Showcase Card */
+        .hero-card-frame {
+            position: relative;
+            border-radius: var(--radius-lg);
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(233, 30, 99, 0.2));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 40px var(--pink-glow);
+            transition: transform 0.5s ease;
+        }
+
+        .hero-card-frame:hover {
+            transform: translateY(-8px) scale(1.01);
+        }
+
+        .hero-poster-img {
+            width: 100%;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+            display: block;
+        }
+
+        .price-badge-overlay {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1f0833, #3c0850);
+            border: 2px solid var(--pink-primary);
+            padding: 14px 28px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px var(--pink-glow);
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .price-item {
+            text-align: center;
+        }
+
+        .price-item .lbl {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--pink-light);
+            font-weight: 800;
+            display: block;
+        }
+
+        .price-item .val {
+            font-family: var(--font-heading);
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .price-divider {
+            width: 1px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ===== TICKER STRIP ===== */
+        .ticker-strip {
+            background: linear-gradient(90deg, var(--purple-deep) 0%, var(--pink-primary) 50%, var(--purple-primary) 100%);
+            padding: 16px 0;
+            overflow: hidden;
+            border-y: 1px solid var(--pink-light);
+            box-shadow: 0 0 20px var(--pink-glow);
+        }
+
+        .ticker-track {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            white-space: nowrap;
+            animation: ticker 25s linear infinite;
+            width: max-content;
+        }
+
+        .ticker-item {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .ticker-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 8px #fff;
+        }
+
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ===== PROGRAMS SECTION ===== */
+        .programs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .program-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 32px 28px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .program-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--pink-primary), var(--purple-primary));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .program-card:hover {
+            transform: translateY(-8px);
+            background: var(--bg-card-hover);
+            border-color: var(--surface-glass-border);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(233, 30, 99, 0.2);
+        }
+
+        .program-card:hover::before {
+            opacity: 1;
+        }
+
+        .program-icon-wrap {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-sm);
+            background: rgba(233, 30, 99, 0.12);
+            border: 1px solid var(--border-pink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: var(--pink-light);
+            margin-bottom: 24px;
+            transition: transform 0.3s;
+        }
+
+        .program-card:hover .program-icon-wrap {
+            transform: scale(1.1) rotate(5deg);
+            background: var(--pink-primary);
+            color: #fff;
+            box-shadow: 0 0 20px var(--pink-glow);
+        }
+
+        .program-title {
+            font-family: var(--font-heading);
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .program-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .program-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag-pill {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-subtle);
+        }
+
+        /* ===== THE 4 PILLARS (POSTER BENEFIT CARDS) ===== */
+        .pillars-section {
+            background: linear-gradient(180deg, var(--bg-dark) 0%, #150628 50%, var(--bg-dark) 100%);
+        }
+
+        .pillars-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .pillar-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(233, 30, 99, 0.2);
+            border-radius: var(--radius-md);
+            padding: 36px 24px;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .pillar-card:hover {
+            background: rgba(233, 30, 99, 0.08);
+            border-color: var(--pink-primary);
+            transform: translateY(-6px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 0 25px var(--pink-glow);
+        }
+
+        .pillar-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(233, 30, 99, 0.2), rgba(123, 44, 191, 0.3));
+            border: 2px solid var(--pink-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 30px;
+            color: #fff;
+            box-shadow: 0 0 20px var(--pink-glow);
+        }
+
+        .pillar-title {
+            font-family: var(--font-heading);
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .pillar-desc {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ===== PRICING & MEMBERSHIP ===== */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            align-items: stretch;
+        }
+
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 40px 32px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card.popular {
+            background: linear-gradient(180deg, #240a3b 0%, #170729 100%);
+            border: 2px solid var(--pink-primary);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5), 0 0 35px var(--pink-glow);
+            transform: scale(1.04);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, var(--pink-primary), var(--pink-bright));
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 6px 20px;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 4px 15px var(--pink-glow);
+        }
+
+        .plan-name {
+            font-family: var(--font-heading);
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .plan-subtitle {
+            font-size: 13px;
+            color: var(--text-subtle);
+            margin-bottom: 24px;
+        }
+
+        .price-box {
+            margin-bottom: 30px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .price-val {
+            font-family: var(--font-heading);
+            font-size: 44px;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .price-val small {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-subtle);
+        }
+
+        .price-detail-tag {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 12.5px;
+            color: var(--pink-light);
+            font-weight: 700;
+            background: rgba(233, 30, 99, 0.1);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 36px;
+            flex-grow: 1;
+        }
+
+        .plan-features li {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .plan-features li svg {
+            width: 18px;
+            height: 18px;
+            color: var(--pink-light);
+            flex-shrink: 0;
+        }
+
+        /* Fee Summary Highlight Box */
+        .fee-breakdown-banner {
+            background: linear-gradient(135deg, rgba(233, 30, 99, 0.12), rgba(123, 44, 191, 0.15));
+            border: 1px dashed var(--pink-primary);
+            border-radius: var(--radius-md);
+            padding: 24px 30px;
+            margin-top: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .fee-info h4 {
+            font-family: var(--font-heading);
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .fee-info p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .fee-tags {
+            display: flex;
+            gap: 16px;
+        }
+
+        .fee-chip {
+            background: var(--bg-dark);
+            border: 1px solid var(--surface-glass-border);
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .fee-chip label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .fee-chip strong {
+            font-family: var(--font-heading);
+            font-size: 20px;
+            color: var(--pink-light);
+            font-weight: 800;
+        }
+
+        /* ===== SCHEDULE TIMETABLE ===== */
+        .schedule-table-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        table.schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .schedule-table th {
+            background: rgba(233, 30, 99, 0.15);
+            font-family: var(--font-heading);
+            font-size: 15px;
+            font-weight: 800;
+            color: #fff;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border-pink);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .schedule-table td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .schedule-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            color: #fff;
+        }
+
+        .class-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-zumba { background: rgba(233, 30, 99, 0.2); color: #ff4081; border: 1px solid rgba(233, 30, 99, 0.4); }
+        .badge-aerobics { background: rgba(156, 39, 176, 0.2); color: #e040fb; border: 1px solid rgba(156, 39, 176, 0.4); }
+        .badge-bollywood { background: rgba(255, 152, 0, 0.2); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.4); }
+        .badge-traditional { background: rgba(0, 188, 212, 0.2); color: #4dd0e1; border: 1px solid rgba(0, 188, 212, 0.4); }
+        .badge-freestyle { background: rgba(76, 175, 80, 0.2); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.4); }
+
+        /* ===== BANK TRANSFER & PAYMENTS ===== */
+        .payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .payment-card {
+            background: var(--bg-card);
+            border: 1px solid var(--surface-glass-border);
+            border-radius: var(--radius-md);
+            padding: 36px;
+            position: relative;
+        }
+
+        .payment-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .payment-icon-bg {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--pink-primary), var(--purple-primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .bank-details-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        .bank-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .bank-row:last-child { margin-bottom: 0; }
+
+        .bank-row span { color: var(--text-subtle); }
+        .bank-row strong { color: #fff; font-weight: 700; }
+        .bank-acc-num { font-family: monospace; font-size: 18px; color: var(--pink-light) !important; letter-spacing: 1px; }
+
+        /* ===== ENROLLMENT FORM SECTION ===== */
+        .enroll-section {
+            background: linear-gradient(135deg, #1b0730 0%, #0c0414 100%);
+            border-top: 1px solid var(--border-pink);
+            border-bottom: 1px solid var(--border-pink);
+        }
+
+        .enroll-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .enroll-form {
+            background: var(--bg-card);
+            border: 1px solid var(--surface-glass-border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--pink-glow);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-family: var(--font-body);
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--pink-primary);
+            box-shadow: 0 0 15px var(--pink-glow);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .calc-box {
+            background: rgba(233, 30, 99, 0.1);
+            border: 1px dashed var(--pink-primary);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calc-total {
+            font-family: var(--font-heading);
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--pink-bright);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: #07020c;
+            padding: 70px 0 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .footer-brand p {
+            color: var(--text-subtle);
+            font-size: 14px;
+            margin-top: 16px;
+            max-width: 300px;
+            line-height: 1.7;
+        }
+
+        .footer-col h5 {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 12px;
+        }
+
+        .footer-col ul a {
+            font-size: 14px;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        .footer-col ul a:hover {
+            color: var(--pink-light);
+        }
+
+        .footer-bottom {
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-subtle);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        /* ===== SCROLL REVEAL ANIMATION ===== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== RESPONSIVE MEDIA QUERIES ===== */
+        @media (max-width: 992px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .hero-sub {
+                margin: 0 auto 36px;
+            }
+            .hero-ctas {
+                justify-content: center;
+            }
+            .hero-stats-row {
+                justify-content: center;
+            }
+            .pillars-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            .pricing-card.popular {
+                transform: scale(1);
+            }
+            .payment-grid {
+                grid-template-columns: 1fr;
+            }
+            .enroll-grid {
+                grid-template-columns: 1fr;
+            }
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            .mobile-toggle {
+                display: block;
+            }
+            .price-badge-overlay {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                transform: none;
+                margin-top: 20px;
+                justify-content: center;
+            }
+            .pillars-grid {
+                grid-template-columns: 1fr;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <header class="header" id="header">
+        <div class="container nav-container">
+            <a href="#" class="logo">
+                <div class="logo-icon">💃</div>
+                <div class="logo-text">
+                    Pipuni's
+                    <span>DANCE & FITNESS</span>
+                </div>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="#about">About Us</a></li>
+                <li><a href="#programs">Programs</a></li>
+                <li><a href="#pillars">Benefits</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#schedule">Schedule</a></li>
+                <li><a href="#payments">Bank Transfer</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <a href="#enroll" class="btn btn-primary" style="padding: 10px 22px; font-size: 13px;">Join Now</a>
+                <a href="/login" class="btn btn-secondary" style="padding: 10px 18px; font-size: 13px;">Portal Login</a>
+                <button class="mobile-toggle" aria-label="Toggle Menu" onclick="toggleMobileNav()">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero" id="home">
+        <div class="hero-bg"></div>
+        <div class="hero-glow-1"></div>
+        <div class="hero-glow-2"></div>
+
+        <div class="container hero-content">
+            <div class="hero-text-block">
+                <div class="hero-badge">
+                    <span>✨</span> Dance Today, Stronger Tomorrow
+                </div>
+                <h1 class="hero-title">
+                    Move Stronger <br />
+                    <span class="highlight">Live Better</span>
+                </h1>
+                <p class="hero-sub">
+                    Welcome to <strong>Pipuni's Dance & Fitness Studio</strong>! Unleash your inner rhythm, burn calories, build endurance, and boost your confidence through Zumba, Aerobics, Bollywood, Traditional & Freestyle Dance.
+                </p>
+
+                <div class="hero-ctas">
+                    <a href="#enroll" class="btn btn-primary">
+                        Start Your Journey
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
+                    <a href="#pricing" class="btn btn-secondary">
+                        View Membership Fees
+                    </a>
+                </div>
+
+                <div class="hero-stats-row">
+                    <div class="stat-card-mini">
+                        <strong>LKR 1,500</strong>
+                        <span>Admission Fee</span>
+                    </div>
+                    <div class="stat-card-mini">
+                        <strong>LKR 3,000</strong>
+                        <span>Monthly Fee</span>
+                    </div>
+                    <div class="stat-card-mini">
+                        <strong>5+ Styles</strong>
+                        <span>Dance & Fitness</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-media-block">
+                <div class="hero-card-frame">
+                    <img src="/tenant-pages/img/pipuni_background_1.jpg" alt="Pipuni's Dance & Fitness Banner" class="hero-poster-img" />
+                    
+                    <div class="price-badge-overlay">
+                        <div class="price-item">
+                            <span class="lbl">Admission Fee</span>
+                            <span class="val">LKR 1,500</span>
+                        </div>
+                        <div class="price-divider"></div>
+                        <div class="price-item">
+                            <span class="lbl">Monthly Pass</span>
+                            <span class="val">LKR 3,000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TICKER STRIP ===== -->
+    <div class="ticker-strip">
+        <div class="ticker-track">
+            <div class="ticker-item"><span>ZUMBA FITNESS</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>AEROBICS WORKOUT</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>BOLLYWOOD DANCE</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>TRADITIONAL FUSION</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>FREESTYLE RHYTHM</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>MOVE STRONGER LIVE BETTER</span> <div class="ticker-dot"></div></div>
+
+            <!-- Repeated for seamless loop -->
+            <div class="ticker-item"><span>ZUMBA FITNESS</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>AEROBICS WORKOUT</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>BOLLYWOOD DANCE</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>TRADITIONAL FUSION</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>FREESTYLE RHYTHM</span> <div class="ticker-dot"></div></div>
+            <div class="ticker-item"><span>MOVE STRONGER LIVE BETTER</span> <div class="ticker-dot"></div></div>
+        </div>
+    </div>
+
+    <!-- ===== PROGRAMS SECTION ===== -->
+    <section class="section" id="programs">
+        <div class="container">
+            <div class="title-block text-center reveal">
+                <div class="section-tag">Dance & Workout Styles</div>
+                <h2 class="section-title gradient-text">Our Featured Dance Programs</h2>
+                <p class="section-desc">Designed for all fitness levels. Express yourself, burn calories, and master exciting choreography with our expert instructors.</p>
+            </div>
+
+            <div class="programs-grid">
+                <!-- Zumba -->
+                <div class="program-card reveal">
+                    <div class="program-icon-wrap">🔥</div>
+                    <h3 class="program-title">Zumba Fitness</h3>
+                    <p class="program-desc">High-octane cardio dance party combining Latin, hip-hop, and international beats. Tone muscles and boost stamina while having maximum fun.</p>
+                    <div class="program-tags">
+                        <span class="tag-pill">High Cardio</span>
+                        <span class="tag-pill">Fat Burn</span>
+                        <span class="tag-pill">All Levels</span>
+                    </div>
+                </div>
+
+                <!-- Aerobics -->
+                <div class="program-card reveal">
+                    <div class="program-icon-wrap">⚡</div>
+                    <h3 class="program-title">Aerobics Workout</h3>
+                    <p class="program-desc">Rhythmic aerobic routines engineered for cardiovascular endurance, core conditioning, agility, and overall body strength.</p>
+                    <div class="program-tags">
+                        <span class="tag-pill">Core Strength</span>
+                        <span class="tag-pill">Stamina</span>
+                        <span class="tag-pill">Endurance</span>
+                    </div>
+                </div>
+
+                <!-- Bollywood -->
+                <div class="program-card reveal">
+                    <div class="program-icon-wrap">✨</div>
+                    <h3 class="program-title">Bollywood Beats</h3>
+                    <p class="program-desc">Energetic, colorful Indian dance routines packed with expressive storytelling, dramatic beats, and full-body workout dynamics.</p>
+                    <div class="program-tags">
+                        <span class="tag-pill">Choreography</span>
+                        <span class="tag-pill">Expressive</span>
+                        <span class="tag-pill">Full Body</span>
+                    </div>
+                </div>
+
+                <!-- Traditional Dance -->
+                <div class="program-card reveal">
+                    <div class="program-icon-wrap">💃</div>
+                    <h3 class="program-title">Traditional Dance</h3>
+                    <p class="program-desc">Graceful fusion of cultural traditional steps, posture refinement, rhythmic footwork, and core stability exercises.</p>
+                    <div class="program-tags">
+                        <span class="tag-pill">Grace & Balance</span>
+                        <span class="tag-pill">Cultural</span>
+                        <span class="tag-pill">Flexibility</span>
+                    </div>
+                </div>
+
+                <!-- Freestyle -->
+                <div class="program-card reveal">
+                    <div class="program-icon-wrap">🎵</div>
+                    <h3 class="program-title">Freestyle Fusion</h3>
+                    <p class="program-desc">Unleash your unique style! Open groove sessions focusing on body coordination, rhythmic improvisation, and self-confidence.</p>
+                    <div class="program-tags">
+                        <span class="tag-pill">Rhythm</span>
+                        <span class="tag-pill">Creative</span>
+                        <span class="tag-pill">Confidence</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== THE 4 PILLARS SECTION ===== -->
+    <section class="section pillars-section" id="pillars">
+        <div class="container">
+            <div class="title-block text-center reveal">
+                <div class="section-tag">Why Choose Pipuni's</div>
+                <h2 class="section-title purple-gradient-text">The 4 Pillars of Transformation</h2>
+                <p class="section-desc">More than just dance lessons — we empower your mind, body, and confidence every single day.</p>
+            </div>
+
+            <div class="pillars-grid">
+                <!-- Pillar 1 -->
+                <div class="pillar-card reveal">
+                    <div class="pillar-icon">❤️</div>
+                    <h3 class="pillar-title">Stronger Body</h3>
+                    <p class="pillar-desc">Build physical endurance, tone core muscles, and enhance flexibility through dynamic dance movements.</p>
+                </div>
+
+                <!-- Pillar 2 -->
+                <div class="pillar-card reveal">
+                    <div class="pillar-icon">😊</div>
+                    <h3 class="pillar-title">Happier Mind</h3>
+                    <p class="pillar-desc">Release stress, elevate your mood with endorphins, and enjoy a revitalizing mental reset in every session.</p>
+                </div>
+
+                <!-- Pillar 3 -->
+                <div class="pillar-card reveal">
+                    <div class="pillar-icon">⭐</div>
+                    <h3 class="pillar-title">More Confidence</h3>
+                    <p class="pillar-desc">Master new dance styles, improve your posture, and shine with self-belief on and off the dance floor.</p>
+                </div>
+
+                <!-- Pillar 4 -->
+                <div class="pillar-card reveal">
+                    <div class="pillar-icon">👥</div>
+                    <h3 class="pillar-title">Stronger Together</h3>
+                    <p class="pillar-desc">Join an uplifting, friendly community of dance enthusiasts who motivate and support each other.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING & MEMBERSHIP SECTION ===== -->
+    <section class="section" id="pricing">
+        <div class="container">
+            <div class="title-block text-center reveal">
+                <div class="section-tag">Simple & Transparent Fees</div>
+                <h2 class="section-title gradient-text">Membership Plans</h2>
+                <p class="section-desc">Get unlimited access to all dance and fitness sessions with our affordable membership structure.</p>
+            </div>
+
+            <div class="pricing-grid">
+                <!-- Standard Plan -->
+                <div class="pricing-card reveal">
+                    <h3 class="plan-name">Standard Monthly</h3>
+                    <p class="plan-subtitle">Ideal for ongoing monthly practice</p>
+
+                    <div class="price-box">
+                        <div class="price-val">LKR 3,000 <small>/ month</small></div>
+                        <span class="price-detail-tag">+ LKR 1,500 One-time Admission</span>
+                    </div>
+
+                    <ul class="plan-features">
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Access to all 5 Dance & Aerobics Styles
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Morning & Evening Class Slots
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Professional Instructor Guidance
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Online Member Portal Access
+                        </li>
+                    </ul>
+
+                    <a href="#enroll" class="btn btn-secondary">Select Monthly Plan</a>
+                </div>
+
+                <!-- Popular Plan (Quarterly Pass) -->
+                <div class="pricing-card popular reveal">
+                    <div class="popular-badge">Most Popular</div>
+                    <h3 class="plan-name">3-Month Dance Pass</h3>
+                    <p class="plan-subtitle">Best value for dedicated dancers</p>
+
+                    <div class="price-box">
+                        <div class="price-val">LKR 8,500 <small>/ 3 months</small></div>
+                        <span class="price-detail-tag">Save LKR 2,000 + Includes Admission</span>
+                    </div>
+
+                    <ul class="plan-features">
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Full Admission Fee Included FREE
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Unlimited Access to All Dance Sessions
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Priority Booking for Weekend Workshops
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Pipuni's Studio Towel Included
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Member Portal & Attendance Tracking
+                        </li>
+                    </ul>
+
+                    <a href="#enroll" class="btn btn-primary">Join 3-Month Plan</a>
+                </div>
+
+                <!-- 6 Month Plan -->
+                <div class="pricing-card reveal">
+                    <h3 class="plan-name">6-Month Transformation</h3>
+                    <p class="plan-subtitle">Long-term fitness & dance mastery</p>
+
+                    <div class="price-box">
+                        <div class="price-val">LKR 16,500 <small>/ 6 months</small></div>
+                        <span class="price-detail-tag">Free Admission + VIP Perks</span>
+                    </div>
+
+                    <ul class="plan-features">
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Zero Admission Fee
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Unlimited Zumba & Aerobics Access
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            1-on-1 Dance Choreography Coaching
+                        </li>
+                        <li>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Free Official Studio T-shirt
+                        </li>
+                    </ul>
+
+                    <a href="#enroll" class="btn btn-secondary">Select 6-Month Plan</a>
+                </div>
+            </div>
+
+            <!-- Fee Summary Banner -->
+            <div class="fee-breakdown-banner reveal">
+                <div class="fee-info">
+                    <h4>First Time Registration Breakdown</h4>
+                    <p>New members pay a one-time admission fee of LKR 1,500 + initial monthly fee of LKR 3,000.</p>
+                </div>
+                <div class="fee-tags">
+                    <div class="fee-chip">
+                        <label>One-Time Admission</label>
+                        <strong>LKR 1,500</strong>
+                    </div>
+                    <div class="fee-chip">
+                        <label>Monthly Subscription</label>
+                        <strong>LKR 3,000</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== SCHEDULE TIMETABLE ===== -->
+    <section class="section" id="schedule">
+        <div class="container">
+            <div class="title-block text-center reveal">
+                <div class="section-tag">Weekly Timetable</div>
+                <h2 class="section-title gradient-text">Class Schedule</h2>
+                <p class="section-desc">Convenient morning and evening sessions designed to fit your busy daily routine.</p>
+            </div>
+
+            <div class="schedule-table-wrap reveal">
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Morning Session (7:30 AM - 9:00 AM)</th>
+                            <th>Evening Session (5:30 PM - 7:00 PM)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Monday</strong></td>
+                            <td><span class="class-badge badge-zumba">Zumba Fitness</span></td>
+                            <td><span class="class-badge badge-aerobics">Aerobics Workout</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tuesday</strong></td>
+                            <td><span class="class-badge badge-bollywood">Bollywood Beats</span></td>
+                            <td><span class="class-badge badge-zumba">Zumba Cardio</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Wednesday</strong></td>
+                            <td><span class="class-badge badge-aerobics">Aerobics & Core</span></td>
+                            <td><span class="class-badge badge-traditional">Traditional Dance</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Thursday</strong></td>
+                            <td><span class="class-badge badge-freestyle">Freestyle Fusion</span></td>
+                            <td><span class="class-badge badge-zumba">Zumba Fitness</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Friday</strong></td>
+                            <td><span class="class-badge badge-zumba">Zumba Party</span></td>
+                            <td><span class="class-badge badge-bollywood">Bollywood Dance</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Saturday</strong></td>
+                            <td><span class="class-badge badge-traditional">Traditional Masterclass</span></td>
+                            <td><span class="class-badge badge-freestyle">Weekend Groove</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BANK TRANSFER & PAYMENTS ===== -->
+    <section class="section" id="payments">
+        <div class="container">
+            <div class="title-block text-center reveal">
+                <div class="section-tag">Easy Online Payments</div>
+                <h2 class="section-title purple-gradient-text">Bank Transfer Details</h2>
+                <p class="section-desc">You can easily pay your admission and monthly fees via direct bank deposit or online bank transfer.</p>
+            </div>
+
+            <div class="payment-grid reveal">
+                <div class="payment-card">
+                    <div class="payment-header">
+                        <div class="payment-icon-bg">🏦</div>
+                        <div>
+                            <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; color:#fff;">Hatton National Bank (HNB)</h3>
+                            <p style="font-size: 13px; color: var(--text-subtle);">Direct Bank Transfer</p>
+                        </div>
+                    </div>
+                    <div class="bank-details-box">
+                        <div class="bank-row">
+                            <span>Account Name:</span>
+                            <strong>Pipuni Dance & Fitness</strong>
+                        </div>
+                        <div class="bank-row">
+                            <span>Account Number:</span>
+                            <strong class="bank-acc-num">0860 2032 1406</strong>
+                        </div>
+                        <div class="bank-row">
+                            <span>Branch:</span>
+                            <strong>Main Branch</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-card">
+                    <div class="payment-header">
+                        <div class="payment-icon-bg">💳</div>
+                        <div>
+                            <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; color:#fff;">Commercial Bank</h3>
+                            <p style="font-size: 13px; color: var(--text-subtle);">Alternative Bank Account</p>
+                        </div>
+                    </div>
+                    <div class="bank-details-box">
+                        <div class="bank-row">
+                            <span>Account Name:</span>
+                            <strong>Pipuni Dance & Fitness</strong>
+                        </div>
+                        <div class="bank-row">
+                            <span>Account Number:</span>
+                            <strong class="bank-acc-num">8000 1425 9901</strong>
+                        </div>
+                        <div class="bank-row">
+                            <span>Branch:</span>
+                            <strong>Main Branch</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== ENROLLMENT FORM SECTION ===== -->
+    <section class="section enroll-section" id="enroll">
+        <div class="container enroll-grid">
+            <div class="enroll-info reveal">
+                <div class="section-tag">Join Today</div>
+                <h2 class="section-title gradient-text">Ready to Move & Dance?</h2>
+                <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 24px; line-height: 1.7;">
+                    Fill out the registration form to enroll in Pipuni's Dance & Fitness. Once submitted, our team will confirm your registration and guide you to your first dance session!
+                </p>
+
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--surface-glass-border); padding: 20px; border-radius: var(--radius-md); margin-bottom: 20px;">
+                    <div style="font-weight: 700; color: var(--pink-light); margin-bottom: 8px;">📍 Studio Location</div>
+                    <div style="color: var(--text-muted); font-size: 14px;">Pipuni's Dance Studio, Main Street</div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--surface-glass-border); padding: 20px; border-radius: var(--radius-md);">
+                    <div style="font-weight: 700; color: var(--pink-light); margin-bottom: 8px;">📞 Contact & Inquiries</div>
+                    <div style="color: var(--text-muted); font-size: 14px;">Phone: +94 77 123 4567 | WhatsApp Supported</div>
+                </div>
+            </div>
+
+            <div class="enroll-form reveal">
+                <h3 style="font-family: var(--font-heading); font-size: 24px; font-weight: 800; color:#fff; margin-bottom: 20px;">Member Registration</h3>
+                
+                <form id="registrationForm" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="fullName">Full Name</label>
+                        <input type="text" id="fullName" class="form-control" placeholder="Enter your full name" required />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phoneNumber">Mobile Number</label>
+                            <input type="tel" id="phoneNumber" class="form-control" placeholder="07X XXXXXXX" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="preferredStyle">Preferred Dance Style</label>
+                            <select id="preferredStyle" class="form-control" required>
+                                <option value="zumba">Zumba Fitness</option>
+                                <option value="aerobics">Aerobics</option>
+                                <option value="bollywood">Bollywood Beats</option>
+                                <option value="traditional">Traditional Dance</option>
+                                <option value="freestyle">Freestyle Fusion</option>
+                                <option value="all">All Access Pass</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="planChoice">Selected Membership Package</label>
+                        <select id="planChoice" class="form-control" onchange="updateCalc()" required>
+                            <option value="monthly">Monthly Pass (Admission LKR 1,500 + Monthly LKR 3,000)</option>
+                            <option value="quarterly">3-Month Pass (LKR 8,500 - Free Admission)</option>
+                            <option value="semiannual">6-Month Pass (LKR 16,500 - Free Admission)</option>
+                        </select>
+                    </div>
+
+                    <div class="calc-box">
+                        <div>
+                            <span style="font-size: 12px; color: var(--text-subtle); font-weight: 700; display: block; text-transform: uppercase;">Total Initial Payment:</span>
+                            <span id="calcBreakdown" style="font-size: 13px; color: var(--text-muted);">Admission LKR 1,500 + Monthly LKR 3,000</span>
+                        </div>
+                        <div class="calc-total" id="calcTotal">LKR 4,500</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px;">
+                        Submit & Reserve Slot
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#" class="logo">
+                        <div class="logo-icon">💃</div>
+                        <div class="logo-text">
+                            Pipuni's
+                            <span>DANCE & FITNESS</span>
+                        </div>
+                    </a>
+                    <p>Dance Today, Stronger Tomorrow. Join the premier dance and aerobic fitness studio designed to move your body and elevate your soul.</p>
+                </div>
+
+                <div class="footer-col">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#programs">Programs</a></li>
+                        <li><a href="#pillars">Benefits</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="#schedule">Schedule</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h5>Dance Styles</h5>
+                    <ul>
+                        <li><a href="#programs">Zumba Fitness</a></li>
+                        <li><a href="#programs">Aerobics Workout</a></li>
+                        <li><a href="#programs">Bollywood Dance</a></li>
+                        <li><a href="#programs">Traditional Dance</a></li>
+                        <li><a href="#programs">Freestyle</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h5>Member Access</h5>
+                    <p style="color: var(--text-subtle); font-size: 13.5px; margin-bottom: 16px;">Registered members can access their dashboard to manage subscriptions and view schedules.</p>
+                    <a href="/login" class="btn btn-secondary" style="padding: 10px 20px; font-size: 13px; width: 100%;">Member Portal Login</a>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>Copyright &copy; 2026 Pipuni's Dance & Fitness. All rights reserved.</div>
+                <div style="display: flex; gap: 20px;">
+                    <a href="#home" style="color: var(--text-subtle);">Back to Top ↑</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== JAVASCRIPT FOR INTERACTION ===== -->
+    <script>
+        // Header scroll effect
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('header');
+            if (window.scrollY > 40) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile Nav Toggle
+        function toggleMobileNav() {
+            const navLinks = document.querySelector('.nav-links');
+            if (navLinks.style.display === 'flex') {
+                navLinks.style.display = 'none';
+            } else {
+                navLinks.style.display = 'flex';
+                navLinks.style.flexDirection = 'column';
+                navLinks.style.position = 'absolute';
+                navLinks.style.top = '80px';
+                navLinks.style.left = '0';
+                navLinks.style.width = '100%';
+                navLinks.style.background = 'rgba(12, 4, 20, 0.98)';
+                navLinks.style.padding = '20px 0';
+                navLinks.style.borderBottom = '1px solid var(--border-pink)';
+            }
+        }
+
+        // Calculation total on plan selection
+        function updateCalc() {
+            const choice = document.getElementById('planChoice').value;
+            const breakdown = document.getElementById('calcBreakdown');
+            const total = document.getElementById('calcTotal');
+
+            if (choice === 'monthly') {
+                breakdown.innerText = 'Admission LKR 1,500 + Monthly LKR 3,000';
+                total.innerText = 'LKR 4,500';
+            } else if (choice === 'quarterly') {
+                breakdown.innerText = '3 Months VIP Pass (Free Admission Included)';
+                total.innerText = 'LKR 8,500';
+            } else if (choice === 'semiannual') {
+                breakdown.innerText = '6 Months Transformation (Free Admission Included)';
+                total.innerText = 'LKR 16,500';
+            }
+        }
+
+        // Form submission handling
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('fullName').value;
+            alert('Thank you, ' + name + '! Your registration request has been received. Our team will contact you shortly to confirm your first class session.');
+            document.getElementById('registrationForm').reset();
+            updateCalc();
+        }
+
+        // Intersection Observer for Scroll Animations
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
