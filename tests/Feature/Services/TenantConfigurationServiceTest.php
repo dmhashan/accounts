@@ -75,4 +75,28 @@ class TenantConfigurationServiceTest extends ApiRouteTestCase
             'value' => '4',
         ]);
     }
+
+    public function testNumericPrefixGenerationSequenceDoesNotRepeatPrefix(): void
+    {
+        $service = app(TenantConfigurationService::class);
+        $service->updateBatch($this->tenant->id, [
+            'member.id_prefix' => '1993',
+            'member.id_next_number' => '1',
+            'member.id_padding' => '4',
+        ]);
+
+        $next1 = \App\Models\Member::generateNextIds($this->tenant->id);
+        $this->assertSame('19930001', $next1['next_member_id']);
+
+        $m1 = $this->createMember();
+        $this->assertSame('19930001', $m1->biometric_member_id);
+        $this->assertSame('2', $service->all($this->tenant->id)['member.id_next_number']);
+
+        $m2 = $this->createMember();
+        $this->assertSame('19930002', $m2->biometric_member_id);
+        $this->assertSame('3', $service->all($this->tenant->id)['member.id_next_number']);
+
+        $next3 = \App\Models\Member::generateNextIds($this->tenant->id);
+        $this->assertSame('19930003', $next3['next_member_id']);
+    }
 }

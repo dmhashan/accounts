@@ -84,7 +84,7 @@ class Member extends Model
      *
      * @return array{next_member_id: string, next_biometric_id: string}
      */
-    public static function generateNextIds(int $tenantId): array
+    public static function generateNextIds(int $tenantId, bool $advance = false): array
     {
         /** @var \App\Services\TenantConfigurationService $configService */
         $configService = app(\App\Services\TenantConfigurationService::class);
@@ -102,24 +102,80 @@ class Member extends Model
         // Determine max existing sequence in DB
         $ids = self::whereNotNull('biometric_member_id')->pluck('biometric_member_id')->all();
 
-        $maxSeq = 0;
+        $maxMemberSeq = 0;
+        $maxBioSeq = 0;
 
         foreach ($ids as $id) {
-            if (preg_match('/([0-9]+)$/', (string) $id, $m)) {
-                $maxSeq = max($maxSeq, (int) $m[1]);
+            $strId = trim((string) $id);
+
+            if ($strId === '') {
+                continue;
+            }
+
+            // Member ID sequence extraction
+            if ($prefix !== '' && str_starts_with($strId, $prefix)) {
+                $remainder = substr($strId, strlen($prefix));
+
+                if (ctype_digit($remainder)) {
+                    $maxMemberSeq = max($maxMemberSeq, (int) $remainder);
+                } elseif (preg_match('/([0-9]+)$/', $remainder, $m)) {
+                    $maxMemberSeq = max($maxMemberSeq, (int) $m[1]);
+                }
+            } else {
+                if (preg_match('/([0-9]+)$/', $strId, $m)) {
+                    if ($prefix === '' || !ctype_digit($strId)) {
+                        $maxMemberSeq = max($maxMemberSeq, (int) $m[1]);
+                    }
+                }
+            }
+
+            // Biometric ID sequence extraction (if non-linked mode)
+            if (!$sameAsMember) {
+                if ($bioPrefix !== '' && str_starts_with($strId, $bioPrefix)) {
+                    $remainder = substr($strId, strlen($bioPrefix));
+
+                    if (ctype_digit($remainder)) {
+                        $maxBioSeq = max($maxBioSeq, (int) $remainder);
+                    } elseif (preg_match('/([0-9]+)$/', $remainder, $m)) {
+                        $maxBioSeq = max($maxBioSeq, (int) $m[1]);
+                    }
+                } else {
+                    if (preg_match('/([0-9]+)$/', $strId, $m)) {
+                        if ($bioPrefix === '' || !ctype_digit($strId)) {
+                            $maxBioSeq = max($maxBioSeq, (int) $m[1]);
+                        }
+                    }
+                }
             }
         }
 
-        $nextMemberSeq = max($startNum, $maxSeq + 1);
+        $nextMemberSeq = max($startNum, $maxMemberSeq + 1);
         $paddedMemberSeq = $padding > 0 ? str_pad((string) $nextMemberSeq, $padding, '0', STR_PAD_LEFT) : (string) $nextMemberSeq;
         $nextMemberId = $prefix . $paddedMemberSeq;
 
         if ($sameAsMember) {
             $nextBiometricId = $nextMemberId;
+            $nextBioSeq = $nextMemberSeq;
         } else {
-            $nextBioSeq = max($bioStartNum, $maxSeq + 1);
+            $nextBioSeq = max($bioStartNum, $maxBioSeq + 1);
             $paddedBioSeq = $bioPadding > 0 ? str_pad((string) $nextBioSeq, $bioPadding, '0', STR_PAD_LEFT) : (string) $nextBioSeq;
             $nextBiometricId = $bioPrefix . $paddedBioSeq;
+        }
+
+        if ($advance && $tenantId > 0) {
+            try {
+                $updateData = [
+                    'member.id_next_number' => (string) ($nextMemberSeq + 1),
+                ];
+
+                if (!$sameAsMember) {
+                    $updateData['biometric.id_next_number'] = (string) ($nextBioSeq + 1);
+                }
+
+                $configService->updateBatch($tenantId, $updateData);
+            } catch (\Throwable) {
+                // Ignore exception if tenant_configurations table or tenant context is not ready
+            }
         }
 
         return [
@@ -129,11 +185,11 @@ class Member extends Model
     }
 
     /**
-     * Generate the next numeric/formatted biometric_member_id for a tenant.
+     * Generate the next numeric/formatted biometric_member_id for a tenant and advance sequence counter.
      */
     public static function generateBiometricMemberId(int $tenantId): string
     {
-        $next = self::generateNextIds($tenantId);
+        $next = self::generateNextIds($tenantId, true);
 
         return $next['next_member_id'];
     }

@@ -63,11 +63,11 @@ class TenantConfigurationService
 
         // Member ID & Biometric ID format preferences
         'member.id_prefix' => ['Member ID Prefix', ''],
-        'member.id_next_number' => ['Member ID Next Number', '1'],
+        'member.id_next_number' => ['Member ID Current Number', '1'],
         'member.id_padding' => ['Member ID Zero Padding', '4'],
         'member.id_auto_generate' => ['Auto Generate Member ID', '1'],
         'biometric.id_prefix' => ['Biometric ID Prefix', ''],
-        'biometric.id_next_number' => ['Biometric ID Next Number', '1'],
+        'biometric.id_next_number' => ['Biometric ID Current Number', '1'],
         'biometric.id_padding' => ['Biometric ID Zero Padding', '4'],
         'biometric.id_same_as_member_id' => ['Biometric ID Same as Member ID', '1'],
     ];

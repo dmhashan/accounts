@@ -330,7 +330,7 @@
                   />
                 </AppFormField>
 
-                <AppFormField label="Starting Sequence Number" help="Starting sequence number">
+                <AppFormField label="Current Sequence Number" help="Current sequence number">
                   <AppFormInput
                     v-model="form['member.id_next_number']"
                     type="number"
@@ -401,7 +401,7 @@
                     />
                   </AppFormField>
 
-                  <AppFormField label="Biometric Next Number">
+                  <AppFormField label="Biometric Current Number">
                     <AppFormInput
                       v-model="form['biometric.id_next_number']"
                       type="number"

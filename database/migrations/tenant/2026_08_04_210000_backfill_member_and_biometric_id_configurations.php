@@ -35,9 +35,18 @@ return new class extends Migration
         foreach ($memberIds as $rawId) {
             $strId = trim((string) $rawId);
 
-            if (preg_match('/^(.*?)([0-9]+)$/', $strId, $matches)) {
+            $prefix = '';
+            $numStr = '';
+
+            if (preg_match('/^(.*?)(0+[0-9]+)$/', $strId, $matches)) {
                 $prefix = $matches[1];
                 $numStr = $matches[2];
+            } elseif (preg_match('/^(.*?)([0-9]+)$/', $strId, $matches)) {
+                $prefix = $matches[1];
+                $numStr = $matches[2];
+            }
+
+            if ($numStr !== '') {
                 $numVal = (int) $numStr;
 
                 if ($prefix !== '') {
