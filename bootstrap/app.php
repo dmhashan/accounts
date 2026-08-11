@@ -36,6 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/public/activity',
             'api/public/event/*/register',
             'api/chatbot/message',
+            'iclock/*',
+            'api/iclock/*',
+            'biometric/*',
+            'api/biometric/*',
         ]);
 
         $middleware->alias([

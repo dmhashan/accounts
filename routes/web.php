@@ -155,3 +155,6 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         return redirect('/');
     })->name('logout');
 });
+
+// Root-level ZKTeco ADMS push routes (/iclock/*)
+require __DIR__ . '/api/zkteco-adms.php';

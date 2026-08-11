@@ -41,6 +41,7 @@ Route::middleware(['auth', 'permission:settings.biometric,settings.manage'])->gr
     Route::get('/settings/biometric/access-events', [BiometricApiController::class, 'accessEvents']);
     Route::post('/settings/biometric/access-events/sync', [BiometricApiController::class, 'syncAccessEvents']);
     Route::get('/settings/biometric/queue-status', [BiometricApiController::class, 'queueStatus']);
+    Route::get('/settings/biometric/adms-status', [BiometricApiController::class, 'admsStatus']);
     Route::post('/settings/biometric/failed-jobs/{failedJob}/retry', [BiometricApiController::class, 'retryFailedJob']);
     Route::delete('/settings/biometric/failed-jobs/{failedJob}', [BiometricApiController::class, 'deleteFailedJob']);
 

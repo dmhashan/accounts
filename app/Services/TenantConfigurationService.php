@@ -60,6 +60,12 @@ class TenantConfigurationService
         'biometric.webhook_server_port' => ['Webhook Server Port',           '80'],
         'biometric.webhook_token' => ['Webhook Token',                  ''],
         'biometric.access_events_sync_from' => ['Access Events Sync From',       ''],
+        'biometric.device_sn' => ['Device Serial Number',           ''],
+        'biometric.zk_fingerprint_alg' => ['Fingerprint Algorithm',         '13'],
+        'biometric.zk_face_alg' => ['Face Algorithm',                '4'],
+        'biometric.adms_delay' => ['ADMS Polling Interval (sec)',   '10'],
+        'biometric.last_heartbeat_at' => ['Last Device Heartbeat',        ''],
+        'biometric.device_info_json' => ['Device Information JSON',       '{}'],
 
         // Member ID & Biometric ID format preferences
         'member.id_prefix' => ['Member ID Prefix', ''],

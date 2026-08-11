@@ -36,3 +36,6 @@ Route::middleware(['web', IdentifyTenant::class])->group(function () {
 
 // Public biometric device webhook — no session/CSRF, tenant identified by URL param
 require __DIR__ . '/api/biometric-webhook.php';
+
+// Public isolated ZKTeco ADMS cloud server routes (/api/iclock/*)
+require __DIR__ . '/api/zkteco-adms.php';

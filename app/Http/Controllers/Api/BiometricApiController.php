@@ -21,7 +21,24 @@ class BiometricApiController extends Controller
     public function __construct(
         private readonly BiometricSyncService $biometric,
         private readonly BiometricQueueStatusService $queueStatus,
+        private readonly \App\Services\ZktecoAdmsService $zkteco,
+        private readonly \App\Services\TenantConfigurationService $config,
     ) {}
+
+    /**
+     * GET /api/settings/biometric/adms-status
+     */
+    public function admsStatus(): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+        $allConfig = $this->config->all($tenant->id);
+        $sn = $allConfig['biometric.device_sn'] ?? '';
+
+        return response()->json([
+            'data' => $this->zkteco->getDeviceStatus($sn),
+        ]);
+    }
 
     /**
      * GET /api/members/biometric-status

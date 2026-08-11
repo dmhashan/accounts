@@ -149,48 +149,136 @@
                     </select>
                   </AppFormField>
 
-                  <!-- IP -->
-                  <AppFormField label="Device IP / Hostname">
-                    <AppFormInput
-                      v-model="form['biometric.device_ip']"
-                      type="text"
-                      placeholder="192.168.1.100"
-                      maxlength="255"
-                    />
-                  </AppFormField>
+                  <!-- Dynamic inputs for HikVision -->
+                  <template v-if="form['biometric.device_maker'] === 'hikvision'">
+                    <!-- IP -->
+                    <AppFormField label="Device IP / Hostname">
+                      <AppFormInput
+                        v-model="form['biometric.device_ip']"
+                        type="text"
+                        placeholder="192.168.1.100"
+                        maxlength="255"
+                      />
+                    </AppFormField>
 
-                  <!-- Port -->
-                  <AppFormField label="Port">
-                    <AppFormInput
-                      v-model="form['biometric.device_port']"
-                      type="number"
-                      placeholder="80"
-                      min="1"
-                      max="65535"
-                    />
-                  </AppFormField>
+                    <!-- Port -->
+                    <AppFormField label="Port">
+                      <AppFormInput
+                        v-model="form['biometric.device_port']"
+                        type="number"
+                        placeholder="80"
+                        min="1"
+                        max="65535"
+                      />
+                    </AppFormField>
 
-                  <!-- Username -->
-                  <AppFormField label="Username">
-                    <AppFormInput
-                      v-model="form['biometric.device_username']"
-                      type="text"
-                      placeholder="admin"
-                      maxlength="100"
-                      autocomplete="off"
-                    />
-                  </AppFormField>
+                    <!-- Username -->
+                    <AppFormField label="Username">
+                      <AppFormInput
+                        v-model="form['biometric.device_username']"
+                        type="text"
+                        placeholder="admin"
+                        maxlength="100"
+                        autocomplete="off"
+                      />
+                    </AppFormField>
 
-                  <!-- Password -->
-                  <AppFormField label="Password">
-                    <AppFormInput
-                      v-model="form['biometric.device_password']"
-                      type="password"
-                      placeholder="••••••••"
-                      maxlength="255"
-                      autocomplete="new-password"
-                    />
-                  </AppFormField>
+                    <!-- Password -->
+                    <AppFormField label="Password">
+                      <AppFormInput
+                        v-model="form['biometric.device_password']"
+                        type="password"
+                        placeholder="••••••••"
+                        maxlength="255"
+                        autocomplete="new-password"
+                      />
+                    </AppFormField>
+                  </template>
+
+                  <!-- Dynamic inputs for ZKTeco ADMS -->
+                  <template v-else-if="form['biometric.device_maker'] === 'zkteco'">
+                    <!-- Serial Number -->
+                    <AppFormField label="Device Serial Number (SN)">
+                      <AppFormInput
+                        v-model="form['biometric.device_sn']"
+                        type="text"
+                        placeholder="e.g. NYU7252300323"
+                        maxlength="100"
+                      />
+                    </AppFormField>
+
+                    <!-- Delay / Polling Interval -->
+                    <AppFormField label="Polling Interval (seconds)">
+                      <AppFormInput
+                        v-model="form['biometric.adms_delay']"
+                        type="number"
+                        placeholder="10"
+                        min="3"
+                        max="3600"
+                      />
+                    </AppFormField>
+
+                    <!-- Fingerprint Algorithm -->
+                    <AppFormField label="Fingerprint Algorithm">
+                      <select v-model="form['biometric.zk_fingerprint_alg']" class="app-form-input w-full">
+                        <option value="13">
+                          ZKFinger VX13.0 (SenseFace default)
+                        </option>
+                        <option value="10">
+                          ZKFinger VX10.0
+                        </option>
+                      </select>
+                    </AppFormField>
+
+                    <!-- Face Algorithm -->
+                    <AppFormField label="Face Algorithm">
+                      <select v-model="form['biometric.zk_face_alg']" class="app-form-input w-full">
+                        <option value="4">
+                          ZKFace VX4.0 (Visible Light)
+                        </option>
+                        <option value="7">
+                          ZKFace VX7.0
+                        </option>
+                      </select>
+                    </AppFormField>
+                  </template>
+                </div>
+
+                <!-- ZKTeco ADMS Setup Help Guide -->
+                <div v-if="form['biometric.device_maker'] === 'zkteco'" class="mt-4 rounded-xl border border-primary-200 dark:border-primary-800/60 bg-primary-50/50 dark:bg-primary-900/10 p-4 space-y-2">
+                  <div class="flex items-center gap-2 text-primary-700 dark:text-primary-300 text-xs font-semibold uppercase tracking-wide">
+                    <Zap class="w-4 h-4 text-primary-600 dark:text-primary-400" :stroke-width="2" />
+                    ZKTeco SenseFace Cloud Server / ADMS Setup
+                  </div>
+                  <p class="text-xs text-secondary-600 dark:text-secondary-400">
+                    On your SenseFace 2a terminal screen, go to <span class="font-semibold text-secondary-800 dark:text-secondary-200">Menu → Comm. → Cloud Server Server (or ADMS / Ethernet)</span> and enter:
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-xs">
+                    <div class="rounded-lg bg-white dark:bg-secondary-800 p-2 border border-secondary-200 dark:border-secondary-700">
+                      <div class="text-[10px] uppercase text-secondary-400 font-sans font-medium">
+                        Server Address
+                      </div>
+                      <div class="text-primary-700 dark:text-primary-300 font-semibold">
+                        {{ admsServerAddress }}
+                      </div>
+                    </div>
+                    <div class="rounded-lg bg-white dark:bg-secondary-800 p-2 border border-secondary-200 dark:border-secondary-700">
+                      <div class="text-[10px] uppercase text-secondary-400 font-sans font-medium">
+                        Server Port
+                      </div>
+                      <div class="text-secondary-800 dark:text-secondary-200 font-semibold">
+                        80 / 443
+                      </div>
+                    </div>
+                    <div class="rounded-lg bg-white dark:bg-secondary-800 p-2 border border-secondary-200 dark:border-secondary-700">
+                      <div class="text-[10px] uppercase text-secondary-400 font-sans font-medium">
+                        Enable Domain Name
+                      </div>
+                      <div class="text-green-600 dark:text-green-400 font-semibold">
+                        ON
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Test connection -->
@@ -356,152 +444,181 @@
             </div>
 
             <div class="px-4 md:px-6 py-4 space-y-4">
-              <!-- Enable toggle -->
-              <div class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0">
-                    <Zap class="w-4 h-4 text-yellow-600 dark:text-yellow-400" :stroke-width="2" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium" style="color: var(--text-strong)">
-                      Enable Real-Time Push
-                    </p>
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                      Accept incoming events from the device webhook
-                    </p>
+              <!-- ZKTeco ADMS Native Push Status -->
+              <div v-if="form['biometric.device_maker'] === 'zkteco'" class="space-y-4">
+                <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                  <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">
+                    ZKTeco Real-Time Push Gateway
+                  </p>
+                  <p class="text-xs text-secondary-600 dark:text-secondary-400 mb-3">
+                    The SenseFace 2a terminal automatically pushes all face, fingerprint, and card authentication scans in real-time to the cloud server gateway.
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="rounded-lg bg-white dark:bg-secondary-800 p-3 border border-secondary-200 dark:border-secondary-700">
+                      <span class="text-secondary-400 font-medium">Gateway Address:</span>
+                      <p class="font-mono font-semibold text-primary-600 dark:text-primary-400 mt-0.5">
+                        {{ admsServerAddress }}/iclock/cdata
+                      </p>
+                    </div>
+                    <div class="rounded-lg bg-white dark:bg-secondary-800 p-3 border border-secondary-200 dark:border-secondary-700">
+                      <span class="text-secondary-400 font-medium">Active Serial Number:</span>
+                      <p class="font-mono font-semibold text-secondary-800 dark:text-secondary-200 mt-0.5">
+                        {{ form['biometric.device_sn'] || 'Not configured' }}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  role="switch"
-                  :aria-checked="form['biometric.webhook_enabled'] === '1'"
-                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
-                  :class="form['biometric.webhook_enabled'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
-                  @click="toggle('biometric.webhook_enabled')"
-                >
-                  <span
-                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
-                    :class="form['biometric.webhook_enabled'] === '1' ? 'translate-x-6' : 'translate-x-1'"
-                  />
-                </button>
               </div>
 
-              <Transition
-                enter-active-class="transition-all duration-200 ease-out"
-                enter-from-class="opacity-0 -translate-y-1"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition-all duration-150 ease-in"
-                leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-1"
-              >
-                <div v-if="form['biometric.webhook_enabled'] === '1'" class="ml-0 md:ml-12 space-y-4">
-                  <!-- Server config -->
-                  <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
-                    <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
-                      Server Reachability
-                    </p>
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
-                      Enter the IP address or hostname of this server as seen from the biometric device (LAN or public IP).
-                    </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div class="sm:col-span-2">
-                        <AppFormField label="Server Host (reachable from device)">
+              <!-- HikVision Webhook Configuration -->
+              <template v-else>
+                <!-- Enable toggle -->
+                <div class="flex items-center justify-between gap-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0">
+                      <Zap class="w-4 h-4 text-yellow-600 dark:text-yellow-400" :stroke-width="2" />
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium" style="color: var(--text-strong)">
+                        Enable Real-Time Push
+                      </p>
+                      <p class="text-xs text-secondary-500 dark:text-secondary-400">
+                        Accept incoming events from the device webhook
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    :aria-checked="form['biometric.webhook_enabled'] === '1'"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 flex-shrink-0"
+                    :class="form['biometric.webhook_enabled'] === '1' ? 'bg-primary-600' : 'bg-secondary-300 dark:bg-secondary-600'"
+                    @click="toggle('biometric.webhook_enabled')"
+                  >
+                    <span
+                      class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                      :class="form['biometric.webhook_enabled'] === '1' ? 'translate-x-6' : 'translate-x-1'"
+                    />
+                  </button>
+                </div>
+
+                <Transition
+                  enter-active-class="transition-all duration-200 ease-out"
+                  enter-from-class="opacity-0 -translate-y-1"
+                  enter-to-class="opacity-100 translate-y-0"
+                  leave-active-class="transition-all duration-150 ease-in"
+                  leave-from-class="opacity-100 translate-y-0"
+                  leave-to-class="opacity-0 -translate-y-1"
+                >
+                  <div v-if="form['biometric.webhook_enabled'] === '1'" class="ml-0 md:ml-12 space-y-4">
+                    <!-- Server config -->
+                    <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                      <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                        Server Reachability
+                      </p>
+                      <p class="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
+                        Enter the IP address or hostname of this server as seen from the biometric device (LAN or public IP).
+                      </p>
+                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                          <AppFormField label="Server Host (reachable from device)">
+                            <AppFormInput
+                              v-model="form['biometric.webhook_server_host']"
+                              type="text"
+                              placeholder="192.168.1.10 or myserver.com"
+                              maxlength="255"
+                            />
+                          </AppFormField>
+                        </div>
+                        <AppFormField label="Server Port">
                           <AppFormInput
-                            v-model="form['biometric.webhook_server_host']"
-                            type="text"
-                            placeholder="192.168.1.10 or myserver.com"
-                            maxlength="255"
+                            v-model="form['biometric.webhook_server_port']"
+                            type="number"
+                            placeholder="80"
+                            min="1"
+                            max="65535"
                           />
                         </AppFormField>
                       </div>
-                      <AppFormField label="Server Port">
-                        <AppFormInput
-                          v-model="form['biometric.webhook_server_port']"
-                          type="number"
-                          placeholder="80"
-                          min="1"
-                          max="65535"
-                        />
-                      </AppFormField>
                     </div>
-                  </div>
 
-                  <!-- Webhook token -->
-                  <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
-                    <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
-                      Webhook Token
-                    </p>
-                    <p class="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
-                      A secret token included in the device's webhook URL. Regenerate to invalidate any existing device configuration.
-                    </p>
-                    <div class="flex items-center gap-2">
-                      <div class="flex-1 min-w-0 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-xs font-mono text-secondary-600 dark:text-secondary-300 truncate">
-                        {{ webhookToken || '— not generated yet —' }}
+                    <!-- Webhook token -->
+                    <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30">
+                      <p class="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-3">
+                        Webhook Token
+                      </p>
+                      <p class="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
+                        A secret token included in the device's webhook URL. Regenerate to invalidate any existing device configuration.
+                      </p>
+                      <div class="flex items-center gap-2">
+                        <div class="flex-1 min-w-0 rounded-lg border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-3 py-2 text-xs font-mono text-secondary-600 dark:text-secondary-300 truncate">
+                          {{ webhookToken || '— not generated yet —' }}
+                        </div>
+                        <button
+                          type="button"
+                          class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors flex-shrink-0"
+                          :disabled="generatingToken"
+                          @click="generateToken"
+                        >
+                          <RefreshCw class="w-3.5 h-3.5" :class="generatingToken ? 'animate-spin' : ''" :stroke-width="2" />
+                          {{ generatingToken ? '' : 'Regenerate' }}
+                        </button>
                       </div>
+                    </div>
+
+                    <!-- Webhook URL preview -->
+                    <div v-if="webhookToken && form['biometric.webhook_server_host']" class="rounded-xl border border-blue-200 dark:border-blue-800 p-4 bg-blue-50/50 dark:bg-blue-900/10">
+                      <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
+                        Device Webhook URL
+                      </p>
+                      <p class="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">
+                        {{ webhookUrlPreview }}
+                      </p>
+                    </div>
+
+                    <!-- Apply to device -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                       <button
                         type="button"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-xs font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors flex-shrink-0"
-                        :disabled="generatingToken"
-                        @click="generateToken"
+                        class="inline-flex items-center gap-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 transition-colors"
+                        :disabled="configuringWebhook || !webhookToken || !form['biometric.webhook_server_host']"
+                        @click="configureWebhook"
                       >
-                        <RefreshCw class="w-3.5 h-3.5" :class="generatingToken ? 'animate-spin' : ''" :stroke-width="2" />
-                        {{ generatingToken ? '' : 'Regenerate' }}
+                        <Zap class="w-4 h-4" :stroke-width="2" />
+                        {{ configuringWebhook ? 'Applying…' : 'Apply to Device' }}
+                      </button>
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-4 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
+                        :disabled="checkingWebhookStatus"
+                        @click="checkWebhookStatus"
+                      >
+                        <MonitorCheck class="w-4 h-4" :stroke-width="2" />
+                        {{ checkingWebhookStatus ? 'Checking…' : 'Check Device Config' }}
                       </button>
                     </div>
-                  </div>
 
-                  <!-- Webhook URL preview -->
-                  <div v-if="webhookToken && form['biometric.webhook_server_host']" class="rounded-xl border border-blue-200 dark:border-blue-800 p-4 bg-blue-50/50 dark:bg-blue-900/10">
-                    <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
-                      Device Webhook URL
+                    <p v-if="webhookConfigResult" class="text-xs font-medium" :class="webhookConfigOk ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                      {{ webhookConfigResult }}
                     </p>
-                    <p class="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">
-                      {{ webhookUrlPreview }}
-                    </p>
-                  </div>
 
-                  <!-- Apply to device -->
-                  <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <button
-                      type="button"
-                      class="inline-flex items-center gap-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 transition-colors"
-                      :disabled="configuringWebhook || !webhookToken || !form['biometric.webhook_server_host']"
-                      @click="configureWebhook"
-                    >
-                      <Zap class="w-4 h-4" :stroke-width="2" />
-                      {{ configuringWebhook ? 'Applying…' : 'Apply to Device' }}
-                    </button>
-                    <button
-                      type="button"
-                      class="inline-flex items-center gap-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-4 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 transition-colors"
-                      :disabled="checkingWebhookStatus"
-                      @click="checkWebhookStatus"
-                    >
-                      <MonitorCheck class="w-4 h-4" :stroke-width="2" />
-                      {{ checkingWebhookStatus ? 'Checking…' : 'Check Device Config' }}
-                    </button>
-                  </div>
-
-                  <p v-if="webhookConfigResult" class="text-xs font-medium" :class="webhookConfigOk ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                    {{ webhookConfigResult }}
-                  </p>
-
-                  <!-- Device current config readback -->
-                  <div v-if="deviceWebhookConfig" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30 text-xs space-y-1.5">
-                    <p class="font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">
-                      Current Device Notification Config
-                    </p>
-                    <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-                      <span class="text-secondary-500 dark:text-secondary-400">Host</span>
-                      <span class="font-mono text-secondary-700 dark:text-secondary-300">{{ deviceWebhookConfig.ip || '—' }}</span>
-                      <span class="text-secondary-500 dark:text-secondary-400">Port</span>
-                      <span class="font-mono text-secondary-700 dark:text-secondary-300">{{ deviceWebhookConfig.port || '—' }}</span>
-                      <span class="text-secondary-500 dark:text-secondary-400">Path</span>
-                      <span class="font-mono text-secondary-700 dark:text-secondary-300 break-all">{{ deviceWebhookConfig.path || '—' }}</span>
+                    <!-- Device current config readback -->
+                    <div v-if="deviceWebhookConfig" class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-4 bg-secondary-50/50 dark:bg-secondary-800/30 text-xs space-y-1.5">
+                      <p class="font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">
+                        Current Device Notification Config
+                      </p>
+                      <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <span class="text-secondary-500 dark:text-secondary-400">Host</span>
+                        <span class="font-mono text-secondary-700 dark:text-secondary-300">{{ deviceWebhookConfig.ip || '—' }}</span>
+                        <span class="text-secondary-500 dark:text-secondary-400">Port</span>
+                        <span class="font-mono text-secondary-700 dark:text-secondary-300">{{ deviceWebhookConfig.port || '—' }}</span>
+                        <span class="text-secondary-500 dark:text-secondary-400">Path</span>
+                        <span class="font-mono text-secondary-700 dark:text-secondary-300 break-all">{{ deviceWebhookConfig.path || '—' }}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Transition>
+                </Transition>
+              </template>
             </div>
           </div>
         </Transition>
@@ -1070,6 +1187,16 @@ const DEVICE_REGISTRY = {
             { value: 'DS-K1T320MFWX-B', label: 'DS-K1T320MFWX-B (Face Recognition Terminal)' },
         ],
     },
+    zkteco: {
+        label: 'ZKTeco (ADMS / Cloud Server)',
+        models: [
+            { value: 'SenseFace 2a', label: 'SenseFace 2a (Face + Fingerprint + Card + QR)' },
+            { value: 'SpeedFace-V5L', label: 'SpeedFace-V5L / V4L' },
+            { value: 'MB20', label: 'MB20 / MB160 / MB460' },
+            { value: 'uFace800', label: 'uFace 800 (Face + Fingerprint)' },
+            { value: 'Generic ADMS', label: 'Generic ZKTeco ADMS Device' },
+        ],
+    },
 };
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -1094,6 +1221,16 @@ const webhookConfigResult    = ref('');
 const webhookConfigOk        = ref(false);
 const checkingWebhookStatus  = ref(false);
 const deviceWebhookConfig    = ref(null);
+
+const admsServerAddress = computed(() => {
+    const host = window.location.hostname;
+    const parts = host.split('.');
+    if (parts.length >= 2) {
+        const baseDomain = parts.slice(-2).join('.');
+        return `biometric.${baseDomain}`;
+    }
+    return `biometric.${host}`;
+});
 
 const webhookUrlPreview = computed(() => {
     const host  = form.value['biometric.webhook_server_host'];
@@ -1173,6 +1310,10 @@ const form = ref({
     'biometric.device_port':         '80',
     'biometric.device_username':     'admin',
     'biometric.device_password':     '',
+    'biometric.device_sn':           '',
+    'biometric.zk_fingerprint_alg':  '13',
+    'biometric.zk_face_alg':         '4',
+    'biometric.adms_delay':          '10',
     'biometric.sync_members':        '0',
     'biometric.access_control':      '0',
     'biometric.grace_period_days':   '0',

@@ -84,6 +84,10 @@ class ConfigurationApiController extends Controller
             'biometric.webhook_server_host' => ['sometimes', 'nullable', 'string', 'max:255'],
             'biometric.webhook_server_port' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
             'biometric.access_events_sync_from' => ['sometimes', 'nullable', 'date'],
+            'biometric.device_sn' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'biometric.zk_fingerprint_alg' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'biometric.zk_face_alg' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'biometric.adms_delay' => ['sometimes', 'nullable', 'integer', 'min:3', 'max:3600'],
 
             // Member ID & Biometric ID format preferences
             'member.id_prefix' => ['sometimes', 'nullable', 'string', 'max:20'],

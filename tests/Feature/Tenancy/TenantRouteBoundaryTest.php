@@ -28,6 +28,12 @@ class TenantRouteBoundaryTest extends TestCase
     {
         $exceptions = [
             'api/biometric/events/{tenantDomain}',
+            'api/iclock/cdata',
+            'api/iclock/getrequest',
+            'api/iclock/devicecmd',
+            'api/iclock/fdata',
+            'api/iclock/ping',
+            'api/iclock/registry',
         ];
 
         $unprotected = collect(app('router')->getRoutes())
@@ -48,6 +54,12 @@ class TenantRouteBoundaryTest extends TestCase
             '/',
             'storage/{path}',
             'up',
+            'iclock/cdata',
+            'iclock/getrequest',
+            'iclock/devicecmd',
+            'iclock/fdata',
+            'iclock/ping',
+            'iclock/registry',
         ];
 
         $unprotected = collect(app('router')->getRoutes())
@@ -61,7 +73,7 @@ class TenantRouteBoundaryTest extends TestCase
         $this->assertSame([], $unprotected, 'Tenant web routes missing IdentifyTenant middleware.');
     }
 
-    public function testBiometricWebhookIsTheOnlyApiRouteThatResolvesTenantInsideItsController(): void
+    public function testBiometricWebhookAndAdmsAreTheOnlyApiRoutesThatResolveTenantInsideTheirController(): void
     {
         $routes = collect(app('router')->getRoutes())
             ->filter(fn (Route $route) => str_starts_with($route->uri(), 'api/'))
@@ -71,6 +83,16 @@ class TenantRouteBoundaryTest extends TestCase
             ->values()
             ->all();
 
-        $this->assertSame(['api/biometric/events/{tenantDomain}'], $routes);
+        $expected = [
+            'api/biometric/events/{tenantDomain}',
+            'api/iclock/cdata',
+            'api/iclock/getrequest',
+            'api/iclock/devicecmd',
+            'api/iclock/fdata',
+            'api/iclock/ping',
+            'api/iclock/registry',
+        ];
+
+        $this->assertSame($expected, $routes);
     }
 }

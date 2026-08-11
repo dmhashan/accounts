@@ -67,6 +67,14 @@ class MediaStorageService
     }
 
     /**
+     * Get the raw content of a stored file.
+     */
+    public function getContent(string $path): ?string
+    {
+        return $this->disk()->get($path);
+    }
+
+    /**
      * Delete a file by its stored path. Silently ignores missing files.
      */
     public function delete(string $path): void

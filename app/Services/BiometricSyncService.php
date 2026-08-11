@@ -27,6 +27,7 @@ class BiometricSyncService
     // Map of supported device makers → driver class
     private const DRIVERS = [
         'hikvision' => HikvisionService::class,
+        'zkteco' => ZktecoAdmsService::class,
     ];
 
     /**
@@ -67,6 +68,7 @@ class BiometricSyncService
     public function __construct(
         private readonly TenantConfigurationService $config,
         private readonly MediaStorageService $media,
+        private readonly ZktecoAdmsService $zkteco,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -93,9 +95,12 @@ class BiometricSyncService
     {
         $config = $this->config->all($tenantId);
         $enabled = ($config['biometric.enabled'] ?? '0') === '1';
-        $configured = $enabled
-            && isset(self::DRIVERS[$config['biometric.device_maker'] ?? ''])
-            && filled($config['biometric.device_ip'] ?? '');
+        $maker = $config['biometric.device_maker'] ?? '';
+
+        $configured = $enabled && (
+            ($maker === 'hikvision' && filled($config['biometric.device_ip'] ?? '')) ||
+            ($maker === 'zkteco' && filled($config['biometric.device_sn'] ?? ''))
+        );
 
         return [
             'enabled' => $enabled,
@@ -158,18 +163,6 @@ class BiometricSyncService
                 'biometric_member_id' => $member->biometric_member_id,
             ]);
 
-            $driver = $this->buildDriver($allConfig);
-
-            if (!$driver) {
-                Log::debug('BiometricSyncService: sync skipped — driver could not be built (check device_maker and device_ip)', [
-                    'member_id' => $member->id,
-                    'device_maker' => $allConfig['biometric.device_maker'] ?? '',
-                    'device_ip' => $allConfig['biometric.device_ip'] ?? '',
-                ]);
-
-                return;
-            }
-
             $maker = $allConfig['biometric.device_maker'] ?? '';
             $model = $allConfig['biometric.device_model'] ?? '';
 
@@ -178,6 +171,54 @@ class BiometricSyncService
                 Log::debug('BiometricSyncService: sync skipped — member has no biometric_member_id', [
                     'member_id' => $member->id,
                     'action' => $action,
+                ]);
+
+                return;
+            }
+
+            // Handle ZKTeco ADMS queue-based sync
+            if ($maker === 'zkteco') {
+                $accessControl = ($allConfig['biometric.access_control'] ?? '0') === '1';
+                $graceDays = (int) ($allConfig['biometric.grace_period_days'] ?? 0);
+
+                if ($action === 'delete') {
+                    $result = $this->zkteco->queueDeleteMember($member->biometric_member_id);
+                    $payload = ['employeeNo' => $member->biometric_member_id];
+                } else {
+                    $result = $this->zkteco->queueAddOrUpdateMember($member, $action, $accessControl, $graceDays);
+                    $payload = ['biometric_member_id' => $member->biometric_member_id, 'name' => $member->name];
+                }
+
+                $status = $result['success'] ? 'success' : 'failed';
+                $this->writeLog([
+                    'member_id' => $member->id,
+                    'biometric_member_id' => $member->biometric_member_id,
+                    'direction' => 'up',
+                    'action' => $action,
+                    'status' => $status,
+                    'device_maker' => $maker,
+                    'device_model' => $model,
+                    'payload' => $payload,
+                    'response' => $result,
+                    'error_message' => $result['success'] ? null : $result['message'],
+                ]);
+
+                if ($result['success'] && $action !== 'delete') {
+                    $member->timestamps = false;
+                    $member->update(['biometric_last_synced_at' => now()]);
+                    $member->timestamps = true;
+                }
+
+                return;
+            }
+
+            $driver = $this->buildDriver($allConfig);
+
+            if (!$driver) {
+                Log::debug('BiometricSyncService: sync skipped — driver could not be built (check device_maker and device_ip)', [
+                    'member_id' => $member->id,
+                    'device_maker' => $allConfig['biometric.device_maker'] ?? '',
+                    'device_ip' => $allConfig['biometric.device_ip'] ?? '',
                 ]);
 
                 return;
@@ -1078,9 +1119,39 @@ class BiometricSyncService
     public function testConnection(Tenant $tenant): array
     {
         $allConfig = $this->config->all($tenant->id);
-        $driver = $this->buildDriver($allConfig);
         $maker = $allConfig['biometric.device_maker'] ?? '';
         $model = $allConfig['biometric.device_model'] ?? '';
+
+        if ($maker === 'zkteco') {
+            $sn = $allConfig['biometric.device_sn'] ?? '';
+
+            if (!$sn) {
+                return ['success' => false, 'message' => 'Device Serial Number (SN) not configured.'];
+            }
+
+            $status = $this->zkteco->getDeviceStatus($sn);
+            $isOnline = $status['online'];
+            $msg = $isOnline
+                ? "ZKTeco device is online and active (SN: {$sn})."
+                : "ZKTeco device is offline. No heartbeat received in the last 60 seconds (SN: {$sn}).";
+
+            $this->writeLog([
+                'member_id' => null,
+                'biometric_member_id' => null,
+                'direction' => 'up',
+                'action' => 'test',
+                'status' => $isOnline ? 'success' : 'failed',
+                'device_maker' => $maker,
+                'device_model' => $model,
+                'payload' => ['sn' => $sn],
+                'response' => $status,
+                'error_message' => $isOnline ? null : $msg,
+            ]);
+
+            return ['success' => $isOnline, 'message' => $msg, 'data' => $status];
+        }
+
+        $driver = $this->buildDriver($allConfig);
 
         if (!$driver) {
             return ['success' => false, 'message' => 'No device maker configured.'];
@@ -1109,6 +1180,27 @@ class BiometricSyncService
      */
     public function unlockDoor(Tenant $tenant, int $doorNo = 1): array
     {
+        $allConfig = $this->config->all($tenant->id);
+        $maker = $allConfig['biometric.device_maker'] ?? '';
+
+        if ($maker === 'zkteco') {
+            $result = $this->zkteco->queueDoorUnlock($doorNo);
+            $this->writeLog([
+                'member_id' => null,
+                'biometric_member_id' => null,
+                'direction' => 'up',
+                'action' => 'unlock',
+                'status' => $result['success'] ? 'success' : 'failed',
+                'device_maker' => $maker,
+                'device_model' => $allConfig['biometric.device_model'] ?? 'SenseFace 2a',
+                'payload' => ['door_no' => $doorNo],
+                'response' => $result,
+                'error_message' => $result['success'] ? null : $result['message'],
+            ]);
+
+            return $result;
+        }
+
         return $this->runDoorControl($tenant, $doorNo, 'unlock', 'Door unlocked.', fn (HikvisionService $driver) => $driver->unlockDoor($doorNo));
     }
 
@@ -1269,16 +1361,52 @@ class BiometricSyncService
     {
         $tenantId = (int) app('tenant')->id;
         $allConfig = $this->config->all($tenantId);
-        $driver = $this->buildDriver($allConfig);
-
-        if (!$driver) {
-            return ['connection_failed' => true, 'not_assigned' => false, 'not_found' => false, 'message' => 'Device not configured.'];
-        }
+        $maker = $allConfig['biometric.device_maker'] ?? '';
 
         $employeeNo = $member->biometric_member_id;
 
         if (!$employeeNo) {
             return ['connection_failed' => false, 'not_assigned' => true, 'not_found' => false, 'message' => 'No biometric ID assigned to this member.'];
+        }
+
+        if ($maker === 'zkteco') {
+            $hasPhoto = (bool) $member->profile_photo_path;
+
+            return [
+                'connection_failed' => false,
+                'not_assigned' => false,
+                'not_found' => false,
+                'fingerprint_setup_supported' => false,
+                'person' => [
+                    'employee_no' => $employeeNo,
+                    'name' => $member->name,
+                    'gender' => $member->gender,
+                    'user_type' => 'normal',
+                    'valid_enabled' => true,
+                    'valid_begin' => optional($member->joined_date)->toIso8601String(),
+                    'valid_end' => null,
+                ],
+                'face' => [
+                    'enrolled' => $hasPhoto,
+                    'count' => $hasPhoto ? 1 : 0,
+                    'face_url' => $hasPhoto ? $this->media->url($member->profile_photo_path) : null,
+                ],
+                'fingerprint' => [
+                    'enrolled' => true,
+                    'count' => 1,
+                ],
+                'card' => [
+                    'assigned' => false,
+                    'count' => 0,
+                    'card_numbers' => [],
+                ],
+            ];
+        }
+
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver) {
+            return ['connection_failed' => true, 'not_assigned' => false, 'not_found' => false, 'message' => 'Device not configured.'];
         }
 
         // ── Person info ───────────────────────────────────────────────────────
