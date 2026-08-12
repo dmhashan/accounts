@@ -43,7 +43,16 @@
           <div>
             <div class="flex flex-wrap items-center gap-2">
               <h1 class="text-xl font-bold text-secondary-900 dark:text-white">
-                {{ payment.member_name || 'Walk-in / Unspecified' }}
+                <RouterLink
+                  v-if="payment.member_id"
+                  :to="`/members/${payment.member_id}`"
+                  class="hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors"
+                >
+                  {{ payment.member_name || 'Member' }}
+                </RouterLink>
+                <span v-else>
+                  {{ payment.member_name || 'Walk-in / Unspecified' }}
+                </span>
               </h1>
               <span
                 v-if="!payment.is_paid"
@@ -212,7 +221,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 import AppPageHeader from '../components/AppPageHeader.vue';
