@@ -1,182 +1,235 @@
 <template>
-  <div>
+  <div class="space-y-5 pb-6">
     <!-- Header -->
-    <div class="pt-12 pb-6">
-      <h1 class="text-2xl font-bold text-gray-900 leading-tight tracking-tight">
-        Wallet
+    <div class="pt-2 pb-1">
+      <h1 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+        Digital Wallet
       </h1>
-      <p class="text-xs text-gray-400 mt-0.5">
-        Your balance & transaction history
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
+        Club credits, top-up balance &amp; expenditure history
       </p>
     </div>
 
-    <!-- Balance hero card -->
-    <div class="relative rounded-3xl overflow-hidden mb-5" style="background: linear-gradient(135deg, #059669 0%, #047857 60%, #065f46 100%); min-height: 140px;">
-      <!-- Decorative blobs -->
-      <div class="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-white/10 pointer-events-none" />
-      <div class="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
-      <div class="absolute top-6 right-24 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
+    <!-- Digital Wallet Card -->
+    <div class="pp-wallet-card p-6 relative overflow-hidden select-none shadow-xl">
+      <!-- Decorative ambient shapes -->
+      <div class="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10 pointer-events-none" />
+      <div class="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-black/10 pointer-events-none" />
 
-      <div class="relative px-6 py-7">
-        <p class="text-xs font-bold text-emerald-200 uppercase tracking-widest mb-1">
-          Current Balance
+      <!-- Card Top -->
+      <div class="relative flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-white/20 p-1.5 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <CreditCard class="w-full h-full text-white" :stroke-width="2" />
+          </div>
+          <div>
+            <p class="text-xs font-black tracking-wider uppercase text-white/90">
+              {{ meta.tenant_name || 'Member Wallet' }}
+            </p>
+            <p class="text-[9px] font-semibold text-emerald-200 uppercase tracking-widest leading-none">
+              Prepaid Member Account
+            </p>
+          </div>
+        </div>
+
+        <Wifi class="w-5 h-5 text-emerald-200 rotate-90" :stroke-width="2" />
+      </div>
+
+      <!-- Card Balance -->
+      <div class="relative py-1">
+        <p class="text-[11px] font-bold text-emerald-200 uppercase tracking-wider mb-1">
+          Available Balance
         </p>
-        <p class="text-4xl font-extrabold text-white tracking-tight leading-none">
+        <p class="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
           {{ formatMoney(meta.current_balance ?? 0) }}
         </p>
-        <div class="mt-4 flex items-center gap-3">
-          <div class="flex items-center gap-1.5 text-emerald-200">
-            <User class="w-3.5 h-3.5" :stroke-width="2" />
-            <span class="text-xs font-medium">{{ meta.name }}</span>
-          </div>
+      </div>
+
+      <!-- Card Bottom -->
+      <div class="relative mt-6 pt-3 border-t border-white/15 flex items-center justify-between text-xs">
+        <div>
+          <p class="font-bold text-white uppercase tracking-tight truncate">
+            {{ meta.name }}
+          </p>
+          <p class="text-[10px] text-emerald-200 font-mono mt-0.5">
+            {{ meta.member_code || meta.member_id || '#MEMBER' }}
+          </p>
+        </div>
+
+        <div class="text-right">
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/20 backdrop-blur-sm text-white">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+            Active
+          </span>
         </div>
       </div>
     </div>
 
-    <!-- Summary chips -->
-    <div class="grid grid-cols-2 gap-3 mb-5">
-      <div class="bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100">
-        <div class="flex items-center gap-2 mb-1">
-          <div class="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
-            <ArrowUp class="w-3.5 h-3.5 text-emerald-600" :stroke-width="2.5" />
-          </div>
-          <p class="text-[11px] text-gray-400 font-medium">
-            Total Credits
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 gap-3">
+      <div class="pp-glass-card rounded-2xl p-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <ArrowDownLeft class="w-5 h-5" :stroke-width="2.2" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            Total Top-ups
+          </p>
+          <p class="text-base font-black text-gray-900 dark:text-white truncate mt-0.5">
+            +{{ formatMoney(totalCredits) }}
           </p>
         </div>
-        <p class="text-base font-bold text-gray-900">
-          {{ formatMoney(totalCredits) }}
-        </p>
       </div>
-      <div class="bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100">
-        <div class="flex items-center gap-2 mb-1">
-          <div class="w-6 h-6 rounded-lg bg-red-50 flex items-center justify-center">
-            <ArrowDown class="w-3.5 h-3.5 text-red-500" :stroke-width="2.5" />
-          </div>
-          <p class="text-[11px] text-gray-400 font-medium">
-            Total Debits
+
+      <div class="pp-glass-card rounded-2xl p-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/50 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
+          <ArrowUpRight class="w-5 h-5" :stroke-width="2.2" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            Total Spent
+          </p>
+          <p class="text-base font-black text-gray-900 dark:text-white truncate mt-0.5">
+            -{{ formatMoney(totalDebits) }}
           </p>
         </div>
-        <p class="text-base font-bold text-gray-900">
-          {{ formatMoney(totalDebits) }}
-        </p>
       </div>
     </div>
 
-    <!-- Transaction history -->
-    <section>
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-base font-bold text-gray-900">
-          Transactions
+    <!-- Transaction History Section -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-extrabold text-gray-900 dark:text-white tracking-tight">
+          Transaction Activity
         </h2>
-        <span v-if="txMeta.total > 0" class="text-xs text-gray-400">{{ txMeta.total }} total</span>
+        <span v-if="txMeta.total > 0" class="text-xs font-semibold text-gray-400 dark:text-gray-500">
+          {{ filteredTransactions.length }} of {{ txMeta.total }}
+        </span>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="flex gap-1.5 p-1 bg-gray-100 dark:bg-zinc-800/80 rounded-2xl">
+        <button
+          v-for="filter in ['all', 'credit', 'debit']"
+          :key="filter"
+          type="button"
+          class="flex-1 py-1.5 text-xs font-bold rounded-xl transition-all capitalize focus:outline-none cursor-pointer"
+          :class="activeFilter === filter
+            ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'"
+          @click="activeFilter = filter"
+        >
+          {{ filter === 'all' ? 'All' : (filter === 'credit' ? 'Top-ups (+)' : 'Spent (-)') }}
+        </button>
       </div>
 
       <!-- Loading skeleton -->
-      <div v-if="loading && transactions.length === 0" class="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm divide-y divide-gray-50">
-        <div v-for="i in 5" :key="i" class="flex items-center gap-4 px-5 py-4 animate-pulse">
-          <div class="w-10 h-10 rounded-2xl bg-gray-100 shrink-0" />
-          <div class="flex-1 space-y-2">
-            <div class="h-3 bg-gray-100 rounded-full w-2/5" />
-            <div class="h-2.5 bg-gray-100 rounded-full w-1/3" />
-          </div>
-          <div class="w-16 space-y-2">
-            <div class="h-3 bg-gray-100 rounded-full" />
-            <div class="h-2.5 bg-gray-100 rounded-full w-3/4 ml-auto" />
+      <div v-if="loading && transactions.length === 0" class="pp-glass-card rounded-3xl p-4 divide-y divide-gray-100 dark:divide-zinc-800">
+        <div v-for="i in 4" :key="i" class="flex items-center gap-3 py-3 animate-pulse">
+          <div class="w-10 h-10 rounded-2xl bg-gray-200 dark:bg-zinc-800 shrink-0" />
+          <div class="flex-1 space-y-1.5">
+            <div class="h-3.5 bg-gray-200 dark:bg-zinc-800 rounded w-1/2" />
+            <div class="h-2.5 bg-gray-200 dark:bg-zinc-800 rounded w-1/3" />
           </div>
         </div>
       </div>
 
-      <!-- Empty state -->
-      <div v-else-if="transactions.length === 0" class="flex flex-col items-center justify-center py-20 gap-3">
-        <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-          <CreditCard class="w-7 h-7 text-gray-300" :stroke-width="1.2" />
-        </div>
-        <p class="text-sm text-gray-400">
-          No wallet transactions yet
+      <!-- Empty State -->
+      <div
+        v-else-if="filteredTransactions.length === 0"
+        class="pp-glass-card rounded-3xl p-10 flex flex-col items-center justify-center text-center gap-2 text-gray-400"
+      >
+        <Receipt class="w-10 h-10 text-gray-300 dark:text-zinc-600" :stroke-width="1.5" />
+        <p class="text-sm font-bold text-gray-700 dark:text-gray-300">
+          No transactions found
+        </p>
+        <p class="text-xs text-gray-400 dark:text-gray-500">
+          Transactions in this category will appear here.
         </p>
       </div>
 
-      <!-- Transaction list -->
-      <div v-else class="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm divide-y divide-gray-50">
+      <!-- Transactions List -->
+      <div v-else class="pp-glass-card rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800/60 shadow-sm">
         <div
-          v-for="tx in transactions"
+          v-for="tx in filteredTransactions"
           :key="tx.id"
-          class="flex items-center gap-4 px-5 py-4"
+          class="flex items-center gap-3.5 px-4 sm:px-5 py-4 hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors"
         >
           <!-- Icon -->
           <div
-            class="shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center"
-            :class="tx.direction === 'credit' ? 'bg-emerald-50' : 'bg-red-50'"
+            class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+            :class="tx.direction === 'credit'
+              ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+              : 'bg-rose-50 dark:bg-rose-950/50 text-rose-500 dark:text-rose-400'"
           >
-            <!-- Topup / credit -->
-            <CreditCard
-              v-if="tx.direction === 'credit'"
-              style="width:18px;height:18px"
-              class="text-emerald-500"
-              :stroke-width="2"
-            />
-            <!-- Debit -->
-            <ShoppingBag
-              v-else
-              style="width:18px;height:18px"
-              class="text-red-400"
-              :stroke-width="2"
-            />
+            <ArrowDownLeft v-if="tx.direction === 'credit'" class="w-5 h-5" :stroke-width="2.2" />
+            <ShoppingBag v-else class="w-5 h-5" :stroke-width="2" />
           </div>
 
           <!-- Details -->
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-gray-900 truncate">
-              {{ tx.label }}
+            <p class="text-sm font-bold text-gray-900 dark:text-white truncate">
+              {{ tx.label || (tx.direction === 'credit' ? 'Wallet Top-up' : 'Account Purchase') }}
             </p>
-            <p class="text-xs text-gray-400 mt-0.5">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
               {{ tx.date }}
-              <span v-if="tx.reference" class="ml-1 opacity-75">&middot; {{ tx.reference }}</span>
+              <span v-if="tx.reference" class="opacity-80">&middot; {{ tx.reference }}</span>
             </p>
-            <p v-if="tx.notes" class="text-[11px] text-gray-400 mt-0.5 truncate">
+            <p v-if="tx.notes" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">
               {{ tx.notes }}
             </p>
           </div>
 
           <!-- Amount -->
-          <div class="shrink-0 text-right">
+          <div class="text-right shrink-0">
             <p
-              class="text-sm font-bold"
-              :class="tx.direction === 'credit' ? 'text-emerald-600' : 'text-red-500'"
+              class="text-sm font-black"
+              :class="tx.direction === 'credit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'"
             >
               {{ tx.direction === 'credit' ? '+' : '-' }}{{ formatMoney(tx.amount) }}
             </p>
             <span
-              class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-0.5"
+              class="inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full mt-0.5"
               :class="tx.direction === 'credit'
-                ? 'text-emerald-600 bg-emerald-50'
-                : 'text-red-500 bg-red-50'"
-            >{{ tx.direction === 'credit' ? 'Credit' : 'Debit' }}</span>
+                ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400'
+                : 'text-gray-600 bg-gray-100 dark:bg-zinc-800 dark:text-gray-300'"
+            >
+              {{ tx.direction === 'credit' ? 'Credit' : 'Debit' }}
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Load more -->
+      <!-- Load More Button -->
       <button
         v-if="txMeta.current_page < txMeta.last_page"
         type="button"
         :disabled="loading"
-        class="mt-3 w-full py-3.5 text-sm font-bold bg-gray-900 text-white rounded-2xl hover:bg-gray-800 active:bg-black transition-colors disabled:opacity-50"
+        class="w-full py-3 rounded-2xl text-xs font-bold bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-98 transition-all disabled:opacity-50 cursor-pointer shadow-md"
         @click="loadMore"
       >
-        {{ loading ? 'Loading...' : `Load more (${txMeta.total - transactions.length} remaining)` }}
+        <span v-if="loading" class="flex items-center justify-center gap-2">
+          <span class="w-3.5 h-3.5 border-2 border-white dark:border-gray-900 border-t-transparent rounded-full animate-spin" />
+          Loading more&hellip;
+        </span>
+        <span v-else>
+          Load more transactions ({{ txMeta.total - transactions.length }} remaining)
+        </span>
       </button>
     </section>
-
-    <!-- bottom spacer -->
-    <div class="h-4" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { User, ArrowUp, ArrowDown, CreditCard, ShoppingBag } from 'lucide-vue-next';
+import {
+    CreditCard,
+    ArrowDownLeft,
+    ArrowUpRight,
+    ShoppingBag,
+    Receipt,
+    Wifi,
+} from 'lucide-vue-next';
 
 const props = defineProps({
     meta:                { type: Object, default: () => ({}) },
@@ -189,11 +242,17 @@ const MEMBER_KEY = 'public_profile_member_id';
 const transactions = ref([...props.walletTransactions]);
 const txMeta       = ref({ ...props.walletTxMeta });
 const loading      = ref(false);
+const activeFilter = ref('all'); // 'all' | 'credit' | 'debit'
 
 function getCsrfToken() {
     const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
     return match ? decodeURIComponent(match[1]) : '';
 }
+
+const filteredTransactions = computed(() => {
+    if (activeFilter.value === 'all') return transactions.value;
+    return transactions.value.filter(t => t.direction === activeFilter.value);
+});
 
 async function loadMore() {
     if (loading.value) return;
@@ -219,10 +278,8 @@ async function loadMore() {
     }
 }
 
-// If initial data was empty (old cached session), try to fetch fresh
 onMounted(() => {
     if (transactions.value.length === 0 && (props.walletTxMeta?.total ?? 0) === 0) {
-        // Trigger a first-page load so the view is always populated
         fetchFirstPage();
     }
 });
@@ -250,11 +307,11 @@ async function fetchFirstPage() {
 }
 
 const totalCredits = computed(() =>
-    transactions.value.filter(t => t.direction === 'credit').reduce((s, t) => s + t.amount, 0)
+    transactions.value.filter(t => t.direction === 'credit').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0)
 );
 
 const totalDebits = computed(() =>
-    transactions.value.filter(t => t.direction === 'debit').reduce((s, t) => s + t.amount, 0)
+    transactions.value.filter(t => t.direction === 'debit').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0)
 );
 
 function formatMoney(val) {

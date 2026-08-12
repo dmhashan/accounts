@@ -13,7 +13,7 @@
             document.documentElement.classList.toggle('dark', shouldUseDark);
         })();
     </script>
-    @vite(['resources/css/app.css', 'resources/js/portal/main.js'])
+    @vite(['resources/css/portal.css', 'resources/js/portal/main.js'])
 </head>
 <body class="font-sans antialiased bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
     @php

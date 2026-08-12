@@ -28,7 +28,7 @@
             document.documentElement.classList.toggle('dark', shouldUseDark);
         })();
     </script>
-    @vite(['resources/css/app.css', 'resources/js/spa/main.js'])
+    @vite(['resources/css/management.css', 'resources/js/spa/main.js'])
 </head>
 <body class="font-sans antialiased bg-background-light dark:bg-background-dark">
     @php

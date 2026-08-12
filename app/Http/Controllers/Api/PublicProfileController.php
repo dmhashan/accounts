@@ -194,6 +194,9 @@ class PublicProfileController extends Controller
 
         return response()->json([
             'meta' => [
+                'id' => $member->id,
+                'member_id' => $member->biometric_member_id ?: ('#' . $member->id),
+                'member_code' => $member->biometric_member_id ?: ('MEM-' . str_pad($member->id, 4, '0', STR_PAD_LEFT)),
                 'name' => $member->name,
                 'gender' => $member->gender,
                 'joined_date' => $member->joined_date?->format('Y-m-d'),

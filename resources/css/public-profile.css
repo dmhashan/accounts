@@ -1,0 +1,354 @@
+@import 'tailwindcss';
+
+@source '../views/members/public-profile.blade.php';
+@source '../js/public-profile.js';
+@source '../js/spa/pages/PublicProfilePage.vue';
+@source '../js/spa/components/PublicProfileApp/**/*.vue';
+@source '../js/spa/components/WorkoutProgramPreviewCard.vue';
+@source '../js/spa/components/SaleInvoicePreviewCard.vue';
+@source '../js/spa/components/forms/AppFormPhoneInput.vue';
+@source '../js/components/ui/MemberAvatar.vue';
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Primary Color - Gym Red / Crimson */
+    --color-primary: #ef4444;
+    --color-primary-50: #fef2f2;
+    --color-primary-100: #fee2e2;
+    --color-primary-200: #fecaca;
+    --color-primary-300: #fca5a5;
+    --color-primary-400: #f87171;
+    --color-primary-500: #ef4444;
+    --color-primary-600: #dc2626;
+    --color-primary-700: #b91c1c;
+    --color-primary-800: #991b1b;
+    --color-primary-900: #7f1d1d;
+    --color-primary-950: #450a0a;
+
+    /* Secondary Color */
+    --color-secondary: #6b7280;
+    --color-secondary-50: #f9fafb;
+    --color-secondary-100: #f3f4f6;
+    --color-secondary-200: #e5e7eb;
+    --color-secondary-300: #d1d5db;
+    --color-secondary-400: #9ca3af;
+    --color-secondary-500: #6b7280;
+    --color-secondary-600: #4b5563;
+    --color-secondary-700: #374151;
+    --color-secondary-800: #1f2937;
+    --color-secondary-900: #111827;
+    --color-secondary-950: #030712;
+
+    /* Background Colors */
+    --color-background-light: #ffffff;
+    --color-background-dark: #000000;
+    --color-background-light-50: #fafafa;
+    --color-background-light-100: #f5f5f5;
+    --color-background-dark-900: #0a0a0a;
+    --color-background-dark-950: #000000;
+}
+
+@layer base {
+    :root {
+        color-scheme: light;
+        --app-safe-area-top: env(safe-area-inset-top, 0px);
+        --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        --member-portal-header-height: 3.75rem;
+        --member-portal-bottom-nav-height: 4.5rem;
+        --member-portal-bottom-padding: calc(var(--member-portal-bottom-nav-height) + var(--app-safe-area-bottom) + 1.5rem);
+        --shell-bg: #f4f6f5;
+        --surface-card: #ffffff;
+        --surface-border: #e2e8e4;
+        --surface-muted: #eef3f0;
+        --control-bg: #ffffff;
+        --control-border: #d9e1dd;
+        --text-strong: #0f172a;
+        --text-muted: #64748b;
+        --ring-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .dark {
+        color-scheme: dark;
+        --shell-bg: #09090b;
+        --surface-card: #18181b;
+        --surface-border: #27272a;
+        --surface-muted: #242428;
+        --control-bg: #202024;
+        --control-border: #3f3f46;
+        --text-strong: #fafafa;
+        --text-muted: #a1a1aa;
+        --ring-color: rgba(248, 113, 113, 0.45);
+    }
+
+    html,
+    body,
+    #public-profile-app {
+        min-height: 100%;
+        min-height: 100dvh;
+    }
+
+    body {
+        background-color: var(--shell-bg);
+        color: var(--text-strong);
+        accent-color: var(--color-primary-500);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    button,
+    a,
+    input,
+    select,
+    textarea {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+@layer components {
+    .app-shell-viewport {
+        min-height: 100vh;
+        height: 100vh;
+        min-height: 100dvh;
+        height: 100dvh;
+    }
+
+    /* ── Member portal layout ─────────────────────────────── */
+    .member-portal-shell {
+        color: var(--text-strong);
+        min-height: 100vh;
+        min-height: 100dvh;
+        background:
+            radial-gradient(1200px circle at 50% -10%, color-mix(in srgb, var(--color-primary-500) 12%, transparent), transparent 60%),
+            radial-gradient(800px circle at 90% 20%, color-mix(in srgb, var(--color-primary-400) 8%, transparent), transparent 50%),
+            linear-gradient(180deg, color-mix(in srgb, var(--shell-bg) 96%, var(--color-primary-50)), var(--shell-bg) 40%);
+    }
+
+    .dark .member-portal-shell {
+        background:
+            radial-gradient(1200px circle at 50% -10%, color-mix(in srgb, var(--color-primary-500) 15%, transparent), transparent 60%),
+            radial-gradient(800px circle at 90% 20%, color-mix(in srgb, var(--color-primary-900) 25%, transparent), transparent 50%),
+            linear-gradient(180deg, color-mix(in srgb, var(--shell-bg) 95%, #000000), var(--shell-bg) 40%);
+    }
+
+    .member-portal-header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: color-mix(in srgb, var(--surface-card) 82%, transparent);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid color-mix(in srgb, var(--surface-border) 75%, transparent);
+        padding-top: max(var(--app-safe-area-top), 0.5rem);
+    }
+
+    .member-portal-main {
+        padding-bottom: var(--member-portal-bottom-padding);
+        scroll-padding-bottom: var(--member-portal-bottom-padding);
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .member-bottom-nav {
+        padding-bottom: max(var(--app-safe-area-bottom), 0.35rem);
+        background: color-mix(in srgb, var(--surface-card) 88%, transparent);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid color-mix(in srgb, var(--surface-border) 80%, transparent);
+        box-shadow: 0 -4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .dark .member-bottom-nav {
+        background: color-mix(in srgb, #0f172a 88%, transparent);
+        border-top-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 -4px 24px -2px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ── Member Authentication UI ───────────────────────────── */
+    .member-auth-icon {
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+        border: 1px solid color-mix(in srgb, var(--color-primary-300) 40%, transparent);
+        box-shadow: 0 16px 36px -12px color-mix(in srgb, var(--color-primary-600) 65%, transparent);
+    }
+
+    .member-auth-title {
+        color: var(--text-strong);
+        letter-spacing: -0.025em;
+    }
+
+    .member-auth-muted,
+    .member-auth-label {
+        color: var(--text-muted);
+    }
+
+    .member-auth-card {
+        background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+        border: 1px solid color-mix(in srgb, var(--surface-border) 85%, var(--color-primary-200));
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+
+    .dark .member-auth-card {
+        border-color: color-mix(in srgb, var(--surface-border) 90%, var(--color-primary-900));
+    }
+
+    .member-auth-input {
+        width: 100%;
+        color: var(--text-strong);
+        background: var(--control-bg);
+        border: 1.5px solid var(--control-border);
+        font-size: 16px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    .member-auth-input::placeholder {
+        color: var(--text-muted);
+        opacity: 0.65;
+    }
+
+    .member-auth-input:focus {
+        border-color: var(--color-primary-500);
+        box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+        outline: none;
+    }
+
+    .member-auth-primary {
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+        box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--color-primary-600) 70%, transparent);
+        transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .member-auth-primary:hover:not(:disabled) {
+        filter: brightness(1.06);
+        box-shadow: 0 14px 28px -8px color-mix(in srgb, var(--color-primary-600) 80%, transparent);
+    }
+
+    .member-auth-primary:active:not(:disabled) {
+        transform: scale(0.98);
+        filter: brightness(0.95);
+    }
+
+    .member-auth-primary:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+
+    .member-auth-secondary {
+        color: var(--text-muted);
+        transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .member-auth-secondary:hover {
+        color: var(--color-primary-600);
+        background: color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+    }
+
+    .member-auth-secondary:active {
+        transform: scale(0.98);
+    }
+
+    /* ── Public Profile Glass & Card Components ─────────────── */
+    .pp-glass-card {
+        background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+        border: 1px solid color-mix(in srgb, var(--surface-border) 78%, transparent);
+        box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.04);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .dark .pp-glass-card {
+        background: color-mix(in srgb, #18181b 88%, transparent);
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
+    }
+
+    .pp-membership-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1.75rem;
+        background: linear-gradient(135deg, #09090b 0%, #18181b 45%, #27272a 100%);
+        box-shadow:
+            0 20px 40px -15px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+        color: #ffffff;
+    }
+
+    .pp-wallet-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1.75rem;
+        background: linear-gradient(135deg, #047857 0%, #059669 40%, #065f46 100%);
+        box-shadow:
+            0 20px 40px -15px rgba(4, 120, 87, 0.35),
+            0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+        color: #ffffff;
+    }
+
+    .pp-input {
+        display: block;
+        width: 100%;
+        background-color: var(--surface-card);
+        border: 1.5px solid color-mix(in srgb, var(--surface-border) 90%, transparent);
+        border-radius: 1rem;
+        padding: 0.75rem 1rem;
+        font-size: 16px;
+        line-height: 1.5;
+        color: var(--text-strong);
+        outline: none;
+        box-shadow: none;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .pp-input::placeholder {
+        color: var(--text-muted);
+        opacity: 0.65;
+    }
+
+    .pp-input:focus {
+        border-color: var(--color-primary-500);
+        box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+        outline: none;
+    }
+
+    .pp-input[readonly] {
+        background-color: color-mix(in srgb, var(--surface-muted) 80%, transparent);
+        color: var(--text-muted);
+        cursor: default;
+    }
+
+    .pp-textarea {
+        display: block;
+        width: 100%;
+        background-color: var(--surface-card);
+        border: 1.5px solid color-mix(in srgb, var(--surface-border) 90%, transparent);
+        border-radius: 1rem;
+        padding: 0.75rem 1rem;
+        font-size: 16px;
+        line-height: 1.5;
+        color: var(--text-strong);
+        outline: none;
+        box-shadow: none;
+        resize: none;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .pp-textarea::placeholder {
+        color: var(--text-muted);
+        opacity: 0.65;
+    }
+
+    .pp-textarea:focus {
+        border-color: var(--color-primary-500);
+        box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+        outline: none;
+    }
+}
