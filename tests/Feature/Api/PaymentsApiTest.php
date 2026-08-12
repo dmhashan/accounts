@@ -790,6 +790,62 @@ class PaymentsApiTest extends ApiRouteTestCase
         $this->assertEquals(1200.00, (float) $memberData['total_outstanding_amount']);
     }
 
+    public function testMemberPaymentsEndpointReturnsMembershipDatesAndPlan(): void
+    {
+        $this->actingAsUser(['payments.manage', 'members.view']);
+        $member = $this->createMember(null, ['name' => 'Jane Member']);
+        $account = $this->createAccount();
+        $plan = $this->createPaymentPlan([
+            'name' => 'Monthly Gold',
+            'duration_value' => 1,
+            'duration_unit' => 'month',
+            'price' => 2500,
+        ]);
+
+        $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'company_account_id' => $account->id,
+            'payment_plan_id' => $plan->id,
+            'amount' => 2500,
+            'payment_date' => '2026-08-01',
+            'start_date' => '2026-08-01',
+            'end_date' => '2026-08-31',
+            'payment_method' => 'cash',
+        ])->assertCreated();
+
+        $response = $this->getJson('/api/members/' . $member->id . '/payments')->assertOk();
+
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'member_id',
+                    'amount',
+                    'payment_date',
+                    'start_date',
+                    'end_date',
+                    'payment_plan_id',
+                    'payment_plan_name',
+                    'is_paid',
+                ],
+            ],
+            'meta' => [
+                'current_page',
+                'last_page',
+                'per_page',
+                'total',
+            ],
+        ]);
+
+        $paymentItem = $response->json('data.0');
+        $this->assertEquals(2500.00, (float) $paymentItem['amount']);
+        $this->assertEquals('2026-08-01', $paymentItem['payment_date']);
+        $this->assertEquals('2026-08-01', $paymentItem['start_date']);
+        $this->assertEquals('2026-08-31', $paymentItem['end_date']);
+        $this->assertEquals('Monthly Gold', $paymentItem['payment_plan_name']);
+        $this->assertTrue($paymentItem['is_paid']);
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------

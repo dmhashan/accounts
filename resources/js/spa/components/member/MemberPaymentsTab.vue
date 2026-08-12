@@ -37,24 +37,57 @@
         class="flex items-center justify-between px-5 py-3 gap-3 hover:bg-secondary-50 dark:hover:bg-secondary-800/50 transition-colors"
       >
         <div class="min-w-0">
-          <p class="text-sm font-semibold text-secondary-900 dark:text-white">
-            {{ formatMoney(payment.amount) }}
-          </p>
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="text-sm font-semibold text-secondary-900 dark:text-white">
+              {{ formatMoney(payment.amount) }}
+            </p>
+            <span
+              v-if="payment.payment_plan_name"
+              class="inline-flex items-center px-1.5 py-0.5 text-[11px] font-medium rounded bg-secondary-100 dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300"
+            >
+              {{ payment.payment_plan_name }}
+            </span>
+          </div>
           <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
             {{ formatDate(payment.payment_date) }}
             <span v-if="payment.payment_method_name || payment.account_name" class="ml-1 opacity-70">&bull; {{ payment.payment_method_name || payment.account_name }}</span>
+          </p>
+          <p v-if="payment.start_date || payment.end_date" class="text-xs text-secondary-600 dark:text-secondary-300 mt-0.5 flex items-center gap-1.5">
+            <span class="inline-flex items-center gap-1 text-secondary-400 dark:text-secondary-500">
+              <Calendar class="w-3 h-3 shrink-0" />
+              <span>Valid:</span>
+            </span>
+            <span v-if="payment.start_date && payment.end_date" class="font-medium text-secondary-700 dark:text-secondary-200">
+              {{ formatDate(payment.start_date) }} &ndash; {{ formatDate(payment.end_date) }}
+            </span>
+            <span v-else-if="payment.start_date" class="font-medium text-secondary-700 dark:text-secondary-200">
+              From {{ formatDate(payment.start_date) }}
+            </span>
+            <span v-else class="font-medium text-secondary-700 dark:text-secondary-200">
+              Until {{ formatDate(payment.end_date) }}
+            </span>
           </p>
           <p v-if="payment.reference_number" class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">
             Ref: {{ payment.reference_number }}
           </p>
         </div>
-        <div class="shrink-0 text-right">
+        <div class="shrink-0 flex flex-col items-end gap-1">
           <span
+            v-if="payment.is_paid"
             class="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-semibold uppercase rounded-full border"
             :class="`${getColorClasses(payment.payment_method_color).bg} ${getColorClasses(payment.payment_method_color).text} ${getColorClasses(payment.payment_method_color).border}`"
           >
             <component :is="getIconComponent(payment.payment_method_icon)" class="w-3 h-3" />
             {{ payment.payment_method === 'member_wallet' ? 'Wallet' : (payment.payment_method_name || 'Method') }}
+          </span>
+          <span
+            v-else
+            class="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-semibold uppercase rounded-full border bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+          >
+            Outstanding
+          </span>
+          <span v-if="!payment.is_paid && payment.balance > 0" class="text-xs font-semibold text-amber-600 dark:text-amber-400">
+            Bal: {{ formatMoney(payment.balance) }}
           </span>
         </div>
       </RouterLink>
@@ -120,7 +153,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { Plus } from 'lucide-vue-next';
+import { Calendar, Plus } from 'lucide-vue-next';
 import { apiRequest } from '../../composables/useApiClient';
 import { useMemberFormatters } from '../../composables/useMemberFormatters';
 import { useAppContext } from '../../composables/useAppContext';
