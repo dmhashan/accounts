@@ -148,10 +148,10 @@
           </div>
           <div class="min-w-0 flex-1">
             <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Total Invoices / Sales
+              Total Payments &amp; Invoices
             </p>
             <p class="text-sm font-bold text-gray-900 dark:text-white mt-0.5">
-              {{ salesData.length }} transaction{{ salesData.length === 1 ? '' : 's' }}
+              {{ (paymentsData.length || 0) + (salesData.length || 0) }} record{{ ((paymentsData.length || 0) + (salesData.length || 0)) === 1 ? '' : 's' }}
             </p>
           </div>
         </div>
@@ -206,6 +206,7 @@ defineProps({
     initials:     { type: String, default: '' },
     workoutsData: { type: Array,  default: () => [] },
     salesData:    { type: Array,  default: () => [] },
+    paymentsData: { type: Array,  default: () => [] },
 });
 
 defineEmits(['logout']);

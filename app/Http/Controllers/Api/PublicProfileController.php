@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BulkNotification;
 use App\Models\Member;
 use App\Models\MemberActivityLog;
+use App\Models\MemberPayment;
 use App\Models\Sale;
 use App\Models\WorkoutProgramAssignment;
 use App\Services\EventService;
@@ -128,7 +129,24 @@ class PublicProfileController extends Controller
             ->orderByDesc('created_at')
             ->with(['items.product', 'items.variation'])
             ->get();
-        $totalOutstanding = $sales->where('is_paid', false)->sum('balance');
+
+        // Member payments (membership subscriptions & other payments)
+        $memberPayments = MemberPayment::query()
+            ->where('member_id', $member->id)
+            ->with([
+                'membership.plan',
+                'paymentMethod',
+                'account:id,name',
+            ])
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $salesOutstanding = (float) $sales->where('is_paid', false)->sum('balance');
+        $paymentsOutstanding = (float) $memberPayments->where('is_paid', false)->sum('balance');
+        $walletBalance = (float) ($member->current_balance ?? 0);
+        $walletOutstanding = $walletBalance < 0 ? abs($walletBalance) : 0.0;
+        $totalOutstanding = round($salesOutstanding + $paymentsOutstanding + $walletOutstanding, 2);
 
         // Format workouts
         $workoutsData = $assignedWorkouts->map(function ($assignment) {
@@ -189,6 +207,68 @@ class PublicProfileController extends Controller
             ])->values(),
         ])->values();
 
+        // Format member payments (all, memberships, and others)
+        $membershipPaymentsData = $memberPayments
+            ->whereNotNull('membership')
+            ->map(fn (MemberPayment $p) => [
+                'id' => $p->id,
+                'type' => 'membership',
+                'payment_date' => $p->payment_date?->format('Y-m-d'),
+                'created_at' => $p->created_at?->format('Y-m-d H:i'),
+                'amount' => number_format((float) $p->amount, 2),
+                'paid_amount' => number_format((float) $p->paid_amount, 2),
+                'balance' => number_format((float) $p->balance, 2),
+                'is_paid' => (bool) $p->is_paid,
+                'payment_method' => $p->payment_method === 'member_wallet' ? 'Member Wallet' : ($p->paymentMethod?->name ?? ($p->payment_method ?: 'Cash')),
+                'payment_method_code' => $p->payment_method,
+                'reference_number' => $p->reference_number,
+                'notes' => $p->notes,
+                'plan_name' => $p->membership?->plan?->name ?? 'Membership Plan',
+                'plan_id' => $p->membership?->payment_plan_id,
+                'duration_value' => $p->membership?->plan?->duration_value,
+                'duration_unit' => $p->membership?->plan?->duration_unit,
+                'start_date' => $p->membership?->start_date?->format('Y-m-d'),
+                'end_date' => $p->membership?->end_date?->format('Y-m-d'),
+            ])->values();
+
+        $otherPaymentsData = $memberPayments
+            ->whereNull('membership')
+            ->map(fn (MemberPayment $p) => [
+                'id' => $p->id,
+                'type' => 'other',
+                'payment_date' => $p->payment_date?->format('Y-m-d'),
+                'created_at' => $p->created_at?->format('Y-m-d H:i'),
+                'amount' => number_format((float) $p->amount, 2),
+                'paid_amount' => number_format((float) $p->paid_amount, 2),
+                'balance' => number_format((float) $p->balance, 2),
+                'is_paid' => (bool) $p->is_paid,
+                'payment_method' => $p->payment_method === 'member_wallet' ? 'Member Wallet' : ($p->paymentMethod?->name ?? ($p->payment_method ?: 'Cash')),
+                'payment_method_code' => $p->payment_method,
+                'reference_number' => $p->reference_number,
+                'notes' => $p->notes,
+            ])->values();
+
+        $allPaymentsData = $memberPayments->map(fn (MemberPayment $p) => [
+            'id' => $p->id,
+            'type' => $p->membership ? 'membership' : 'other',
+            'payment_date' => $p->payment_date?->format('Y-m-d'),
+            'created_at' => $p->created_at?->format('Y-m-d H:i'),
+            'amount' => number_format((float) $p->amount, 2),
+            'paid_amount' => number_format((float) $p->paid_amount, 2),
+            'balance' => number_format((float) $p->balance, 2),
+            'is_paid' => (bool) $p->is_paid,
+            'payment_method' => $p->payment_method === 'member_wallet' ? 'Member Wallet' : ($p->paymentMethod?->name ?? ($p->payment_method ?: 'Cash')),
+            'payment_method_code' => $p->payment_method,
+            'reference_number' => $p->reference_number,
+            'notes' => $p->notes,
+            'plan_name' => $p->membership?->plan?->name,
+            'plan_id' => $p->membership?->payment_plan_id,
+            'duration_value' => $p->membership?->plan?->duration_value,
+            'duration_unit' => $p->membership?->plan?->duration_unit,
+            'start_date' => $p->membership?->start_date?->format('Y-m-d'),
+            'end_date' => $p->membership?->end_date?->format('Y-m-d'),
+        ])->values();
+
         // Wallet data — first page for immediate display
         $walletPage = $this->walletService->transactions($member, $tenant->id, 10);
 
@@ -205,6 +285,8 @@ class PublicProfileController extends Controller
                 'phone_number' => $member->phone_number,
                 'tenant_name' => $tenant->name,
                 'total_outstanding' => number_format($totalOutstanding, 2),
+                'sales_outstanding' => number_format($salesOutstanding, 2),
+                'payments_outstanding' => number_format($paymentsOutstanding, 2),
                 'current_balance' => round((float) $member->current_balance, 2),
                 'profile_photo_url' => $member->profile_photo_path
                     ? $this->media->url($member->profile_photo_path)
@@ -212,6 +294,9 @@ class PublicProfileController extends Controller
             ],
             'workouts' => $workoutsData,
             'sales' => $salesData,
+            'payments' => $allPaymentsData,
+            'membership_payments' => $membershipPaymentsData,
+            'other_payments' => $otherPaymentsData,
             'wallet_transactions' => $walletPage['data'],
             'wallet_tx_meta' => $walletPage['meta'],
         ]);

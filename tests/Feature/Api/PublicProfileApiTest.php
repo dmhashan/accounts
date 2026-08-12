@@ -5,6 +5,10 @@ namespace Tests\Feature\Api;
 use App\Models\BulkNotification;
 use App\Models\BulkNotificationRecipient;
 use App\Models\Event;
+use App\Models\MemberPayment;
+use App\Models\PaymentMembership;
+use App\Models\PaymentPlan;
+use App\Models\Sale;
 use App\Models\Tenant;
 use App\Services\SmsService;
 use Illuminate\Support\Facades\Cache;
@@ -146,5 +150,114 @@ class PublicProfileApiTest extends ApiRouteTestCase
             'browser' => 'Safari',
             'os' => 'iOS',
         ]);
+    }
+
+    public function testPublicProfileReturnsMembershipAndOtherPayments(): void
+    {
+        $member = $this->createMember();
+        $token = Str::uuid()->toString();
+        Cache::put('pp_token:' . $token, [
+            'member_id' => $member->id,
+            'tenant_uuid' => $this->tenant->tenant_uuid,
+        ]);
+
+        $plan = PaymentPlan::create([
+            'name' => '1 Month Standard',
+            'duration_value' => 1,
+            'duration_unit' => 'month',
+            'price' => 5000,
+            'is_active' => true,
+        ]);
+
+        // Membership payment
+        $membershipPayment = MemberPayment::create([
+            'member_id' => $member->id,
+            'amount' => 5000,
+            'paid_amount' => 5000,
+            'balance' => 0,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'is_paid' => true,
+            'reference_number' => 'MEM-REF-001',
+            'notes' => 'Renewed standard plan',
+        ]);
+
+        PaymentMembership::create([
+            'member_payment_id' => $membershipPayment->id,
+            'payment_plan_id' => $plan->id,
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addMonth()->toDateString(),
+        ]);
+
+        // Other payment
+        $otherPayment = MemberPayment::create([
+            'member_id' => $member->id,
+            'amount' => 1500,
+            'paid_amount' => 1500,
+            'balance' => 0,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'card',
+            'is_paid' => true,
+            'reference_number' => 'OTH-REF-002',
+            'notes' => 'Personal Training Session',
+        ]);
+
+        $response = $this->withHeader('X-PP-Token', $token)
+            ->getJson('/api/public/member-profile')
+            ->assertOk();
+
+        // Verify payments structure
+        $response->assertJsonPath('payments.0.id', $otherPayment->id)
+            ->assertJsonPath('payments.0.type', 'other')
+            ->assertJsonPath('payments.1.id', $membershipPayment->id)
+            ->assertJsonPath('payments.1.type', 'membership')
+            ->assertJsonPath('payments.1.plan_name', '1 Month Standard')
+            ->assertJsonPath('membership_payments.0.id', $membershipPayment->id)
+            ->assertJsonPath('membership_payments.0.plan_name', '1 Month Standard')
+            ->assertJsonPath('other_payments.0.id', $otherPayment->id)
+            ->assertJsonPath('other_payments.0.notes', 'Personal Training Session');
+    }
+
+    public function testPublicProfileTotalOutstandingCombinesSalesAndMemberPayments(): void
+    {
+        $member = $this->createMember();
+        $token = Str::uuid()->toString();
+        Cache::put('pp_token:' . $token, [
+            'member_id' => $member->id,
+            'tenant_uuid' => $this->tenant->tenant_uuid,
+        ]);
+
+        // Unpaid sale with 800 balance
+        Sale::create([
+            'customer_member_id' => $member->id,
+            'customer_name' => $member->name,
+            'customer_type' => 'member',
+            'total_amount' => 1000,
+            'paid_amount' => 200,
+            'balance' => 800,
+            'is_paid' => false,
+            'payment_method' => 'cash',
+        ]);
+
+        // Unpaid member payment with 1500 balance
+        MemberPayment::create([
+            'member_id' => $member->id,
+            'amount' => 2000,
+            'paid_amount' => 500,
+            'balance' => 1500,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'cash',
+            'is_paid' => false,
+            'notes' => 'Admission balance',
+        ]);
+
+        $response = $this->withHeader('X-PP-Token', $token)
+            ->getJson('/api/public/member-profile')
+            ->assertOk();
+
+        // Total outstanding should be 800 + 1500 = 2300.00
+        $response->assertJsonPath('meta.total_outstanding', '2,300.00')
+            ->assertJsonPath('meta.sales_outstanding', '800.00')
+            ->assertJsonPath('meta.payments_outstanding', '1,500.00');
     }
 }

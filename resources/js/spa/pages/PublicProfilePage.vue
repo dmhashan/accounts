@@ -114,11 +114,15 @@
                 :initials="initials"
                 :workouts-data="workoutsData"
                 :sales-data="salesData"
+                :payments-data="paymentsData"
+                :membership-payments="membershipPaymentsData"
+                :other-payments="otherPaymentsData"
                 :wallet-transactions="walletTransactions"
                 :wallet-tx-meta="walletTxMeta"
                 :tenant-logo-url="tenantLogoUrl"
                 @open-workout="openWorkout"
                 @open-sale="openSale"
+                @open-payment="openPayment"
                 @logout="logout"
               />
             </transition>
@@ -208,6 +212,49 @@
           </div>
         </div>
       </Teleport>
+
+      <!-- ── Payment Receipt Preview Modal / Bottom Sheet ─── -->
+      <Teleport to="body">
+        <div
+          v-if="activePayment"
+          class="fixed inset-0 z-50 flex items-end sm:items-center justify-center overflow-y-auto sm:p-4"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+            @click="closePayment"
+          />
+
+          <!-- Dialog Sheet -->
+          <div class="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl max-h-[90vh] flex flex-col z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800 shrink-0">
+              <div class="flex items-center gap-2">
+                <span
+                  class="w-2.5 h-2.5 rounded-full"
+                  :class="activePayment.is_paid ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'"
+                />
+                <h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                  Payment Receipt
+                </h3>
+              </div>
+              <button
+                type="button"
+                class="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors focus:outline-none"
+                aria-label="Close"
+                @click="closePayment"
+              >
+                <X class="w-4 h-4" :stroke-width="2.2" />
+              </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1">
+              <PaymentReceiptPreviewCard :payment="activePayment" />
+            </div>
+          </div>
+        </div>
+      </Teleport>
     </template>
   </div>
 </template>
@@ -225,6 +272,7 @@ import MemberAvatar     from '../../components/ui/MemberAvatar.vue';
 
 import WorkoutProgramPreviewCard from '../components/WorkoutProgramPreviewCard.vue';
 import SaleInvoicePreviewCard    from '../components/SaleInvoicePreviewCard.vue';
+import PaymentReceiptPreviewCard from '../components/PaymentReceiptPreviewCard.vue';
 
 const MEMBER_ID_KEY  = 'public_profile_member_id';
 const SESSION_ID_KEY = 'pp_session_id';
@@ -272,11 +320,14 @@ const isLoading     = ref(false);
 const currentToken  = ref(null);
 
 // ── Profile data ───────────────────────────────────────────
-const workoutsData       = ref([]);
-const salesData          = ref([]);
-const walletTransactions = ref([]);
-const walletTxMeta       = ref({ current_page: 1, last_page: 1, total: 0, per_page: 10 });
-const meta               = ref({});
+const workoutsData           = ref([]);
+const salesData              = ref([]);
+const paymentsData           = ref([]);
+const membershipPaymentsData = ref([]);
+const otherPaymentsData      = ref([]);
+const walletTransactions     = ref([]);
+const walletTxMeta           = ref({ current_page: 1, last_page: 1, total: 0, per_page: 10 });
+const meta                   = ref({});
 
 const tenantName    = computed(() => window.__tenantName || '');
 const tenantLogoUrl = computed(() => window.__tenantLogoUrl || null);
@@ -286,6 +337,7 @@ const router        = useRouter();
 const route         = useRoute();
 const activeWorkout = ref(null);
 const activeSale    = ref(null);
+const activePayment = ref(null);
 
 // Event pages are publicly accessible — no OTP required
 const isEventPage = computed(() => route.path.startsWith('/event/'));
@@ -317,6 +369,7 @@ function handleKeydown(e) {
     if (e.key === 'Escape') {
         if (activeWorkout.value) closeWorkout();
         if (activeSale.value) closeSale();
+        if (activePayment.value) closePayment();
     }
 }
 
@@ -414,12 +467,15 @@ async function loadProfile(token) {
             return;
         }
         const data = await res.json();
-        meta.value               = data.meta;
-        workoutsData.value       = data.workouts;
-        salesData.value          = data.sales;
-        walletTransactions.value = data.wallet_transactions || [];
-        walletTxMeta.value       = data.wallet_tx_meta || walletTxMeta.value;
-        screen.value             = 'profile';
+        meta.value                   = data.meta;
+        workoutsData.value           = data.workouts || [];
+        salesData.value              = data.sales || [];
+        paymentsData.value           = data.payments || [];
+        membershipPaymentsData.value = data.membership_payments || [];
+        otherPaymentsData.value      = data.other_payments || [];
+        walletTransactions.value     = data.wallet_transactions || [];
+        walletTxMeta.value           = data.wallet_tx_meta || walletTxMeta.value;
+        screen.value                 = 'profile';
     } catch {
         localStorage.removeItem(MEMBER_ID_KEY);
         currentToken.value = null;
@@ -464,16 +520,21 @@ function openWorkout(workout)  { activeWorkout.value = workout; }
 function closeWorkout()        { activeWorkout.value = null; }
 function openSale(sale)        { activeSale.value = sale; }
 function closeSale()           { activeSale.value = null; }
+function openPayment(payment)  { activePayment.value = payment; }
+function closePayment()        { activePayment.value = null; }
 
 function logout() {
     track('logout');
     localStorage.removeItem(MEMBER_ID_KEY);
     currentToken.value = null;
-    meta.value               = {};
-    workoutsData.value       = [];
-    salesData.value          = [];
-    walletTransactions.value = [];
-    walletTxMeta.value       = { current_page: 1, last_page: 1, total: 0, per_page: 10 };
+    meta.value                   = {};
+    workoutsData.value           = [];
+    salesData.value              = [];
+    paymentsData.value           = [];
+    membershipPaymentsData.value = [];
+    otherPaymentsData.value      = [];
+    walletTransactions.value     = [];
+    walletTxMeta.value           = { current_page: 1, last_page: 1, total: 0, per_page: 10 };
     phone.value        = '';
     otpCode.value      = '';
     error.value        = '';

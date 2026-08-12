@@ -6,6 +6,7 @@
 @source '../js/spa/components/PublicProfileApp/**/*.vue';
 @source '../js/spa/components/WorkoutProgramPreviewCard.vue';
 @source '../js/spa/components/SaleInvoicePreviewCard.vue';
+@source '../js/spa/components/PaymentReceiptPreviewCard.vue';
 @source '../js/spa/components/forms/AppFormPhoneInput.vue';
 @source '../js/components/ui/MemberAvatar.vue';
 

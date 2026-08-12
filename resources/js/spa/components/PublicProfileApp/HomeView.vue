@@ -37,7 +37,7 @@
 
     <!-- Outstanding Balance Warning (if balance > 0) -->
     <div
-      v-if="outstandingSales.length"
+      v-if="parseFloat(meta.total_outstanding || 0) > 0 || outstandingTransactions.length > 0"
       class="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-gradient-to-r from-red-600 via-red-500 to-rose-600 text-white shadow-xl shadow-red-500/20"
     >
       <div class="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
@@ -50,10 +50,10 @@
             </p>
           </div>
           <p class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {{ String(meta.total_outstanding).replace(/^-/, '') }}
+            {{ String(meta.total_outstanding || 0).replace(/^-/, '') }}
           </p>
           <p class="text-[11px] text-red-100 mt-0.5">
-            {{ outstandingSales.length }} invoice{{ outstandingSales.length > 1 ? 's' : '' }} pending payment
+            {{ outstandingTransactions.length }} payment{{ outstandingTransactions.length === 1 ? '' : 's' }} pending
           </p>
         </div>
 
@@ -296,57 +296,63 @@
     </section>
 
     <!-- Recent Payments Section -->
-    <section v-if="salesData.length">
+    <section v-if="allTransactions.length">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <div class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
             <Receipt class="w-3.5 h-3.5" :stroke-width="2.2" />
           </div>
           <h2 class="text-base font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Recent Payments
+            Recent Payments &amp; Invoices
           </h2>
         </div>
         <button
           type="button"
-          class="text-xs font-bold text-red-600 dark:text-red-400 hover:underline transition-colors focus:outline-none"
+          class="text-xs font-bold text-red-600 dark:text-red-400 hover:underline transition-colors focus:outline-none cursor-pointer"
           @click="router.push('/transactions')"
         >
-          View all ({{ salesData.length }}) &rarr;
+          View all ({{ allTransactions.length }}) &rarr;
         </button>
       </div>
 
       <div class="pp-glass-card rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800/60 shadow-sm">
         <button
-          v-for="(sale, i) in salesData.slice(0, 3)"
+          v-for="(item, i) in allTransactions.slice(0, 3)"
           :key="i"
           type="button"
           class="w-full flex items-center gap-3.5 px-4 sm:px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-zinc-800/40 active:bg-gray-100 dark:active:bg-zinc-800 transition-colors focus:outline-none text-left cursor-pointer"
-          @click="$emit('open-sale', sale)"
+          @click="handleTransactionClick(item)"
         >
           <div
             class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-            :class="!sale.is_paid
+            :class="!item.isPaid
               ? 'bg-red-50 dark:bg-red-950/40 text-red-500'
-              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500'"
+              : (item.category === 'membership'
+                ? 'bg-red-50 dark:bg-red-950/40 text-red-500'
+                : (item.category === 'invoice'
+                  ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500'))"
           >
-            <FileText class="w-5 h-5" :stroke-width="1.8" />
+            <Crown v-if="item.category === 'membership'" class="w-5 h-5" :stroke-width="2" />
+            <FileText v-else-if="item.category === 'invoice'" class="w-5 h-5" :stroke-width="1.8" />
+            <Receipt v-else class="w-5 h-5" :stroke-width="1.8" />
           </div>
 
           <div class="min-w-0 flex-1">
             <p class="text-sm font-bold text-gray-900 dark:text-white truncate">
-              Invoice #{{ sale.id }}
+              {{ item.title }}
             </p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              {{ sale.created_at }} &middot; {{ sale.items?.length || 0 }} item{{ sale.items?.length === 1 ? '' : 's' }}
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+              {{ item.subtitle }}
             </p>
           </div>
 
           <div class="text-right shrink-0">
             <p class="text-sm font-black text-gray-900 dark:text-white">
-              {{ sale.total_amount }}
+              {{ item.amount }}
             </p>
             <span
-              v-if="!sale.is_paid"
+              v-if="!item.isPaid"
               class="inline-block text-[10px] font-extrabold text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400 px-2 py-0.5 rounded-full mt-0.5"
             >Unpaid</span>
             <span
@@ -360,7 +366,7 @@
 
     <!-- Empty State if no data at all -->
     <div
-      v-if="!workoutsData.length && !salesData.length && !upcomingEvents.length"
+      v-if="!workoutsData.length && !allTransactions.length && !upcomingEvents.length"
       class="pp-glass-card rounded-3xl p-10 flex flex-col items-center justify-center text-center gap-3 text-gray-400"
     >
       <div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-400">
@@ -391,27 +397,99 @@ import {
     AlertCircle,
     CreditCard,
     Receipt,
+    Crown,
     Flame,
     Dumbbell,
     Wifi,
 } from 'lucide-vue-next';
 
 const props = defineProps({
-    meta:          { type: Object,  default: () => ({}) },
-    greeting:      { type: String,  default: '' },
-    firstName:     { type: String,  default: '' },
-    lastName:      { type: String,  default: '' },
-    initials:      { type: String,  default: '' },
-    workoutsData:  { type: Array,   default: () => [] },
-    salesData:     { type: Array,   default: () => [] },
-    tenantLogoUrl: { type: String,  default: null },
+    meta:               { type: Object,  default: () => ({}) },
+    greeting:           { type: String,  default: '' },
+    firstName:          { type: String,  default: '' },
+    lastName:           { type: String,  default: '' },
+    initials:           { type: String,  default: '' },
+    workoutsData:       { type: Array,   default: () => [] },
+    salesData:          { type: Array,   default: () => [] },
+    paymentsData:       { type: Array,   default: () => [] },
+    membershipPayments: { type: Array,   default: () => [] },
+    otherPayments:      { type: Array,   default: () => [] },
+    tenantLogoUrl:      { type: String,  default: null },
 });
 
-defineEmits(['open-workout', 'open-sale']);
+const emit = defineEmits(['open-workout', 'open-sale', 'open-payment']);
 
 const router = useRouter();
 
-const outstandingSales = computed(() => props.salesData.filter(s => !s.is_paid));
+// Unified transactions for recent payments list
+const allTransactions = computed(() => {
+    const list = [];
+
+    for (const sale of props.salesData) {
+        list.push({
+            raw: sale,
+            id: `sale_${sale.id}`,
+            numericId: sale.id,
+            category: 'invoice',
+            categoryLabel: 'Invoice',
+            title: `Invoice #${sale.id}`,
+            subtitle: `${sale.created_at} · ${sale.items?.length || 0} item${sale.items?.length === 1 ? '' : 's'}`,
+            date: sale.created_at,
+            amount: sale.total_amount,
+            paidAmount: sale.paid_amount,
+            balance: sale.balance,
+            isPaid: Boolean(sale.is_paid),
+        });
+    }
+
+    const sourcePayments = props.paymentsData.length
+        ? props.paymentsData
+        : [...props.membershipPayments, ...props.otherPayments];
+
+    for (const payment of sourcePayments) {
+        const isMembership = payment.type === 'membership' || Boolean(payment.plan_name);
+        let subtitle = `Paid on ${payment.payment_date || payment.created_at}`;
+
+        if (isMembership) {
+            if (payment.start_date && payment.end_date) {
+                subtitle = `Valid: ${payment.start_date} → ${payment.end_date}`;
+            } else if (payment.start_date) {
+                subtitle = `Valid from ${payment.start_date}`;
+            } else if (payment.end_date) {
+                subtitle = `Valid until ${payment.end_date}`;
+            }
+        }
+
+        list.push({
+            raw: payment,
+            id: `payment_${payment.id}`,
+            numericId: payment.id,
+            category: isMembership ? 'membership' : 'other',
+            categoryLabel: isMembership ? 'Membership' : 'Other Payment',
+            title: isMembership
+                ? (payment.plan_name || 'Gym Membership')
+                : (payment.notes ? `Payment: ${payment.notes}` : `Payment #${payment.id}`),
+            subtitle,
+            date: payment.payment_date || payment.created_at,
+            amount: payment.amount,
+            paidAmount: payment.paid_amount,
+            balance: payment.balance,
+            isPaid: Boolean(payment.is_paid),
+        });
+    }
+
+    return list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+});
+
+const outstandingTransactions = computed(() => allTransactions.value.filter(t => !t.isPaid));
+
+function handleTransactionClick(item) {
+    if (item.category === 'invoice') {
+        emit('open-sale', item.raw);
+    } else {
+        emit('open-payment', item.raw);
+    }
+}
 
 // ── Upcoming events ───────────────────────────────────────
 const upcomingEvents = ref([]);
