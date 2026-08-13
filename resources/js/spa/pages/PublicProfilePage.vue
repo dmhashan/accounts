@@ -152,22 +152,78 @@
               <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                  Workout Routine
+                  {{ activeWorkout.title || 'Workout Routine' }}
                 </h3>
               </div>
-              <button
-                type="button"
-                class="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors focus:outline-none"
-                aria-label="Close"
-                @click="closeWorkout"
-              >
-                <X class="w-4 h-4" :stroke-width="2.2" />
-              </button>
+              <div class="flex items-center gap-2">
+                <a
+                  v-if="activeWorkout.file_url"
+                  :href="activeWorkout.file_url"
+                  target="_blank"
+                  download
+                  class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                >
+                  <Download class="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </a>
+                <button
+                  type="button"
+                  class="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors focus:outline-none"
+                  aria-label="Close"
+                  @click="closeWorkout"
+                >
+                  <X class="w-4 h-4" :stroke-width="2.2" />
+                </button>
+              </div>
             </div>
 
             <!-- Modal Content (Scrollable) -->
             <div class="p-4 sm:p-6 overflow-y-auto flex-1">
-              <WorkoutProgramPreviewCard :program="activeWorkout" />
+              <!-- Type 1: Uploaded PDF -->
+              <div v-if="activeWorkout.type === 'file' && (activeWorkout.mime_type === 'application/pdf' || activeWorkout.file_name?.endsWith('.pdf'))" class="space-y-4">
+                <div v-if="activeWorkout.notes" class="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/40 text-sm text-gray-700 dark:text-gray-300">
+                  <span class="font-bold">Notes: </span>
+                  <span>{{ activeWorkout.notes }}</span>
+                </div>
+                <div class="rounded-2xl border border-gray-200 dark:border-zinc-800 overflow-hidden bg-zinc-950 aspect-[4/3] max-h-[500px]">
+                  <iframe
+                    v-if="activeWorkout.file_url"
+                    :src="activeWorkout.file_url"
+                    class="w-full h-full border-0"
+                    title="Workout PDF Viewer"
+                  />
+                </div>
+              </div>
+
+              <!-- Type 2: Uploaded Image -->
+              <div v-else-if="activeWorkout.type === 'file'" class="space-y-4 text-center">
+                <div v-if="activeWorkout.notes" class="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/40 text-sm text-gray-700 dark:text-gray-300 text-left">
+                  <span class="font-bold">Notes: </span>
+                  <span>{{ activeWorkout.notes }}</span>
+                </div>
+                <div class="rounded-2xl border border-gray-200 dark:border-zinc-800 overflow-hidden bg-gray-50 dark:bg-zinc-800/40 p-2 inline-block max-w-full">
+                  <img
+                    :src="activeWorkout.file_url"
+                    :alt="activeWorkout.title"
+                    class="max-h-[600px] w-auto rounded-xl object-contain mx-auto"
+                  />
+                </div>
+              </div>
+
+              <!-- Type 3: Formatted Rich Text -->
+              <div v-else-if="activeWorkout.type === 'text'" class="space-y-4">
+                <div v-if="activeWorkout.notes" class="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/40 text-sm text-gray-700 dark:text-gray-300">
+                  <span class="font-bold">Notes: </span>
+                  <span>{{ activeWorkout.notes }}</span>
+                </div>
+                <div class="p-6 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-800/60 shadow-sm">
+                  <!-- eslint-disable-next-line vue/no-v-html -->
+                  <div class="app-rich-editor-content text-sm text-gray-900 dark:text-white" v-html="activeWorkout.formatted_text" />
+                </div>
+              </div>
+
+              <!-- Type 4: Configured Program -->
+              <WorkoutProgramPreviewCard v-else :program="activeWorkout" />
             </div>
           </div>
         </div>
@@ -262,7 +318,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { X, ArrowLeft, Bell } from 'lucide-vue-next';
+import { X, ArrowLeft, Bell, Download } from 'lucide-vue-next';
 
 import LoadingScreen    from '../components/PublicProfileApp/LoadingScreen.vue';
 import IdentifyScreen   from '../components/PublicProfileApp/IdentifyScreen.vue';

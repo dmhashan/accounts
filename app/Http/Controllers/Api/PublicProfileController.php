@@ -115,12 +115,14 @@ class PublicProfileController extends Controller
 
         // Assigned workout plans
         $assignedWorkouts = WorkoutProgramAssignment::with([
+            'creator:id,name',
             'assignedProgram.creator',
             'assignedProgram.days.dayExercises.exercise',
             'assignedProgram.extras',
         ])
             ->where('member_id', $member->id)
             ->orderByDesc('effective_date')
+            ->orderByDesc('id')
             ->get();
 
         // Sales / invoices
@@ -150,14 +152,28 @@ class PublicProfileController extends Controller
 
         // Format workouts
         $workoutsData = $assignedWorkouts->map(function ($assignment) {
+            $type = $assignment->type ?: 'program';
             $program = $assignment->assignedProgram;
+            $title = $assignment->title ?: ($program?->title ?? 'Workout Plan');
+            $creatorName = $assignment->creator?->name ?? ($program?->creator?->name ?? null);
 
-            return [
-                'title' => $program->title ?? 'N/A',
-                'duration_weeks' => $program->duration_weeks,
-                'creator_name' => $program->creator->name ?? null,
+            $data = [
+                'id' => $assignment->id,
+                'type' => $type,
+                'title' => $title,
                 'effective_date' => $assignment->effective_date?->format('Y-m-d'),
-                'days' => ($program->days ?? collect())->map(function ($day) {
+                'creator_name' => $creatorName,
+                'notes' => $assignment->notes,
+                'file_name' => $assignment->file_name,
+                'mime_type' => $assignment->mime_type,
+                'file_size' => $assignment->file_size,
+                'file_url' => $assignment->file_path ? $this->media->url($assignment->file_path) : null,
+                'formatted_text' => $assignment->formatted_text,
+            ];
+
+            if ($type === 'program' && $program) {
+                $data['duration_weeks'] = $program->duration_weeks;
+                $data['days'] = ($program->days ?? collect())->map(function ($day) {
                     return [
                         'day_number' => $day->day_number,
                         'title' => $day->title,
@@ -171,8 +187,8 @@ class PublicProfileController extends Controller
                             'rest_seconds' => $ex->rest_seconds,
                         ])->values(),
                     ];
-                })->values(),
-                'extras' => ($program->extras ?? collect())->map(fn ($e) => [
+                })->values();
+                $data['extras'] = ($program->extras ?? collect())->map(fn ($e) => [
                     'type' => $e->type,
                     'exercise_name' => $e->exercise_name,
                     'sets' => $e->sets,
@@ -182,8 +198,14 @@ class PublicProfileController extends Controller
                     'frequency_per_week' => $e->frequency_per_week,
                     'duration_minutes' => $e->duration_minutes,
                     'cardio_type' => $e->cardio_type,
-                ])->values(),
-            ];
+                ])->values();
+            } else {
+                $data['days'] = [];
+                $data['extras'] = [];
+                $data['duration_weeks'] = null;
+            }
+
+            return $data;
         })->values();
 
         // Format sales

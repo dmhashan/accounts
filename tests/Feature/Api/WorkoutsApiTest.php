@@ -8,6 +8,8 @@ use App\Models\WorkoutProgram;
 use App\Models\WorkoutProgramAssignment;
 use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutProgramExtra;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class WorkoutsApiTest extends ApiRouteTestCase
 {
@@ -627,5 +629,97 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'Workout program assignment deleted successfully.');
 
         $this->assertDatabaseMissing('workout_program_assignments', ['id' => $assignment->id]);
+    }
+
+    public function testStoreMemberWorkoutWithUploadedPdfFile(): void
+    {
+        $disk = (string) config('filesystems.media_disk', 'public');
+        Storage::fake($disk);
+        $this->actingAsUser(['workouts.manage', 'members.view']);
+        $member = $this->createMember();
+
+        $file = UploadedFile::fake()->create('custom_routine.pdf', 500, 'application/pdf');
+
+        $response = $this->post('/api/members/' . $member->id . '/workouts', [
+            'type' => 'file',
+            'title' => 'Custom 4-Day PDF Split',
+            'effective_date' => '2026-08-15',
+            'file' => $file,
+            'notes' => 'Trainer specific PDF notes',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.type', 'file')
+            ->assertJsonPath('data.title', 'Custom 4-Day PDF Split')
+            ->assertJsonPath('data.file_name', 'custom_routine.pdf');
+
+        $this->assertDatabaseHas('workout_program_assignments', [
+            'member_id' => $member->id,
+            'type' => 'file',
+            'title' => 'Custom 4-Day PDF Split',
+            'file_name' => 'custom_routine.pdf',
+        ]);
+    }
+
+    public function testStoreMemberWorkoutWithRichFormattedText(): void
+    {
+        $this->actingAsUser(['workouts.manage', 'members.view']);
+        $member = $this->createMember();
+
+        $htmlContent = '<h3>Day 1: Chest & Triceps</h3><ul><li>Bench Press 4x10</li><li>Tricep Dips 3x12</li></ul>';
+
+        $response = $this->postJson('/api/members/' . $member->id . '/workouts', [
+            'type' => 'text',
+            'title' => 'Hypertrophy Block A',
+            'effective_date' => '2026-08-15',
+            'formatted_text' => $htmlContent,
+            'notes' => 'Rest 90s between sets',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.type', 'text')
+            ->assertJsonPath('data.title', 'Hypertrophy Block A')
+            ->assertJsonPath('data.formatted_text', $htmlContent);
+
+        $this->assertDatabaseHas('workout_program_assignments', [
+            'member_id' => $member->id,
+            'type' => 'text',
+            'title' => 'Hypertrophy Block A',
+            'formatted_text' => $htmlContent,
+        ]);
+    }
+
+    public function testShowWorkoutAssignmentReturnsDetails(): void
+    {
+        $this->actingAsUser(['workouts.manage']);
+        $program = $this->createProgram(['title' => 'Powerlifting 101']);
+        $assignment = $this->createAssignment($program);
+
+        $this->getJson('/api/workout-program-assignments/' . $assignment->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $assignment->id)
+            ->assertJsonPath('data.assigned_program_title', 'Powerlifting 101');
+    }
+
+    public function testMemberWorkoutsListReturnsAllTypes(): void
+    {
+        $this->actingAsUser(['workouts.manage', 'members.view']);
+        $member = $this->createMember();
+        $program = $this->createProgram(['title' => 'Strength Base']);
+
+        $this->createAssignment($program, ['member_id' => $member->id]);
+
+        WorkoutProgramAssignment::create([
+            'member_id' => $member->id,
+            'type' => 'text',
+            'title' => 'Custom Core Protocol',
+            'effective_date' => '2026-08-14',
+            'formatted_text' => '<p>Plank 3x60s</p>',
+        ]);
+
+        $response = $this->getJson('/api/members/' . $member->id . '/workouts');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data.data');
     }
 }

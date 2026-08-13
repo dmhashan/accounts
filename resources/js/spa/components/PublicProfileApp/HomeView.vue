@@ -155,7 +155,7 @@
 
       <button
         type="button"
-        class="w-full text-left rounded-3xl overflow-hidden focus:outline-none active:scale-[0.99] transition-transform select-none group"
+        class="w-full text-left rounded-3xl overflow-hidden focus:outline-none active:scale-[0.99] transition-transform select-none group cursor-pointer"
         @click="$emit('open-workout', workoutsData[0])"
       >
         <div class="pp-membership-card p-5 sm:p-6">
@@ -163,7 +163,7 @@
             <div>
               <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white mb-2 shadow-sm">
                 <Flame class="w-3 h-3" :stroke-width="2.5" />
-                Active Routine
+                <span>{{ workoutsData[0].type === 'file' ? (workoutsData[0].file_name?.endsWith('.pdf') ? 'PDF Plan' : 'Image Plan') : (workoutsData[0].type === 'text' ? 'Custom Routine' : 'Active Routine') }}</span>
               </div>
               <h3 class="text-xl sm:text-2xl font-black text-white leading-snug">
                 {{ workoutsData[0].title }}
@@ -182,18 +182,18 @@
           <div class="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-zinc-800 text-center">
             <div class="bg-white/5 rounded-2xl p-2 border border-white/5">
               <p class="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">
-                Duration
+                {{ workoutsData[0].type === 'file' ? 'Type' : (workoutsData[0].type === 'text' ? 'Format' : 'Duration') }}
               </p>
-              <p class="text-sm font-black text-white mt-0.5">
-                {{ workoutsData[0].duration_weeks || '-' }} wks
+              <p class="text-sm font-black text-white mt-0.5 truncate">
+                {{ workoutsData[0].type === 'file' ? (workoutsData[0].file_name?.endsWith('.pdf') ? 'PDF' : 'Image') : (workoutsData[0].type === 'text' ? 'Rich Text' : (workoutsData[0].duration_weeks ? `${workoutsData[0].duration_weeks} wks` : '-')) }}
               </p>
             </div>
             <div class="bg-white/5 rounded-2xl p-2 border border-white/5">
               <p class="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">
-                Routines
+                {{ workoutsData[0].type === 'file' ? 'File' : (workoutsData[0].type === 'text' ? 'Mode' : 'Routines') }}
               </p>
-              <p class="text-sm font-black text-white mt-0.5">
-                {{ workoutsData[0].days?.length || '-' }} days
+              <p class="text-sm font-black text-white mt-0.5 truncate">
+                {{ workoutsData[0].type === 'file' ? 'Attached' : (workoutsData[0].type === 'text' ? 'Guide' : `${workoutsData[0].days?.length || 0} days`) }}
               </p>
             </div>
             <div class="bg-white/5 rounded-2xl p-2 border border-white/5">

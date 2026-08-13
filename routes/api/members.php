@@ -54,8 +54,9 @@ Route::middleware(['auth', 'permission:sales.process'])->group(function () {
 });
 
 // Member-scoped workout assignments
-Route::middleware(['auth', 'permission:workouts.assignments,workouts.manage'])->group(function () {
+Route::middleware(['auth', 'permission:workouts.assignments,workouts.manage,members.view,users.view'])->group(function () {
     Route::get('/members/{member}/workouts', [WorkoutProgramApiController::class, 'memberAssignments']);
+    Route::post('/members/{member}/workouts', [WorkoutProgramApiController::class, 'storeMemberWorkout'])->middleware('permission:workouts.assignments,workouts.manage,members.edit,users.edit');
 });
 
 // Member attendance history (requires users.view)

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Workout\StoreMemberWorkoutRequest;
 use App\Http\Requests\Api\Workout\StoreWorkoutDayExerciseRequest;
 use App\Http\Requests\Api\Workout\StoreWorkoutProgramAssignmentRequest;
 use App\Http\Requests\Api\Workout\StoreWorkoutProgramDayRequest;
@@ -40,6 +41,26 @@ class WorkoutProgramApiController extends Controller
         return $this->success(
             'Member workout assignments fetched successfully.',
             $this->workoutProgramService->memberAssignments($member->id, $tenantId, $perPage),
+        );
+    }
+
+    public function storeMemberWorkout(StoreMemberWorkoutRequest $request, Member $member): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $this->memberService->ensureTenantMember($member, $tenantId);
+
+        $assignment = $this->workoutProgramService->storeMemberWorkout(
+            $member,
+            $tenantId,
+            $request->user()?->id,
+            $request->validated(),
+            $request->file('file'),
+        );
+
+        return $this->success(
+            'Workout assigned to member successfully.',
+            $this->workoutProgramService->showAssignment($assignment, $tenantId),
+            201,
         );
     }
 
@@ -195,6 +216,14 @@ class WorkoutProgramApiController extends Controller
         );
 
         return $this->success('Workout program assignments created successfully.', $result, 201);
+    }
+
+    public function showAssignment(WorkoutProgramAssignment $assignment): JsonResponse
+    {
+        return $this->success(
+            'Workout assignment fetched successfully.',
+            $this->workoutProgramService->showAssignment($assignment, app('tenant')->id),
+        );
     }
 
     public function assignmentUpdate(UpdateWorkoutProgramAssignmentRequest $request, WorkoutProgramAssignment $assignment): JsonResponse

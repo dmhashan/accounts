@@ -9,14 +9,23 @@ class WorkoutProgramAssignment extends Model
 {
     protected $fillable = [
         'member_id',
+        'type',
+        'title',
         'source_program_id',
         'assigned_program_id',
         'effective_date',
+        'file_path',
+        'file_name',
+        'mime_type',
+        'file_size',
+        'formatted_text',
+        'notes',
         'created_by',
     ];
 
     protected $casts = [
         'effective_date' => 'date',
+        'file_size' => 'integer',
     ];
 
     public function member(): BelongsTo

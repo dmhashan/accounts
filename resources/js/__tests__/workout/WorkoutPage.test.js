@@ -20,6 +20,16 @@ vi.mock('../../spa/composables/useApiClient', () => ({
     apiRequest: vi.fn(),
 }));
 
+vi.mock('../../spa/composables/useAppContext', () => ({
+    useAppContext: () => ({
+        permissions: {
+            workoutExercises: true,
+            workoutPrograms: true,
+            workoutAssignments: true,
+        },
+    }),
+}));
+
 // ---------------------------------------------------------------------------
 // Global stubs
 // ---------------------------------------------------------------------------

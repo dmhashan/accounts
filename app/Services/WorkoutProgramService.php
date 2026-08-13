@@ -10,10 +10,15 @@ use App\Models\WorkoutProgram;
 use App\Models\WorkoutProgramAssignment;
 use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutProgramExtra;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 
 class WorkoutProgramService
 {
+    public function __construct(
+        private readonly MediaStorageService $media,
+    ) {}
+
     public function assignmentMembers(int $tenantId, int $perPage, string $search = ''): array
     {
         $members = Member::query()
@@ -141,9 +146,101 @@ class WorkoutProgramService
         ]);
     }
 
+    public function storeMemberWorkout(Member $member, int $tenantId, ?int $createdBy, array $validated, ?UploadedFile $file = null): WorkoutProgramAssignment
+    {
+        $this->ensureMemberTenant($member, $tenantId);
+        $type = $validated['type'] ?? (isset($validated['program_id']) ? 'program' : 'text');
+
+        $title = filled($validated['title'] ?? null) ? trim((string) $validated['title']) : '';
+
+        if ($type === 'file') {
+            if (!$file) {
+                throw new \InvalidArgumentException('A workout file is required.');
+            }
+
+            if ($title === '') {
+                $base = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $title = ucwords(trim(str_replace(['_', '-'], ' ', $base))) ?: 'Workout File';
+            }
+
+            $path = $this->media->store($file, "members/{$member->id}/workouts");
+
+            return WorkoutProgramAssignment::create([
+                'member_id' => $member->id,
+                'type' => 'file',
+                'title' => $title,
+                'effective_date' => $validated['effective_date'],
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+                'created_by' => $createdBy,
+            ]);
+        }
+
+        if ($type === 'text') {
+            if ($title === '') {
+                $title = 'Workout Routine - ' . \Carbon\Carbon::parse($validated['effective_date'])->format('d M Y');
+            }
+
+            return WorkoutProgramAssignment::create([
+                'member_id' => $member->id,
+                'type' => 'text',
+                'title' => $title,
+                'effective_date' => $validated['effective_date'],
+                'formatted_text' => $validated['formatted_text'] ?? '',
+                'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+                'created_by' => $createdBy,
+            ]);
+        }
+
+        // Program assignment
+        $sourceProgram = WorkoutProgram::query()->findOrFail((int) $validated['program_id']);
+        $this->ensureProgramTenant($sourceProgram, $tenantId);
+
+        $assignedProgram = $this->resolveAssignedProgramWithSnapshot($sourceProgram, $tenantId, $createdBy, $validated);
+
+        return WorkoutProgramAssignment::create([
+            'member_id' => $member->id,
+            'type' => 'program',
+            'title' => trim($validated['title'] ?? '') ?: null,
+            'source_program_id' => $sourceProgram->id,
+            'assigned_program_id' => $assignedProgram->id,
+            'effective_date' => $validated['effective_date'],
+            'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+            'created_by' => $createdBy,
+        ]);
+    }
+
+    public function showAssignment(WorkoutProgramAssignment $assignment, int $tenantId): array
+    {
+        $this->ensureAssignmentTenant($assignment, $tenantId);
+        $assignment->load([
+            'member:id,name,biometric_member_id,email,phone_number',
+            'creator:id,name',
+            'sourceProgram:id,title',
+            'assignedProgram.creator:id,name',
+            'assignedProgram.days.dayExercises.exercise:id,name',
+            'assignedProgram.extras',
+        ]);
+
+        $data = $this->serializeAssignment($assignment);
+
+        if (($assignment->type === 'program' || !$assignment->type) && $assignment->assignedProgram) {
+            $data['program_details'] = $this->fullProgram($assignment->assignedProgram, $tenantId);
+        }
+
+        return $data;
+    }
+
     public function destroyProgramAssignment(WorkoutProgramAssignment $assignment, int $tenantId): void
     {
         $this->ensureAssignmentTenant($assignment, $tenantId);
+
+        if ($assignment->file_path) {
+            $this->media->delete($assignment->file_path);
+        }
         $assignment->delete();
     }
 
@@ -527,6 +624,9 @@ class WorkoutProgramService
 
     private function serializeAssignment(WorkoutProgramAssignment $assignment): array
     {
+        $type = $assignment->type ?: 'program';
+        $title = $assignment->title ?: ($assignment->assignedProgram?->title ?? $assignment->sourceProgram?->title ?? 'Workout Plan');
+
         return [
             'id' => $assignment->id,
             'member_id' => $assignment->member_id,
@@ -534,10 +634,19 @@ class WorkoutProgramService
             'member_code' => $assignment->member?->biometric_member_id,
             'member_email' => $assignment->member?->email,
             'member_phone' => $assignment->member?->phone_number,
+            'type' => $type,
+            'title' => $title,
             'source_program_id' => $assignment->source_program_id,
             'source_program_title' => $assignment->sourceProgram?->title,
             'assigned_program_id' => $assignment->assigned_program_id,
             'assigned_program_title' => $assignment->assignedProgram?->title,
+            'file_path' => $assignment->file_path,
+            'file_name' => $assignment->file_name,
+            'mime_type' => $assignment->mime_type,
+            'file_size' => $assignment->file_size,
+            'file_url' => $assignment->file_path ? $this->media->url($assignment->file_path) : null,
+            'formatted_text' => $assignment->formatted_text,
+            'notes' => $assignment->notes,
             'effective_date' => optional($assignment->effective_date)->format('Y-m-d'),
             'created_by' => $assignment->created_by,
             'created_by_name' => $assignment->creator?->name,

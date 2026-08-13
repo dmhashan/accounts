@@ -51,7 +51,7 @@
       >
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2 mb-1.5">
+            <div class="flex items-center gap-2 mb-1.5 flex-wrap">
               <span
                 v-if="i === 0"
                 class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500 text-white shadow-sm"
@@ -64,6 +64,15 @@
               >
                 Plan {{ i + 1 }}
               </span>
+
+              <!-- Type Badge -->
+              <span
+                class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+                :class="i === 0 ? 'bg-white/20 text-white' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'"
+              >
+                {{ getBadgeLabel(workout) }}
+              </span>
+
               <span
                 v-if="workout.effective_date"
                 class="text-[11px] font-medium"
@@ -93,7 +102,7 @@
             class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
             :class="i === 0 ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300'"
           >
-            <Zap class="w-5 h-5" :stroke-width="2" />
+            <component :is="getWorkoutIcon(workout)" class="w-5 h-5" :stroke-width="2" />
           </div>
         </div>
 
@@ -103,18 +112,30 @@
           :class="i === 0 ? 'border-t border-zinc-800' : 'border-t border-gray-100 dark:border-zinc-800/60'"
         >
           <div :class="i === 0 ? 'bg-white/5 rounded-xl p-1.5' : 'bg-gray-50 dark:bg-zinc-800/50 rounded-xl p-1.5'">
-            <span class="block text-[10px] uppercase tracking-wider font-bold" :class="i === 0 ? 'text-zinc-400' : 'text-gray-400'">Duration</span>
-            <span class="font-extrabold" :class="i === 0 ? 'text-white' : 'text-gray-900 dark:text-white'">{{ workout.duration_weeks || '-' }} wks</span>
+            <span class="block text-[10px] uppercase tracking-wider font-bold" :class="i === 0 ? 'text-zinc-400' : 'text-gray-400'">
+              {{ workout.type === 'file' ? 'Format' : (workout.type === 'text' ? 'Format' : 'Duration') }}
+            </span>
+            <span class="font-extrabold truncate block" :class="i === 0 ? 'text-white' : 'text-gray-900 dark:text-white'">
+              {{ workout.type === 'file' ? (workout.file_name?.endsWith('.pdf') ? 'PDF Document' : 'Image File') : (workout.type === 'text' ? 'Rich Text' : (workout.duration_weeks ? `${workout.duration_weeks} wks` : '-')) }}
+            </span>
           </div>
 
           <div :class="i === 0 ? 'bg-white/5 rounded-xl p-1.5' : 'bg-gray-50 dark:bg-zinc-800/50 rounded-xl p-1.5'">
-            <span class="block text-[10px] uppercase tracking-wider font-bold" :class="i === 0 ? 'text-zinc-400' : 'text-gray-400'">Days</span>
-            <span class="font-extrabold" :class="i === 0 ? 'text-white' : 'text-gray-900 dark:text-white'">{{ workout.days?.length || '-' }} routines</span>
+            <span class="block text-[10px] uppercase tracking-wider font-bold" :class="i === 0 ? 'text-zinc-400' : 'text-gray-400'">
+              {{ workout.type === 'file' ? 'File Size' : (workout.type === 'text' ? 'Content' : 'Routines') }}
+            </span>
+            <span class="font-extrabold truncate block" :class="i === 0 ? 'text-white' : 'text-gray-900 dark:text-white'">
+              {{ workout.type === 'file' ? (formatFileSize(workout.file_size) || 'Attached') : (workout.type === 'text' ? 'Formatted' : `${workout.days?.length || 0} routines`) }}
+            </span>
           </div>
 
           <div :class="i === 0 ? 'bg-white/5 rounded-xl p-1.5' : 'bg-gray-50 dark:bg-zinc-800/50 rounded-xl p-1.5'">
-            <span class="block text-[10px] uppercase tracking-wider font-bold" :class="i === 0 ? 'text-zinc-400' : 'text-gray-400'">Extras</span>
-            <span class="font-extrabold" :class="i === 0 ? 'text-white' : 'text-gray-900 dark:text-white'">{{ workout.extras?.length || '0' }} core/cardio</span>
+            <span class="block text-[10px] uppercase tracking-wider font-bold" :class="i === 0 ? 'text-zinc-400' : 'text-gray-400'">
+              {{ workout.type === 'file' ? 'Access' : (workout.type === 'text' ? 'Action' : 'Extras') }}
+            </span>
+            <span class="font-extrabold truncate block" :class="i === 0 ? 'text-white' : 'text-gray-900 dark:text-white'">
+              {{ workout.type === 'file' ? 'View/Download' : (workout.type === 'text' ? 'Read Plan' : `${workout.extras?.length || 0} extras`) }}
+            </span>
           </div>
         </div>
       </button>
@@ -123,11 +144,35 @@
 </template>
 
 <script setup>
-import { Zap, Dumbbell } from 'lucide-vue-next';
+import { Zap, Dumbbell, FileText, FileSpreadsheet, Image as ImageIcon } from 'lucide-vue-next';
 
 defineProps({
     workoutsData: { type: Array, default: () => [] },
 });
 
 defineEmits(['open-workout']);
+
+function getBadgeLabel(workout) {
+    if (workout.type === 'file') {
+        return workout.file_name?.endsWith('.pdf') ? 'PDF Plan' : 'Image Plan';
+    }
+    if (workout.type === 'text') return 'Custom Routine';
+    return 'Program Routine';
+}
+
+function getWorkoutIcon(workout) {
+    if (workout.type === 'file') {
+        if (workout.file_name?.endsWith('.pdf')) return FileSpreadsheet;
+        return ImageIcon;
+    }
+    if (workout.type === 'text') return FileText;
+    return Zap;
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
 </script>
