@@ -26,6 +26,17 @@ Route::middleware(['auth', 'permission:settings.configuration,settings.manage'])
     Route::post('/settings/gowa/test-connection', [App\Http\Controllers\Api\GoWaApiController::class, 'testConnection']);
     Route::post('/settings/gowa/groups/compare', [App\Http\Controllers\Api\GoWaApiController::class, 'compareGroup']);
     Route::post('/settings/gowa/groups/sync', [App\Http\Controllers\Api\GoWaApiController::class, 'syncGroup']);
+
+    // Isolated WhatsApp Integration Module
+    Route::prefix('settings/whatsapp')->group(function () {
+        Route::get('/config', [App\Http\Controllers\Api\WhatsAppApiController::class, 'getConfig']);
+        Route::put('/config', [App\Http\Controllers\Api\WhatsAppApiController::class, 'updateConfig']);
+        Route::post('/test-connection', [App\Http\Controllers\Api\WhatsAppApiController::class, 'testConnection']);
+        Route::get('/messages', [App\Http\Controllers\Api\WhatsAppApiController::class, 'getMessages']);
+        Route::post('/send', [App\Http\Controllers\Api\WhatsAppApiController::class, 'sendMessage']);
+        Route::get('/check-user', [App\Http\Controllers\Api\WhatsAppApiController::class, 'checkUser']);
+        Route::get('/qr-code', [App\Http\Controllers\Api\WhatsAppApiController::class, 'getLoginQr']);
+    });
 });
 
 Route::middleware(['auth', 'permission:settings.biometric,settings.manage'])->group(function () {

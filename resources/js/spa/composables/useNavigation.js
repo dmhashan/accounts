@@ -146,6 +146,7 @@ export function useNavigation() {
             if (context.permissions?.formsManage) settingsChildren.push({ label: 'Forms', path: '/settings/forms', activePrefix: '/settings/forms' });
             if (context.permissions?.campaigns) settingsChildren.push({ label: 'Campaigns', path: '/settings/campaigns', activePrefix: '/settings/campaigns' });
             if (context.permissions?.settingsConfiguration) settingsChildren.push({ label: 'Configuration', path: '/settings/configuration' });
+            if (context.permissions?.settingsWhatsApp ?? context.permissions?.settingsConfiguration ?? context.permissions?.settingsGeneral) settingsChildren.push({ label: 'WhatsApp', path: '/settings/whatsapp', activePrefix: '/settings/whatsapp' });
             if (context.permissions?.settingsBiometric) settingsChildren.push({ label: 'Biometric', path: '/settings/biometric' });
             if (context.permissions?.settingsLegacyTools) settingsChildren.push({ label: 'Manual Commands', path: '/settings/legacy-tools' });
             items.push({
