@@ -25,6 +25,24 @@
       </button>
     </div>
 
+    <!-- WhatsApp / Action Feedback Toast -->
+    <div
+      v-if="waToast.show"
+      class="px-5 py-2.5 border-b flex items-center justify-between gap-3 text-xs transition-all"
+      :class="waToast.success
+        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+        : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'"
+    >
+      <div class="flex items-center gap-2">
+        <CheckCircle2 v-if="waToast.success" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+        <AlertCircle v-else class="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+        <span>{{ waToast.message }}</span>
+      </div>
+      <button type="button" class="text-secondary-400 hover:text-secondary-600" @click="waToast.show = false">
+        <X class="w-3.5 h-3.5" />
+      </button>
+    </div>
+
     <!-- Loading State -->
     <div v-if="workoutsLoading" class="px-5 py-10 text-center text-sm text-secondary-400 flex flex-col items-center gap-2">
       <div class="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -104,6 +122,19 @@
 
         <!-- Right Actions -->
         <div class="flex items-center gap-1 shrink-0 mt-1">
+          <!-- WhatsApp Send Button -->
+          <button
+            v-if="isWhatsAppEnabled && canManage"
+            type="button"
+            class="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors disabled:opacity-50"
+            :disabled="sendingWaId === wa.id"
+            title="Send Workout via WhatsApp"
+            @click.stop="sendViaWhatsApp(wa)"
+          >
+            <RefreshCw v-if="sendingWaId === wa.id" class="w-4 h-4 animate-spin text-emerald-600" />
+            <MessageSquare v-else class="w-4 h-4 text-emerald-600" />
+          </button>
+
           <button
             type="button"
             class="p-1.5 rounded-lg text-secondary-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
@@ -422,7 +453,7 @@
         </div>
 
         <!-- Modal Footer -->
-        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-secondary-200 dark:border-secondary-700 bg-secondary-50/50 dark:bg-secondary-900/50 shrink-0">
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-secondary-200 dark:border-secondary-700 bg-secondary-50/50 dark:bg-secondary-900/50 shrink-0 flex-wrap">
           <button
             type="button"
             class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-xl text-sm font-semibold text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors"
@@ -431,25 +462,51 @@
             Cancel
           </button>
 
-          <button
-            v-if="activeMode === 'assign'"
-            type="submit"
-            form="assignForm"
-            class="px-5 py-2 bg-primary-600 hover:bg-primary-700 active:scale-95 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-sm"
-            :disabled="formSaving || !assignForm.program_id || !assignForm.effective_date"
-          >
-            {{ formSaving ? 'Assigning...' : 'Assign Program' }}
-          </button>
+          <!-- Mode: Assign Program Buttons -->
+          <template v-if="activeMode === 'assign'">
+            <button
+              v-if="isWhatsAppEnabled"
+              type="button"
+              class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-sm flex items-center gap-1.5"
+              :disabled="formSaving || !assignForm.program_id || !assignForm.effective_date"
+              @click="submitAssignProgram(true)"
+            >
+              <MessageSquare class="w-4 h-4" />
+              <span>{{ formSaving ? 'Assigning & Sending...' : 'Assign & Send via WhatsApp' }}</span>
+            </button>
 
-          <button
-            v-else
-            type="submit"
-            form="customForm"
-            class="px-5 py-2 bg-primary-600 hover:bg-primary-700 active:scale-95 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-sm"
-            :disabled="formSaving || !customForm.title || !customForm.effective_date || (customForm.format === 'file' && !selectedFile) || (customForm.format === 'text' && !customForm.formatted_text)"
-          >
-            {{ formSaving ? 'Saving...' : 'Save &amp; Assign' }}
-          </button>
+            <button
+              type="submit"
+              form="assignForm"
+              class="px-5 py-2 bg-primary-600 hover:bg-primary-700 active:scale-95 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-sm"
+              :disabled="formSaving || !assignForm.program_id || !assignForm.effective_date"
+            >
+              {{ formSaving ? 'Assigning...' : 'Assign Program' }}
+            </button>
+          </template>
+
+          <!-- Mode: Custom Workout Buttons -->
+          <template v-else>
+            <button
+              v-if="isWhatsAppEnabled"
+              type="button"
+              class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-sm flex items-center gap-1.5"
+              :disabled="formSaving || !customForm.title || !customForm.effective_date || (customForm.format === 'file' && !selectedFile) || (customForm.format === 'text' && !customForm.formatted_text)"
+              @click="submitCustomWorkout(true)"
+            >
+              <MessageSquare class="w-4 h-4" />
+              <span>{{ formSaving ? 'Saving & Sending...' : 'Add, Assign & Send via WhatsApp' }}</span>
+            </button>
+
+            <button
+              type="submit"
+              form="customForm"
+              class="px-5 py-2 bg-primary-600 hover:bg-primary-700 active:scale-95 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-all shadow-sm"
+              :disabled="formSaving || !customForm.title || !customForm.effective_date || (customForm.format === 'file' && !selectedFile) || (customForm.format === 'text' && !customForm.formatted_text)"
+            >
+              {{ formSaving ? 'Saving...' : 'Save &amp; Assign' }}
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -483,6 +540,18 @@
           </div>
 
           <div class="flex items-center gap-2">
+            <button
+              v-if="isWhatsAppEnabled && canManage"
+              type="button"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white transition-colors disabled:opacity-50 shadow-xs"
+              :disabled="sendingWaId === activePreview.id"
+              @click="sendViaWhatsApp(activePreview)"
+            >
+              <RefreshCw v-if="sendingWaId === activePreview.id" class="w-3.5 h-3.5 animate-spin" />
+              <MessageSquare v-else class="w-3.5 h-3.5" />
+              <span>Send via WhatsApp</span>
+            </button>
+
             <a
               v-if="activePreview.file_url"
               :href="activePreview.file_url"
@@ -584,6 +653,8 @@
 <script setup>
 import { computed, ref } from 'vue';
 import {
+    AlertCircle,
+    CheckCircle2,
     Plus,
     X,
     FolderOpen,
@@ -595,6 +666,8 @@ import {
     Dumbbell,
     Eye,
     Download,
+    MessageSquare,
+    RefreshCw,
     Trash2,
     UploadCloud,
 } from 'lucide-vue-next';
@@ -619,11 +692,40 @@ const canManage = computed(() => Boolean(
     context.permissions?.usersEdit
 ));
 
+const isWhatsAppEnabled = computed(() => Boolean(context.settings?.whatsappEnabled));
+
 const { formatDate } = useMemberFormatters();
 
 const workoutsLoading = ref(false);
 const memberWorkouts = ref([]);
 const workoutsMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
+
+const sendingWaId = ref(null);
+const waToast = ref({ show: false, success: true, message: '' });
+let toastTimer = null;
+
+function showWaToast(message, success = true) {
+    clearTimeout(toastTimer);
+    waToast.value = { show: true, success, message };
+    toastTimer = setTimeout(() => {
+        waToast.value.show = false;
+    }, 4500);
+}
+
+async function sendViaWhatsApp(wa) {
+    if (!wa?.id || sendingWaId.value) return;
+    sendingWaId.value = wa.id;
+    try {
+        const res = await apiRequest(`/api/members/${props.memberId}/workouts/${wa.id}/send-whatsapp`, {
+            method: 'post',
+        });
+        showWaToast(res.message || 'Workout plan sent to member via WhatsApp!', true);
+    } catch (err) {
+        showWaToast(err?.response?.data?.message || err?.message || 'Failed to send workout via WhatsApp.', false);
+    } finally {
+        sendingWaId.value = null;
+    }
+}
 
 async function loadMemberWorkouts(page = 1) {
     workoutsLoading.value = true;
@@ -792,7 +894,7 @@ function handleFileDrop(e) {
     }
 }
 
-async function submitAssignProgram() {
+async function submitAssignProgram(andSendWhatsApp = false) {
     if (!assignForm.value.program_id || !assignForm.value.effective_date) return;
     formSaving.value = true;
     formError.value = '';
@@ -805,10 +907,14 @@ async function submitAssignProgram() {
                 program_id: assignForm.value.program_id,
                 effective_date: assignForm.value.effective_date,
                 notes: assignForm.value.notes,
+                send_whatsapp: andSendWhatsApp,
             },
         });
         closeAddWorkoutModal();
         loadMemberWorkouts(1);
+        if (andSendWhatsApp) {
+            showWaToast('Workout program assigned and dispatched via WhatsApp!', true);
+        }
     } catch (err) {
         if (err?.response?.data?.errors) {
             const firstMsg = Object.values(err.response.data.errors).flat()[0];
@@ -821,7 +927,7 @@ async function submitAssignProgram() {
     }
 }
 
-async function submitCustomWorkout() {
+async function submitCustomWorkout(andSendWhatsApp = false) {
     if (!customForm.value.title || !customForm.value.effective_date) return;
     formSaving.value = true;
     formError.value = '';
@@ -848,6 +954,9 @@ async function submitCustomWorkout() {
             if (customForm.value.notes) {
                 formData.append('notes', customForm.value.notes);
             }
+            if (andSendWhatsApp) {
+                formData.append('send_whatsapp', '1');
+            }
 
             await apiRequest(`/api/members/${props.memberId}/workouts`, {
                 method: 'post',
@@ -869,12 +978,16 @@ async function submitCustomWorkout() {
                     effective_date: customForm.value.effective_date,
                     formatted_text: customForm.value.formatted_text,
                     notes: customForm.value.notes,
+                    send_whatsapp: andSendWhatsApp,
                 },
             });
         }
 
         closeAddWorkoutModal();
         loadMemberWorkouts(1);
+        if (andSendWhatsApp) {
+            showWaToast('Custom workout added, assigned and dispatched via WhatsApp!', true);
+        }
     } catch (err) {
         if (err?.response?.status === 413 || err?.message?.includes('413') || err?.response?.data?.message?.includes('too large') || err?.response?.data?.message?.includes('exceeds the limit')) {
             formError.value = 'The uploaded file exceeds the server maximum upload limit (8MB). Please choose a smaller or compressed file.';

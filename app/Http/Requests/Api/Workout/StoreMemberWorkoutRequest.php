@@ -29,6 +29,7 @@ class StoreMemberWorkoutRequest extends FormRequest
             ],
             'formatted_text' => ['required_if:type,text', 'nullable', 'string'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'send_whatsapp' => ['nullable', 'boolean'],
         ];
     }
 

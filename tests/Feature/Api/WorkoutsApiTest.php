@@ -722,4 +722,128 @@ class WorkoutsApiTest extends ApiRouteTestCase
         $response->assertOk()
             ->assertJsonCount(2, 'data.data');
     }
+
+    public function testSendMemberWorkoutViaWhatsAppDispatchesMessageWhenEnabled(): void
+    {
+        $this->actingAsUser(['workouts.manage', 'members.edit']);
+        $tenantId = app('tenant')->id;
+
+        // Enable WhatsApp for tenant
+        $configService = app(\App\Services\TenantConfigurationService::class);
+        $configService->updateBatch($tenantId, [
+            'general.gowa_enabled' => '1',
+            'general.gowa_url' => 'http://localhost:3000',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'http://localhost:3000/send/file' => \Illuminate\Support\Facades\Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['message_id' => 'wa_msg_pdf_123'],
+            ], 200),
+            'http://localhost:3000/send/image' => \Illuminate\Support\Facades\Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['message_id' => 'wa_msg_img_123'],
+            ], 200),
+            'http://localhost:3000/send/message' => \Illuminate\Support\Facades\Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['message_id' => 'wa_msg_workout_123'],
+            ], 200),
+            'http://localhost:3000/devices' => \Illuminate\Support\Facades\Http::response([
+                'results' => [['id' => 'default', 'state' => 'connected']],
+            ], 200),
+        ]);
+
+        $member = $this->createMember(null, [
+            'name' => 'Dilshan Silva',
+            'phone_number' => '0771234567',
+            'allow_whatsapp' => true,
+        ]);
+
+        $program = $this->createProgram(['title' => 'Hypertrophy Phase 1']);
+        $assignment = $this->createAssignment($program, ['member_id' => $member->id]);
+
+        $this->postJson("/api/members/{$member->id}/workouts/{$assignment->id}/send-whatsapp")
+            ->assertOk()
+            ->assertJsonPath('error', false)
+            ->assertJsonPath('message', 'Workout plan sent to member via WhatsApp successfully.');
+
+        \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            if ($request->url() !== 'http://localhost:3000/send/file') {
+                return false;
+            }
+
+            return $request->isMultipart();
+        });
+    }
+
+    public function testSendMemberWorkoutViaWhatsAppDispatchesUploadedFile(): void
+    {
+        $this->actingAsUser(['workouts.manage', 'members.edit']);
+        $tenantId = app('tenant')->id;
+
+        $configService = app(\App\Services\TenantConfigurationService::class);
+        $configService->updateBatch($tenantId, [
+            'general.gowa_enabled' => '1',
+            'general.gowa_url' => 'http://localhost:3000',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'http://localhost:3000/send/file' => \Illuminate\Support\Facades\Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['message_id' => 'wa_msg_file_456'],
+            ], 200),
+            'http://localhost:3000/devices' => \Illuminate\Support\Facades\Http::response([
+                'results' => [['id' => 'default', 'state' => 'connected']],
+            ], 200),
+        ]);
+
+        $member = $this->createMember(null, [
+            'name' => 'John Doe',
+            'phone_number' => '0779998877',
+            'allow_whatsapp' => true,
+        ]);
+
+        Storage::fake(config('filesystems.media_disk', 'public'));
+        $mediaService = app(\App\Services\MediaStorageService::class);
+        $filePath = $mediaService->storeContent('dummy-pdf-content', 'members/workouts/sample.pdf');
+
+        $assignment = WorkoutProgramAssignment::create([
+            'member_id' => $member->id,
+            'type' => 'file',
+            'title' => 'Chest & Back PDF Routine',
+            'file_path' => $filePath,
+            'file_name' => 'sample.pdf',
+            'mime_type' => 'application/pdf',
+            'effective_date' => '2026-08-14',
+        ]);
+
+        $this->postJson("/api/members/{$member->id}/workouts/{$assignment->id}/send-whatsapp")
+            ->assertOk()
+            ->assertJsonPath('error', false)
+            ->assertJsonPath('message', 'Workout plan sent to member via WhatsApp successfully.');
+    }
+
+    public function testSendMemberWorkoutViaWhatsAppFailsWhenWhatsAppDisabled(): void
+    {
+        $this->actingAsUser(['workouts.manage', 'members.edit']);
+        $tenantId = app('tenant')->id;
+
+        $configService = app(\App\Services\TenantConfigurationService::class);
+        $configService->updateBatch($tenantId, [
+            'general.gowa_enabled' => '0',
+        ]);
+
+        $member = $this->createMember(null, [
+            'name' => 'Dilshan Silva',
+            'phone_number' => '0771234567',
+        ]);
+
+        $program = $this->createProgram(['title' => 'Hypertrophy Phase 1']);
+        $assignment = $this->createAssignment($program, ['member_id' => $member->id]);
+
+        $this->postJson("/api/members/{$member->id}/workouts/{$assignment->id}/send-whatsapp")
+            ->assertStatus(400)
+            ->assertJsonPath('error', true)
+            ->assertJsonPath('message', 'WhatsApp integration is currently turned off in Settings.');
+    }
 }

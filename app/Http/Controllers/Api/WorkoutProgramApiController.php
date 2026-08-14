@@ -245,6 +245,44 @@ class WorkoutProgramApiController extends Controller
         return $this->success('Workout program assignment deleted successfully.');
     }
 
+    public function sendMemberWorkoutWhatsApp(Request $request, Member $member, WorkoutProgramAssignment $assignment): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $this->memberService->ensureTenantMember($member, $tenantId);
+
+        if ($assignment->member_id !== $member->id) {
+            abort(404, 'Workout assignment does not belong to this member.');
+        }
+
+        $result = $this->workoutProgramService->sendWorkoutViaWhatsApp($assignment, $tenantId);
+
+        if (!($result['success'] ?? false)) {
+            return response()->json([
+                'error' => true,
+                'statusCode' => 400,
+                'message' => $result['message'] ?? 'Failed to send workout via WhatsApp.',
+            ], 400);
+        }
+
+        return $this->success('Workout plan sent to member via WhatsApp successfully.', $result['data'] ?? null);
+    }
+
+    public function sendAssignmentWhatsApp(Request $request, WorkoutProgramAssignment $assignment): JsonResponse
+    {
+        $tenantId = app('tenant')->id;
+        $result = $this->workoutProgramService->sendWorkoutViaWhatsApp($assignment, $tenantId);
+
+        if (!($result['success'] ?? false)) {
+            return response()->json([
+                'error' => true,
+                'statusCode' => 400,
+                'message' => $result['message'] ?? 'Failed to send workout via WhatsApp.',
+            ], 400);
+        }
+
+        return $this->success('Workout plan sent to member via WhatsApp successfully.', $result['data'] ?? null);
+    }
+
     private function success(string $message, mixed $data = null, int $statusCode = 200): JsonResponse
     {
         return response()->json([

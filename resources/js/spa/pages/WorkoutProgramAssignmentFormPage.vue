@@ -78,11 +78,22 @@
           {{ formError }}
         </div>
 
-        <div class="flex justify-end">
+        <div class="flex items-center justify-end gap-2 flex-wrap">
+          <button
+            v-if="isWhatsAppEnabled"
+            type="button"
+            :disabled="submitting"
+            class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white text-sm font-bold disabled:opacity-50 transition-all shadow-sm"
+            @click="submit(true)"
+          >
+            <MessageSquare class="w-4 h-4" />
+            <span>{{ submitting ? 'Assigning & Sending…' : 'Assign & Send via WhatsApp' }}</span>
+          </button>
+
           <button
             type="submit"
             :disabled="submitting"
-            class="inline-flex items-center px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-semibold"
+            class="inline-flex items-center px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:scale-95 text-white text-sm font-semibold disabled:opacity-50 transition-all shadow-sm"
           >
             {{ submitting ? 'Assigning…' : 'Assign Program' }}
           </button>
@@ -95,14 +106,18 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { MessageSquare } from 'lucide-vue-next';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import { apiRequest } from '../composables/useApiClient';
+import { useAppContext } from '../composables/useAppContext';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
 import AppFormDateInput from '../components/forms/AppFormDateInput.vue';
 import AppFormSelect from '../components/forms/AppFormSelect.vue';
 
 const router = useRouter();
+const context = useAppContext();
+const isWhatsAppEnabled = computed(() => Boolean(context.settings?.whatsappEnabled));
 
 const programs = ref([]);
 const errorMessage = ref('');
@@ -182,7 +197,7 @@ function toggleMember(member) {
     }
 }
 
-async function submit() {
+async function submit(andSendWhatsApp = false) {
     formError.value = '';
 
     if (!form.value.program_id) {
@@ -206,6 +221,7 @@ async function submit() {
                 program_id: form.value.program_id,
                 member_ids: form.value.member_ids,
                 effective_date: form.value.effective_date,
+                send_whatsapp: andSendWhatsApp,
             },
         });
         router.push('/workout?tab=assignments');

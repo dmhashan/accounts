@@ -35,3 +35,4 @@ Route::post('/workout-program-assignments', [WorkoutProgramApiController::class,
 Route::get('/workout-program-assignments/{assignment}', [WorkoutProgramApiController::class, 'showAssignment'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);
 Route::put('/workout-program-assignments/{assignment}', [WorkoutProgramApiController::class, 'assignmentUpdate'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);
 Route::delete('/workout-program-assignments/{assignment}', [WorkoutProgramApiController::class, 'assignmentDestroy'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);
+Route::post('/workout-program-assignments/{assignment}/send-whatsapp', [WorkoutProgramApiController::class, 'sendAssignmentWhatsApp'])->middleware(['auth', 'permission:workouts.assignments,workouts.manage']);

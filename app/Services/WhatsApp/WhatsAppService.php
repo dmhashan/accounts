@@ -205,18 +205,26 @@ class WhatsAppService
     }
 
     /**
+     * Alias for isEnabled.
+     */
+    public function isWhatsAppEnabled(?int $tenantId = null): bool
+    {
+        return $this->isEnabled($tenantId);
+    }
+
+    /**
      * Merge options with tenant config if options don't override.
      */
     private function resolveConfig(array $options = []): array
     {
         $tenantConfig = $this->getConfig();
 
-        return [
+        return array_merge($options, [
             'enabled' => $options['enabled'] ?? $tenantConfig['enabled'],
             'url' => !empty($options['url']) ? $options['url'] : $tenantConfig['url'],
             'api_key' => array_key_exists('api_key', $options) ? $options['api_key'] : $tenantConfig['api_key'],
             'session_id' => array_key_exists('session_id', $options) ? $options['session_id'] : $tenantConfig['session_id'],
             'driver' => $options['driver'] ?? $tenantConfig['driver'] ?? 'gowa',
-        ];
+        ]);
     }
 }

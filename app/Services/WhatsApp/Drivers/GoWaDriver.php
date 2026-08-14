@@ -386,31 +386,12 @@ class GoWaDriver implements WhatsAppClientInterface
         $fileParamName = ($mediaType === 'file' || $mediaType === 'document') ? 'file' : $mediaType;
 
         try {
-            $client = $this->httpClient($apiKey, $sessionId)->timeout(25)->asMultipart();
+            $client = $this->httpClient($apiKey, $sessionId, asJson: false)->timeout(30)->asMultipart();
 
             $fields = [
                 'phone' => $formatted,
                 'caption' => $caption,
             ];
-
-            // Local file attachment
-            if (file_exists($mediaUrl) && is_readable($mediaUrl)) {
-                $filename = basename($mediaUrl);
-                $fileContent = file_get_contents($mediaUrl);
-                $client = $client->attach($fileParamName, $fileContent, $filename);
-            } elseif (filter_var($mediaUrl, FILTER_VALIDATE_URL)) {
-                // Check if GoWA supports remote URL field (image_url, file_url, audio_url, video_url)
-                $urlFieldMap = [
-                    'image' => 'image_url',
-                    'file' => 'file_url',
-                    'document' => 'file_url',
-                    'audio' => 'audio_url',
-                    'video' => 'video_url',
-                    'sticker' => 'sticker_url',
-                ];
-                $urlFieldName = $urlFieldMap[$mediaType] ?? 'image_url';
-                $fields[$urlFieldName] = $mediaUrl;
-            }
 
             if ($mediaType === 'image' && isset($options['view_once'])) {
                 $fields['view_once'] = $options['view_once'] ? 'true' : 'false';
@@ -424,6 +405,35 @@ class GoWaDriver implements WhatsAppClientInterface
                 $fields['reply_message_id'] = $options['reply_message_id'];
             }
 
+            // 1. Direct binary buffer passed in options
+            if (!empty($options['file_content'])) {
+                $filename = $options['filename'] ?? ($mediaType === 'image' ? 'image.jpg' : 'document.pdf');
+                $client = $client->attach($fileParamName, $options['file_content'], $filename);
+            }
+            // 2. Local file on filesystem
+            elseif (!empty($mediaUrl) && file_exists($mediaUrl) && is_readable($mediaUrl)) {
+                $filename = $options['filename'] ?? basename($mediaUrl);
+                $fileContent = file_get_contents($mediaUrl);
+                $client = $client->attach($fileParamName, $fileContent, $filename);
+            }
+            // 3. Remote URL -> attempt to download and attach as binary to ensure delivery behind firewalls
+            elseif (!empty($mediaUrl) && filter_var($mediaUrl, FILTER_VALIDATE_URL)) {
+                try {
+                    $download = Http::timeout(10)->get($mediaUrl);
+
+                    if ($download->successful() && !empty($download->body())) {
+                        $filename = $options['filename'] ?? (basename(parse_url($mediaUrl, PHP_URL_PATH)) ?: ($mediaType === 'image' ? 'image.jpg' : 'document.pdf'));
+                        $client = $client->attach($fileParamName, $download->body(), $filename);
+                    } else {
+                        $urlFieldName = ($mediaType === 'image') ? 'image_url' : 'file_url';
+                        $fields[$urlFieldName] = $mediaUrl;
+                    }
+                } catch (\Throwable) {
+                    $urlFieldName = ($mediaType === 'image') ? 'image_url' : 'file_url';
+                    $fields[$urlFieldName] = $mediaUrl;
+                }
+            }
+
             $response = $client->post($endpoint, $fields);
 
             if ($response->successful()) {
@@ -435,6 +445,11 @@ class GoWaDriver implements WhatsAppClientInterface
             }
 
             $errBody = $response->json();
+            Log::warning('GoWaDriver sendMedia failed response', [
+                'endpoint' => $endpoint,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
             return [
                 'success' => false,
@@ -863,9 +878,9 @@ class GoWaDriver implements WhatsAppClientInterface
     /**
      * Prepare Guzzle HTTP client with appropriate auth & device headers.
      */
-    private function httpClient(?string $apiKey = null, ?string $sessionId = null): PendingRequest
+    private function httpClient(?string $apiKey = null, ?string $sessionId = null, bool $asJson = true): PendingRequest
     {
-        $client = Http::acceptJson()->asJson();
+        $client = $asJson ? Http::acceptJson()->asJson() : Http::acceptJson();
 
         if (!empty($apiKey)) {
             $trimmedKey = trim($apiKey);

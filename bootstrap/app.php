@@ -48,8 +48,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (Illuminate\Http\Exceptions\PostTooLargeException $e, Illuminate\Http\Request $request) {
             $msg = 'The uploaded file exceeds the maximum allowed server upload limit (8MB). Please choose a smaller file.';
+
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'message' => $msg,

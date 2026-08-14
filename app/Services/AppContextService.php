@@ -23,6 +23,7 @@ class AppContextService
                 'timeFormat' => $cfg['general.time_format'] ?? 'HH:mm',
                 'colorTheme' => $cfg['general.color_theme'] ?? 'crimson',
                 'colorMode' => $cfg['general.color_mode'] ?? 'system',
+                'whatsappEnabled' => ($cfg['general.gowa_enabled'] ?? '0') === '1',
             ],
             'user' => [
                 'id' => $user->id,

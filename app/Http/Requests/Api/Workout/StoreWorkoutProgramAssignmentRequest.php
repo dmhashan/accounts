@@ -20,6 +20,7 @@ class StoreWorkoutProgramAssignmentRequest extends FormRequest
             'effective_date' => ['required', 'date'],
             'program_title_override' => ['nullable', 'string', 'max:255'],
             'program_description_override' => ['nullable', 'string', 'max:5000'],
+            'send_whatsapp' => ['nullable', 'boolean'],
         ];
     }
 }

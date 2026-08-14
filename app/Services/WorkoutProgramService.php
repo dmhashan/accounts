@@ -10,13 +10,20 @@ use App\Models\WorkoutProgram;
 use App\Models\WorkoutProgramAssignment;
 use App\Models\WorkoutProgramDay;
 use App\Models\WorkoutProgramExtra;
+use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
+use Mpdf\Mpdf;
 
 class WorkoutProgramService
 {
     public function __construct(
         private readonly MediaStorageService $media,
+        private readonly WhatsAppService $whatsAppService,
+        private readonly MemberPortalUrlService $memberPortalUrl,
     ) {}
 
     public function assignmentMembers(int $tenantId, int $perPage, string $search = ''): array
@@ -120,6 +127,16 @@ class WorkoutProgramService
             ]);
         }
 
+        if (!empty($validated['send_whatsapp'])) {
+            foreach ($created as $assignment) {
+                try {
+                    $this->sendWorkoutViaWhatsApp($assignment, $tenantId);
+                } catch (\Throwable) {
+                    // Ignore non-fatal WhatsApp delivery errors during batch creation
+                }
+            }
+        }
+
         return [
             'count' => count($created),
             'ids' => collect($created)->pluck('id')->values(),
@@ -165,7 +182,7 @@ class WorkoutProgramService
 
             $path = $this->media->store($file, "members/{$member->id}/workouts");
 
-            return WorkoutProgramAssignment::create([
+            $assignment = WorkoutProgramAssignment::create([
                 'member_id' => $member->id,
                 'type' => 'file',
                 'title' => $title,
@@ -177,14 +194,12 @@ class WorkoutProgramService
                 'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
                 'created_by' => $createdBy,
             ]);
-        }
-
-        if ($type === 'text') {
+        } elseif ($type === 'text') {
             if ($title === '') {
                 $title = 'Workout Routine - ' . \Carbon\Carbon::parse($validated['effective_date'])->format('d M Y');
             }
 
-            return WorkoutProgramAssignment::create([
+            $assignment = WorkoutProgramAssignment::create([
                 'member_id' => $member->id,
                 'type' => 'text',
                 'title' => $title,
@@ -193,24 +208,338 @@ class WorkoutProgramService
                 'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
                 'created_by' => $createdBy,
             ]);
+        } else {
+            // Program assignment
+            $sourceProgram = WorkoutProgram::query()->findOrFail((int) $validated['program_id']);
+            $this->ensureProgramTenant($sourceProgram, $tenantId);
+
+            $assignedProgram = $this->resolveAssignedProgramWithSnapshot($sourceProgram, $tenantId, $createdBy, $validated);
+
+            $assignment = WorkoutProgramAssignment::create([
+                'member_id' => $member->id,
+                'type' => 'program',
+                'title' => trim($validated['title'] ?? '') ?: null,
+                'source_program_id' => $sourceProgram->id,
+                'assigned_program_id' => $assignedProgram->id,
+                'effective_date' => $validated['effective_date'],
+                'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
+                'created_by' => $createdBy,
+            ]);
         }
 
-        // Program assignment
-        $sourceProgram = WorkoutProgram::query()->findOrFail((int) $validated['program_id']);
-        $this->ensureProgramTenant($sourceProgram, $tenantId);
+        if (!empty($validated['send_whatsapp'])) {
+            try {
+                $this->sendWorkoutViaWhatsApp($assignment, $tenantId);
+            } catch (\Throwable) {
+                // Non-blocking on send failure during initial creation
+            }
+        }
 
-        $assignedProgram = $this->resolveAssignedProgramWithSnapshot($sourceProgram, $tenantId, $createdBy, $validated);
+        return $assignment;
+    }
 
-        return WorkoutProgramAssignment::create([
-            'member_id' => $member->id,
-            'type' => 'program',
-            'title' => trim($validated['title'] ?? '') ?: null,
-            'source_program_id' => $sourceProgram->id,
-            'assigned_program_id' => $assignedProgram->id,
-            'effective_date' => $validated['effective_date'],
-            'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
-            'created_by' => $createdBy,
+    /**
+     * Send workout assignment details directly to member via WhatsApp.
+     */
+    public function sendWorkoutViaWhatsApp(WorkoutProgramAssignment $assignment, int $tenantId): array
+    {
+        $this->ensureAssignmentTenant($assignment, $tenantId);
+
+        $assignment->loadMissing([
+            'member',
+            'assignedProgram.days.dayExercises.exercise',
+            'assignedProgram.extras',
+            'sourceProgram',
         ]);
+
+        $member = $assignment->member;
+
+        if (!$member) {
+            return [
+                'success' => false,
+                'message' => 'Member not found for this workout assignment.',
+            ];
+        }
+
+        $phone = $member->whatsapp_number ?: $member->phone_number;
+
+        if (empty($phone)) {
+            return [
+                'success' => false,
+                'message' => 'Member has no phone or WhatsApp number registered in the system.',
+            ];
+        }
+
+        if (!$this->whatsAppService->isWhatsAppEnabled($tenantId)) {
+            return [
+                'success' => false,
+                'message' => 'WhatsApp integration is currently turned off in Settings.',
+            ];
+        }
+
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+        $tenantName = $tenant?->name ?? 'Gym';
+        $memberName = $member->name ?? 'Member';
+        $title = $assignment->title ?: ($assignment->assignedProgram?->title ?: ($assignment->sourceProgram?->title ?: 'Workout Plan'));
+        $startDate = Carbon::parse($assignment->effective_date)->format('d M Y');
+
+        // Handle File upload plan (PDF or Image)
+        if ($assignment->type === 'file' && !empty($assignment->file_path)) {
+            $fileUrl = $this->media->url($assignment->file_path);
+            $isImage = str_starts_with($assignment->mime_type ?? '', 'image/') || (bool) preg_match('/\.(jpg|jpeg|png|webp)$/i', $assignment->file_name ?? '');
+            $mediaType = $isImage ? 'image' : 'file';
+
+            $caption = "🏋️ *Workout Plan Assigned*\n" .
+                "Hi {$memberName}, here is your workout file from *{$tenantName}* (Effective: {$startDate}).\n" .
+                ($assignment->notes ? "\n📝 *Notes:* " . trim($assignment->notes) . "\n" : '');
+
+            if ($tenant) {
+                $portalUrl = $this->memberPortalUrl->urlForTenant($tenant);
+
+                if (!empty($portalUrl)) {
+                    $caption .= "\n📲 *View in Member Portal:* {$portalUrl}";
+                }
+            }
+
+            $fileContent = $this->media->getContent($assignment->file_path);
+
+            return $this->whatsAppService->sendMedia($phone, $fileUrl, $caption, $mediaType, [
+                'file_content' => $fileContent,
+                'filename' => $assignment->file_name ?? ($isImage ? 'workout.jpg' : 'workout.pdf'),
+            ]);
+        }
+
+        // Handle Program assignments -> Generate and send official Workout Plan PDF
+        if ($assignment->type === 'program' || empty($assignment->type)) {
+            $caption = "🏋️ *Workout Plan Assigned*\n" .
+                "Hi {$memberName}, here is your official workout program from *{$tenantName}* (Effective: {$startDate}).\n" .
+                "\n📌 *Plan:* {$title}" .
+                ($assignment->notes ? "\n📝 *Trainer Notes:* " . trim($assignment->notes) : '');
+
+            if ($tenant) {
+                $portalUrl = $this->memberPortalUrl->urlForTenant($tenant);
+
+                if (!empty($portalUrl)) {
+                    $caption .= "\n📲 *View in Member Portal:* {$portalUrl}";
+                }
+            }
+
+            try {
+                $pdfContent = $this->renderWorkoutPlanPdf($assignment, $tenant);
+                $pdfFilename = Str::slug($title ?: 'workout-plan') . '.pdf';
+
+                return $this->whatsAppService->sendMedia($phone, '', $caption, 'file', [
+                    'file_content' => $pdfContent,
+                    'filename' => $pdfFilename,
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to generate workout PDF for WhatsApp, falling back to text', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Handle Text routines (or fallback for Program if PDF fails)
+        $lines = [];
+        $lines[] = '🏋️ *Workout Plan Assigned*';
+        $lines[] = "Hi {$memberName}, here is your training routine from *{$tenantName}*:\n";
+        $lines[] = "📌 *Plan:* {$title}";
+        $lines[] = "📅 *Start Date:* {$startDate}";
+
+        if (!empty($assignment->notes)) {
+            $lines[] = '📝 *Trainer Notes:* ' . trim($assignment->notes);
+        }
+
+        if ($assignment->type === 'text') {
+            if (!empty($assignment->formatted_text)) {
+                $html = $assignment->formatted_text;
+                $html = preg_replace('/<br\s*\/?>/i', "\n", $html);
+                $html = preg_replace('/<\/p>/i', "\n\n", $html);
+                $html = preg_replace('/<li[^>]*>/i', '• ', $html);
+                $html = preg_replace('/<\/li>/i', "\n", $html);
+                $html = preg_replace('/<strong[^>]*>(.*?)<\/strong>/i', '*$1*', $html);
+                $html = preg_replace('/<b[^>]*>(.*?)<\/b>/i', '*$1*', $html);
+                $cleanText = trim(strip_tags($html));
+
+                if (!empty($cleanText)) {
+                    $lines[] = "\n" . $cleanText;
+                }
+            }
+        } else {
+            // Program structure text fallback
+            $program = $assignment->assignedProgram ?: $assignment->sourceProgram;
+
+            if ($program) {
+                $days = $program->days()->with(['dayExercises.exercise'])->orderBy('day_number')->get();
+
+                if ($days->isNotEmpty()) {
+                    $lines[] = "\n📋 *Routine Schedule:*";
+
+                    foreach ($days as $day) {
+                        $dayTitle = $day->title ?: "Day {$day->day_number}";
+                        $lines[] = "\n🗓️ *{$dayTitle}*";
+
+                        foreach ($day->dayExercises as $de) {
+                            $exName = $de->exercise?->name ?: 'Exercise';
+                            $setRep = "{$de->sets} sets x {$de->reps} reps";
+                            $rest = $de->rest_seconds ? " (Rest: {$de->rest_seconds}s)" : '';
+                            $lines[] = "  • *{$exName}* — {$setRep}{$rest}";
+                        }
+                    }
+                }
+
+                $extras = $program->extras()->orderBy('id')->get();
+
+                if ($extras->isNotEmpty()) {
+                    $lines[] = "\n💡 *Additional Guidance:*";
+
+                    foreach ($extras as $extra) {
+                        $lines[] = "  • *{$extra->title}*: {$extra->description}";
+                    }
+                }
+            }
+        }
+
+        if ($tenant) {
+            $portalUrl = $this->memberPortalUrl->urlForTenant($tenant);
+
+            if (!empty($portalUrl)) {
+                $lines[] = "\n📲 *View in Member Portal:* {$portalUrl}";
+            }
+        }
+
+        $message = implode("\n", $lines);
+
+        return $this->whatsAppService->send($phone, $message);
+    }
+
+    public function renderWorkoutPlanPdf(WorkoutProgramAssignment $assignment, $tenant): string
+    {
+        $assignment->loadMissing([
+            'member',
+            'creator',
+            'sourceProgram',
+            'assignedProgram.creator',
+            'assignedProgram.days.dayExercises.exercise.variations',
+            'assignedProgram.extras',
+        ]);
+
+        $program = $assignment->assignedProgram ?: $assignment->sourceProgram;
+        $title = $assignment->title ?: ($program?->title ?: 'Workout Plan');
+        $memberName = $assignment->member?->name ?? 'Member';
+        $memberId = $assignment->member?->biometric_member_id ?? $assignment->member?->member_id;
+        $effectiveDate = Carbon::parse($assignment->effective_date)->format('d M Y');
+        $trainerName = $assignment->creator?->name ?? ($program?->creator?->name ?? '');
+
+        $days = [];
+
+        if ($program) {
+            $programDays = $program->days()->with(['dayExercises.exercise'])->orderBy('day_number')->get();
+
+            foreach ($programDays as $d) {
+                $exercises = [];
+
+                foreach ($d->dayExercises as $de) {
+                    $exercises[] = [
+                        'name' => $de->exercise?->name ?? 'Exercise',
+                        'variation' => $de->variation_name ?? '',
+                        'target_muscle' => $de->exercise?->target_muscle ?? '',
+                        'sets' => $de->sets,
+                        'reps' => $de->reps,
+                        'tempo' => $de->tempo,
+                        'rest' => $de->rest_seconds,
+                        'notes' => $de->notes,
+                    ];
+                }
+                $days[] = [
+                    'title' => $d->title ?: "Day {$d->day_number}",
+                    'description' => $d->description,
+                    'exercises' => $exercises,
+                ];
+            }
+        }
+
+        $extras = [];
+
+        if ($program) {
+            $programExtras = $program->extras()->orderBy('id')->get();
+
+            foreach ($programExtras as $e) {
+                $extras[] = [
+                    'type' => strtoupper((string) $e->type),
+                    'title' => $e->exercise_name ?: ($e->cardio_type ?: 'Protocol'),
+                    'description' => $e->notes ?: ($e->frequency_per_week ? "{$e->frequency_per_week}x/week, {$e->duration_minutes} mins" : ''),
+                ];
+            }
+        }
+
+        $html = view('pdfs.workout-plan', [
+            'title' => $title,
+            'description' => $program?->description,
+            'memberName' => $memberName,
+            'memberId' => $memberId,
+            'effectiveDate' => $effectiveDate,
+            'trainerName' => $trainerName,
+            'notes' => $assignment->notes,
+            'days' => $days,
+            'extras' => $extras,
+            'tenantName' => $tenant?->name ?? 'Gym',
+            'tenantAddress' => $tenant?->address ?? '',
+            'tenantEmail' => $tenant?->email ?? '',
+            'tenantPhone' => $tenant?->phone ?? '',
+            'tenantLogo' => $this->imageToDataUri($tenant?->logo_path ?? null),
+            'generatedAt' => now()->format('d M Y, H:i'),
+        ])->render();
+
+        $tmpDir = storage_path('app/mpdf-tmp');
+
+        if (!is_dir($tmpDir)) {
+            @mkdir($tmpDir, 0777, true);
+        }
+
+        $defaultFontDirs = (new ConfigVariables)->getDefaults()['fontDir'];
+        $defaultFontData = (new FontVariables)->getDefaults()['fontdata'];
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'fontDir' => array_merge($defaultFontDirs, [storage_path('fonts')]),
+            'fontdata' => $defaultFontData,
+            'default_font' => 'dejavusans',
+            'tempDir' => $tmpDir,
+        ]);
+
+        $mpdf->WriteHTML($html);
+
+        return $mpdf->Output('', 'S');
+    }
+
+    private function imageToDataUri(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        try {
+            $content = $this->media->getContent($path);
+
+            if (!$content) {
+                return null;
+            }
+
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $mime = match ($ext) {
+                'png' => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'webp' => 'image/webp',
+                'svg' => 'image/svg+xml',
+                default => 'image/jpeg',
+            };
+
+            return 'data:' . $mime . ';base64,' . base64_encode($content);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function showAssignment(WorkoutProgramAssignment $assignment, int $tenantId): array
