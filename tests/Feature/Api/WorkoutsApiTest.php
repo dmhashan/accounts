@@ -823,6 +823,77 @@ class WorkoutsApiTest extends ApiRouteTestCase
             ->assertJsonPath('message', 'Workout plan sent to member via WhatsApp successfully.');
     }
 
+    public function testSendMemberWorkoutViaWhatsAppDispatchesRichTextProperlyFormatted(): void
+    {
+        $this->actingAsUser(['workouts.manage', 'members.edit']);
+        $tenantId = app('tenant')->id;
+
+        $configService = app(\App\Services\TenantConfigurationService::class);
+        $configService->updateBatch($tenantId, [
+            'general.gowa_enabled' => '1',
+            'general.gowa_url' => 'http://localhost:3000',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'http://localhost:3000/send/file' => \Illuminate\Support\Facades\Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['message_id' => 'wa_msg_text_pdf_789'],
+            ], 200),
+            'http://localhost:3000/send/message' => \Illuminate\Support\Facades\Http::response([
+                'code' => 'SUCCESS',
+                'results' => ['message_id' => 'wa_msg_text_789'],
+            ], 200),
+            'http://localhost:3000/devices' => \Illuminate\Support\Facades\Http::response([
+                'results' => [['id' => 'default', 'state' => 'connected']],
+            ], 200),
+        ]);
+
+        $member = $this->createMember(null, [
+            'name' => 'Suneth Silva',
+            'phone_number' => '0770204000',
+            'allow_whatsapp' => true,
+        ]);
+
+        $html = '<div>Suneth&nbsp;weight - 75kg&nbsp;Height - 160</div><div>Age - 21</div><div><br></div><div>Warm Up 15 min</div><div>Dynamic stretching</div><div><br></div><div>Day 01 - Upper Body&nbsp;</div><div>Lat Pull Down &nbsp;3 * 10-12</div><div>Barbell Bench Press 3 * 8-10</div>';
+
+        $assignment = WorkoutProgramAssignment::create([
+            'member_id' => $member->id,
+            'type' => 'text',
+            'title' => 'Custom Upper Body Routine',
+            'formatted_text' => $html,
+            'effective_date' => '2026-08-14',
+        ]);
+
+        $this->postJson("/api/members/{$member->id}/workouts/{$assignment->id}/send-whatsapp")
+            ->assertOk()
+            ->assertJsonPath('error', false)
+            ->assertJsonPath('message', 'Workout plan sent to member via WhatsApp successfully.');
+
+        \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            if ($request->url() !== 'http://localhost:3000/send/file') {
+                return false;
+            }
+
+            return $request->isMultipart();
+        });
+    }
+
+    public function testConvertHtmlToWhatsAppMarkdownHelper(): void
+    {
+        $service = app(\App\Services\WorkoutProgramService::class);
+
+        $html = '<h2>Day 1: Chest &amp; Back</h2><p>Warm up <strong>5 mins</strong> &nbsp;stretching.</p><ul><li>Bench Press 3x10</li><li>Lat Pulldown 3x12</li></ul><div>Notes: <em>Rest 60s</em></div>';
+        $converted = $service->convertHtmlToWhatsAppMarkdown($html);
+
+        $this->assertStringContainsString('*📌 Day 1: Chest & Back*', $converted);
+        $this->assertStringContainsString('Warm up *5 mins*  stretching.', $converted);
+        $this->assertStringContainsString('• Bench Press 3x10', $converted);
+        $this->assertStringContainsString('• Lat Pulldown 3x12', $converted);
+        $this->assertStringContainsString('Notes: _Rest 60s_', $converted);
+        $this->assertStringNotContainsString('&nbsp;', $converted);
+        $this->assertStringNotContainsString('&amp;', $converted);
+    }
+
     public function testSendMemberWorkoutViaWhatsAppFailsWhenWhatsAppDisabled(): void
     {
         $this->actingAsUser(['workouts.manage', 'members.edit']);

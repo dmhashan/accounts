@@ -339,7 +339,37 @@ class WorkoutProgramService
             }
         }
 
-        // Handle Text routines (or fallback for Program if PDF fails)
+        // Handle Rich-Text Routine assignments -> Generate and send official Workout Routine PDF
+        if ($assignment->type === 'text') {
+            $caption = "🏋️ *Workout Routine Assigned*\n" .
+                "Hi {$memberName}, here is your custom workout routine from *{$tenantName}* (Effective: {$startDate}).\n" .
+                "\n📌 *Plan:* {$title}" .
+                ($assignment->notes ? "\n📝 *Trainer Notes:* " . trim($assignment->notes) : '');
+
+            if ($tenant) {
+                $portalUrl = $this->memberPortalUrl->urlForTenant($tenant);
+
+                if (!empty($portalUrl)) {
+                    $caption .= "\n📲 *View in Member Portal:* {$portalUrl}";
+                }
+            }
+
+            try {
+                $pdfContent = $this->renderCustomWorkoutPdf($assignment, $tenant);
+                $pdfFilename = Str::slug($title ?: 'workout-routine') . '.pdf';
+
+                return $this->whatsAppService->sendMedia($phone, '', $caption, 'file', [
+                    'file_content' => $pdfContent,
+                    'filename' => $pdfFilename,
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to generate custom workout PDF for WhatsApp, falling back to text', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Text fallback for all routines if PDF delivery fails
         $lines = [];
         $lines[] = '🏋️ *Workout Plan Assigned*';
         $lines[] = "Hi {$memberName}, here is your training routine from *{$tenantName}*:\n";
@@ -352,14 +382,7 @@ class WorkoutProgramService
 
         if ($assignment->type === 'text') {
             if (!empty($assignment->formatted_text)) {
-                $html = $assignment->formatted_text;
-                $html = preg_replace('/<br\s*\/?>/i', "\n", $html);
-                $html = preg_replace('/<\/p>/i', "\n\n", $html);
-                $html = preg_replace('/<li[^>]*>/i', '• ', $html);
-                $html = preg_replace('/<\/li>/i', "\n", $html);
-                $html = preg_replace('/<strong[^>]*>(.*?)<\/strong>/i', '*$1*', $html);
-                $html = preg_replace('/<b[^>]*>(.*?)<\/b>/i', '*$1*', $html);
-                $cleanText = trim(strip_tags($html));
+                $cleanText = $this->convertHtmlToWhatsAppMarkdown($assignment->formatted_text);
 
                 if (!empty($cleanText)) {
                     $lines[] = "\n" . $cleanText;
@@ -514,6 +537,58 @@ class WorkoutProgramService
         return $mpdf->Output('', 'S');
     }
 
+    public function renderCustomWorkoutPdf(WorkoutProgramAssignment $assignment, $tenant): string
+    {
+        $assignment->loadMissing([
+            'member',
+            'creator',
+        ]);
+
+        $title = $assignment->title ?: 'Custom Workout Routine';
+        $memberName = $assignment->member?->name ?? 'Member';
+        $memberId = $assignment->member?->biometric_member_id ?? $assignment->member?->member_id;
+        $effectiveDate = Carbon::parse($assignment->effective_date)->format('d M Y');
+        $trainerName = $assignment->creator?->name ?? '';
+
+        $html = view('pdfs.workout-routine', [
+            'title' => $title,
+            'memberName' => $memberName,
+            'memberId' => $memberId,
+            'effectiveDate' => $effectiveDate,
+            'trainerName' => $trainerName,
+            'notes' => $assignment->notes,
+            'formattedText' => $assignment->formatted_text,
+            'tenantName' => $tenant?->name ?? 'Gym',
+            'tenantAddress' => $tenant?->address ?? '',
+            'tenantEmail' => $tenant?->email ?? '',
+            'tenantPhone' => $tenant?->phone ?? '',
+            'tenantLogo' => $this->imageToDataUri($tenant?->logo_path ?? null),
+            'generatedAt' => now()->format('d M Y, H:i'),
+        ])->render();
+
+        $tmpDir = storage_path('app/mpdf-tmp');
+
+        if (!is_dir($tmpDir)) {
+            @mkdir($tmpDir, 0777, true);
+        }
+
+        $defaultFontDirs = (new ConfigVariables)->getDefaults()['fontDir'];
+        $defaultFontData = (new FontVariables)->getDefaults()['fontdata'];
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'fontDir' => array_merge($defaultFontDirs, [storage_path('fonts')]),
+            'fontdata' => $defaultFontData,
+            'default_font' => 'dejavusans',
+            'tempDir' => $tmpDir,
+        ]);
+
+        $mpdf->WriteHTML($html);
+
+        return $mpdf->Output('', 'S');
+    }
+
     private function imageToDataUri(?string $path): ?string
     {
         if (!$path) {
@@ -540,6 +615,79 @@ class WorkoutProgramService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Convert rich-text HTML (from editors like Quill / contenteditable) into clean WhatsApp markdown.
+     * Accurately converts paragraphs, divs, headings, lists, tables, line breaks and HTML entities.
+     */
+    public function convertHtmlToWhatsAppMarkdown(string $html): string
+    {
+        if (empty(trim($html))) {
+            return '';
+        }
+
+        // 1. Replace non-breaking spaces and entity variants with standard space
+        $text = str_ireplace(['&nbsp;', '&#160;', '&NBSP;'], ' ', $html);
+        $text = str_replace(["\xc2\xa0", "\u{00a0}"], ' ', $text);
+
+        // 2. Format headings as bold blocks
+        $text = preg_replace_callback('/<h([1-6])[^>]*>(.*?)<\/h\1>/is', function ($m) {
+            $content = trim(strip_tags($m[2]));
+
+            return $content !== '' ? "\n\n*📌 {$content}*\n" : "\n";
+        }, $text);
+
+        // 3. Format basic inline styling
+        $text = preg_replace('/<(strong|b)[^>]*>(.*?)<\/\1>/is', '*$2*', $text);
+        $text = preg_replace('/<(em|i)[^>]*>(.*?)<\/\1>/is', '_$2_', $text);
+        $text = preg_replace('/<(strike|s|del)[^>]*>(.*?)<\/\1>/is', '~$2~', $text);
+        $text = preg_replace('/<code[^>]*>(.*?)<\/code>/is', '`$1`', $text);
+        $text = preg_replace('/<pre[^>]*>(.*?)<\/pre>/is', "```\n$1\n```", $text);
+        $text = preg_replace('/<blockquote[^>]*>(.*?)<\/blockquote>/is', "\n> $1\n", $text);
+
+        // 4. Format lists
+        $text = preg_replace('/<li[^>]*>/i', "\n• ", $text);
+        $text = preg_replace('/<\/li>/i', '', $text);
+        $text = preg_replace('/<\/(ul|ol)>/i', "\n", $text);
+
+        // 5. Format tables
+        $text = preg_replace('/<\/(th|td)>/i', '  |  ', $text);
+        $text = preg_replace('/<\/tr>/i', "\n", $text);
+        $text = preg_replace('/<\/table>/i', "\n", $text);
+
+        // 6. Format block containers & line breaks (critical for Chrome <div> and <p> linebreaks)
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $text);
+        $text = preg_replace('/<\/p>/i', "\n\n", $text);
+        $text = preg_replace('/<\/div>/i', "\n", $text);
+        $text = preg_replace('/<hr\s*\/?>/i', "\n──────────\n", $text);
+
+        // 7. Strip any remaining HTML tags
+        $text = strip_tags($text);
+
+        // 8. Decode remaining HTML entities (&amp;, &lt;, &gt;, quotes, etc.)
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // 9. Normalize linebreaks and trim whitespace on individual lines
+        $rawLines = explode("\n", $text);
+        $cleanedLines = [];
+        $lastWasEmpty = false;
+
+        foreach ($rawLines as $rawLine) {
+            $line = trim($rawLine);
+
+            if ($line === '') {
+                if (!$lastWasEmpty && !empty($cleanedLines)) {
+                    $cleanedLines[] = '';
+                    $lastWasEmpty = true;
+                }
+            } else {
+                $cleanedLines[] = $line;
+                $lastWasEmpty = false;
+            }
+        }
+
+        return trim(implode("\n", $cleanedLines));
     }
 
     public function showAssignment(WorkoutProgramAssignment $assignment, int $tenantId): array
