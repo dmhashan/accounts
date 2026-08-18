@@ -1333,6 +1333,203 @@
             .modal-box { padding: 32px 22px; }
         }
 
+        /* ===== SUPPLEMENT STORE ===== */
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+        }
+        .store-product-card {
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .store-product-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: var(--r-lg);
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(232, 32, 42, 0) 0%, rgba(232, 32, 42, 0) 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            transition: background 0.35s;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .store-product-card:hover::before {
+            background: linear-gradient(135deg, rgba(232, 32, 42, 0.55) 0%, rgba(232, 32, 42, 0.12) 100%);
+        }
+        .store-product-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 22px 55px rgba(0, 0, 0, 0.5), 0 0 32px var(--red-glow);
+            border-color: rgba(232, 32, 42, 0.35);
+        }
+        .store-img-wrapper {
+            position: relative;
+            width: 100%;
+            height: 230px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line);
+        }
+        .store-img-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .store-product-card:hover .store-img-wrapper img {
+            transform: scale(1.08);
+        }
+        .store-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+            color: #ffffff;
+            font-size: 9.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 4px 11px;
+            border-radius: 6px;
+            box-shadow: 0 3px 10px rgba(232, 32, 42, 0.4);
+            z-index: 2;
+        }
+        .store-product-body {
+            padding: 20px 20px 22px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+            gap: 14px;
+        }
+        .store-product-category {
+            color: var(--accent3);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .store-product-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.4;
+            min-height: 40px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .store-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .store-price-currency {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: var(--accent3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .store-price-amount {
+            font-size: 24px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -0.4px;
+        }
+        .store-whatsapp-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            width: 100%;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            padding: 12px 16px;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .store-whatsapp-btn:hover {
+            background: linear-gradient(135deg, #2ae770 0%, #16a392 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+            color: #ffffff;
+        }
+        .store-whatsapp-btn:active {
+            transform: scale(0.98);
+        }
+        .store-whatsapp-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+        .store-info-banner {
+            margin-top: 36px;
+            background: var(--glass);
+            border: 1px solid var(--line2);
+            border-radius: var(--r-lg);
+            padding: 24px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            backdrop-filter: blur(12px);
+        }
+        .store-info-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .store-info-icon {
+            font-size: 26px;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: rgba(232, 32, 42, 0.12);
+            border: 1px solid rgba(232, 32, 42, 0.25);
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .store-info-text strong {
+            display: block;
+            font-size: 14.5px;
+            color: #ffffff;
+            margin-bottom: 3px;
+        }
+        .store-info-text span {
+            font-size: 12.5px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
         /* ===== FOOTER ===== */
         footer {
             border-top: 1px solid var(--line);
@@ -1397,6 +1594,7 @@
             .trainers-grid { grid-template-columns: 1fr; }
             .equipment-grid { grid-template-columns: 1fr; }
             .pricing-grid { grid-template-columns: 1fr; }
+            .store-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
             .testimonials-grid { grid-template-columns: 1fr; }
             .cta-wrap { padding: 52px 28px; }
             .footer-top { flex-direction: column; text-align: center; }
@@ -1405,6 +1603,10 @@
         @media (max-width: 540px) {
             .hero-cta { flex-direction: column; align-items: flex-start; }
             .hero-stat + .hero-stat { border-left: none; padding-left: 24px; }
+            .store-grid { grid-template-columns: 1fr; }
+            .store-img-wrapper { height: 210px; }
+            .store-info-banner { flex-direction: column; align-items: flex-start; padding: 22px 20px; }
+            .store-info-banner .btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -1451,6 +1653,7 @@
                 <a href="#trainers">Trainers</a>
                 <a href="#equipment">Equipment</a>
                 <a href="#pricing">Pricing</a>
+                <a href="#store">Store</a>
                 <a href="#hours">Hours</a>
                 <a href="#payment">Payments</a>
             </div>
@@ -1808,8 +2011,231 @@
             </div>
         </section>
 
+        <!-- ===== SUPPLEMENT STORE ===== -->
+        <section class="section section-darker" id="store" aria-labelledby="store-heading">
+            <div class="container">
+                <div class="title-block reveal">
+                    <div class="kicker">Official Supplement Store</div>
+                    <h2 id="store-heading" class="display">
+                        Fuel Your <span class="ghost">Performance</span>
+                    </h2>
+                    <p style="color:var(--muted2);max-width:560px;margin:16px auto 0;font-size:15px;line-height:1.7;">
+                        Premium authentic supplements verified for maximum potency, muscle growth, and recovery. Direct WhatsApp ordering with fast pickup and islandwide delivery.
+                    </p>
+                </div>
+
+                <div class="store-grid">
+                    <!-- Product 1: Core Champs Omega-3 -->
+                    <article class="store-product-card reveal reveal-d1">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://supplementstores.lk/wp-content/uploads/2025/01/Core-champ-Fishoil-100-Caps.jpg" alt="Core Champs Omega-3 Fish Oil Caps 100" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">Health &amp; Wellness</span>
+                                <h3 class="store-product-title">Core Champs Omega-3 Fish Oil Caps 100</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">6,000</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20Core%20Champs%20Omega-3%20Fish%20Oil%20Caps%20100%20(LKR%206%2C000)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order Core Champs Omega-3 Fish Oil via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Product 2: Core Champs Multivitamin -->
+                    <article class="store-product-card reveal reveal-d2">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://supplementstores.lk/wp-content/uploads/2025/01/Core-champ-Multivitmin-.jpg" alt="Core Champs Multivitamin" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">Vitamins &amp; Immunity</span>
+                                <h3 class="store-product-title">Core Champs Multivitamin</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">6,000</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20Core%20Champs%20Multivitamin%20(LKR%206%2C000)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order Core Champs Multivitamin via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Product 3: CORE CHAMPS COLLAGEN -->
+                    <article class="store-product-card reveal reveal-d3">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://f.nooncdn.com/p/pzsku/Z5ADC46A8AEC7517F24F8Z/45/_/1708447032/4f0dfe73-871a-4d24-95fb-ee97dc2fd1e8.jpg" alt="CORE CHAMPS COLLAGEN PINEAPPLE 28SV" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">Joint &amp; Recovery</span>
+                                <h3 class="store-product-title">CORE CHAMPS COLLAGEN PINEAPPLE 28SV</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">9,000</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20CORE%20CHAMPS%20COLLAGEN%20PINEAPPLE%2028SV%20(LKR%209%2C000)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order Core Champs Collagen via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Product 4: Psychotic pre workout -->
+                    <article class="store-product-card reveal reveal-d4">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://supplementstores.lk/wp-content/uploads/2025/01/IMG_0028.jpeg" alt="Psychotic pre workout 35 Servings" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">High Energy Pre-Workout</span>
+                                <h3 class="store-product-title">Psychotic pre workout 35 Servings</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">10,000</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20Psychotic%20pre%20workout%2035%20Servings%20(LKR%2010%2C000)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order Psychotic pre workout via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Product 5: The Curse! -->
+                    <article class="store-product-card reveal reveal-d1">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/cob/cob59944/l/50.jpg" alt="The Curse!®, Pre-Workout, Peach Rings" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">Pre-Workout Power</span>
+                                <h3 class="store-product-title">The Curse!®, Pre-Workout, Peach Rings</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">9,000</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20The%20Curse!%C2%AE%2C%20Pre-Workout%2C%20Peach%20Rings%20(LKR%209%2C000)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order The Curse Pre-Workout via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Product 6: Xtend BCAA Original -->
+                    <article class="store-product-card reveal reveal-d2">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://fitnessisland.lk/cdn/shop/files/XtendBCAAOriginal420G.png?v=1686852362" alt="Xtend BCAA Original - Blue Raspberry Ice" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">Intra-Workout BCAAs</span>
+                                <h3 class="store-product-title">Xtend BCAA Original - Blue Raspberry Ice</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">10,500</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20Xtend%20BCAA%20Original%20-%20Blue%20Raspberry%20Ice%20(LKR%2010%2C500)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order Xtend BCAA Original via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Product 7: Gibbon whey 5 Lbs -->
+                    <article class="store-product-card reveal reveal-d3">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://supplementstores.lk/wp-content/uploads/2025/07/6026D555-9449-44C4-B03F-A6D9EE336317-scaled.jpeg" alt="Gibbon whey 5 Lbs" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">Whey Protein</span>
+                                <h3 class="store-product-title">Gibbon whey 5 Lbs</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">29,950</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20Gibbon%20whey%205%20Lbs%20(LKR%2029%2C950)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order Gibbon whey via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Product 8: LEVRONE GOLD CREATINE 300g -->
+                    <article class="store-product-card reveal reveal-d4">
+                        <div class="store-img-wrapper">
+                            <span class="store-badge">In Stock</span>
+                            <img src="https://supplementstores.lk/wp-content/uploads/2025/01/Gold-Creatine-300-g.jpg" alt="LEVRONE GOLD CREATINE 300g" loading="lazy" />
+                        </div>
+                        <div class="store-product-body">
+                            <div>
+                                <span class="store-product-category">Pure Creatine</span>
+                                <h3 class="store-product-title">LEVRONE GOLD CREATINE 300g</h3>
+                            </div>
+                            <div>
+                                <div class="store-price-row">
+                                    <span class="store-price-currency">LKR</span>
+                                    <span class="store-price-amount">8,000</span>
+                                </div>
+                                <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20would%20like%20to%20order%3A%20LEVRONE%20GOLD%20CREATINE%20300g%20(LKR%208%2C000)" target="_blank" rel="noopener noreferrer" class="store-whatsapp-btn" aria-label="Order LEVRONE GOLD CREATINE via WhatsApp">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.39 1.01 2.56.12.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+                                    Order via WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- Custom Orders / WhatsApp Inquiries Banner -->
+                <div class="store-info-banner reveal">
+                    <div class="store-info-left">
+                        <div class="store-info-icon" aria-hidden="true">💊</div>
+                        <div class="store-info-text">
+                            <strong>Looking for other brands or custom stacks?</strong>
+                            <span>We stock authentic protein isolates, mass gainers, creatine, vitamins, and pre-workouts. Inquire for customized orders &amp; advice.</span>
+                        </div>
+                    </div>
+                    <a href="https://wa.me/94779600296?text=Hi%20CoreX%20Fitness%2C%20I%20have%20an%20inquiry%20about%20supplements" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+                        Chat on WhatsApp &rarr;
+                    </a>
+                </div>
+            </div>
+        </section>
+
         <!-- ===== TESTIMONIALS ===== -->
-        <section class="section section-darker" aria-labelledby="reviews-heading">
+        <section class="section section-dark" aria-labelledby="reviews-heading">
             <div class="container">
                 <div class="title-block reveal">
                     <div class="kicker">Real Member Reviews</div>
@@ -2014,6 +2440,7 @@
                     <a href="#trainers">Trainers</a>
                     <a href="#equipment">Equipment</a>
                     <a href="#pricing">Pricing</a>
+                    <a href="#store">Store</a>
                     <a href="#hours">Hours</a>
                     <a href="#payment">Payments</a>
                     <a href="https://cxfit.beforward.lk/login">Admin Portal</a>
