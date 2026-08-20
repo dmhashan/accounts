@@ -188,6 +188,26 @@
                 <p>Attendance: <span class="font-medium text-secondary-900 dark:text-white">{{ formatNumber(member.attendance_count) }}</span></p>
                 <p>Outstanding: <span class="font-medium text-secondary-900 dark:text-white">{{ formatMoney(member.total_outstanding_amount) }}</span></p>
                 <p>Biometric: <span :class="biometricSyncClass(member)">{{ biometricSyncLabel(member) }}</span></p>
+                <div class="col-span-2 flex flex-wrap gap-1.5 pt-1">
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="member.has_face
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+                      : 'bg-secondary-100 text-secondary-500 border border-secondary-200 dark:bg-secondary-800 dark:text-secondary-400 dark:border-secondary-700'"
+                  >
+                    <ScanFace class="h-3 w-3" :stroke-width="2" />
+                    {{ member.has_face ? 'Face ID: Given' : 'Face ID: Not Given' }}
+                  </span>
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                    :class="member.has_fingerprint
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+                      : 'bg-secondary-100 text-secondary-500 border border-secondary-200 dark:bg-secondary-800 dark:text-secondary-400 dark:border-secondary-700'"
+                  >
+                    <Fingerprint class="h-3 w-3" :stroke-width="2" />
+                    {{ member.has_fingerprint ? 'Fingerprint: Given' : 'Fingerprint: Not Given' }}
+                  </span>
+                </div>
               </div>
               <div class="mt-3 flex gap-2">
                 <RouterLink :to="`/members/${member.member_id}`" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-secondary-300 px-3 text-xs font-semibold text-secondary-700 dark:border-secondary-700 dark:text-secondary-200">
@@ -301,9 +321,31 @@
                     {{ formatNumber(member.attendance_count) }}
                   </td>
                   <td class="px-3 py-3">
-                    <span :class="biometricSyncClass(member)">
-                      {{ biometricSyncLabel(member) }}
-                    </span>
+                    <div class="flex flex-col gap-1 items-start">
+                      <div class="flex flex-wrap items-center gap-1">
+                        <span
+                          class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap"
+                          :class="member.has_face
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+                            : 'bg-secondary-100 text-secondary-500 border border-secondary-200 dark:bg-secondary-800 dark:text-secondary-400 dark:border-secondary-700'"
+                        >
+                          <ScanFace class="h-3 w-3" :stroke-width="2" />
+                          {{ member.has_face ? 'Face ID: Given' : 'Face ID: No' }}
+                        </span>
+                        <span
+                          class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap"
+                          :class="member.has_fingerprint
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+                            : 'bg-secondary-100 text-secondary-500 border border-secondary-200 dark:bg-secondary-800 dark:text-secondary-400 dark:border-secondary-700'"
+                        >
+                          <Fingerprint class="h-3 w-3" :stroke-width="2" />
+                          {{ member.has_fingerprint ? 'FP: Given' : 'FP: No' }}
+                        </span>
+                      </div>
+                      <span v-if="member.biometric_configured" :class="biometricSyncClass(member)" class="text-[10px] py-0 px-1.5">
+                        {{ biometricSyncLabel(member) }}
+                      </span>
+                    </div>
                   </td>
                   <td class="px-3 py-3 text-right text-sm font-semibold text-secondary-900 dark:text-white">
                     {{ formatMoney(member.total_outstanding_amount) }}
@@ -507,11 +549,13 @@ import {
     CreditCard,
     Download,
     Eye,
+    Fingerprint,
     Flame,
     Funnel,
     Plus,
     RefreshCw,
     RotateCcw,
+    ScanFace,
     Search,
     ShieldCheck,
     TimerOff,
@@ -594,6 +638,8 @@ const filterFields = [
     { key: 'attendance_days', label: 'Attendance Days', type: 'number' },
     { key: 'attendance_count', label: 'Count', type: 'number' },
     { key: 'biometric', label: 'Biometric', type: 'multi' },
+    { key: 'face_id', label: 'Face ID', type: 'multi' },
+    { key: 'fingerprint', label: 'Fingerprint', type: 'multi' },
     { key: 'outstanding', label: 'Outstanding', type: 'number' },
 ];
 const comparisonOperators = ['lt', 'lte', 'eq', 'gte', 'gt'];
@@ -903,6 +949,20 @@ function filterOptionsFor(field) {
             { value: 'not_configured', label: 'Not Configured' },
             { value: 'synced', label: 'Synced' },
             { value: 'not_synced', label: 'Not Synced' },
+        ];
+    }
+
+    if (field === 'face_id') {
+        return [
+            { value: 'given', label: 'Face ID Given' },
+            { value: 'not_given', label: 'Face ID Not Given' },
+        ];
+    }
+
+    if (field === 'fingerprint') {
+        return [
+            { value: 'given', label: 'Fingerprint Given' },
+            { value: 'not_given', label: 'Fingerprint Not Given' },
         ];
     }
 

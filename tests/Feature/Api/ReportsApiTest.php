@@ -406,7 +406,11 @@ class ReportsApiTest extends ApiRouteTestCase
                 ->assertJsonPath('data.0.days_since_last_attendance', 3)
                 ->assertJsonPath('data.0.last_attendance_days', 3)
                 ->assertJsonPath('data.0.biometric_configured', true)
-                ->assertJsonPath('data.0.biometric_synced', true);
+                ->assertJsonPath('data.0.biometric_synced', true)
+                ->assertJsonPath('data.0.has_face', false)
+                ->assertJsonPath('data.0.has_fingerprint', false)
+                ->assertJsonPath('data.0.face_status', 'not_given')
+                ->assertJsonPath('data.0.fingerprint_status', 'not_given');
         } finally {
             $this->travelBack();
         }
@@ -604,6 +608,52 @@ class ReportsApiTest extends ApiRouteTestCase
         } finally {
             $this->travelBack();
         }
+    }
+
+    public function testMemberAnalysisFaceIdAndFingerprintDetailsAndExport(): void
+    {
+        $this->actingAsUser(['reports.view']);
+
+        $faceMember = $this->createMember(attributes: [
+            'name' => 'Face Member',
+            'has_face' => true,
+            'has_fingerprint' => false,
+        ]);
+
+        $fpMember = $this->createMember(attributes: [
+            'name' => 'Fingerprint Member',
+            'has_face' => false,
+            'has_fingerprint' => true,
+        ]);
+
+        // Verify JSON response has Face ID and Fingerprint tags/status
+        $this->getJson('/api/reports/member-analysis/members?search=Face')
+            ->assertOk()
+            ->assertJsonPath('data.0.member_id', $faceMember->id)
+            ->assertJsonPath('data.0.has_face', true)
+            ->assertJsonPath('data.0.has_fingerprint', false)
+            ->assertJsonPath('data.0.face_status', 'given')
+            ->assertJsonPath('data.0.fingerprint_status', 'not_given');
+
+        // Verify filtering by Face ID status
+        $rules = json_encode([['field' => 'face_id', 'operator' => 'eq', 'value' => ['given']]]);
+        $this->getJson('/api/reports/member-analysis/members?filter_rules=' . urlencode($rules))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.member_id', $faceMember->id);
+
+        // Verify filtering by Fingerprint status
+        $rulesFp = json_encode([['field' => 'fingerprint', 'operator' => 'eq', 'value' => ['given']]]);
+        $this->getJson('/api/reports/member-analysis/members?filter_rules=' . urlencode($rulesFp))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.member_id', $fpMember->id);
+
+        // Verify CSV export includes Face ID and Fingerprint headers
+        $response = $this->get('/api/reports/member-analysis/export');
+        $response->assertOk();
+        $this->assertStringContainsString('Face ID', $response->streamedContent());
+        $this->assertStringContainsString('Fingerprint', $response->streamedContent());
     }
 
     private function createReport(int $tenantId, string $pdfPath): DailySummaryReport

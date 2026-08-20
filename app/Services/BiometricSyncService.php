@@ -1341,7 +1341,13 @@ class BiometricSyncService
             ];
         }
 
-        return $driver->setupFingerprint($employeeNo);
+        $result = $driver->setupFingerprint($employeeNo);
+
+        if ($result['success'] ?? true) {
+            $member->update(['has_fingerprint' => true]);
+        }
+
+        return $result;
     }
 
     // -------------------------------------------------------------------------
@@ -1504,7 +1510,10 @@ class BiometricSyncService
 
         $path = $this->media->storeContent($imageResult['body'], $filename);
 
-        $member->update(['profile_photo_path' => $path]);
+        $member->update([
+            'profile_photo_path' => $path,
+            'has_face' => true,
+        ]);
 
         return [
             'success' => true,

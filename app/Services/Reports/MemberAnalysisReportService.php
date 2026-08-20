@@ -2,6 +2,8 @@
 
 namespace App\Services\Reports;
 
+use App\Models\BiometricAccessEvent;
+use App\Models\BiometricSyncLog;
 use App\Models\Member;
 use App\Models\MemberAttendance;
 use App\Models\MemberPayment;
@@ -148,6 +150,8 @@ class MemberAnalysisReportService
                 'Biometric Configured',
                 'Biometric Synced',
                 'Biometric Last Synced At',
+                'Face ID',
+                'Fingerprint',
             ]);
 
             foreach ($rows as $row) {
@@ -173,6 +177,8 @@ class MemberAnalysisReportService
                     $row['biometric_configured'] ? 'Yes' : 'No',
                     $row['biometric_synced'] === null ? 'Not configured' : ($row['biometric_synced'] ? 'Yes' : 'No'),
                     $row['biometric_last_synced_at'],
+                    $row['has_face'] ? 'Given' : 'Not Given',
+                    $row['has_fingerprint'] ? 'Given' : 'Not Given',
                 ]);
             }
 
@@ -259,6 +265,9 @@ class MemberAnalysisReportService
                 'members.joined_date',
                 'members.current_balance',
                 'members.biometric_last_synced_at',
+                'members.profile_photo_path',
+                'members.has_face',
+                'members.has_fingerprint',
                 'members.created_at',
                 DB::raw('default_plan.name as default_plan_name'),
             ])
@@ -269,7 +278,10 @@ class MemberAnalysisReportService
             ->selectSub($this->latestMembershipSubquery($tenantId, 'payment_plans.name'), 'membership_plan_name')
             ->selectSub($this->lastAttendanceDateSubquery($tenantId), 'last_attendance_date')
             ->selectSub($this->attendanceCountSubquery($tenantId), 'attendance_count')
-            ->selectSub($this->salesOutstandingSubquery($tenantId), 'sales_outstanding_amount');
+            ->selectSub($this->salesOutstandingSubquery($tenantId), 'sales_outstanding_amount')
+            ->selectSub($this->hasFaceEventSubquery($tenantId), 'has_face_event')
+            ->selectSub($this->hasFingerprintEventSubquery($tenantId), 'has_fingerprint_event')
+            ->selectSub($this->hasFingerprintSetupSubquery($tenantId), 'has_fingerprint_setup');
 
         $this->applyTenantScope($query, 'members', $tenantId);
 
@@ -362,6 +374,40 @@ class MemberAnalysisReportService
         return $this->applyTenantScope($query, 'sales', $tenantId);
     }
 
+    private function hasFaceEventSubquery(int $tenantId): Builder
+    {
+        $query = BiometricAccessEvent::query()
+            ->selectRaw('1')
+            ->whereColumn('biometric_access_events.member_id', 'members.id')
+            ->where('auth_method', 'face')
+            ->limit(1);
+
+        return $this->applyTenantScope($query, 'biometric_access_events', $tenantId);
+    }
+
+    private function hasFingerprintEventSubquery(int $tenantId): Builder
+    {
+        $query = BiometricAccessEvent::query()
+            ->selectRaw('1')
+            ->whereColumn('biometric_access_events.member_id', 'members.id')
+            ->where('auth_method', 'fingerprint')
+            ->limit(1);
+
+        return $this->applyTenantScope($query, 'biometric_access_events', $tenantId);
+    }
+
+    private function hasFingerprintSetupSubquery(int $tenantId): Builder
+    {
+        $query = BiometricSyncLog::query()
+            ->selectRaw('1')
+            ->whereColumn('biometric_sync_logs.member_id', 'members.id')
+            ->where('action', 'fingerprint_setup')
+            ->where('status', 'success')
+            ->limit(1);
+
+        return $this->applyTenantScope($query, 'biometric_sync_logs', $tenantId);
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -450,6 +496,14 @@ class MemberAnalysisReportService
         $outstanding = $totalOutstanding > 0;
         $biometricLastSyncedAt = $this->dateTimeOrNull($member->biometric_last_synced_at);
 
+        $hasFace = (bool) ($member->has_face ?? false)
+            || filled($member->profile_photo_path)
+            || (bool) ($member->has_face_event ?? false);
+
+        $hasFingerprint = (bool) ($member->has_fingerprint ?? false)
+            || (bool) ($member->has_fingerprint_event ?? false)
+            || (bool) ($member->has_fingerprint_setup ?? false);
+
         $flags = [
             'inactive' => $inactive,
             'low_activity' => $lowActivity,
@@ -496,6 +550,10 @@ class MemberAnalysisReportService
             'biometric_configured' => $biometricConfigured,
             'biometric_synced' => $biometricConfigured ? $biometricLastSyncedAt !== null : null,
             'biometric_last_synced_at' => $biometricLastSyncedAt,
+            'has_face' => $hasFace,
+            'has_fingerprint' => $hasFingerprint,
+            'face_status' => $hasFace ? 'given' : 'not_given',
+            'fingerprint_status' => $hasFingerprint ? 'given' : 'not_given',
             'flags' => $flags,
         ];
     }
@@ -546,9 +604,41 @@ class MemberAnalysisReportService
             'attendance_days' => $this->compareNumber($row['days_since_last_attendance'] ?? null, $rule),
             'attendance_count' => $this->compareNumber($row['attendance_count'] ?? null, $rule),
             'biometric' => $this->matchesBiometric($row, $this->arrayValue($rule['value'] ?? [])),
+            'face_id' => $this->matchesFaceId($row, $this->arrayValue($rule['value'] ?? [])),
+            'fingerprint' => $this->matchesFingerprint($row, $this->arrayValue($rule['value'] ?? [])),
             'outstanding' => $this->compareNumber($row['total_outstanding_amount'] ?? null, $rule),
             default => true,
         };
+    }
+
+    /**
+     * @param  array<int, mixed>  $values
+     */
+    private function matchesFaceId(array $row, array $values): bool
+    {
+        if ($values === []) {
+            return true;
+        }
+
+        $values = array_map(fn (mixed $value): string => (string) $value, $values);
+
+        return (in_array('given', $values, true) && (bool) ($row['has_face'] ?? false))
+            || (in_array('not_given', $values, true) && !(bool) ($row['has_face'] ?? false));
+    }
+
+    /**
+     * @param  array<int, mixed>  $values
+     */
+    private function matchesFingerprint(array $row, array $values): bool
+    {
+        if ($values === []) {
+            return true;
+        }
+
+        $values = array_map(fn (mixed $value): string => (string) $value, $values);
+
+        return (in_array('given', $values, true) && (bool) ($row['has_fingerprint'] ?? false))
+            || (in_array('not_given', $values, true) && !(bool) ($row['has_fingerprint'] ?? false));
     }
 
     /**
@@ -710,6 +800,8 @@ class MemberAnalysisReportService
             'attendance_days',
             'attendance_count',
             'biometric',
+            'face_id',
+            'fingerprint',
             'outstanding',
         ];
         $allowedOperators = ['eq', 'lt', 'lte', 'gt', 'gte'];
@@ -719,6 +811,8 @@ class MemberAnalysisReportService
             'verified' => ['verified', 'unverified'],
             'temp' => ['temp', 'full'],
             'biometric' => ['configured', 'not_configured', 'synced', 'not_synced'],
+            'face_id' => ['given', 'not_given'],
+            'fingerprint' => ['given', 'not_given'],
         ];
 
         return collect($rules)
@@ -739,7 +833,7 @@ class MemberAnalysisReportService
                         ->all();
                 }
 
-                if (in_array($field, ['active', 'verified', 'temp', 'biometric'], true)) {
+                if (in_array($field, ['active', 'verified', 'temp', 'biometric', 'face_id', 'fingerprint'], true)) {
                     $allowedValues = $allowedMultiValues[$field];
                     $value = collect($this->arrayValue($value))
                         ->map(fn (mixed $item): string => (string) $item)
@@ -771,7 +865,7 @@ class MemberAnalysisReportService
                 return compact('field', 'operator', 'value');
             })
             ->filter(function (array $rule): bool {
-                if (in_array($rule['field'], ['plan', 'active', 'verified', 'temp', 'biometric'], true)) {
+                if (in_array($rule['field'], ['plan', 'active', 'verified', 'temp', 'biometric', 'face_id', 'fingerprint'], true)) {
                     return $rule['value'] !== [];
                 }
 

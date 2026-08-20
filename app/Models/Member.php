@@ -34,6 +34,8 @@ class Member extends Model
         'is_verified',
         'is_temp',
         'biometric_last_synced_at',
+        'has_face',
+        'has_fingerprint',
     ];
 
     protected $casts = [
@@ -42,6 +44,8 @@ class Member extends Model
         'allow_sms' => 'boolean',
         'allow_whatsapp' => 'boolean',
         'is_temp' => 'boolean',
+        'has_face' => 'boolean',
+        'has_fingerprint' => 'boolean',
         'date_of_birth' => 'date',
         'joined_date' => 'date',
         'admission_fee' => 'decimal:2',

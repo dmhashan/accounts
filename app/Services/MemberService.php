@@ -432,7 +432,10 @@ class MemberService
 
         $path = $this->media->store($file, 'member-avatars');
 
-        $member->update(['profile_photo_path' => $path]);
+        $member->update([
+            'profile_photo_path' => $path,
+            'has_face' => true,
+        ]);
 
         return $this->media->url($path);
     }
