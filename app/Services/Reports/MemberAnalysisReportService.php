@@ -281,7 +281,8 @@ class MemberAnalysisReportService
             ->selectSub($this->salesOutstandingSubquery($tenantId), 'sales_outstanding_amount')
             ->selectSub($this->hasFaceEventSubquery($tenantId), 'has_face_event')
             ->selectSub($this->hasFingerprintEventSubquery($tenantId), 'has_fingerprint_event')
-            ->selectSub($this->hasFingerprintSetupSubquery($tenantId), 'has_fingerprint_setup');
+            ->selectSub($this->hasFingerprintSetupSubquery($tenantId), 'has_fingerprint_setup')
+            ->selectSub($this->hasBiometricSyncSubquery($tenantId), 'has_biometric_sync');
 
         $this->applyTenantScope($query, 'members', $tenantId);
 
@@ -408,6 +409,17 @@ class MemberAnalysisReportService
         return $this->applyTenantScope($query, 'biometric_sync_logs', $tenantId);
     }
 
+    private function hasBiometricSyncSubquery(int $tenantId): Builder
+    {
+        $query = BiometricSyncLog::query()
+            ->selectRaw('1')
+            ->whereColumn('biometric_sync_logs.member_id', 'members.id')
+            ->where('status', 'success')
+            ->limit(1);
+
+        return $this->applyTenantScope($query, 'biometric_sync_logs', $tenantId);
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -501,8 +513,10 @@ class MemberAnalysisReportService
             || (bool) ($member->has_face_event ?? false);
 
         $hasFingerprint = (bool) ($member->has_fingerprint ?? false)
+            || $member->biometric_last_synced_at !== null
             || (bool) ($member->has_fingerprint_event ?? false)
-            || (bool) ($member->has_fingerprint_setup ?? false);
+            || (bool) ($member->has_fingerprint_setup ?? false)
+            || (bool) ($member->has_biometric_sync ?? false);
 
         $flags = [
             'inactive' => $inactive,

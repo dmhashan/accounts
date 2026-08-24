@@ -408,9 +408,9 @@ class ReportsApiTest extends ApiRouteTestCase
                 ->assertJsonPath('data.0.biometric_configured', true)
                 ->assertJsonPath('data.0.biometric_synced', true)
                 ->assertJsonPath('data.0.has_face', false)
-                ->assertJsonPath('data.0.has_fingerprint', false)
+                ->assertJsonPath('data.0.has_fingerprint', true)
                 ->assertJsonPath('data.0.face_status', 'not_given')
-                ->assertJsonPath('data.0.fingerprint_status', 'not_given');
+                ->assertJsonPath('data.0.fingerprint_status', 'given');
         } finally {
             $this->travelBack();
         }

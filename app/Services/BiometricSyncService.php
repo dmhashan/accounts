@@ -1468,6 +1468,11 @@ class BiometricSyncService
             }
         }
 
+        $member->update([
+            'has_face' => $faceCount > 0 || (bool) $member->profile_photo_path,
+            'has_fingerprint' => $fpCount > 0,
+        ]);
+
         return [
             'connection_failed' => false,
             'not_assigned' => false,
