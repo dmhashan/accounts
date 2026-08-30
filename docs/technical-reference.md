@@ -287,6 +287,7 @@ Scheduled commands:
 | --- | --- |
 | `notifications:membership-expiry` | Daily at 01:00 UTC, one server |
 | `notifications:member-milestones` | Daily at 01:00 UTC, one server |
+| `biometric:import-access-events` | Every 4 hours, one server |
 
 Operational commands:
 
