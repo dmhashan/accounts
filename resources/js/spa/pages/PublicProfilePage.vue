@@ -119,6 +119,11 @@
                 :other-payments="otherPaymentsData"
                 :wallet-transactions="walletTransactions"
                 :wallet-tx-meta="walletTxMeta"
+                :body-measurements="bodyMeasurementsData"
+                :body-measurement-fields="bodyMeasurementFields"
+                :body-measurement-latest="bodyMeasurementLatest"
+                :body-measurement-previous="bodyMeasurementPrevious"
+                :attendances="attendancesData"
                 :tenant-logo-url="tenantLogoUrl"
                 @open-workout="openWorkout"
                 @open-sale="openSale"
@@ -383,6 +388,11 @@ const membershipPaymentsData = ref([]);
 const otherPaymentsData      = ref([]);
 const walletTransactions     = ref([]);
 const walletTxMeta           = ref({ current_page: 1, last_page: 1, total: 0, per_page: 10 });
+const bodyMeasurementsData    = ref([]);
+const bodyMeasurementFields   = ref([]);
+const bodyMeasurementLatest   = ref(null);
+const bodyMeasurementPrevious = ref(null);
+const attendancesData         = ref([]);
 const meta                   = ref({});
 
 const tenantName    = computed(() => window.__tenantName || '');
@@ -405,8 +415,9 @@ const showBackButton = computed(() => {
 const currentSectionTitle = computed(() => {
     if (route.path === '/') return 'Overview';
     if (route.path.startsWith('/workout')) return 'Workouts';
-    if (route.path.startsWith('/wallet')) return 'Wallet';
-    if (route.path.startsWith('/transactions')) return 'Payments';
+    if (route.path.startsWith('/measurements')) return 'Body Measurements';
+    if (route.path.startsWith('/calendar')) return 'Calendar';
+    if (route.path.startsWith('/wallet') || route.path.startsWith('/transactions')) return 'Wallet & Payments';
     if (route.path.startsWith('/profile')) return 'Profile';
     if (route.path.startsWith('/notifications')) return 'Messages';
     if (route.path.startsWith('/event/')) return 'Event';
@@ -531,6 +542,11 @@ async function loadProfile(token) {
         otherPaymentsData.value      = data.other_payments || [];
         walletTransactions.value     = data.wallet_transactions || [];
         walletTxMeta.value           = data.wallet_tx_meta || walletTxMeta.value;
+        bodyMeasurementsData.value    = data.body_measurements || [];
+        bodyMeasurementFields.value   = data.body_measurement_fields || [];
+        bodyMeasurementLatest.value   = data.body_measurement_latest || null;
+        bodyMeasurementPrevious.value = data.body_measurement_previous || null;
+        attendancesData.value         = data.attendances || [];
         screen.value                 = 'profile';
     } catch {
         localStorage.removeItem(MEMBER_ID_KEY);

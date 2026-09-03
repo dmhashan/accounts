@@ -44,7 +44,7 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
-import { Home, Zap, CreditCard, Receipt, User } from 'lucide-vue-next';
+import { Home, Zap, Scale, Calendar, Wallet, User } from 'lucide-vue-next';
 
 const route  = useRoute();
 const router = useRouter();
@@ -63,10 +63,11 @@ function navigate(path) {
 }
 
 const navTabs = [
-    { key: 'home',         path: '/',             label: 'Home',     icon: Home },
-    { key: 'workout',      path: '/workout',      label: 'Workouts', icon: Zap },
-    { key: 'wallet',       path: '/wallet',       label: 'Wallet',   icon: CreditCard },
-    { key: 'transactions', path: '/transactions', label: 'Payments', icon: Receipt },
-    { key: 'profile',      path: '/profile',      label: 'Profile',  icon: User },
+    { key: 'home',         path: '/',             label: 'Home',              icon: Home },
+    { key: 'workout',      path: '/workout',      label: 'Workouts',          icon: Zap },
+    { key: 'measurements', path: '/measurements', label: 'Body Stats',        icon: Scale },
+    { key: 'calendar',     path: '/calendar',     label: 'Calendar',          icon: Calendar },
+    { key: 'wallet',       path: '/wallet',       label: 'Wallet & Payments', icon: Wallet },
+    { key: 'profile',      path: '/profile',      label: 'Profile',           icon: User },
 ];
 </script>

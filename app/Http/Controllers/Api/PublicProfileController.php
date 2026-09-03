@@ -6,13 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\BulkNotification;
 use App\Models\Member;
 use App\Models\MemberActivityLog;
+use App\Models\MemberAttendance;
 use App\Models\MemberPayment;
 use App\Models\Sale;
 use App\Models\WorkoutProgramAssignment;
 use App\Services\EventService;
 use App\Services\MediaStorageService;
+use App\Services\MemberBodyMeasurementService;
 use App\Services\MemberPortalUrlService;
 use App\Services\SmsService;
+use App\Services\TenantConfigurationService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -294,6 +297,25 @@ class PublicProfileController extends Controller
         // Wallet data — first page for immediate display
         $walletPage = $this->walletService->transactions($member, $tenant->id, 10);
 
+        // Body Measurements
+        $measurementsService = app(MemberBodyMeasurementService::class);
+        $bodyMeasurementsData = $measurementsService->index($member, $tenant->id, 50);
+
+        // Member Attendances / Check-in history
+        $attendances = MemberAttendance::query()
+            ->where('member_id', $member->id)
+            ->orderByDesc('attended_date')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get()
+            ->map(fn ($att) => [
+                'id' => $att->id,
+                'date' => optional($att->attended_date)->toDateString(),
+                'time' => optional($att->attended_date)->format('H:i'),
+                'created_at' => optional($att->created_at)->toISOString(),
+            ])
+            ->values();
+
         return response()->json([
             'meta' => [
                 'id' => $member->id,
@@ -321,7 +343,44 @@ class PublicProfileController extends Controller
             'other_payments' => $otherPaymentsData,
             'wallet_transactions' => $walletPage['data'],
             'wallet_tx_meta' => $walletPage['meta'],
+            'body_measurements' => $bodyMeasurementsData['data'] ?? [],
+            'body_measurement_fields' => $bodyMeasurementsData['fields'] ?? [],
+            'body_measurement_latest' => $bodyMeasurementsData['latest'] ?? null,
+            'body_measurement_previous' => $bodyMeasurementsData['previous'] ?? null,
+            'attendances' => $attendances,
         ]);
+    }
+
+    /**
+     * Store a new body measurement entry for the authenticated member.
+     */
+    public function storeBodyMeasurement(Request $request)
+    {
+        $tenant = app('tenant');
+        $memberId = $request->input('_pp_member_id');
+
+        $member = Member::query()
+            ->where('id', $memberId)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'weight' => ['required', 'numeric', 'min:1', 'max:500'],
+            'height' => ['required', 'numeric', 'min:1', 'max:300'],
+            'measurement_date' => ['required', 'date', 'before_or_equal:today'],
+            'measurements' => ['nullable', 'array'],
+            'measurements.*' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $service = app(MemberBodyMeasurementService::class);
+        $record = $service->store($member, $tenant->id, $validated, null);
+        $fields = app(TenantConfigurationService::class)->bodyMeasurementFields($tenant->id, true);
+
+        return response()->json([
+            'message' => 'Body measurement saved successfully.',
+            'data' => $service->serialize($record, $fields),
+        ], 201);
     }
 
     /**

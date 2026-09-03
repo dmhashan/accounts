@@ -18,6 +18,7 @@ Route::prefix('public')->group(function () {
     Route::middleware('pp.token')->group(function () {
         Route::get('/member-profile', [PublicProfileController::class, 'getProfile']);
         Route::get('/wallet/transactions', [PublicProfileController::class, 'getWalletTransactions']);
+        Route::post('/body-measurements', [PublicProfileController::class, 'storeBodyMeasurement']);
         Route::get('/notifications', [PublicProfileController::class, 'getNotifications']);
         Route::get('/event/{slug}/my-registration', [PublicProfileController::class, 'getMyEventRegistration']);
         Route::put('/event/{slug}/my-registration', [PublicProfileController::class, 'updateMyEventRegistration']);

@@ -1,18 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import HomeView         from '../components/PublicProfileApp/HomeView.vue';
-import WorkoutView      from '../components/PublicProfileApp/WorkoutView.vue';
-import TransactionsView from '../components/PublicProfileApp/TransactionsView.vue';
-import WalletView       from '../components/PublicProfileApp/WalletView.vue';
-import ProfileView      from '../components/PublicProfileApp/ProfileView.vue';
-import EventView        from '../components/PublicProfileApp/EventView.vue';
-import NotificationsView from '../components/PublicProfileApp/NotificationsView.vue';
+import HomeView             from '../components/PublicProfileApp/HomeView.vue';
+import WorkoutView          from '../components/PublicProfileApp/WorkoutView.vue';
+import BodyMeasurementsView from '../components/PublicProfileApp/BodyMeasurementsView.vue';
+import CalendarView         from '../components/PublicProfileApp/CalendarView.vue';
+import WalletPaymentsView   from '../components/PublicProfileApp/WalletPaymentsView.vue';
+import ProfileView          from '../components/PublicProfileApp/ProfileView.vue';
+import EventView            from '../components/PublicProfileApp/EventView.vue';
+import NotificationsView    from '../components/PublicProfileApp/NotificationsView.vue';
 
 const routes = [
     { path: '/',              component: HomeView },
     { path: '/workout',       component: WorkoutView },
-    { path: '/wallet',        component: WalletView },
-    { path: '/transactions',  component: TransactionsView },
+    { path: '/measurements',  component: BodyMeasurementsView },
+    { path: '/calendar',      component: CalendarView },
+    { path: '/wallet',        component: WalletPaymentsView },
+    { path: '/transactions',  redirect: '/wallet' },
     { path: '/profile',       component: ProfileView },
     { path: '/notifications', component: NotificationsView },
     { path: '/event/:slug',   component: EventView, meta: { public: true } },
