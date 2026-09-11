@@ -210,6 +210,29 @@ class SaleApiController extends Controller
         ]);
     }
 
+    public function bulkMarkAsPaid(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'sale_ids' => ['required', 'array', 'min:1'],
+            'sale_ids.*' => ['required', 'integer', 'exists:sales,id'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'payment_method_id' => ['nullable', 'integer', 'exists:payment_methods,id'],
+            'account_id' => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => ($request->input('payment_method') ?? 'cash') !== 'member_wallet' && !$request->filled('payment_method_id')),
+                'nullable',
+                'integer',
+                'exists:company_accounts,id',
+            ],
+        ]);
+
+        $result = $this->saleProcessingService->bulkMarkAsPaid(app('tenant')->id, $validated);
+
+        return response()->json([
+            'message' => "{$result['paid_count']} sale(s) marked as paid successfully.",
+            'data' => $result,
+        ]);
+    }
+
     public function destroy(Sale $sale): JsonResponse
     {
         $this->ensureSaleBelongsToTenant($sale);

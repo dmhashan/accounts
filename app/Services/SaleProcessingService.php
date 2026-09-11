@@ -178,6 +178,48 @@ class SaleProcessingService
         return $paid;
     }
 
+    public function bulkMarkAsPaid(int $tenantId, array $validated): array
+    {
+        $saleIds = $validated['sale_ids'];
+        $paidCount = 0;
+        $errors = [];
+        $paidSales = [];
+
+        $sales = Sale::query()
+            ->whereIn('id', $saleIds)
+            ->get();
+
+        foreach ($sales as $sale) {
+            if ($sale->is_paid) {
+                continue;
+            }
+
+            try {
+                $updatedSale = $this->markAsPaid($sale, $tenantId, $validated);
+                $paidCount++;
+                $paidSales[] = [
+                    'id' => $updatedSale->id,
+                    'is_paid' => (bool) $updatedSale->is_paid,
+                ];
+            } catch (\Throwable $e) {
+                $errors[] = [
+                    'id' => $sale->id,
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        if ($paidCount === 0 && !empty($errors)) {
+            abort(422, $errors[0]['error'] ?? 'Failed to process bulk payment for selected sales.');
+        }
+
+        return [
+            'paid_count' => $paidCount,
+            'paid_sales' => $paidSales,
+            'errors' => $errors,
+        ];
+    }
+
     private function buildSaleItemsAndTotals(array $validated, int $tenantId, string $today): array
     {
         $itemsPayload = $validated['items'];
