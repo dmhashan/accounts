@@ -15,6 +15,9 @@ Route::prefix('public')->group(function () {
     // Upcoming events — public, no auth required
     Route::get('/upcoming-events', [PublicProfileController::class, 'getUpcomingEvents']);
 
+    // Public gym member terms and conditions
+    Route::get('/terms-and-conditions', [PublicProfileController::class, 'termsAndConditions']);
+
     Route::middleware('pp.token')->group(function () {
         Route::get('/member-profile', [PublicProfileController::class, 'getProfile']);
         Route::get('/wallet/transactions', [PublicProfileController::class, 'getWalletTransactions']);

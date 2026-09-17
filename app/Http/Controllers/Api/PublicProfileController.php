@@ -644,4 +644,40 @@ class PublicProfileController extends Controller
             'data' => app(EventService::class)->toRegistrationItem($updated),
         ]);
     }
+
+    /**
+     * Publicly fetch gym member terms and conditions configuration.
+     */
+    public function termsAndConditions(TenantConfigurationService $configService)
+    {
+        $tenant = app('tenant');
+
+        if (!$tenant || !$tenant->is_active) {
+            return response()->json(['message' => 'Tenant not found.'], 404);
+        }
+
+        $config = $configService->all($tenant->id);
+        $enabled = ($config['terms.enabled'] ?? '0') === '1';
+        $content = $config['terms.content'] ?? '';
+
+        $logoUrl = null;
+
+        if (!empty($tenant->logo_path)) {
+            try {
+                $logoUrl = $this->media->url($tenant->logo_path);
+            } catch (\Throwable $e) {
+                $logoUrl = null;
+            }
+        }
+
+        return response()->json([
+            'enabled' => $enabled,
+            'content' => $enabled ? $content : null,
+            'tenant' => [
+                'name' => $tenant->name,
+                'logo_url' => $logoUrl,
+                'domain' => $tenant->domain,
+            ],
+        ]);
+    }
 }

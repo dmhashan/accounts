@@ -99,4 +99,28 @@ class ConfigurationApiTest extends ApiRouteTestCase
         $this->assertSame('Shoulder', $storedFields['shoulder']['label']);
         $this->assertFalse($storedFields->has('weight'));
     }
+
+    public function testTermsAndConditionsSettingsCanBeUpdated(): void
+    {
+        $this->actingAsUser(['settings.manage']);
+
+        $this->putJson('/api/settings/configuration', [
+            'terms.enabled' => '1',
+            'terms.content' => '<h2>Gym Rules</h2><p>Rule 1: Always re-rack weights.</p>',
+        ])
+            ->assertOk()
+            ->assertJsonFragment([
+                'terms.enabled' => '1',
+                'terms.content' => '<h2>Gym Rules</h2><p>Rule 1: Always re-rack weights.</p>',
+            ]);
+
+        $this->assertDatabaseHas('tenant_configurations', [
+            'key' => 'terms.enabled',
+            'value' => '1',
+        ]);
+        $this->assertDatabaseHas('tenant_configurations', [
+            'key' => 'terms.content',
+            'value' => '<h2>Gym Rules</h2><p>Rule 1: Always re-rack weights.</p>',
+        ]);
+    }
 }

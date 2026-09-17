@@ -89,6 +89,10 @@ Route::middleware([IdentifyTenant::class])->group(function () {
         ->where('slug', '[a-z0-9\-]+')
         ->name('campaigns.public');
 
+    // Public gym member terms and conditions page
+    Route::get('/members_terms_and_conditions', [App\Http\Controllers\TermsAndConditionsController::class, 'show'])
+        ->name('members.terms');
+
     // Dashboard route (requires authentication)
     Route::get('/dashboard', function () {
         return redirect('/#/dashboard');

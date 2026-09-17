@@ -134,6 +134,7 @@ export function useNavigation() {
         ) {
             const settingsChildren = [];
             if (context.permissions?.settingsGeneral) settingsChildren.push({ label: 'General', path: '/settings/general' });
+            if (context.permissions?.settingsTerms ?? context.permissions?.settingsGeneral) settingsChildren.push({ label: 'Terms & Conditions', path: '/settings/terms', activePrefix: '/settings/terms' });
             if (context.permissions?.settingsMemberReachable ?? context.permissions?.settingsGeneral) settingsChildren.push({ label: 'Member Reachable Configurations', path: '/settings/member-reachable' });
             if (context.permissions?.users) settingsChildren.push({ label: 'Users', path: '/settings/users' });
             if (context.permissions?.roles) settingsChildren.push({ label: 'Roles', path: '/settings/roles' });

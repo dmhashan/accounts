@@ -76,6 +76,10 @@ class TenantConfigurationService
         'biometric.id_next_number' => ['Biometric ID Current Number', '1'],
         'biometric.id_padding' => ['Biometric ID Zero Padding', '4'],
         'biometric.id_same_as_member_id' => ['Biometric ID Same as Member ID', '1'],
+
+        // Gym Member Terms & Conditions
+        'terms.enabled' => ['Enable Member Terms and Conditions', '0'],
+        'terms.content' => ['Member Terms and Conditions Content', ''],
     ];
 
     /**

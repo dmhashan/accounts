@@ -98,6 +98,10 @@ class ConfigurationApiController extends Controller
             'biometric.id_next_number' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'biometric.id_padding' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10'],
             'biometric.id_same_as_member_id' => ['sometimes', 'in:0,1'],
+
+            // Gym Member Terms & Conditions
+            'terms.enabled' => ['sometimes', 'in:0,1'],
+            'terms.content' => ['sometimes', 'nullable', 'string'],
         ]);
 
         $tenant = app('tenant');
