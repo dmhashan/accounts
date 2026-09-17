@@ -104,6 +104,26 @@ class FormsApiTest extends ApiRouteTestCase
         $this->assertDatabaseMissing('form_submissions', ['id' => $submissionId]);
     }
 
+    public function testFormTemplateAllowsLongFieldLabels(): void
+    {
+        $this->actingAsUser(['forms.manage']);
+
+        $longLabel = str_repeat('A', 500);
+
+        $response = $this->postJson('/api/forms/templates', [
+            'title' => 'Rules & Regulations',
+            'description' => 'Gym rules',
+            'is_active' => true,
+            'fields' => [[
+                'id' => 'corex-rules-para-general',
+                'type' => 'paragraph',
+                'label' => $longLabel,
+                'required' => false,
+            ]],
+        ])->assertCreated()
+            ->assertJsonPath('data.fields.0.label', $longLabel);
+    }
+
     private function createTemplate(array $attributes = []): FormTemplate
     {
         return FormTemplate::create(array_merge([
