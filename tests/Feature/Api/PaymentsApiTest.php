@@ -846,6 +846,60 @@ class PaymentsApiTest extends ApiRouteTestCase
         $this->assertTrue($paymentItem['is_paid']);
     }
 
+    public function testPaymentsIndexFiltersByMembershipAndOtherType(): void
+    {
+        $this->actingAsUser(['payments.manage']);
+        $member = $this->createMember();
+        $account = $this->createAccount();
+        $plan = $this->createPaymentPlan(['duration_value' => 1, 'duration_unit' => 'month', 'price' => 1500]);
+
+        // 1. Create a Membership payment
+        $membershipPaymentRes = $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'company_account_id' => $account->id,
+            'payment_method' => 'cash',
+            'payment_plan_id' => $plan->id,
+            'amount' => 1500,
+            'payment_date' => '2026-09-01',
+            'start_date' => '2026-09-01',
+            'is_paid' => true,
+        ])->assertCreated();
+        $membershipPaymentId = $membershipPaymentRes->json('data.id');
+
+        // 2. Create an Other payment (no plan / start_date / end_date)
+        $otherPaymentRes = $this->postJson('/api/payments', [
+            'member_id' => $member->id,
+            'company_account_id' => $account->id,
+            'payment_method' => 'cash',
+            'amount' => 500,
+            'payment_date' => '2026-09-02',
+            'reference_number' => 'REF-OTHER-100',
+            'notes' => 'Locker rental fee',
+            'is_paid' => true,
+        ])->assertCreated();
+        $otherPaymentId = $otherPaymentRes->json('data.id');
+
+        // Test filtering by type=membership
+        $responseMembership = $this->getJson('/api/payments?type=membership')->assertOk();
+        $membershipItems = $responseMembership->json('data');
+        $this->assertCount(1, $membershipItems);
+        $this->assertSame($membershipPaymentId, $membershipItems[0]['id']);
+        $this->assertSame('membership', $membershipItems[0]['type']);
+        $this->assertTrue($membershipItems[0]['is_membership']);
+
+        // Test filtering by type=other
+        $responseOther = $this->getJson('/api/payments?type=other')->assertOk();
+        $otherItems = $responseOther->json('data');
+        $this->assertCount(1, $otherItems);
+        $this->assertSame($otherPaymentId, $otherItems[0]['id']);
+        $this->assertSame('other', $otherItems[0]['type']);
+        $this->assertFalse($otherItems[0]['is_membership']);
+
+        // Test type=all returns both
+        $responseAll = $this->getJson('/api/payments?type=all&status=all')->assertOk();
+        $this->assertCount(2, $responseAll->json('data'));
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------

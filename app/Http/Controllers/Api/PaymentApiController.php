@@ -43,8 +43,9 @@ class PaymentApiController extends Controller
     {
         $perPage = min((int) $request->integer('per_page', 20), 50);
         $status = $request->query('status');
+        $type = $request->query('type') ?? $request->query('category');
 
-        return response()->json($this->paymentService->payments(app('tenant')->id, $perPage, $status));
+        return response()->json($this->paymentService->payments(app('tenant')->id, $perPage, $status, $type));
     }
 
     public function show(MemberPayment $payment): JsonResponse

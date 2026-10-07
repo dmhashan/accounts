@@ -66,6 +66,18 @@
               >
                 Paid
               </span>
+              <span
+                v-if="payment.type === 'membership' || payment.is_membership"
+                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+              >
+                Membership Payment
+              </span>
+              <span
+                v-else
+                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-secondary-100 dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 border-secondary-200 dark:border-secondary-700"
+              >
+                Other Payment
+              </span>
             </div>
             <p v-if="payment.member_phone" class="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
               {{ payment.member_phone }}

@@ -161,7 +161,7 @@ class PaymentService
         ];
     }
 
-    public function payments(int $tenantId, int $perPage, ?string $status = null): array
+    public function payments(int $tenantId, int $perPage, ?string $status = null, ?string $type = null): array
     {
         $payments = MemberPayment::query()
             ->with([
@@ -171,8 +171,20 @@ class PaymentService
                 'settlement',
                 'membership.plan:id,name',
             ])
-            ->when($status === 'outstanding', fn ($query) => $query->where('is_paid', false))
-            ->when($status === 'paid', fn ($query) => $query->where('is_paid', true))
+            ->when(filled($status) && $status !== 'all', function ($query) use ($status) {
+                if ($status === 'outstanding') {
+                    $query->where('is_paid', false);
+                } elseif ($status === 'paid') {
+                    $query->where('is_paid', true);
+                }
+            })
+            ->when(filled($type) && $type !== 'all', function ($query) use ($type) {
+                if ($type === 'membership') {
+                    $query->has('membership');
+                } elseif ($type === 'other') {
+                    $query->doesntHave('membership');
+                }
+            })
             ->orderBy('payment_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -533,6 +545,8 @@ class PaymentService
             'is_paid' => (bool) $payment->is_paid,
             'paid_amount' => round((float) $payment->paid_amount, 2),
             'balance' => round((float) $payment->balance, 2),
+            'type' => $payment->membership !== null ? 'membership' : 'other',
+            'is_membership' => $payment->membership !== null,
         ];
     }
 }

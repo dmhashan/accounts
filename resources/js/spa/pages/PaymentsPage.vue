@@ -47,12 +47,12 @@
           {{ errorMessage }}
         </div>
 
-        <!-- Sub-tabs for Outstanding vs Paid -->
-        <div class="border-b border-secondary-200 dark:border-secondary-700 mb-4 overflow-hidden mx-4">
-          <nav class="-mb-px flex gap-4 pb-px" aria-label="Payment status tabs">
+        <!-- Sub-tabs for Status & Filters for Type -->
+        <div class="mb-4 mx-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-secondary-200 dark:border-secondary-700 pb-3">
+          <nav class="-mb-px flex gap-2 sm:gap-4 overflow-x-auto" aria-label="Payment status tabs">
             <button
               type="button"
-              class="inline-flex items-center justify-center pb-3 pt-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer"
+              class="inline-flex items-center justify-center pb-2 pt-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap"
               :class="paymentStatusTab === 'outstanding'
                 ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
                 : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
@@ -62,7 +62,7 @@
             </button>
             <button
               type="button"
-              class="inline-flex items-center justify-center pb-3 pt-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer"
+              class="inline-flex items-center justify-center pb-2 pt-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap"
               :class="paymentStatusTab === 'paid'
                 ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
                 : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
@@ -70,7 +70,50 @@
             >
               Paid Payments
             </button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center pb-2 pt-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap"
+              :class="paymentStatusTab === 'all'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200'"
+              @click="switchPaymentStatusTab('all')"
+            >
+              All Statuses
+            </button>
           </nav>
+
+          <div class="flex items-center gap-1 bg-secondary-100 dark:bg-secondary-800/70 p-1 rounded-xl shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              class="px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+              :class="paymentTypeFilter === 'all'
+                ? 'bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white shadow-sm'
+                : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white'"
+              @click="switchPaymentTypeFilter('all')"
+            >
+              All Types
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+              :class="paymentTypeFilter === 'membership'
+                ? 'bg-purple-600 text-white shadow-sm font-bold'
+                : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white'"
+              @click="switchPaymentTypeFilter('membership')"
+            >
+              Membership
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+              :class="paymentTypeFilter === 'other'
+                ? 'bg-secondary-700 text-white shadow-sm font-bold'
+                : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white'"
+              @click="switchPaymentTypeFilter('other')"
+            >
+              Other
+            </button>
+          </div>
         </div>
 
         <div class="app-surface rounded-2xl overflow-hidden">
@@ -94,6 +137,19 @@
                     </p>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1 text-xs text-secondary-500 dark:text-secondary-400">
                       <span>{{ payment.payment_date }}</span>
+                      <span>&bull;</span>
+                      <span
+                        v-if="payment.type === 'membership' || payment.is_membership"
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                      >
+                        Membership
+                      </span>
+                      <span
+                        v-else
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-secondary-100 dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 border border-secondary-200 dark:border-secondary-700"
+                      >
+                        Other
+                      </span>
                       <span>&bull;</span>
                       <span
                         v-if="payment.is_paid && payment.payment_method_name"
@@ -139,6 +195,9 @@
                       Date
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                      Type
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                       Method
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
@@ -169,6 +228,20 @@
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 whitespace-nowrap">
                       {{ payment.payment_date }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300 whitespace-nowrap">
+                      <span
+                        v-if="payment.type === 'membership' || payment.is_membership"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                      >
+                        Membership
+                      </span>
+                      <span
+                        v-else
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 border border-secondary-200 dark:border-secondary-700"
+                      >
+                        Other
+                      </span>
                     </td>
                     <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
                       <span
@@ -201,7 +274,7 @@
                     </td>
                   </tr>
                   <tr v-if="payments.length === 0">
-                    <td colspan="6" class="px-6 py-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                    <td colspan="7" class="px-6 py-8 text-center text-sm text-secondary-500 dark:text-secondary-400">
                       No payments recorded.
                     </td>
                   </tr>
@@ -866,7 +939,8 @@ const loading = ref(false);
 const errorMessage = ref('');
 const payments = ref([]);
 const pagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 });
-const paymentStatusTab = ref('outstanding');
+const paymentStatusTab = ref(route.query.status || 'outstanding');
+const paymentTypeFilter = ref(route.query.type || 'all');
 
 function money(value) {
     return Number(value || 0).toFixed(2);
@@ -878,19 +952,29 @@ function switchPaymentStatusTab(tab) {
     loadPayments(1);
 }
 
+function switchPaymentTypeFilter(type) {
+    if (paymentTypeFilter.value === type) return;
+    paymentTypeFilter.value = type;
+    loadPayments(1);
+}
+
 async function loadPayments(page = 1) {
     if (!canManagePayments.value) return;
 
     loading.value = true;
     errorMessage.value = '';
     try {
-        const response = await apiRequest('/api/payments', {
-            params: {
-                page,
-                per_page: 20,
-                status: paymentStatusTab.value,
-            },
-        });
+        const params = {
+            page,
+            per_page: 20,
+        };
+        if (paymentStatusTab.value && paymentStatusTab.value !== 'all') {
+            params.status = paymentStatusTab.value;
+        }
+        if (paymentTypeFilter.value && paymentTypeFilter.value !== 'all') {
+            params.type = paymentTypeFilter.value;
+        }
+        const response = await apiRequest('/api/payments', { params });
         payments.value = response.data || [];
         pagination.value = response.meta || { current_page: 1, last_page: 1, per_page: 20, total: 0 };
     } catch {
