@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ImportBiometricAccessEventsJob;
 use App\Models\BiometricAccessEvent;
 use App\Models\BiometricSyncLog;
+use App\Models\Employee;
 use App\Models\Member;
 use App\Models\Tenant;
 use App\Services\BiometricQueueStatusService;
@@ -314,6 +315,58 @@ class BiometricApiController extends Controller
         $tenant = app('tenant');
 
         $result = $this->biometric->getMemberFaceImage($member);
+
+        if (!$result['success'] || $result['body'] === '') {
+            abort(404);
+        }
+
+        return response($result['body'], 200, [
+            'Content-Type' => $result['content_type'],
+            'Cache-Control' => 'private, max-age=300',
+        ]);
+    }
+
+    /**
+     * GET /api/employees/{employee}/biometric-device-info
+     */
+    public function employeeDeviceInfo(Request $request, Employee $employee): JsonResponse
+    {
+        $result = $this->biometric->getEmployeeDeviceInfo($employee);
+
+        return response()->json($result);
+    }
+
+    /**
+     * POST /api/employees/{employee}/biometric-sync
+     */
+    public function syncEmployee(Request $request, Employee $employee): JsonResponse
+    {
+        $result = $this->biometric->syncEmployee($employee, 'manual_sync');
+
+        $employee->refresh();
+
+        return response()->json([
+            'message' => $result['message'] ?? 'Employee synced to biometric device.',
+            'biometric_last_synced_at' => optional($employee->biometric_last_synced_at)->toISOString(),
+        ], ($result['success'] ?? false) ? 200 : 422);
+    }
+
+    /**
+     * POST /api/employees/{employee}/biometric-setup-fingerprint
+     */
+    public function setupEmployeeFingerprint(Request $request, Employee $employee): JsonResponse
+    {
+        $result = $this->biometric->setupEmployeeFingerprint($employee);
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+    }
+
+    /**
+     * GET /api/employees/{employee}/biometric-face-image
+     */
+    public function employeeFaceImage(Request $request, Employee $employee): Response
+    {
+        $result = $this->biometric->getEmployeeFaceImage($employee);
 
         if (!$result['success'] || $result['body'] === '') {
             abort(404);

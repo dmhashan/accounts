@@ -100,6 +100,7 @@ class EmployeeService
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('employee_code', 'like', "%{$search}%")
+                        ->orWhere('biometric_id', 'like', "%{$search}%")
                         ->orWhere('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
@@ -344,6 +345,8 @@ class EmployeeService
         return [
             'id' => $employee->id,
             'employee_code' => $employee->employee_code,
+            'biometric_id' => $employee->biometric_id,
+            'biometric_last_synced_at' => optional($employee->biometric_last_synced_at)->toISOString(),
             'name' => $employee->name,
             'email' => $employee->email,
             'phone' => $employee->phone,
@@ -387,6 +390,9 @@ class EmployeeService
 
         return [
             'employee_code' => filled($validated['employee_code'] ?? null) ? trim((string) $validated['employee_code']) : ($employee?->employee_code),
+            'biometric_id' => array_key_exists('biometric_id', $validated)
+                ? (filled($validated['biometric_id']) ? trim((string) $validated['biometric_id']) : null)
+                : $employee?->biometric_id,
             'name' => $name,
             'email' => filled($validated['email'] ?? null) ? trim((string) $validated['email']) : null,
             'phone' => filled($validated['phone'] ?? null) ? trim((string) $validated['phone']) : null,

@@ -1,21 +1,28 @@
 <?php
 
+use App\Http\Controllers\Api\BiometricApiController;
 use App\Http\Controllers\Api\EmployeeApiController;
 use App\Http\Controllers\Api\EmployeePaySheetApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'permission:employees.manage,employee_pay_sheets.manage'])->group(function () {
     Route::get('/employees/meta', [EmployeeApiController::class, 'meta']);
+    Route::get('/employees/biometric-status', [BiometricApiController::class, 'memberStatus']);
     Route::get('/employees', [EmployeeApiController::class, 'index']);
     Route::get('/employees/{employee}', [EmployeeApiController::class, 'show']);
     Route::get('/employees/{employee}/documents', [EmployeeApiController::class, 'documents']);
     Route::get('/employees/{employee}/documents/{document}/url', [EmployeeApiController::class, 'documentUrl']);
     Route::get('/employees/{employee}/attendance', [EmployeeApiController::class, 'attendance']);
+    Route::get('/employees/{employee}/biometric-device-info', [BiometricApiController::class, 'employeeDeviceInfo']);
+    Route::get('/employees/{employee}/biometric-face-image', [BiometricApiController::class, 'employeeFaceImage']);
 });
 
 Route::middleware(['auth', 'permission:employees.manage'])->group(function () {
     Route::post('/employees', [EmployeeApiController::class, 'store']);
     Route::put('/employees/{employee}', [EmployeeApiController::class, 'update']);
+    Route::put('/employees/{employee}/biometric-id', [EmployeeApiController::class, 'updateBiometricId']);
+    Route::post('/employees/{employee}/biometric-sync', [BiometricApiController::class, 'syncEmployee']);
+    Route::post('/employees/{employee}/biometric-setup-fingerprint', [BiometricApiController::class, 'setupEmployeeFingerprint']);
     Route::delete('/employees/{employee}', [EmployeeApiController::class, 'destroy']);
     Route::post('/employees/{employee}/documents', [EmployeeApiController::class, 'storeDocument']);
     Route::delete('/employees/{employee}/documents/{document}', [EmployeeApiController::class, 'destroyDocument']);

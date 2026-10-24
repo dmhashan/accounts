@@ -12,6 +12,8 @@ class Employee extends Model
 
     protected $fillable = [
         'employee_code',
+        'biometric_id',
+        'biometric_last_synced_at',
         'name',
         'email',
         'phone',
@@ -43,6 +45,7 @@ class Employee extends Model
         'annual_leave_days' => 'decimal:2',
         'paid_leave_days_per_month' => 'decimal:2',
         'half_paid_leave_days_per_month' => 'decimal:2',
+        'biometric_last_synced_at' => 'datetime',
     ];
 
     public function documents(): HasMany

@@ -75,6 +75,12 @@
               </div>
             </div>
 
+            <EmployeeBiometricSection
+              :employee="employee"
+              :can-manage="canManageEmployees"
+              @updated="employee = { ...employee, ...$event }"
+            />
+
             <div class="app-surface rounded-2xl p-5">
               <div class="mb-4 flex items-center justify-between gap-3">
                 <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
@@ -1189,6 +1195,7 @@ import { Banknote, CalendarCheck2, CreditCard, Download, Eye, FileText, HandCoin
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppPagination from '../components/AppPagination.vue';
+import EmployeeBiometricSection from '../components/employee/EmployeeBiometricSection.vue';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 

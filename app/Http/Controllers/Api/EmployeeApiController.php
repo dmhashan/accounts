@@ -152,18 +152,47 @@ class EmployeeApiController extends Controller
         ]);
     }
 
+    public function updateBiometricId(Request $request, Employee $employee): JsonResponse
+    {
+        $validated = $request->validate([
+            'biometric_id' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employees', 'biometric_id')->ignore($employee->id),
+            ],
+        ]);
+
+        $biometricId = filled($validated['biometric_id'] ?? null)
+            ? trim((string) $validated['biometric_id'])
+            : null;
+
+        $employee->update(['biometric_id' => $biometricId]);
+
+        return response()->json([
+            'message' => $biometricId ? 'Biometric ID updated successfully.' : 'Biometric ID removed successfully.',
+            'data' => [
+                'id' => $employee->id,
+                'biometric_id' => $employee->biometric_id,
+            ],
+        ]);
+    }
+
     private function employeeRules(?Employee $employee = null): array
     {
         $employeeCode = Rule::unique('employees', 'employee_code');
         $email = Rule::unique('employees', 'email');
+        $biometricId = Rule::unique('employees', 'biometric_id');
 
         if ($employee) {
             $employeeCode = $employeeCode->ignore($employee->id);
             $email = $email->ignore($employee->id);
+            $biometricId = $biometricId->ignore($employee->id);
         }
 
         return [
             'employee_code' => ['nullable', 'string', 'max:50', 'alpha_dash', $employeeCode],
+            'biometric_id' => ['nullable', 'string', 'max:50', $biometricId],
             'name' => ['required', 'string', 'max:200'],
             'email' => ['nullable', 'email', 'max:255', $email],
             'phone' => ['nullable', 'string', 'max:30'],

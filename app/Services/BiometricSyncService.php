@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\BiometricAccessEvent;
 use App\Models\BiometricSyncLog;
+use App\Models\Employee;
+use App\Models\EmployeeAttendance;
 use App\Models\Member;
 use App\Models\MemberAttendance;
 use App\Models\PaymentMembership;
@@ -650,6 +652,7 @@ class BiometricSyncService
         unset($raw['picture_bytes'], $raw['picture_content_type']);
         $failReason = $result === 'failed' ? $this->resolveFailReason($tenant, $member, $event, $eventTime) : null;
         $shouldMarkAttendance = $member && ($result === 'success' || $failReason === 'payment_expired');
+        $employee = (!$member && $employeeNo) ? $this->resolveEmployeeByEmployeeNo($tenant, $employeeNo) : null;
 
         // De-duplicate: the same scan may arrive via both the real-time webhook
         // and a later manual device import. Match on tenant + person + type + time.
@@ -693,7 +696,7 @@ class BiometricSyncService
                 }
 
                 if (!$existing->person_name) {
-                    $resolvedName = $event['name'] ?? $member?->name;
+                    $resolvedName = $event['name'] ?? $member?->name ?? $employee?->name;
 
                     if ($resolvedName) {
                         $existing->person_name = $resolvedName;
@@ -726,6 +729,8 @@ class BiometricSyncService
 
                 if ($shouldMarkAttendance) {
                     $this->markMemberAttendance($tenant, $member, $eventTime, $existing->id);
+                } elseif ($employee && $result === 'success') {
+                    $this->markEmployeeAttendance($tenant, $employee, $eventTime);
                 }
 
                 return false;
@@ -738,7 +743,7 @@ class BiometricSyncService
             'member_id' => $member?->id,
             'biometric_member_id' => $member?->biometric_member_id ?: $employeeNo,
             'employee_no' => $employeeNo,
-            'person_name' => $event['name'] ?? $member?->name,
+            'person_name' => $event['name'] ?? $member?->name ?? $employee?->name,
             'auth_method' => $method,
             'result' => $result,
             'fail_reason' => $failReason,
@@ -750,6 +755,8 @@ class BiometricSyncService
 
         if ($shouldMarkAttendance) {
             $this->markMemberAttendance($tenant, $member, $eventTime, $createdEvent->id);
+        } elseif ($employee && $result === 'success') {
+            $this->markEmployeeAttendance($tenant, $employee, $eventTime);
         }
 
         Log::debug('Biometric real-time push: access event created', [
@@ -1105,6 +1112,69 @@ class BiometricSyncService
         return $matches->first();
     }
 
+    public function resolveEmployeeByEmployeeNo(Tenant $tenant, ?string $employeeNo): ?Employee
+    {
+        $employeeNo = $this->normaliseEmployeeNo($employeeNo);
+
+        if (!$employeeNo) {
+            return null;
+        }
+
+        $candidates = [$employeeNo];
+
+        if (ctype_digit($employeeNo)) {
+            $unpadded = ltrim($employeeNo, '0');
+            $unpadded = $unpadded === '' ? '0' : $unpadded;
+            $padded4 = str_pad($unpadded, 4, '0', STR_PAD_LEFT);
+
+            $candidates[] = $unpadded;
+            $candidates[] = $padded4;
+        }
+
+        $candidates = array_values(array_unique(array_filter($candidates, static fn ($v) => $v !== '')));
+
+        return Employee::query()
+            ->whereNotNull('biometric_id')
+            ->where(function ($q) use ($candidates, $employeeNo) {
+                $q->whereIn('biometric_id', $candidates);
+
+                if (ctype_digit($employeeNo)) {
+                    $unpadded = ltrim($employeeNo, '0');
+                    $unpadded = $unpadded === '' ? '0' : $unpadded;
+                    $q->orWhere('biometric_id', 'like', '%-' . str_pad($unpadded, 4, '0', STR_PAD_LEFT));
+                }
+            })
+            ->first();
+    }
+
+    public function markEmployeeAttendance(Tenant $tenant, Employee $employee, Carbon $eventTime): void
+    {
+        try {
+            $date = $eventTime->toDateString();
+            $time = $eventTime->format('H:i');
+
+            $attendance = EmployeeAttendance::firstOrNew([
+                'employee_id' => $employee->id,
+                'attendance_date' => $date,
+            ]);
+
+            if (!$attendance->exists) {
+                $attendance->status = 'present';
+                $attendance->check_in_at = $time;
+                $attendance->notes = 'Recorded via biometric device';
+                $attendance->save();
+            } elseif (!$attendance->check_out_at && $attendance->check_in_at && $attendance->check_in_at !== $time) {
+                $attendance->check_out_at = $time;
+                $attendance->save();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('BiometricSyncService: failed to mark employee attendance', [
+                'employee_id' => $employee->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     private function normaliseEmployeeNo(?string $employeeNo): ?string
     {
         $employeeNo = trim((string) $employeeNo);
@@ -1363,20 +1433,34 @@ class BiometricSyncService
      *   ['not_found'         => true, ...]
      *   ['person' => [...], 'face' => [...], 'fingerprint' => [...], 'card' => [...]]
      */
-    public function getMemberDeviceInfo(Member $member): array
-    {
+    /**
+     * Common device person lookup by employeeNo.
+     */
+    public function getPersonDeviceInfo(
+        string $employeeNo,
+        string $fallbackName = '',
+        ?string $fallbackGender = null,
+        ?string $fallbackValidBegin = null,
+        ?string $fallbackValidEnd = null,
+        bool $fallbackValidEnabled = true,
+        ?string $profilePhotoUrl = null,
+        string $entityLabel = 'Person',
+    ): array {
         $tenantId = (int) app('tenant')->id;
         $allConfig = $this->config->all($tenantId);
         $maker = $allConfig['biometric.device_maker'] ?? '';
 
-        $employeeNo = $member->biometric_member_id;
-
         if (!$employeeNo) {
-            return ['connection_failed' => false, 'not_assigned' => true, 'not_found' => false, 'message' => 'No biometric ID assigned to this member.'];
+            return [
+                'connection_failed' => false,
+                'not_assigned' => true,
+                'not_found' => false,
+                'message' => "No biometric ID assigned to this {$entityLabel}.",
+            ];
         }
 
         if ($maker === 'zkteco') {
-            $hasPhoto = (bool) $member->profile_photo_path;
+            $hasPhoto = (bool) $profilePhotoUrl;
 
             return [
                 'connection_failed' => false,
@@ -1385,17 +1469,18 @@ class BiometricSyncService
                 'fingerprint_setup_supported' => false,
                 'person' => [
                     'employee_no' => $employeeNo,
-                    'name' => $member->name,
-                    'gender' => $member->gender,
+                    'name' => $fallbackName,
+                    'gender' => $fallbackGender,
                     'user_type' => 'normal',
-                    'valid_enabled' => true,
-                    'valid_begin' => optional($member->joined_date)->toIso8601String(),
-                    'valid_end' => null,
+                    'door_right' => '1',
+                    'valid_enabled' => $fallbackValidEnabled,
+                    'valid_begin' => $fallbackValidBegin,
+                    'valid_end' => $fallbackValidEnd,
                 ],
                 'face' => [
                     'enrolled' => $hasPhoto,
                     'count' => $hasPhoto ? 1 : 0,
-                    'face_url' => $hasPhoto ? $this->media->url($member->profile_photo_path) : null,
+                    'face_url' => $profilePhotoUrl,
                 ],
                 'fingerprint' => [
                     'enrolled' => true,
@@ -1412,7 +1497,12 @@ class BiometricSyncService
         $driver = $this->buildDriver($allConfig);
 
         if (!$driver) {
-            return ['connection_failed' => true, 'not_assigned' => false, 'not_found' => false, 'message' => 'Device not configured.'];
+            return [
+                'connection_failed' => true,
+                'not_assigned' => false,
+                'not_found' => false,
+                'message' => 'Device not configured.',
+            ];
         }
 
         // ── Person info ───────────────────────────────────────────────────────
@@ -1425,7 +1515,7 @@ class BiometricSyncService
                 return ['connection_failed' => true, 'not_assigned' => false, 'not_found' => false, 'message' => $personResult['message']];
             }
 
-            return ['connection_failed' => false, 'not_assigned' => false, 'not_found' => true, 'message' => 'Member not found on device.'];
+            return ['connection_failed' => false, 'not_assigned' => false, 'not_found' => true, 'message' => "{$entityLabel} not found on device."];
         }
 
         $userInfoSearch = $personResult['data']['UserInfoSearch'] ?? [];
@@ -1438,14 +1528,13 @@ class BiometricSyncService
         }
 
         if ($numMatches === 0 || empty($userInfoList)) {
-            return ['connection_failed' => false, 'not_assigned' => false, 'not_found' => true, 'message' => 'Member not found on device.'];
+            return ['connection_failed' => false, 'not_assigned' => false, 'not_found' => true, 'message' => "{$entityLabel} not found on device."];
         }
 
         $person = (array) $userInfoList[0];
         $valid = $person['Valid'] ?? [];
 
-        // ── Credential counts from UserInfo (avoids separate search endpoints
-        //    that many device models return notSupport for) ───────────────────
+        // ── Credential counts from UserInfo ───────────────────
         $faceCount = (int) ($person['numOfFace'] ?? 0);
         $fpCount = (int) ($person['numOfFP'] ?? 0);
         $cardCount = (int) ($person['numOfCard'] ?? 0);
@@ -1468,11 +1557,6 @@ class BiometricSyncService
             }
         }
 
-        $member->update([
-            'has_face' => $faceCount > 0 || (bool) $member->profile_photo_path,
-            'has_fingerprint' => $fpCount > 0,
-        ]);
-
         return [
             'connection_failed' => false,
             'not_assigned' => false,
@@ -1483,6 +1567,7 @@ class BiometricSyncService
                 'name' => $person['name'] ?? '',
                 'gender' => $person['gender'] ?? null,
                 'user_type' => $person['userType'] ?? null,
+                'door_right' => $person['doorRight'] ?? null,
                 'valid_enabled' => isset($valid['enable']) ? (bool) $valid['enable'] : null,
                 'valid_begin' => $valid['beginTime'] ?? null,
                 'valid_end' => $valid['endTime'] ?? null,
@@ -1491,6 +1576,240 @@ class BiometricSyncService
             'fingerprint' => ['enrolled' => $fpCount > 0, 'count' => $fpCount],
             'card' => ['assigned' => $cardCount > 0, 'count' => $cardCount, 'card_numbers' => $cardNumbers],
         ];
+    }
+
+    public function getMemberDeviceInfo(Member $member): array
+    {
+        $res = $this->getPersonDeviceInfo(
+            employeeNo: (string) ($member->biometric_member_id ?? ''),
+            fallbackName: $member->name,
+            fallbackGender: $member->gender,
+            fallbackValidBegin: optional($member->joined_date)->toIso8601String(),
+            fallbackValidEnd: null,
+            fallbackValidEnabled: true,
+            profilePhotoUrl: $member->profile_photo_path ? $this->media->url($member->profile_photo_path) : null,
+            entityLabel: 'Member',
+        );
+
+        if (!empty($res['face'])) {
+            $member->update([
+                'has_face' => $res['face']['enrolled'] || (bool) $member->profile_photo_path,
+                'has_fingerprint' => $res['fingerprint']['enrolled'] ?? false,
+            ]);
+        }
+
+        return $res;
+    }
+
+    public function getEmployeeDeviceInfo(Employee $employee): array
+    {
+        return $this->getPersonDeviceInfo(
+            employeeNo: (string) ($employee->biometric_id ?? ''),
+            fallbackName: $employee->name,
+            fallbackGender: $employee->gender,
+            fallbackValidBegin: optional($employee->joined_date)->toIso8601String(),
+            fallbackValidEnd: optional($employee->left_date)->toIso8601String(),
+            fallbackValidEnabled: $employee->status === 'active',
+            profilePhotoUrl: null,
+            entityLabel: 'Employee',
+        );
+    }
+
+    public function syncEmployee(Employee $employee, string $action = 'manual_sync'): array
+    {
+        $tenantId = (int) app('tenant')->id;
+
+        if (!$this->isEnabled($tenantId)) {
+            return ['success' => false, 'message' => 'Biometric device is not enabled.'];
+        }
+
+        if (empty($employee->biometric_id)) {
+            return ['success' => false, 'message' => 'No biometric ID assigned to this employee.'];
+        }
+
+        $allConfig = $this->config->all($tenantId);
+        $maker = $allConfig['biometric.device_maker'] ?? '';
+        $model = $allConfig['biometric.device_model'] ?? '';
+
+        if ($maker === 'zkteco') {
+            $sn = $allConfig['biometric.device_sn'] ?? '';
+
+            if (!$sn) {
+                return ['success' => false, 'message' => 'Device Serial Number (SN) not configured.'];
+            }
+
+            $pin = $this->extractEmployeeNo($employee->biometric_id);
+            $name = mb_substr($employee->name, 0, 24);
+            $cmdString = "DATA USER PIN={$pin}\tName={$name}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=1";
+
+            \App\Models\BiometricDeviceCommand::create([
+                'device_sn' => $sn,
+                'command_type' => 'DATA USER',
+                'command_string' => $cmdString,
+                'status' => 'pending',
+                'member_id' => null,
+                'biometric_member_id' => $employee->biometric_id,
+                'action' => $action,
+            ]);
+
+            $employee->timestamps = false;
+            $employee->update(['biometric_last_synced_at' => now()]);
+            $employee->timestamps = true;
+
+            $this->writeLogSafely([
+                'member_id' => null,
+                'biometric_member_id' => $employee->biometric_id,
+                'direction' => 'up',
+                'action' => $action,
+                'status' => 'success',
+                'device_maker' => $maker,
+                'device_model' => $model,
+                'payload' => ['biometric_id' => $employee->biometric_id, 'name' => $employee->name],
+                'response' => ['queued' => true],
+                'error_message' => null,
+            ]);
+
+            return ['success' => true, 'message' => 'Employee sync queued for device.'];
+        }
+
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver) {
+            return ['success' => false, 'message' => 'Biometric driver could not be built.'];
+        }
+
+        $beginTime = $employee->joined_date
+            ? $employee->joined_date->copy()->startOfDay()->format('Y-m-d\TH:i:s')
+            : now()->startOfDay()->format('Y-m-d\TH:i:s');
+        $endTime = $employee->left_date
+            ? $employee->left_date->copy()->endOfDay()->format('Y-m-d\TH:i:s')
+            : now()->addYears(10)->endOfDay()->format('Y-m-d\TH:i:s');
+
+        $personPayload = [
+            'employeeNo' => $this->extractEmployeeNo($employee->biometric_id),
+            'name' => mb_substr($employee->name, 0, 32),
+            'userType' => 'normal',
+            'gender' => $employee->gender === 'female' ? 'female' : 'male',
+            'Valid' => [
+                'enable' => $employee->status === 'active',
+                'beginTime' => $beginTime,
+                'endTime' => $endTime,
+            ],
+            'doorRight' => '1',
+            'RightPlan' => [
+                ['doorNo' => 1, 'planTemplateNo' => '1'],
+            ],
+        ];
+
+        $alreadyExistsCodes = ['deviceUserAlreadyExist', 'employeeNoAlreadyExist'];
+        $notExistCodes = ['employeeNoNotExist', 'noSuchUser'];
+
+        if ($action === 'update') {
+            $result = $driver->updatePerson($personPayload);
+
+            if (!$result['success'] && isset($result['data']['subStatusCode'])
+                && in_array($result['data']['subStatusCode'], $notExistCodes, true)) {
+                $result = $driver->addPerson($personPayload);
+            }
+        } else {
+            $result = $driver->addPerson($personPayload);
+
+            if (!$result['success'] && isset($result['data']['subStatusCode'])
+                && in_array($result['data']['subStatusCode'], $alreadyExistsCodes, true)) {
+                $result = $driver->updatePerson($personPayload);
+            }
+        }
+
+        $status = $result['success'] ? 'success' : 'failed';
+
+        $this->writeLogSafely([
+            'member_id' => null,
+            'biometric_member_id' => $employee->biometric_id,
+            'direction' => 'up',
+            'action' => $action,
+            'status' => $status,
+            'device_maker' => $maker,
+            'device_model' => $model,
+            'payload' => $personPayload,
+            'response' => $result['data'] ?? [],
+            'error_message' => $result['success'] ? null : $result['message'],
+        ]);
+
+        if ($result['success']) {
+            $employee->timestamps = false;
+            $employee->update(['biometric_last_synced_at' => now()]);
+            $employee->timestamps = true;
+        }
+
+        return [
+            'success' => $result['success'],
+            'message' => $result['success'] ? 'Employee synced to biometric device.' : ($result['message'] ?? 'Sync failed.'),
+            'biometric_last_synced_at' => optional($employee->biometric_last_synced_at)->toISOString(),
+        ];
+    }
+
+    public function setupEmployeeFingerprint(Employee $employee): array
+    {
+        $allConfig = $this->config->all((int) app('tenant')->id);
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver) {
+            return ['success' => false, 'message' => 'Device not configured.'];
+        }
+
+        $employeeNo = $employee->biometric_id;
+
+        if (!$employeeNo) {
+            return ['success' => false, 'message' => 'No biometric ID assigned to this employee.'];
+        }
+
+        $model = $allConfig['biometric.device_model'] ?? '';
+
+        if ($this->modelLacksRemoteFingerprintSetup($model)) {
+            return [
+                'success' => false,
+                'message' => "Remote fingerprint enrolment is not supported on {$model}. "
+                    . 'Enrol the fingerprint directly at the terminal (device screen → Personnel).',
+            ];
+        }
+
+        return $driver->setupFingerprint($this->extractEmployeeNo($employeeNo));
+    }
+
+    public function getEmployeeFaceImage(Employee $employee): array
+    {
+        $tenantId = (int) app('tenant')->id;
+        $allConfig = $this->config->all($tenantId);
+        $driver = $this->buildDriver($allConfig);
+
+        if (!$driver || !$employee->biometric_id) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        $employeeNo = $this->extractEmployeeNo($employee->biometric_id);
+        $personResult = $driver->getUserInfo($employeeNo);
+
+        if (!$personResult['success']) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        $userInfoList = $personResult['data']['UserInfoSearch']['UserInfo'] ?? [];
+
+        if (!empty($userInfoList) && !isset($userInfoList[0])) {
+            $userInfoList = [$userInfoList];
+        }
+
+        if (empty($userInfoList)) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        $faceUrl = ((array) $userInfoList[0])['faceURL'] ?? null;
+
+        if (!$faceUrl) {
+            return ['success' => false, 'body' => '', 'content_type' => ''];
+        }
+
+        return $driver->getFaceImage($faceUrl);
     }
 
     /**

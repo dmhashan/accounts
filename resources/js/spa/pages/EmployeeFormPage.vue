@@ -12,6 +12,9 @@
           <AppFormField label="Employee code" optional>
             <AppFormInput v-model="form.employee_code" type="text" placeholder="Auto generated when blank" />
           </AppFormField>
+          <AppFormField label="Biometric ID" optional>
+            <AppFormInput v-model="form.biometric_id" type="text" placeholder="e.g. 1001 or EMP-01" />
+          </AppFormField>
           <AppFormField label="Status" required>
             <AppFormSelect v-model="form.status" required>
               <option v-for="option in meta.employee_statuses" :key="option.value" :value="option.value">
@@ -137,6 +140,7 @@ const form = ref(defaultForm());
 function defaultForm() {
     return {
         employee_code: '',
+        biometric_id: '',
         name: '',
         email: '',
         phone: '',
@@ -175,6 +179,7 @@ async function submit() {
     try {
         const payload = {
             ...form.value,
+            biometric_id: form.value.biometric_id ? form.value.biometric_id.trim() : null,
             gender: form.value.gender || null,
             date_of_birth: form.value.date_of_birth || null,
             left_date: form.value.left_date || null,

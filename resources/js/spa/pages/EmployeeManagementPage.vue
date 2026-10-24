@@ -58,7 +58,7 @@
                       {{ employee.name }}
                     </p>
                     <p class="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400">
-                      {{ employee.employee_code || 'No code' }}<span v-if="employee.job_title"> &bull; {{ employee.job_title }}</span>
+                      {{ employee.employee_code || 'No code' }}<span v-if="employee.biometric_id" class="font-mono text-primary-600 dark:text-primary-400 font-semibold"> &bull; #{{ employee.biometric_id }}</span><span v-if="employee.job_title"> &bull; {{ employee.job_title }}</span>
                     </p>
                     <p class="mt-2 text-sm font-bold text-primary-600 dark:text-primary-400">
                       {{ money(employee.daily_rate) }} / day
@@ -107,7 +107,7 @@
                         {{ employee.name }}
                       </p>
                       <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                        {{ employee.employee_code || 'No code' }}
+                        {{ employee.employee_code || 'No code' }}<span v-if="employee.biometric_id" class="ml-1.5 font-mono text-primary-600 dark:text-primary-400 font-semibold">#{{ employee.biometric_id }}</span>
                       </p>
                     </td>
                     <td class="px-6 py-4">
