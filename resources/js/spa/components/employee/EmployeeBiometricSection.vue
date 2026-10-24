@@ -202,22 +202,28 @@
 
       <!-- Device Person Info Grid (when available) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <!-- Biometric ID card -->
+        <!-- Biometric record name card -->
         <div class="rounded-xl border border-secondary-200 dark:border-secondary-700 p-3 bg-white dark:bg-secondary-900/40">
           <p class="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
-            Biometric Hardware ID
+            Biometric Record Name
           </p>
-          <p class="text-sm font-bold font-mono text-secondary-900 dark:text-white flex items-center gap-1.5">
-            <span>{{ employee.biometric_id }}</span>
+          <p class="text-sm font-semibold text-secondary-900 dark:text-white flex items-center gap-1.5">
+            <span v-if="deviceInfo?.person?.name">{{ deviceInfo.person.name }}</span>
+            <span v-else class="text-secondary-400 dark:text-secondary-500 italic text-xs">
+              {{ deviceInfo ? 'Not registered on device' : 'Fetch from device to view' }}
+            </span>
             <button
               v-if="canManage"
               type="button"
-              class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200"
-              title="Edit ID"
+              class="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-200 ml-auto shrink-0"
+              title="Edit Biometric ID"
               @click="openEditModal"
             >
               <Pencil class="w-3.5 h-3.5" :stroke-width="2" />
             </button>
+          </p>
+          <p class="text-[11px] font-mono text-secondary-500 dark:text-secondary-400 mt-0.5">
+            ID: {{ employee.biometric_id }}
           </p>
         </div>
 
@@ -372,7 +378,7 @@
       <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-800 space-y-4">
         <div class="flex items-center justify-between border-b border-secondary-100 pb-3 dark:border-secondary-800">
           <h4 class="text-base font-bold text-secondary-900 dark:text-white">
-            Edit Biometric Hardware ID
+            Edit Biometric ID
           </h4>
           <button
             type="button"
