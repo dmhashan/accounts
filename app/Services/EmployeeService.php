@@ -207,6 +207,28 @@ class EmployeeService
             ->orderBy('attendance_date')
             ->get();
 
+        // ── Biometric first check-in times per day ────────────────────────────
+        // Query the earliest successful biometric event per date for this employee
+        // (matched by employee_no == biometric_id, only success events).
+        $firstCheckins = [];
+
+        if (filled($employee->biometric_id)) {
+            $events = \App\Models\BiometricAccessEvent::query()
+                ->where('employee_no', $employee->biometric_id)
+                ->where('result', 'success')
+                ->whereBetween('event_time', [$from->startOfDay(), $to->endOfDay()])
+                ->orderBy('event_time')
+                ->get(['event_time']);
+
+            foreach ($events as $event) {
+                $dateKey = $event->event_time?->toDateString();
+
+                if ($dateKey && !isset($firstCheckins[$dateKey])) {
+                    $firstCheckins[$dateKey] = $event->event_time->format('H:i');
+                }
+            }
+        }
+
         $recordsByDate = $records->keyBy(fn (EmployeeAttendance $attendance) => $attendance->attendance_date?->toDateString());
         [$defaultFrom, $defaultTo] = $this->defaultAttendanceRange($employee, $from, $to);
         $calendarRecords = [];
@@ -229,6 +251,12 @@ class EmployeeService
         }
 
         ksort($calendarRecords);
+
+        // Merge first_checkin_at into each day record
+        foreach ($calendarRecords as $dateKey => &$record) {
+            $record['first_checkin_at'] = $firstCheckins[$dateKey] ?? null;
+        }
+        unset($record);
 
         $stats = collect(array_keys(self::ATTENDANCE_STATUSES))
             ->mapWithKeys(fn (string $status) => [$status => 0])

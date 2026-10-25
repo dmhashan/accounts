@@ -227,54 +227,127 @@
             Loading attendance...
           </div>
 
-          <div v-else class="overflow-x-auto">
-            <div class="grid min-w-[46rem] grid-cols-7 overflow-hidden rounded-2xl border border-secondary-200 dark:border-secondary-700">
-              <div v-for="day in weekDays" :key="day" class="bg-secondary-50 px-2 py-2 text-center text-xs font-semibold uppercase text-secondary-500 dark:bg-secondary-800 dark:text-secondary-400">
-                {{ day }}
-              </div>
-              <div
-                v-for="cell in calendarCells"
-                :key="cell.key"
-                class="min-h-[7.25rem] border-t border-secondary-200 p-2 dark:border-secondary-700"
-                :class="cell.date ? 'bg-white dark:bg-secondary-900' : 'bg-secondary-50/70 dark:bg-secondary-950/70'"
-              >
-                <template v-if="cell.date">
-                  <div class="mb-2 flex items-center justify-between gap-2">
-                    <span class="text-sm font-semibold text-secondary-900 dark:text-white">{{ cell.day }}</span>
-                    <button
-                      v-if="canManageEmployees && attendanceMap[cell.date]?.id"
-                      type="button"
-                      title="Clear"
-                      class="inline-flex h-6 w-6 items-center justify-center rounded-lg text-secondary-400 hover:bg-secondary-100 hover:text-red-500 dark:hover:bg-secondary-800"
-                      :disabled="savingAttendanceDate === cell.date"
-                      @click="clearAttendance(cell.date)"
+          <!-- Date-list attendance table -->
+          <div v-else class="overflow-x-auto rounded-2xl border border-secondary-200 dark:border-secondary-700">
+            <table class="min-w-full divide-y divide-secondary-200 dark:divide-secondary-700">
+              <thead class="bg-secondary-50 dark:bg-secondary-800">
+                <tr>
+                  <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
+                    Date
+                  </th>
+                  <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
+                    Status
+                  </th>
+                  <th v-if="employee?.biometric_id" class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
+                    First Check-in
+                  </th>
+                  <th class="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-secondary-100 dark:divide-secondary-800 bg-white dark:bg-secondary-900">
+                <tr
+                  v-for="cell in calendarCells"
+                  :key="cell.date"
+                  class="transition-colors"
+                  :class="cell.isToday
+                    ? 'bg-primary-50/60 dark:bg-primary-900/10'
+                    : cell.isWeekend
+                      ? 'bg-secondary-50/60 dark:bg-secondary-800/30'
+                      : ''"
+                >
+                  <!-- Date column -->
+                  <td class="whitespace-nowrap px-4 py-2.5">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
+                        :class="cell.isToday
+                          ? 'bg-primary-600 text-white'
+                          : cell.isWeekend
+                            ? 'bg-secondary-200 text-secondary-600 dark:bg-secondary-700 dark:text-secondary-300'
+                            : 'bg-secondary-100 text-secondary-800 dark:bg-secondary-800 dark:text-secondary-200'"
+                      >
+                        {{ cell.day }}
+                      </span>
+                      <div>
+                        <p class="text-xs font-semibold text-secondary-900 dark:text-white">
+                          {{ cell.dayName }}
+                        </p>
+                        <p class="text-[11px] text-secondary-400 dark:text-secondary-500">
+                          {{ cell.monthName }}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Status column -->
+                  <td class="px-4 py-2.5">
+                    <span
+                      v-if="attendanceMap[cell.date]?.status || isAttendanceSelectable(cell.date)"
+                      class="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold"
+                      :class="attendanceStatusBadgeClass(attendanceMap[cell.date]?.status || 'present')"
                     >
-                      <X class="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <select
-                    v-if="isAttendanceSelectable(cell.date)"
-                    :value="attendanceMap[cell.date]?.status || 'present'"
-                    class="w-full rounded-lg border px-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-950"
-                    :class="attendanceSelectClass(attendanceMap[cell.date]?.status || 'present')"
-                    :disabled="!canManageEmployees || savingAttendanceDate === cell.date"
-                    @change="setAttendance(cell.date, $event.target.value)"
-                  >
-                    <option v-for="status in attendanceStatuses" :key="status.value" :value="status.value">
-                      {{ status.label }}
-                    </option>
-                  </select>
-                  <p v-else class="rounded-lg border border-secondary-200 bg-secondary-50 px-2 py-1.5 text-xs font-semibold text-secondary-400 dark:border-secondary-700 dark:bg-secondary-950 dark:text-secondary-500">
-                    {{ disabledAttendanceLabel(cell.date) }}
-                  </p>
-                  <p v-if="savingAttendanceDate === cell.date" class="mt-2 text-[11px] text-secondary-400">
-                    Saving...
-                  </p>
-                </template>
-              </div>
-            </div>
+                      {{ attendanceStatusLabel(attendanceMap[cell.date]?.status || 'present') }}
+                    </span>
+                    <span v-else class="text-xs text-secondary-400 dark:text-secondary-600">
+                      {{ disabledAttendanceLabel(cell.date) }}
+                    </span>
+                  </td>
+
+                  <!-- First Check-in column (only if employee has biometric_id) -->
+                  <td v-if="employee?.biometric_id" class="px-4 py-2.5">
+                    <span
+                      v-if="attendanceMap[cell.date]?.first_checkin_at"
+                      class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                    >
+                      <Clock class="h-3 w-3 shrink-0" :stroke-width="2.5" />
+                      {{ attendanceMap[cell.date].first_checkin_at }}
+                    </span>
+                    <span
+                      v-else-if="attendanceMap[cell.date]?.check_in_at"
+                      class="inline-flex items-center gap-1 rounded-lg bg-secondary-100 px-2.5 py-1 text-xs font-medium text-secondary-600 dark:bg-secondary-800 dark:text-secondary-300"
+                    >
+                      <Clock class="h-3 w-3 shrink-0" :stroke-width="2" />
+                      {{ attendanceMap[cell.date].check_in_at }}
+                    </span>
+                    <span v-else class="text-xs text-secondary-300 dark:text-secondary-600">—</span>
+                  </td>
+
+                  <!-- Action column -->
+                  <td class="px-4 py-2.5 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <select
+                        v-if="isAttendanceSelectable(cell.date)"
+                        :value="attendanceMap[cell.date]?.status || 'present'"
+                        class="rounded-lg border px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-950"
+                        :class="attendanceSelectClass(attendanceMap[cell.date]?.status || 'present')"
+                        :disabled="!canManageEmployees || savingAttendanceDate === cell.date"
+                        @change="setAttendance(cell.date, $event.target.value)"
+                      >
+                        <option v-for="status in attendanceStatuses" :key="status.value" :value="status.value">
+                          {{ status.label }}
+                        </option>
+                      </select>
+                      <button
+                        v-if="canManageEmployees && attendanceMap[cell.date]?.id"
+                        type="button"
+                        title="Clear"
+                        class="inline-flex h-6 w-6 items-center justify-center rounded-lg text-secondary-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-secondary-800"
+                        :disabled="savingAttendanceDate === cell.date"
+                        @click="clearAttendance(cell.date)"
+                      >
+                        <X class="h-3.5 w-3.5" />
+                      </button>
+                      <span v-if="savingAttendanceDate === cell.date" class="text-[11px] text-secondary-400">Saving…</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+
 
         <div v-else-if="activeTab === 'salary_advances'" class="mt-4 space-y-4">
           <div class="app-surface rounded-2xl p-4 md:p-5">
@@ -1191,7 +1264,7 @@
 <script setup>
 import { computed, defineComponent, h, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Banknote, CalendarCheck2, CreditCard, Download, Eye, FileText, HandCoins, Pencil, Plus, RefreshCw, Trash2, Upload, X } from 'lucide-vue-next';
+import { Banknote, CalendarCheck2, Clock, CreditCard, Download, Eye, FileText, HandCoins, Pencil, Plus, RefreshCw, Trash2, Upload, X } from 'lucide-vue-next';
 import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppPagination from '../components/AppPagination.vue';
@@ -1251,7 +1324,6 @@ const attendanceLeaveBalance = ref(null);
 const attendanceActionError = ref('');
 const attendanceLoading = ref(false);
 const savingAttendanceDate = ref('');
-const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const paySheets = ref([]);
 const paySheetsLoading = ref(false);
@@ -1351,14 +1423,26 @@ const salaryAdvanceMonthLabel = computed(() => monthLabel(salaryAdvanceMonth.val
 
 const calendarCells = computed(() => {
     const [year, month] = attendanceMonth.value.split('-').map(Number);
-    const first = new Date(year, month - 1, 1);
     const daysInMonth = new Date(year, month, 0).getDate();
+    const todayStr = today();
     const cells = [];
 
-    for (let i = 0; i < first.getDay(); i++) cells.push({ key: `blank-${i}`, date: null });
     for (let day = 1; day <= daysInMonth; day++) {
-        const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        cells.push({ key: date, date, day });
+        const mm = String(month).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        const date = `${year}-${mm}-${dd}`;
+        const dateObj = new Date(year, month - 1, day);
+        const dayOfWeek = dateObj.getDay(); // 0=Sun, 6=Sat
+
+        cells.push({
+            key: date,
+            date,
+            day,
+            isToday: date === todayStr,
+            isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+            dayName: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(dateObj),
+            monthName: new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(dateObj),
+        });
     }
 
     return cells;
