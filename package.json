@@ -45,5 +45,9 @@
     "routes/**/*.php": "./vendor/bin/pint",
     "database/**/*.php": "./vendor/bin/pint",
     "tests/**/*.php": "./vendor/bin/pint"
+  },
+  "allowScripts": {
+    "esbuild@0.27.2": true,
+    "vue-demi@0.14.10": true
   }
 }
