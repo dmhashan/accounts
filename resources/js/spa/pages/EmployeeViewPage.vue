@@ -1408,7 +1408,7 @@ const attendanceMap = computed(() => Object.fromEntries(attendanceRecords.value.
 const selectedPaySheet = computed(() => paySheets.value.find((item) => item.period_start?.slice(0, 7) === paySheetMonth.value) || null);
 const selectedPaySheetPdfUrl = computed(() => selectedPaySheetDetail.value ? `/api/employees/${route.params.id}/pay-sheets/${selectedPaySheetDetail.value.id}/pdf` : '#');
 const selectedPaySheetLocked = computed(() => selectedPaySheet.value?.status === 'paid');
-const paySheetPaymentAmount = computed(() => Number(paySheetPayTarget.value?.run_total_net ?? paySheetPayTarget.value?.net_pay ?? 0));
+const paySheetPaymentAmount = computed(() => Number(paySheetPayTarget.value?.net_pay ?? paySheetPayTarget.value?.run_total_net ?? 0));
 const paySheetAdjustmentSummary = computed(() => ({
     earnings: paySheetAdjustments.value
         .filter((adjustment) => adjustment.type === 'earning')
