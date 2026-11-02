@@ -26,9 +26,10 @@ class EmployeePaySheetItem extends Model
         'gross_pay',
         'deductions',
         'net_pay',
-        'earning_lines',
-        'deduction_lines',
-        'notes',
+        'expense_id',
+        'status',
+        'paid_at',
+        'paid_by',
     ];
 
     protected $casts = [
@@ -43,8 +44,10 @@ class EmployeePaySheetItem extends Model
         'gross_pay' => 'decimal:2',
         'deductions' => 'decimal:2',
         'net_pay' => 'decimal:2',
-        'earning_lines' => 'array',
-        'deduction_lines' => 'array',
+        'expense_id' => 'integer',
+        'status' => 'string',
+        'paid_at' => 'datetime',
+        'paid_by' => 'integer',
     ];
 
     public function paySheetRun(): BelongsTo
@@ -55,5 +58,15 @@ class EmployeePaySheetItem extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function expense(): BelongsTo
+    {
+        return $this->belongsTo(Expense::class);
+    }
+
+    public function paidBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by');
     }
 }

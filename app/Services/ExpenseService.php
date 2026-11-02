@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CompanyAccount;
 use App\Models\CompanyAccountTransaction;
+use App\Models\EmployeePaySheetItem;
 use App\Models\EmployeePaySheetRun;
 use App\Models\Expense;
 use App\Models\ExpenseDocument;
@@ -168,11 +169,15 @@ class ExpenseService
 
     private function ensureExpenseIsNotPaySheetPayment(Expense $expense): void
     {
-        $linked = EmployeePaySheetRun::query()
+        $linkedToItem = EmployeePaySheetItem::query()
             ->where('expense_id', $expense->id)
             ->exists();
 
-        if ($linked) {
+        $linkedToRun = EmployeePaySheetRun::query()
+            ->where('expense_id', $expense->id)
+            ->exists();
+
+        if ($linkedToRun || $linkedToItem) {
             abort(422, 'This expense is linked to a paid employee pay sheet and cannot be edited or deleted.');
         }
     }

@@ -128,6 +128,7 @@ class EmployeePaySheetApiController extends Controller
     public function markPaid(Request $request, EmployeePaySheetRun $employeePaySheetRun): JsonResponse
     {
         $validated = $request->validate([
+            'employee_pay_sheet_item_id' => ['required', 'integer', 'exists:employee_pay_sheet_items,id'],
             'company_account_id' => ['required', 'integer', 'exists:company_accounts,id'],
             'paid_at' => ['nullable', 'date'],
             'reference_number' => ['nullable', 'string', 'max:255'],
