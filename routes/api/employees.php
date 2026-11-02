@@ -27,6 +27,7 @@ Route::middleware(['auth', 'permission:employees.manage'])->group(function () {
     Route::post('/employees/{employee}/documents', [EmployeeApiController::class, 'storeDocument']);
     Route::delete('/employees/{employee}/documents/{document}', [EmployeeApiController::class, 'destroyDocument']);
     Route::post('/employees/{employee}/attendance', [EmployeeApiController::class, 'storeAttendance']);
+    Route::post('/employees/{employee}/attendance/actual-checkin', [EmployeeApiController::class, 'setActualCheckin']);
     Route::delete('/employees/{employee}/attendance/{attendance}', [EmployeeApiController::class, 'destroyAttendance']);
 });
 

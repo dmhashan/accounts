@@ -239,7 +239,10 @@
                     Status
                   </th>
                   <th v-if="employee?.biometric_id" class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
-                    First Check-in
+                    Biometric Check-in
+                  </th>
+                  <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
+                    Actual Check-in
                   </th>
                   <th class="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
                     Action
@@ -295,23 +298,42 @@
                     </span>
                   </td>
 
-                  <!-- First Check-in column (only if employee has biometric_id) -->
+                  <!-- Original device time is immutable from the employee UI. -->
                   <td v-if="employee?.biometric_id" class="px-4 py-2.5">
                     <span
-                      v-if="attendanceMap[cell.date]?.first_checkin_at"
+                      v-if="attendanceMap[cell.date]?.biometric_checkin_at || attendanceMap[cell.date]?.first_checkin_at"
                       class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                     >
                       <Clock class="h-3 w-3 shrink-0" :stroke-width="2.5" />
-                      {{ attendanceMap[cell.date].first_checkin_at }}
-                    </span>
-                    <span
-                      v-else-if="attendanceMap[cell.date]?.check_in_at"
-                      class="inline-flex items-center gap-1 rounded-lg bg-secondary-100 px-2.5 py-1 text-xs font-medium text-secondary-600 dark:bg-secondary-800 dark:text-secondary-300"
-                    >
-                      <Clock class="h-3 w-3 shrink-0" :stroke-width="2" />
-                      {{ attendanceMap[cell.date].check_in_at }}
+                      {{ attendanceMap[cell.date].biometric_checkin_at || attendanceMap[cell.date].first_checkin_at }}
                     </span>
                     <span v-else class="text-xs text-secondary-300 dark:text-secondary-600">—</span>
+                  </td>
+
+                  <td class="px-4 py-2.5">
+                    <div v-if="canManageEmployees && isAttendanceSelectable(cell.date)" class="flex min-w-44 items-center gap-2">
+                      <input
+                        type="time"
+                        :value="attendanceMap[cell.date]?.actual_checkin_at || attendanceMap[cell.date]?.check_in_at || ''"
+                        class="w-28 rounded-lg border border-secondary-300 bg-white px-2 py-1 text-xs text-secondary-800 dark:border-secondary-700 dark:bg-secondary-950 dark:text-secondary-200"
+                        :disabled="savingAttendanceDate === cell.date"
+                        aria-label="Actual check-in time"
+                        @change="setActualCheckin(cell.date, $event.target.value)"
+                      />
+                      <button
+                        v-if="attendanceMap[cell.date]?.biometric_checkin_at || attendanceMap[cell.date]?.first_checkin_at"
+                        type="button"
+                        class="whitespace-nowrap rounded-lg border border-secondary-200 px-2 py-1 text-[11px] font-medium text-secondary-600 hover:bg-secondary-50 dark:border-secondary-700 dark:text-secondary-300 dark:hover:bg-secondary-800"
+                        :disabled="savingAttendanceDate === cell.date"
+                        title="Copy biometric time to actual check-in"
+                        @click="useBiometricCheckin(cell.date)"
+                      >
+                        Use biometric
+                      </button>
+                    </div>
+                    <span v-else class="text-xs text-secondary-600 dark:text-secondary-300">
+                      {{ attendanceMap[cell.date]?.actual_checkin_at || attendanceMap[cell.date]?.check_in_at || '—' }}
+                    </span>
                   </td>
 
                   <!-- Action column -->
@@ -1482,6 +1504,38 @@ async function loadAttendance() {
     } finally {
         attendanceLoading.value = false;
     }
+}
+
+async function setActualCheckin(date, actualCheckinAt) {
+  savingAttendanceDate.value = date;
+  attendanceActionError.value = '';
+  try {
+    await apiRequest(`/api/employees/${route.params.id}/attendance/actual-checkin`, {
+      method: 'post',
+      data: { attendance_date: date, actual_checkin_at: actualCheckinAt || null },
+    });
+    await loadAttendance();
+  } catch (error) {
+    attendanceActionError.value = error?.response?.data?.message || 'Failed to save actual check-in time.';
+  } finally {
+    savingAttendanceDate.value = '';
+  }
+}
+
+async function useBiometricCheckin(date) {
+  savingAttendanceDate.value = date;
+  attendanceActionError.value = '';
+  try {
+    await apiRequest(`/api/employees/${route.params.id}/attendance/actual-checkin`, {
+      method: 'post',
+      data: { attendance_date: date, use_biometric: true },
+    });
+    await loadAttendance();
+  } catch (error) {
+    attendanceActionError.value = error?.response?.data?.message || 'Failed to copy biometric check-in time.';
+  } finally {
+    savingAttendanceDate.value = '';
+  }
 }
 
 async function setAttendance(date, status) {

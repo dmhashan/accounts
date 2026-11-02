@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\EmployeeAttendance;
 use App\Services\BiometricSyncService;
 use App\Services\TenantConfigurationService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class EmployeesBiometricTest extends ApiRouteTestCase
@@ -317,5 +318,50 @@ class EmployeesBiometricTest extends ApiRouteTestCase
         $this->assertSame('2026-10-24', $attendance->attendance_date->toDateString());
         $this->assertSame('present', $attendance->status);
         $this->assertSame('08:30', $attendance->check_in_at);
+        $this->assertSame('08:30:00', $attendance->biometric_checkin_at);
+        $this->assertSame('08:30:00', $attendance->actual_checkin_at);
+
+        $this->actingAsUser(['employees.manage']);
+        $this->postJson("/api/employees/{$employee->id}/attendance/actual-checkin", [
+            'attendance_date' => '2026-10-24',
+            'actual_checkin_at' => '10:15',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'half_day')
+            ->assertJsonPath('data.biometric_checkin_at', '08:30:00')
+            ->assertJsonPath('data.actual_checkin_at', '10:15:00');
+
+        $this->postJson("/api/employees/{$employee->id}/attendance/actual-checkin", [
+            'attendance_date' => '2026-10-24',
+            'use_biometric' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'present')
+            ->assertJsonPath('data.actual_checkin_at', '08:30:00');
+    }
+
+    public function testNoScanEmployeesAreMarkedAbsentAfterCutoffOnlyOnConfiguredWorkdays(): void
+    {
+        $employee = Employee::create([
+            'name' => 'Nadeesha Perera',
+            'status' => 'active',
+            'joined_date' => '2026-01-01',
+            'pay_method' => 'daily',
+            'daily_rate' => 2000,
+        ]);
+
+        $service = app(\App\Services\EmployeeService::class);
+        $monday = Carbon::parse('2026-10-26 13:00:00', 'Asia/Colombo');
+        $this->assertSame(1, $service->markMissingEmployeeAttendance($this->tenant, $monday));
+        $this->assertDatabaseHas('employee_attendances', [
+            'employee_id' => $employee->id,
+            'attendance_date' => '2026-10-26',
+            'status' => 'absent',
+            'attendance_source' => 'automatic',
+        ]);
+
+        $this->assertSame(0, $service->markMissingEmployeeAttendance($this->tenant, $monday));
+        $this->assertSame(0, $service->markMissingEmployeeAttendance(
+            $this->tenant,
+            Carbon::parse('2026-10-25 13:00:00', 'Asia/Colombo'),
+        ));
     }
 }

@@ -416,6 +416,42 @@
                     />
                   </AppFormField>
                 </div>
+
+                <div class="ml-0 md:ml-12 rounded-xl border border-secondary-200 dark:border-secondary-700 p-4">
+                  <h3 class="text-sm font-semibold text-secondary-800 dark:text-secondary-200">
+                    Employee Attendance Rules
+                  </h3>
+                  <p class="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+                    Early arrivals are Present, arrivals after the present cutoff through the half-day cutoff are Half day, and later arrivals are Absent. No-scan employees are marked absent after the half-day cutoff on selected workdays.
+                  </p>
+                  <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <AppFormField label="Present cutoff">
+                      <AppFormInput v-model="form['biometric.attendance_present_cutoff']" type="time" />
+                    </AppFormField>
+                    <AppFormField label="Half-day cutoff">
+                      <AppFormInput v-model="form['biometric.attendance_half_day_cutoff']" type="time" />
+                    </AppFormField>
+                    <AppFormField label="Timezone (IANA)">
+                      <AppFormInput v-model="form['biometric.attendance_timezone']" type="text" placeholder="Asia/Colombo" />
+                    </AppFormField>
+                  </div>
+                  <fieldset class="mt-3">
+                    <legend class="mb-2 text-xs font-medium text-secondary-600 dark:text-secondary-300">
+                      Working days for automatic absence
+                    </legend>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2">
+                      <label v-for="day in attendanceWeekdays" :key="day.value" class="inline-flex items-center gap-2 text-xs text-secondary-700 dark:text-secondary-300">
+                        <input
+                          type="checkbox"
+                          class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                          :checked="attendanceWorkingDays.includes(day.value)"
+                          @change="setAttendanceWorkingDay(day.value, $event.target.checked)"
+                        />
+                        {{ day.label }}
+                      </label>
+                    </div>
+                  </fieldset>
+                </div>
               </div>
             </div>
           </div>
@@ -1317,6 +1353,10 @@ const form = ref({
     'biometric.sync_members':        '0',
     'biometric.access_control':      '0',
     'biometric.grace_period_days':   '0',
+    'biometric.attendance_present_cutoff': '09:00',
+    'biometric.attendance_half_day_cutoff': '12:00',
+    'biometric.attendance_working_days': '[1,2,3,4,5]',
+    'biometric.attendance_timezone': 'Asia/Colombo',
     'biometric.webhook_enabled':     '0',
     'biometric.webhook_server_host': '',
     'biometric.webhook_server_port': '80',
@@ -1329,11 +1369,36 @@ const availableModels = computed(() => {
     return DEVICE_REGISTRY[maker]?.models ?? [];
 });
 
+const attendanceWeekdays = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 7, label: 'Sun' },
+];
+const attendanceWorkingDays = computed(() => {
+  try {
+    const days = JSON.parse(form.value['biometric.attendance_working_days'] || '[1,2,3,4,5]');
+    return Array.isArray(days) ? days.map(Number) : [1, 2, 3, 4, 5];
+  } catch {
+    return [1, 2, 3, 4, 5];
+  }
+});
+
 const isBiometricEnabled = computed(() => form.value['biometric.enabled'] === '1');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function toggle(key) {
     form.value[key] = form.value[key] === '1' ? '0' : '1';
+}
+
+function setAttendanceWorkingDay(day, checked) {
+  const days = new Set(attendanceWorkingDays.value);
+  if (checked) days.add(day);
+  else days.delete(day);
+  form.value['biometric.attendance_working_days'] = JSON.stringify([...days].sort((a, b) => a - b));
 }
 
 function onMakerChange() {

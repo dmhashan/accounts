@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Models\EmployeeAttendance;
 use App\Models\EmployeeDocument;
+use App\Models\Tenant;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -62,7 +63,10 @@ class EmployeeService
 
     public const MAX_DOCUMENT_SIZE_KB = 10240;
 
-    public function __construct(private readonly MediaStorageService $media) {}
+    public function __construct(
+        private readonly MediaStorageService $media,
+        private readonly TenantConfigurationService $config,
+    ) {}
 
     public function meta(): array
     {
@@ -207,9 +211,8 @@ class EmployeeService
             ->orderBy('attendance_date')
             ->get();
 
-        // ── Biometric first check-in times per day ────────────────────────────
-        // Query the earliest successful biometric event per date for this employee
-        // (matched by employee_no == biometric_id, only success events).
+        // Backfill the API's biometric time from historical events while older rows
+        // are being migrated into the dedicated employee_attendances column.
         $firstCheckins = [];
 
         if (filled($employee->biometric_id)) {
@@ -254,7 +257,8 @@ class EmployeeService
 
         // Merge first_checkin_at into each day record
         foreach ($calendarRecords as $dateKey => &$record) {
-            $record['first_checkin_at'] = $firstCheckins[$dateKey] ?? null;
+            $record['biometric_checkin_at'] = $record['biometric_checkin_at'] ?? $firstCheckins[$dateKey] ?? null;
+            $record['first_checkin_at'] = $record['biometric_checkin_at'];
         }
         unset($record);
 
@@ -285,19 +289,151 @@ class EmployeeService
         $this->validateAttendanceDate($employee, $attendanceDate);
         $this->validateLeaveAvailability($employee, $attendanceDate, $validated['status']);
 
-        return EmployeeAttendance::updateOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'attendance_date' => $attendanceDate->toDateString(),
-            ],
-            [
-                'recorded_by' => $recordedBy,
-                'status' => $validated['status'],
-                'check_in_at' => filled($validated['check_in_at'] ?? null) ? $validated['check_in_at'] : null,
-                'check_out_at' => filled($validated['check_out_at'] ?? null) ? $validated['check_out_at'] : null,
-                'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
-            ],
-        );
+        $attendance = EmployeeAttendance::firstOrNew([
+            'employee_id' => $employee->id,
+            'attendance_date' => $attendanceDate->toDateString(),
+        ]);
+        $attendance->recorded_by = $recordedBy;
+        $attendance->status = $validated['status'];
+        $attendance->attendance_source = 'manual';
+
+        if (array_key_exists('actual_checkin_at', $validated) || array_key_exists('check_in_at', $validated)) {
+            $time = $validated['actual_checkin_at'] ?? $validated['check_in_at'] ?? null;
+            $attendance->actual_checkin_at = $time;
+            $attendance->check_in_at = $time;
+        }
+
+        if (array_key_exists('check_out_at', $validated)) {
+            $attendance->check_out_at = $validated['check_out_at'];
+        }
+
+        if (array_key_exists('notes', $validated)) {
+            $attendance->notes = filled($validated['notes']) ? trim((string) $validated['notes']) : null;
+        }
+
+        $attendance->save();
+
+        return $attendance;
+    }
+
+    public function setActualCheckin(Employee $employee, string $date, ?string $actualTime, bool $useBiometric, ?int $recordedBy): EmployeeAttendance
+    {
+        $attendanceDate = Carbon::parse($date)->startOfDay();
+        $this->validateAttendanceDate($employee, $attendanceDate);
+
+        $attendance = EmployeeAttendance::firstOrNew([
+            'employee_id' => $employee->id,
+            'attendance_date' => $attendanceDate->toDateString(),
+        ]);
+
+        $time = $useBiometric ? $attendance->biometric_checkin_at : $actualTime;
+
+        if ($useBiometric && !$time && filled($employee->biometric_id)) {
+            $event = \App\Models\BiometricAccessEvent::query()
+                ->where('employee_no', $employee->biometric_id)
+                ->where('result', 'success')
+                ->whereBetween('event_time', [$attendanceDate->copy()->startOfDay(), $attendanceDate->copy()->endOfDay()])
+                ->orderBy('event_time')
+                ->first(['event_time']);
+
+            if ($event?->event_time) {
+                $attendance->biometric_checkin_at = $event->event_time->format('H:i:s');
+                $time = $attendance->biometric_checkin_at;
+            }
+        }
+
+        if ($useBiometric && !$time) {
+            throw ValidationException::withMessages([
+                'actual_checkin_at' => ['There is no biometric check-in to copy for this date.'],
+            ]);
+        }
+
+        $attendance->recorded_by = $recordedBy;
+        $attendance->actual_checkin_at = $time;
+        $attendance->check_in_at = $time;
+        $attendance->attendance_source = 'actual_time';
+        $attendance->status ??= 'present';
+
+        if ($time !== null) {
+            $attendance->status = $this->classifyAttendanceTime($time, $this->attendanceSettings());
+        }
+
+        $attendance->save();
+
+        return $attendance;
+    }
+
+    public function markMissingEmployeeAttendance(Tenant $tenant, ?Carbon $now = null): int
+    {
+        $settings = $this->attendanceSettings($tenant->id);
+        $timezone = $settings['timezone'];
+        $now = ($now ?? Carbon::now($timezone))->copy()->timezone($timezone);
+
+        if ($now->format('H:i') <= $settings['half_day_cutoff']) {
+            return 0;
+        }
+
+        $workingDays = $settings['working_days'];
+        $date = $now->toDateString();
+
+        if (!in_array($now->dayOfWeekIso, $workingDays, true)) {
+            return 0;
+        }
+
+        $employees = Employee::query()
+            ->where('status', 'active')
+            ->whereDate('joined_date', '<=', $date)
+            ->where(fn ($query) => $query->whereNull('left_date')->orWhereDate('left_date', '>=', $date))
+            ->get();
+
+        $marked = 0;
+
+        foreach ($employees as $employee) {
+            $attendance = EmployeeAttendance::firstOrCreate(
+                ['employee_id' => $employee->id, 'attendance_date' => $date],
+                [
+                    'status' => 'absent',
+                    'attendance_source' => 'automatic',
+                    'notes' => 'Automatically marked absent: no biometric or manual check-in.',
+                ],
+            );
+
+            if ($attendance->wasRecentlyCreated) {
+                $marked++;
+            }
+        }
+
+        return $marked;
+    }
+
+    public function classifyAttendanceTime(string $time, ?array $settings = null): string
+    {
+        $settings ??= $this->attendanceSettings();
+        $time = substr($time, 0, 5);
+
+        if ($time <= $settings['present_cutoff']) {
+            return 'present';
+        }
+
+        if ($time <= $settings['half_day_cutoff']) {
+            return 'half_day';
+        }
+
+        return 'absent';
+    }
+
+    private function attendanceSettings(?int $tenantId = null): array
+    {
+        $tenantId ??= (int) app('tenant')->id;
+        $config = $this->config->all($tenantId);
+        $workingDays = json_decode($config['biometric.attendance_working_days'] ?? '[1,2,3,4,5]', true);
+
+        return [
+            'present_cutoff' => $config['biometric.attendance_present_cutoff'] ?? '09:00',
+            'half_day_cutoff' => $config['biometric.attendance_half_day_cutoff'] ?? '12:00',
+            'working_days' => array_map('intval', is_array($workingDays) ? $workingDays : [1, 2, 3, 4, 5]),
+            'timezone' => $config['biometric.attendance_timezone'] ?? config('app.timezone', 'UTC'),
+        ];
     }
 
     public function destroyAttendance(Employee $employee, EmployeeAttendance $attendance): void
@@ -343,7 +479,11 @@ class EmployeeService
             'status_label' => $this->attendanceStatusLabel($attendance->status),
             'pay_units' => $this->attendancePayUnits($attendance->status),
             'leave_units' => $this->attendanceLeaveUnits($attendance->status),
-            'check_in_at' => $attendance->check_in_at,
+            'biometric_checkin_at' => $attendance->biometric_checkin_at,
+            'actual_checkin_at' => $attendance->actual_checkin_at ?? $attendance->check_in_at,
+            'first_checkin_at' => $attendance->biometric_checkin_at,
+            'check_in_at' => $attendance->actual_checkin_at ?? $attendance->check_in_at,
+            'attendance_source' => $attendance->attendance_source,
             'check_out_at' => $attendance->check_out_at,
             'notes' => $attendance->notes,
             'recorded_by' => $attendance->recorder ? ['id' => $attendance->recorder->id, 'name' => $attendance->recorder->name] : null,
@@ -455,6 +595,9 @@ class EmployeeService
             'status_label' => self::ATTENDANCE_STATUSES['present']['label'],
             'pay_units' => $this->attendancePayUnits('present'),
             'leave_units' => $this->attendanceLeaveUnits('present'),
+            'biometric_checkin_at' => null,
+            'actual_checkin_at' => null,
+            'first_checkin_at' => null,
             'check_in_at' => null,
             'check_out_at' => null,
             'notes' => null,

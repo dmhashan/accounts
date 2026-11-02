@@ -76,6 +76,29 @@ Artisan::command('biometric:import-access-events', function () {
     $this->info("Dispatched biometric access events import job for {$count} tenant(s).");
 })->purpose('Import biometric access events from last sync time up to now for enabled tenants');
 
+Artisan::command('employees:mark-absent', function () {
+    $service = app(App\Services\EmployeeService::class);
+    $tenancy = app(App\Services\Tenancy\TenantDatabaseManager::class);
+    $count = 0;
+
+    $markForTenant = function (App\Models\Tenant $tenant) use ($service, &$count): void {
+        $count += $service->markMissingEmployeeAttendance($tenant);
+    };
+
+    if ($tenancy->isolationEnabled()) {
+        $tenancy->eachTenant($markForTenant);
+    } else {
+        $tenant = app()->bound('tenant') ? app('tenant') : App\Models\Tenant::first();
+
+        if ($tenant) {
+            $markForTenant($tenant);
+        }
+    }
+
+    $this->info("Automatically marked {$count} employee(s) absent.");
+})->purpose('Mark employees absent after the configured half-day cutoff when no check-in exists');
+
 Schedule::command('notifications:membership-expiry')->dailyAt('01:00')->timezone('UTC')->onOneServer();
 Schedule::command('notifications:member-milestones')->dailyAt('01:00')->timezone('UTC')->onOneServer();
 Schedule::command('biometric:import-access-events')->everyFourHours()->onOneServer();
+Schedule::command('employees:mark-absent')->everyMinute()->onOneServer();

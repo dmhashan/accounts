@@ -41,7 +41,7 @@ class ConfigurationApiController extends Controller
 
     public function update(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             // General display preferences
             'general\.date_format' => ['sometimes', new Enum(DateFormat::class)],
             'general\.time_format' => ['sometimes', new Enum(TimeFormat::class)],
@@ -80,6 +80,10 @@ class ConfigurationApiController extends Controller
             'biometric.sync_members' => ['sometimes', 'in:0,1'],
             'biometric.access_control' => ['sometimes', 'in:0,1'],
             'biometric.grace_period_days' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'biometric.attendance_present_cutoff' => ['sometimes', 'required', 'date_format:H:i'],
+            'biometric.attendance_half_day_cutoff' => ['sometimes', 'required', 'date_format:H:i'],
+            'biometric.attendance_working_days' => ['sometimes', 'required', 'json'],
+            'biometric.attendance_timezone' => ['sometimes', 'required', 'timezone'],
             'biometric.webhook_enabled' => ['sometimes', 'in:0,1'],
             'biometric.webhook_server_host' => ['sometimes', 'nullable', 'string', 'max:255'],
             'biometric.webhook_server_port' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
@@ -105,6 +109,28 @@ class ConfigurationApiController extends Controller
         ]);
 
         $tenant = app('tenant');
+
+        $savedSettings = $this->service->all($tenant->id);
+        $presentCutoff = $validated['biometric.attendance_present_cutoff'] ?? $savedSettings['biometric.attendance_present_cutoff'];
+        $halfDayCutoff = $validated['biometric.attendance_half_day_cutoff'] ?? $savedSettings['biometric.attendance_half_day_cutoff'];
+
+        if ($halfDayCutoff <= $presentCutoff) {
+            return response()->json([
+                'message' => 'The half-day cutoff must be later than the present cutoff.',
+                'errors' => ['biometric.attendance_half_day_cutoff' => ['The half-day cutoff must be later than the present cutoff.']],
+            ], 422);
+        }
+
+        if (isset($validated['biometric.attendance_working_days'])) {
+            $workingDays = json_decode($validated['biometric.attendance_working_days'], true);
+
+            if (!is_array($workingDays) || $workingDays === [] || array_diff($workingDays, range(1, 7)) !== []) {
+                return response()->json([
+                    'message' => 'Select at least one valid attendance working day.',
+                    'errors' => ['biometric.attendance_working_days' => ['Select at least one valid attendance working day.']],
+                ], 422);
+            }
+        }
 
         $biometricWebhookKeys = array_intersect_key($request->all(), array_flip([
             'biometric.webhook_enabled',

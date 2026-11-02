@@ -1150,23 +1150,47 @@ class BiometricSyncService
     public function markEmployeeAttendance(Tenant $tenant, Employee $employee, Carbon $eventTime): void
     {
         try {
-            $date = $eventTime->toDateString();
-            $time = $eventTime->format('H:i');
+            $settings = $this->config->all($tenant->id);
+            $timezone = $settings['biometric.attendance_timezone'] ?? config('app.timezone', 'UTC');
+            $localEventTime = $eventTime->copy()->timezone($timezone);
+            $date = $localEventTime->toDateString();
+            $time = $localEventTime->format('H:i:s');
 
             $attendance = EmployeeAttendance::firstOrNew([
                 'employee_id' => $employee->id,
                 'attendance_date' => $date,
             ]);
 
-            if (!$attendance->exists) {
-                $attendance->status = 'present';
-                $attendance->check_in_at = $time;
-                $attendance->notes = 'Recorded via biometric device';
-                $attendance->save();
-            } elseif (!$attendance->check_out_at && $attendance->check_in_at && $attendance->check_in_at !== $time) {
-                $attendance->check_out_at = $time;
-                $attendance->save();
+            $wasNew = !$attendance->exists;
+            $oldBiometricTime = $attendance->biometric_checkin_at;
+
+            if (!$oldBiometricTime || $time < (string) $oldBiometricTime) {
+                $attendance->biometric_checkin_at = $time;
             }
+
+            if (!$attendance->actual_checkin_at && !$attendance->check_in_at) {
+                $attendance->actual_checkin_at = $attendance->biometric_checkin_at;
+            }
+
+            $attendance->check_in_at = $attendance->actual_checkin_at ?? $attendance->check_in_at;
+
+            if ($wasNew) {
+                $attendance->attendance_source = 'biometric';
+                $attendance->notes = 'Recorded via biometric device';
+            } elseif (!in_array($attendance->attendance_source, ['manual'], true)) {
+                $attendance->attendance_source = 'biometric';
+            }
+
+            if ($attendance->attendance_source !== 'manual' && $attendance->actual_checkin_at) {
+                $actualTime = substr((string) $attendance->actual_checkin_at, 0, 5);
+                $presentCutoff = $settings['biometric.attendance_present_cutoff'] ?? '09:00';
+                $halfDayCutoff = $settings['biometric.attendance_half_day_cutoff'] ?? '12:00';
+                $attendance->status = $actualTime <= $presentCutoff
+                    ? 'present'
+                    : ($actualTime <= $halfDayCutoff ? 'half_day' : 'absent');
+            }
+
+            $attendance->save();
         } catch (\Throwable $e) {
             Log::warning('BiometricSyncService: failed to mark employee attendance', [
                 'employee_id' => $employee->id,

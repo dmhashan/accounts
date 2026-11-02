@@ -131,6 +131,7 @@ class EmployeeApiController extends Controller
             'attendance_date' => ['required', 'date'],
             'status' => ['required', Rule::in(array_keys(EmployeeService::ATTENDANCE_STATUSES))],
             'check_in_at' => ['nullable', 'date_format:H:i'],
+            'actual_checkin_at' => ['nullable', 'date_format:H:i'],
             'check_out_at' => ['nullable', 'date_format:H:i'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -139,6 +140,28 @@ class EmployeeApiController extends Controller
 
         return response()->json([
             'message' => 'Attendance recorded successfully.',
+            'data' => $this->employeeService->serializeAttendance($attendance->load('recorder')),
+        ]);
+    }
+
+    public function setActualCheckin(Request $request, Employee $employee): JsonResponse
+    {
+        $validated = $request->validate([
+            'attendance_date' => ['required', 'date'],
+            'actual_checkin_at' => ['nullable', 'date_format:H:i'],
+            'use_biometric' => ['sometimes', 'boolean'],
+        ]);
+
+        $attendance = $this->employeeService->setActualCheckin(
+            $employee,
+            $validated['attendance_date'],
+            $validated['actual_checkin_at'] ?? null,
+            (bool) ($validated['use_biometric'] ?? false),
+            $request->user()?->id,
+        );
+
+        return response()->json([
+            'message' => 'Actual check-in time saved and attendance status recalculated.',
             'data' => $this->employeeService->serializeAttendance($attendance->load('recorder')),
         ]);
     }
