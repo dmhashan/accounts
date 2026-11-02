@@ -1703,6 +1703,7 @@ async function paySelectedPaySheet() {
         const response = await apiRequest(`/api/employee-pay-sheets/${paySheetPayTarget.value.employee_pay_sheet_run_id}/mark-paid`, {
             method: 'post',
             data: {
+                employee_pay_sheet_item_id: paySheetPayTarget.value.id,
                 company_account_id: paySheetPayForm.value.company_account_id,
                 paid_at: paySheetPayForm.value.paid_at,
                 reference_number: paySheetPayForm.value.reference_number,
