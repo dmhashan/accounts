@@ -15,7 +15,10 @@ class ExpenseService
 {
     public const MAX_DOCUMENT_SIZE_KB = 10240; // 10 MB
 
-    public function __construct(private readonly MediaStorageService $media) {}
+    public function __construct(
+        private readonly MediaStorageService $media,
+        private readonly ManagerNotificationDispatcher $managerNotifications,
+    ) {}
 
     public function expenses(int $tenantId, int $perPage): array
     {
@@ -52,7 +55,7 @@ class ExpenseService
 
     public function storeExpense(int $tenantId, array $validated, array $documents = [], ?int $uploadedBy = null): Expense
     {
-        return DB::transaction(function () use ($tenantId, $validated, $documents, $uploadedBy) {
+        $expense = DB::transaction(function () use ($tenantId, $validated, $documents, $uploadedBy) {
             $this->ensureAccountBelongsToTenant((int) $validated['company_account_id'], $tenantId);
 
             $expense = Expense::create([
@@ -69,10 +72,26 @@ class ExpenseService
 
             return $expense;
         });
+
+        $this->managerNotifications->dispatch($tenantId, 'expense.created', "Expense #{$expense->id} was added.", [
+            'Category' => $expense->category,
+            'Amount' => 'LKR ' . number_format((float) $expense->amount, 2),
+            'Date' => (string) $expense->expense_date,
+            'Reference' => $expense->reference_number ?: '—',
+        ]);
+
+        return $expense;
     }
 
     public function updateExpense(Expense $expense, int $tenantId, array $validated, array $documents = [], ?int $uploadedBy = null): void
     {
+        $before = [
+            'category' => (string) $expense->category,
+            'amount' => (float) $expense->amount,
+            'date' => (string) $expense->expense_date,
+            'reference' => (string) ($expense->reference_number ?? ''),
+        ];
+
         DB::transaction(function () use ($expense, $tenantId, $validated, $documents, $uploadedBy) {
             $lockedExpense = Expense::query()
                 ->lockForUpdate()
@@ -97,6 +116,17 @@ class ExpenseService
             $this->syncTransaction($lockedExpense, $tenantId);
             $this->storeDocuments($lockedExpense, $tenantId, $documents, $uploadedBy);
         });
+
+        $this->managerNotifications->dispatch($tenantId, 'expense.updated', "Expense #{$expense->id} was edited.", [
+            'Previous category' => $before['category'],
+            'New category' => trim((string) $validated['category']),
+            'Previous amount' => 'LKR ' . number_format($before['amount'], 2),
+            'New amount' => 'LKR ' . number_format((float) $validated['amount'], 2),
+            'Previous date' => $before['date'],
+            'New date' => (string) $validated['expense_date'],
+            'Previous reference' => $before['reference'] ?: '—',
+            'New reference' => $validated['reference_number'] ?? '—',
+        ]);
     }
 
     public function destroyExpense(Expense $expense, int $tenantId): void
@@ -109,6 +139,12 @@ class ExpenseService
         }
 
         $this->ensureExpenseIsNotPaySheetPayment($lockedExpense);
+        $details = [
+            'Category' => $lockedExpense->category,
+            'Amount' => 'LKR ' . number_format((float) $lockedExpense->amount, 2),
+            'Date' => (string) $lockedExpense->expense_date,
+            'Reference' => $lockedExpense->reference_number ?: '—',
+        ];
 
         // Delete the associated transaction before deleting the expense
         CompanyAccountTransaction::where('model_name', 'expense')
@@ -120,6 +156,7 @@ class ExpenseService
         }
 
         $lockedExpense->delete();
+        $this->managerNotifications->dispatch($tenantId, 'expense.deleted', "Expense #{$lockedExpense->id} was deleted.", $details);
     }
 
     public function documentUrl(Expense $expense, ExpenseDocument $document, int $tenantId): string

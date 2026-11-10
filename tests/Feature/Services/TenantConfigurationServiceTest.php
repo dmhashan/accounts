@@ -33,6 +33,49 @@ class TenantConfigurationServiceTest extends ApiRouteTestCase
             'key' => 'general.color_theme',
             'value' => 'forest',
         ]);
+
+    }
+
+    public function testSharedConfigurationRowsAreScopedByTenant(): void
+    {
+        Schema::dropIfExists('tenant_configurations');
+        Schema::create('tenant_configurations', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
+            $table->string('key', 100);
+            $table->string('title', 255);
+            $table->text('value')->nullable();
+            $table->timestamps();
+            $table->unique(['tenant_id', 'key']);
+        });
+
+        $otherTenant = \App\Models\Tenant::create([
+            'name' => 'Other Gym',
+            'domain' => 'other-gym',
+            'tenant_uuid' => \Illuminate\Support\Str::uuid()->toString(),
+            'use_custom_landing_page' => false,
+        ]);
+        $service = app(TenantConfigurationService::class);
+
+        $service->updateBatch($this->tenant->id, ['general.color_theme' => 'forest']);
+        $service->updateBatch($otherTenant->id, ['general.color_theme' => 'ocean']);
+
+        $this->assertDatabaseHas('tenant_configurations', [
+            'tenant_id' => $this->tenant->id,
+            'key' => 'general.color_theme',
+            'value' => 'forest',
+        ]);
+        $this->assertSame('forest', $service->all($this->tenant->id)['general.color_theme']);
+        $this->assertSame('ocean', $service->all($otherTenant->id)['general.color_theme']);
+
+        Schema::dropIfExists('tenant_configurations');
+        Schema::create('tenant_configurations', function (Blueprint $table): void {
+            $table->id();
+            $table->string('key', 100)->unique();
+            $table->string('title', 255);
+            $table->text('value')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function testConfigurableMemberAndBiometricIdGeneration(): void

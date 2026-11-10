@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BiometricApiController;
 use App\Http\Controllers\Api\ConfigurationApiController;
+use App\Http\Controllers\Api\ManagerNotificationApiController;
 use App\Http\Controllers\Api\SettingsApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,14 @@ Route::middleware(['auth', 'permission:settings.configuration,settings.manage'])
         Route::get('/check-user', [App\Http\Controllers\Api\WhatsAppApiController::class, 'checkUser']);
         Route::get('/qr-code', [App\Http\Controllers\Api\WhatsAppApiController::class, 'getLoginQr']);
     });
+});
+
+Route::middleware(['auth', 'permission:settings.configuration,settings.manage'])->prefix('settings/manager-notifications')->group(function () {
+    Route::get('/', [ManagerNotificationApiController::class, 'index']);
+    Route::put('/', [ManagerNotificationApiController::class, 'update']);
+    Route::post('/recipients', [ManagerNotificationApiController::class, 'storeRecipient']);
+    Route::put('/recipients/{recipient}', [ManagerNotificationApiController::class, 'updateRecipient']);
+    Route::delete('/recipients/{recipient}', [ManagerNotificationApiController::class, 'destroyRecipient']);
 });
 
 Route::middleware(['auth', 'permission:settings.biometric,settings.manage'])->group(function () {

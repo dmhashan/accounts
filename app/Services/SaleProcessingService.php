@@ -19,6 +19,7 @@ class SaleProcessingService
         private readonly MemberPortalUrlService $memberPortalUrl,
         private readonly PaymentMethodService $paymentMethods,
         private readonly PaymentSettlementService $settlements,
+        private readonly ManagerNotificationDispatcher $managerNotifications,
     ) {}
 
     public function create(int $tenantId, array $validated): Sale
@@ -57,16 +58,28 @@ class SaleProcessingService
             $this->sendSaleOutstandingNotification($sale);
         }
 
+        $this->managerNotifications->dispatch($tenantId, 'sale.created', "Sale #{$sale->id} was added.", [
+            'Total' => 'LKR ' . number_format((float) $sale->total_amount, 2),
+            'Paid' => 'LKR ' . number_format((float) $sale->paid_amount, 2),
+            'Reference' => $sale->reference_number ?: '—',
+            'Status' => $sale->is_paid ? 'Paid' : 'Outstanding',
+        ]);
+
         return $sale;
     }
 
     public function update(Sale $sale, int $tenantId, array $validated): Sale
     {
         $this->ensureSaleIsMutable($sale);
+        $before = [
+            'total' => (float) $sale->total_amount,
+            'reference' => (string) ($sale->reference_number ?? ''),
+            'item_count' => $sale->items()->count(),
+        ];
 
         $today = Carbon::today()->toDateString();
 
-        return DB::transaction(function () use ($sale, $tenantId, $validated, $today) {
+        $updatedSale = DB::transaction(function () use ($sale, $tenantId, $validated, $today) {
             $this->restoreStockForExistingItems($sale, $tenantId, $today);
             $this->refundWalletIfNeeded($sale, $tenantId);
 
@@ -93,11 +106,29 @@ class SaleProcessingService
 
             return $sale;
         });
+
+        $this->managerNotifications->dispatch($tenantId, 'sale.updated', "Sale #{$updatedSale->id} was edited.", [
+            'Previous total' => 'LKR ' . number_format($before['total'], 2),
+            'New total' => 'LKR ' . number_format((float) $updatedSale->total_amount, 2),
+            'Previous item count' => $before['item_count'],
+            'New item count' => $updatedSale->items()->count(),
+            'Previous reference' => $before['reference'] ?: '—',
+            'New reference' => $updatedSale->reference_number ?: '—',
+        ]);
+
+        return $updatedSale;
     }
 
     public function delete(Sale $sale, int $tenantId): void
     {
         $this->ensureSaleIsMutable($sale);
+        $details = [
+            'Total' => 'LKR ' . number_format((float) $sale->total_amount, 2),
+            'Reference' => $sale->reference_number ?: '—',
+            'Item count' => $sale->items()->count(),
+            'Status' => $sale->is_paid ? 'Paid' : 'Outstanding',
+        ];
+        $saleId = $sale->id;
 
         $today = Carbon::today()->toDateString();
 
@@ -107,6 +138,8 @@ class SaleProcessingService
 
             $sale->delete();
         });
+
+        $this->managerNotifications->dispatch($tenantId, 'sale.deleted', "Sale #{$saleId} was deleted.", $details);
     }
 
     public function markAsPaid(Sale $sale, int $tenantId, array $validated): Sale
@@ -174,6 +207,12 @@ class SaleProcessingService
         });
 
         $this->sendSalePaidNotification($paid);
+        $this->managerNotifications->dispatch($tenantId, 'sale.updated', "Sale #{$paid->id} was marked paid.", [
+            'Total' => 'LKR ' . number_format((float) $paid->total_amount, 2),
+            'Paid' => 'LKR ' . number_format((float) $paid->paid_amount, 2),
+            'Reference' => $paid->reference_number ?: '—',
+            'Status' => 'Paid',
+        ]);
 
         return $paid;
     }

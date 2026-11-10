@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\DateFormat;
 use App\Enums\TimeFormat;
 use App\Models\TenantConfiguration;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class TenantConfigurationService
@@ -118,9 +119,13 @@ class TenantConfigurationService
 
     public function all(int $tenantId): array
     {
-        $rows = TenantConfiguration::query()
-            ->pluck('value', 'key')
-            ->all();
+        $query = TenantConfiguration::query();
+
+        if (Schema::hasColumn('tenant_configurations', 'tenant_id')) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        $rows = $query->pluck('value', 'key')->all();
 
         $result = [];
 
@@ -152,10 +157,25 @@ class TenantConfigurationService
                 $value = $this->bodyMeasurementFieldsJson($value);
             }
 
-            TenantConfiguration::updateOrCreate(
-                ['key' => $key],
-                ['title' => $title, 'value' => (string) $value],
-            );
+            $hasTenantId = Schema::hasColumn('tenant_configurations', 'tenant_id');
+            $query = TenantConfiguration::query()->where('key', $key);
+
+            if ($hasTenantId) {
+                $query->where('tenant_id', $tenantId);
+            }
+
+            $configuration = $query->first() ?? new TenantConfiguration;
+            $configuration->forceFill([
+                'key' => $key,
+                'title' => $title,
+                'value' => (string) $value,
+            ]);
+
+            if ($hasTenantId) {
+                $configuration->forceFill(['tenant_id' => $tenantId]);
+            }
+
+            $configuration->save();
         }
 
         return $this->all($tenantId);

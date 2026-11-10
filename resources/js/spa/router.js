@@ -34,6 +34,7 @@ const MemberReachableSettingsPage = () => import('./pages/MemberReachableSetting
 const TermsSettingsPage = () => import('./pages/TermsSettingsPage.vue');
 const LegacyToolsPage = () => import('./pages/LegacyToolsPage.vue');
 const ConfigurationPage = () => import('./pages/ConfigurationPage.vue');
+const ManagerNotificationsSettingsPage = () => import('./pages/ManagerNotificationsSettingsPage.vue');
 const WhatsAppSettingsPage = () => import('./pages/WhatsAppSettingsPage.vue');
 const BiometricSettingsPage = () => import('./pages/BiometricSettingsPage.vue');
 const WorkoutPage = () => import('./pages/WorkoutPage.vue');
@@ -171,6 +172,7 @@ const routes = [
     { path: '/settings/campaigns/:id(\\d+)/edit', component: CampaignFormPage, meta: { title: 'Edit Campaign' } },
     { path: '/settings/legacy-tools', component: LegacyToolsPage, meta: { title: 'Manual Commands' } },
     { path: '/settings/configuration', component: ConfigurationPage, meta: { title: 'Configuration' } },
+    { path: '/settings/manager-notifications', component: ManagerNotificationsSettingsPage, meta: { title: 'Manager Notifications' } },
     { path: '/settings/whatsapp', component: WhatsAppSettingsPage, meta: { title: 'WhatsApp' } },
     { path: '/settings/biometric', component: BiometricSettingsPage, meta: { title: 'Biometric Device' } },
     { path: '/workout', component: WorkoutPage, meta: { title: 'Workout' } },

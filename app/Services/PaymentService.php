@@ -16,6 +16,7 @@ class PaymentService
         private readonly AutomatedMemberNotificationService $notifications,
         private readonly PaymentMethodService $paymentMethods,
         private readonly PaymentSettlementService $settlements,
+        private readonly ManagerNotificationDispatcher $managerNotifications,
     ) {}
 
     public function meta(int $tenantId): array
@@ -292,12 +293,24 @@ class PaymentService
             $this->notifications->sendPaymentOutstanding($payment);
         }
 
+        $this->managerNotifications->dispatch($tenantId, 'payment.created', "Payment #{$payment->id} was added.", [
+            'Amount' => 'LKR ' . number_format((float) $payment->amount, 2),
+            'Date' => (string) $payment->payment_date,
+            'Reference' => $payment->reference_number ?: '—',
+            'Status' => $payment->is_paid ? 'Paid' : 'Outstanding',
+        ]);
+
         return $payment;
     }
 
     public function updatePayment(MemberPayment $payment, int $tenantId, array $validated): void
     {
         $oldMemberId = $payment->member_id;
+        $before = [
+            'amount' => (float) $payment->amount,
+            'date' => (string) $payment->payment_date,
+            'reference' => (string) ($payment->reference_number ?? ''),
+        ];
 
         DB::transaction(function () use ($payment, $tenantId, $validated) {
             $lockedPayment = MemberPayment::query()
@@ -338,10 +351,20 @@ class PaymentService
         foreach (array_unique(array_filter([$oldMemberId, $newMemberId])) as $memberId) {
             $this->triggerBiometricSync($memberId, $tenantId);
         }
+
+        $this->managerNotifications->dispatch($tenantId, 'payment.updated', "Payment #{$payment->id} was edited.", [
+            'Previous amount' => 'LKR ' . number_format($before['amount'], 2),
+            'New amount' => 'LKR ' . number_format((float) $validated['amount'], 2),
+            'Previous date' => $before['date'],
+            'New date' => (string) $validated['payment_date'],
+            'Previous reference' => $before['reference'] ?: '—',
+            'New reference' => $validated['reference_number'] ?? '—',
+        ]);
     }
 
     public function markAsPaid(MemberPayment $payment, int $tenantId, array $validated): MemberPayment
     {
+        $wasPaid = (bool) $payment->is_paid;
         $paid = DB::transaction(function () use ($payment, $tenantId, $validated) {
             $lockedPayment = MemberPayment::query()
                 ->lockForUpdate()
@@ -411,6 +434,13 @@ class PaymentService
 
         $this->triggerBiometricSync($paid->member_id, $tenantId);
         $this->notifications->sendPaymentReceipt($paid);
+        $this->managerNotifications->dispatch($tenantId, 'payment.updated', "Payment #{$paid->id} was marked paid.", [
+            'Amount' => 'LKR ' . number_format((float) $paid->amount, 2),
+            'Date' => (string) $paid->payment_date,
+            'Reference' => $paid->reference_number ?: '—',
+            'Previous status' => $wasPaid ? 'Paid' : 'Outstanding',
+            'Status' => 'Paid',
+        ]);
 
         return $paid;
     }
@@ -425,6 +455,12 @@ class PaymentService
         }
 
         $memberId = $lockedPayment->member_id;
+        $details = [
+            'Amount' => 'LKR ' . number_format((float) $lockedPayment->amount, 2),
+            'Date' => (string) $lockedPayment->payment_date,
+            'Reference' => $lockedPayment->reference_number ?: '—',
+            'Status' => $lockedPayment->is_paid ? 'Paid' : 'Outstanding',
+        ];
 
         // Refund wallet if this was a wallet payment
         if ($lockedPayment->payment_method === 'member_wallet' && $lockedPayment->member_id) {
@@ -444,6 +480,7 @@ class PaymentService
         $lockedPayment->delete();
 
         $this->triggerBiometricSync($memberId, $tenantId);
+        $this->managerNotifications->dispatch($tenantId, 'payment.deleted', "Payment #{$payment->id} was deleted.", $details);
     }
 
     private function triggerBiometricSync(?int $memberId, int $tenantId): void

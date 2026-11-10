@@ -11,7 +11,10 @@ class InventoryService
 {
     private const LOW_STOCK_THRESHOLD = 5;
 
-    public function __construct(private readonly AuditService $auditService) {}
+    public function __construct(
+        private readonly AuditService $auditService,
+        private readonly ManagerNotificationDispatcher $managerNotifications,
+    ) {}
 
     public function meta(int $tenantId): array
     {
@@ -327,6 +330,13 @@ class InventoryService
             'product_variation_id' => $stock->product_variation_id,
         ]);
 
+        $this->managerNotifications->dispatch($tenantId, 'stock.created', "Stock entry #{$stock->id} was added.", [
+            'Product' => $product->name,
+            'Variation' => $variation->name,
+            'Quantity' => (int) $stock->quantity,
+            'Display quantity' => (int) $stock->display_quantity,
+        ]);
+
         return [
             'stock' => $stock,
         ];
@@ -378,6 +388,15 @@ class InventoryService
             'foreign_selling_price' => (float) $stock->foreign_selling_price,
         ]);
 
+        $this->managerNotifications->dispatch($tenantId, 'stock.updated', "Stock entry #{$stock->id} was edited.", [
+            'Product' => $product->name,
+            'Variation' => $variation->name,
+            'Previous quantity' => $before['quantity'],
+            'New quantity' => (int) $stock->quantity,
+            'Previous display quantity' => $before['display_quantity'],
+            'New display quantity' => (int) $stock->display_quantity,
+        ]);
+
         return null;
     }
 
@@ -389,10 +408,18 @@ class InventoryService
             'quantity' => (int) $stock->quantity,
             'display_quantity' => (int) $stock->display_quantity,
         ];
+        $product = Product::query()->find($stock->product_id);
+        $variation = ProductVariation::query()->find($stock->product_variation_id);
 
         $this->auditService->log($tenantId, 'deleted', $stock, $before, null);
 
         $stock->delete();
+        $this->managerNotifications->dispatch($tenantId, 'stock.deleted', "Stock entry #{$stock->id} was deleted.", [
+            'Product' => $product?->name ?? 'Unknown product',
+            'Variation' => $variation?->name ?? 'Unknown variation',
+            'Quantity' => $before['quantity'],
+            'Display quantity' => $before['display_quantity'],
+        ]);
     }
 
     public function releaseToDisplay(StockEntry $stock, int $tenantId, int $displayQuantity): ?string
@@ -408,12 +435,23 @@ class InventoryService
         }
 
         $before = ['display_quantity' => (int) $stock->display_quantity];
+        $product = Product::query()->find($stock->product_id);
+        $variation = ProductVariation::query()->find($stock->product_variation_id);
 
         $stock->update(['display_quantity' => $displayQuantity]);
 
         $this->auditService->log($tenantId, 'display_released', $stock, $before, [
             'display_quantity' => (int) $stock->display_quantity,
         ]);
+
+        if ($before['display_quantity'] !== (int) $stock->display_quantity) {
+            $this->managerNotifications->dispatch($tenantId, 'display.released', "Display quantity for stock entry #{$stock->id} was changed.", [
+                'Product' => $product?->name ?? 'Unknown product',
+                'Variation' => $variation?->name ?? 'Unknown variation',
+                'Previous display quantity' => $before['display_quantity'],
+                'New display quantity' => (int) $stock->display_quantity,
+            ]);
+        }
 
         return null;
     }
