@@ -226,9 +226,9 @@ class PaymentService
             $isPaid = filter_var($validated['is_paid'] ?? true, FILTER_VALIDATE_BOOLEAN);
             $isWalletPayment = $isPaid && (($validated['payment_method'] ?? 'cash') === 'member_wallet');
 
-            if (!empty($validated['member_id'])) {
-                $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
-            }
+            $member = !empty($validated['member_id'])
+                ? $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId)
+                : null;
 
             $paymentMethod = null;
             $accountId = null;
@@ -275,6 +275,7 @@ class PaymentService
                 'paid_amount' => $isPaid ? $validated['amount'] : 0.00,
                 'balance' => $isPaid ? 0.00 : $validated['amount'],
             ]);
+            $payment->setRelation('member', $member);
 
             $this->syncMembership($payment, $tenantId, $validated);
 
@@ -294,9 +295,9 @@ class PaymentService
         }
 
         $this->managerNotifications->dispatch($tenantId, 'payment.created', "Payment #{$payment->id} was added.", [
+            ...$this->managerPaymentContext($payment),
             'Amount' => 'LKR ' . number_format((float) $payment->amount, 2),
             'Date' => (string) $payment->payment_date,
-            'Reference' => $payment->reference_number ?: '—',
             'Status' => $payment->is_paid ? 'Paid' : 'Outstanding',
         ]);
 
@@ -312,7 +313,7 @@ class PaymentService
             'reference' => (string) ($payment->reference_number ?? ''),
         ];
 
-        DB::transaction(function () use ($payment, $tenantId, $validated) {
+        $updatedPayment = DB::transaction(function () use ($payment, $tenantId, $validated) {
             $lockedPayment = MemberPayment::query()
                 ->lockForUpdate()
                 ->find($payment->id);
@@ -326,9 +327,9 @@ class PaymentService
                 abort(422, 'Wallet payments cannot be edited.');
             }
 
-            if (!empty($validated['member_id'])) {
-                $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId);
-            }
+            $member = !empty($validated['member_id'])
+                ? $this->ensureMemberBelongsToTenant((int) $validated['member_id'], $tenantId)
+                : null;
             $paymentMethod = $this->paymentMethods->resolveFromPayload($validated, $tenantId);
 
             $lockedPayment->update([
@@ -341,9 +342,13 @@ class PaymentService
                 'reference_number' => filled($validated['reference_number'] ?? null) ? trim((string) $validated['reference_number']) : null,
                 'notes' => filled($validated['notes'] ?? null) ? trim((string) $validated['notes']) : null,
             ]);
+            $lockedPayment->setRelation('member', $member);
+            $lockedPayment->setRelation('paymentMethod', $paymentMethod);
 
             $this->syncMembership($lockedPayment, $tenantId, $validated);
             $this->settlements->syncForPayment($lockedPayment->fresh(['member']), $paymentMethod);
+
+            return $lockedPayment;
         });
 
         $newMemberId = !empty($validated['member_id']) ? (int) $validated['member_id'] : null;
@@ -352,13 +357,12 @@ class PaymentService
             $this->triggerBiometricSync($memberId, $tenantId);
         }
 
-        $this->managerNotifications->dispatch($tenantId, 'payment.updated', "Payment #{$payment->id} was edited.", [
+        $this->managerNotifications->dispatch($tenantId, 'payment.updated', "Payment #{$updatedPayment->id} was edited.", [
+            ...$this->managerPaymentContext($updatedPayment),
             'Previous amount' => 'LKR ' . number_format($before['amount'], 2),
             'New amount' => 'LKR ' . number_format((float) $validated['amount'], 2),
             'Previous date' => $before['date'],
             'New date' => (string) $validated['payment_date'],
-            'Previous reference' => $before['reference'] ?: '—',
-            'New reference' => $validated['reference_number'] ?? '—',
         ]);
     }
 
@@ -367,6 +371,7 @@ class PaymentService
         $wasPaid = (bool) $payment->is_paid;
         $paid = DB::transaction(function () use ($payment, $tenantId, $validated) {
             $lockedPayment = MemberPayment::query()
+                ->with(['member:id,name', 'paymentMethod:id,name'])
                 ->lockForUpdate()
                 ->find($payment->id);
 
@@ -429,15 +434,19 @@ class PaymentService
                 $this->settlements->syncForPayment($lockedPayment->fresh(['member']), $paymentMethod);
             }
 
-            return $lockedPayment->fresh();
+            $paidPayment = $lockedPayment->fresh();
+            $paidPayment->setRelation('member', $lockedPayment->member);
+            $paidPayment->setRelation('paymentMethod', $paymentMethod);
+
+            return $paidPayment;
         });
 
         $this->triggerBiometricSync($paid->member_id, $tenantId);
         $this->notifications->sendPaymentReceipt($paid);
         $this->managerNotifications->dispatch($tenantId, 'payment.updated', "Payment #{$paid->id} was marked paid.", [
+            ...$this->managerPaymentContext($paid),
             'Amount' => 'LKR ' . number_format((float) $paid->amount, 2),
             'Date' => (string) $paid->payment_date,
-            'Reference' => $paid->reference_number ?: '—',
             'Previous status' => $wasPaid ? 'Paid' : 'Outstanding',
             'Status' => 'Paid',
         ]);
@@ -448,6 +457,7 @@ class PaymentService
     public function destroyPayment(MemberPayment $payment, int $tenantId): void
     {
         $lockedPayment = MemberPayment::query()
+            ->with(['member:id,name', 'paymentMethod:id,name'])
             ->find($payment->id);
 
         if (!$lockedPayment) {
@@ -456,9 +466,9 @@ class PaymentService
 
         $memberId = $lockedPayment->member_id;
         $details = [
+            ...$this->managerPaymentContext($lockedPayment),
             'Amount' => 'LKR ' . number_format((float) $lockedPayment->amount, 2),
             'Date' => (string) $lockedPayment->payment_date,
-            'Reference' => $lockedPayment->reference_number ?: '—',
             'Status' => $lockedPayment->is_paid ? 'Paid' : 'Outstanding',
         ];
 
@@ -481,6 +491,32 @@ class PaymentService
 
         $this->triggerBiometricSync($memberId, $tenantId);
         $this->managerNotifications->dispatch($tenantId, 'payment.deleted', "Payment #{$payment->id} was deleted.", $details);
+    }
+
+    private function managerPaymentContext(MemberPayment $payment): array
+    {
+        $context = [];
+        $member = $payment->relationLoaded('member') ? $payment->member : null;
+
+        if (filled($member?->name)) {
+            $firstName = preg_split('/\s+/', trim((string) $member->name))[0] ?? '';
+
+            if ($firstName !== '') {
+                $context['Member'] = $firstName;
+            }
+        }
+
+        $paymentMethod = $payment->relationLoaded('paymentMethod') ? $payment->paymentMethod : null;
+        $paymentMethodName = $paymentMethod?->name;
+        $paymentMethodName = $paymentMethodName ?: $payment->payment_method;
+
+        if (filled($paymentMethodName)) {
+            $context['Payment method'] = $paymentMethodName === 'member_wallet'
+                ? 'Member Wallet'
+                : trim((string) $paymentMethodName);
+        }
+
+        return $context;
     }
 
     private function triggerBiometricSync(?int $memberId, int $tenantId): void
@@ -525,15 +561,15 @@ class PaymentService
         }
     }
 
-    private function ensureMemberBelongsToTenant(int $memberId, int $tenantId): void
+    private function ensureMemberBelongsToTenant(int $memberId, int $tenantId): Member
     {
-        $exists = Member::query()
-            ->where('id', $memberId)
-            ->exists();
+        $member = Member::query()->where('id', $memberId)->first();
 
-        if (!$exists) {
+        if (!$member) {
             abort(422, 'Invalid member selection.');
         }
+
+        return $member;
     }
 
     private function ensureAccountBelongsToTenant(int $accountId, int $tenantId): void
