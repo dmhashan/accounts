@@ -98,14 +98,13 @@ class SendManagerNotificationJob implements ShouldQueue
                     $tenantMail->mailerForTenant($this->tenantId)
                         ->to($recipient->destination, $recipient->label)
                         ->send(new ManagerEventNotificationMail(
-                            $tenant->name ?: 'Your organisation',
                             $eventLabel,
                             $this->summary,
                             $this->safeDetails(),
                             $this->actorName,
                         ));
                 } else {
-                    $message = $this->smsMessage($tenant->name ?: 'Gym', $eventLabel);
+                    $message = $this->smsMessage($eventLabel);
 
                     if (!$sms->send($recipient->destination, $message, $this->tenantId)) {
                         throw new \RuntimeException('SMS provider did not confirm delivery.');
@@ -149,15 +148,19 @@ class SendManagerNotificationJob implements ShouldQueue
         return $safe;
     }
 
-    private function smsMessage(string $tenantName, string $eventLabel): string
+    private function smsMessage(string $eventLabel): string
     {
-        $message = trim(strip_tags($tenantName)) . ': ' . $eventLabel . '. ' . trim(strip_tags($this->summary));
+        if ($this->eventKey === 'payment.created') {
+            return mb_substr(trim(strip_tags($this->summary)), 0, 159);
+        }
+
+        $message = $eventLabel . ': ' . trim(strip_tags($this->summary));
 
         foreach ($this->safeDetails() as $label => $value) {
             $message .= ' ' . $label . ': ' . $value . '.';
         }
 
-        return mb_substr($message, 0, 480);
+        return mb_substr($message, 0, 159);
     }
 
     private function pruneDeliveryHistory(): void

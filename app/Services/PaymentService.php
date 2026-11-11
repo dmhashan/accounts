@@ -8,6 +8,7 @@ use App\Models\Member;
 use App\Models\MemberPayment;
 use App\Models\PaymentMembership;
 use App\Models\PaymentPlan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
@@ -294,8 +295,20 @@ class PaymentService
             $this->notifications->sendPaymentOutstanding($payment);
         }
 
-        $this->managerNotifications->dispatch($tenantId, 'payment.created', "Payment #{$payment->id} was added.", [
-            ...$this->managerPaymentContext($payment),
+        $paymentContext = $this->managerPaymentContext($payment);
+        $actorName = trim((string) (Auth::user()?->name ?? ''));
+        $actorFirstName = preg_split('/\s+/', $actorName)[0] ?? '';
+        $memberName = $paymentContext['Member'] ?? '';
+        $paymentMethodName = $paymentContext['Payment method'] ?? '';
+        $summary = 'LKR ' . number_format((float) $payment->amount, 2)
+            . ($payment->is_paid ? ' ' : ' outstanding ')
+            . "payment #{$payment->id}"
+            . ($memberName !== '' ? " for {$memberName}" : '')
+            . ($actorFirstName !== '' ? " added by {$actorFirstName}" : ' added')
+            . ($paymentMethodName !== '' ? " via {$paymentMethodName}" : '');
+
+        $this->managerNotifications->dispatch($tenantId, 'payment.created', mb_substr($summary, 0, 159), [
+            ...$paymentContext,
             'Amount' => 'LKR ' . number_format((float) $payment->amount, 2),
             'Date' => (string) $payment->payment_date,
             'Status' => $payment->is_paid ? 'Paid' : 'Outstanding',

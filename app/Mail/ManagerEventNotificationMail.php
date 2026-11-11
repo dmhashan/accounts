@@ -13,7 +13,6 @@ class ManagerEventNotificationMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public readonly string $tenantName,
         public readonly string $eventLabel,
         public readonly string $summary,
         public readonly array $details,
@@ -22,7 +21,7 @@ class ManagerEventNotificationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->tenantName . ': ' . $this->eventLabel);
+        return new Envelope(subject: $this->eventLabel);
     }
 
     public function content(): Content
@@ -30,7 +29,6 @@ class ManagerEventNotificationMail extends Mailable
         return new Content(
             view: 'emails.manager-event-notification',
             with: [
-                'tenantName' => $this->tenantName,
                 'eventLabel' => $this->eventLabel,
                 'summary' => $this->summary,
                 'details' => $this->details,

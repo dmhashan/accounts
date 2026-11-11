@@ -44,6 +44,7 @@ class ManagerNotificationDeliveryTest extends ApiRouteTestCase
         ))->handle(app(TenantDatabaseManager::class), app(TenantMailService::class), $sms);
 
         Mail::assertSent(ManagerEventNotificationMail::class, fn (ManagerEventNotificationMail $mail) => $mail->eventLabel === 'Expense added'
+            && $mail->envelope()->subject === 'Expense added'
             && $mail->summary === 'Expense #45 was added.'
             && $mail->details['Amount'] === 'LKR 25.00',
         );
