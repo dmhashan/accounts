@@ -1,5 +1,6 @@
 import { LoaderCircle, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { Avatar } from './Avatar';
 
 type ProfileMenuProps = {
   onLogout: () => void;
@@ -60,13 +61,13 @@ export function ProfileMenu({ onLogout, loggingOut }: ProfileMenuProps) {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="avatar-initials" aria-hidden="true">FF</span>
+        <Avatar />
       </button>
 
       {open && (
         <div ref={menuRef} className="profile-popover" role="menu" aria-label="Profile menu" onKeyDown={handleMenuKeyDown}>
           <div className="profile-summary">
-            <span className="avatar-initials avatar-initials--large" aria-hidden="true">FF</span>
+            <Avatar size="large" />
             <span><strong>FitFlow Admin</strong><small>Signed in</small></span>
           </div>
           <div className="popover-divider" />

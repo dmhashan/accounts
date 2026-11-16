@@ -13,7 +13,7 @@ The v2 application is an isolated React + TypeScript SPA in `v2_frontend/`. It i
 - `src/components/workspace/WorkspaceShell.tsx` composes the authenticated shell and handles sign-out feedback.
 - `WorkspaceSidebar.tsx`, `WorkspaceHeader.tsx`, and `WorkspaceNavigation.tsx` separate persistent desktop navigation and the shared generic destination from the header.
 - `WorkspaceDrawer.tsx` provides tablet/phone navigation with Escape dismissal, focus trapping/restoration, backdrop dismissal, and sign-out.
-- `ProfileMenu.tsx` provides a generic `FF` initials avatar and keyboard/touch accessible profile popover. It does not expose personal profile data.
+- `Avatar.tsx` provides a reusable neutral person-icon avatar; `ProfileMenu.tsx` composes it with the keyboard/touch accessible profile popover. It does not expose fabricated personal profile data.
 - `src/styles.css` defines the isolated light theme and responsive component styling; it does not depend on the legacy application stylesheet.
 
 ## Verified tenant staff auth contract
