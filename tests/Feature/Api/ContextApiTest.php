@@ -29,6 +29,14 @@ class ContextApiTest extends ApiRouteTestCase
         $response->assertDontSee('secret');
     }
 
+    public function testInvalidBearerTokenReturnsGuestContext(): void
+    {
+        $response = $this->withToken('invalid-token')->getJson('/api/app/context');
+
+        $response->assertOk()->assertJsonPath('tenant.id', $this->tenant->id);
+        $this->assertEqualsCanonicalizing(['settings', 'tenant'], array_keys($response->json()));
+    }
+
     public function testAppContextRouteReturnsUserTenantAndPermissions(): void
     {
         $user = $this->actingAsUser([
