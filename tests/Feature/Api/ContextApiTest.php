@@ -6,6 +6,29 @@ use App\Services\TenantConfigurationService;
 
 class ContextApiTest extends ApiRouteTestCase
 {
+    public function testGuestAppContextReturnsOnlyTenantAndPublicSettings(): void
+    {
+        app(TenantConfigurationService::class)->updateBatch($this->tenant->id, [
+            'general.color_theme' => 'ocean',
+            'general.color_mode' => 'dark',
+            'biometric.device_password' => 'secret',
+        ]);
+
+        $response = $this->getJson('/api/app/context');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('tenant.id', $this->tenant->id)
+            ->assertJsonPath('tenant.name', $this->tenant->name)
+            ->assertJsonPath('settings.colorTheme', 'ocean')
+            ->assertJsonPath('settings.colorMode', 'dark')
+            ->assertJsonMissingPath('user')
+            ->assertJsonMissingPath('permissions');
+
+        $this->assertEqualsCanonicalizing(['settings', 'tenant'], array_keys($response->json()));
+        $response->assertDontSee('secret');
+    }
+
     public function testAppContextRouteReturnsUserTenantAndPermissions(): void
     {
         $user = $this->actingAsUser([
