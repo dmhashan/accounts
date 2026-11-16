@@ -56,7 +56,7 @@ export function WorkspaceDrawer({ context, onClose, onLogout, loggingOut, menuBu
       <button className="drawer-backdrop" type="button" aria-label="Close navigation" onClick={onClose} />
       <aside ref={drawerRef} className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Workspace navigation">
         <div className="drawer-heading">
-          <Brand compact tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} poweredBy />
+          <Brand compact tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} />
           <button ref={closeRef} className="icon-button drawer-close" type="button" aria-label="Close navigation" onClick={onClose}>
             <X size={20} aria-hidden="true" />
           </button>

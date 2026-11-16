@@ -1,6 +1,6 @@
 # FitFlow v2 frontend documentation
 
-This folder is the working source of truth for planning and implementing the FitFlow v2 frontend. It documents the existing Laravel application as observed on 2026-11-16, separates existing behavior from proposed v2 product boundaries, and records the visual direction supplied for the new UI. Detailed page layouts and component arrangements will be added after they are provided.
+This folder is the working source of truth for the FitFlow v2 frontend. It records the current React implementation, verified Laravel contracts, product boundaries, and supplied visual direction. Distinguish existing behavior from proposed functionality and update these documents when contracts or design decisions change.
 
 ## Documents
 
@@ -21,6 +21,5 @@ This folder is the working source of truth for planning and implementing the Fit
 
 - `php artisan route:list --path=api` — live API method/URI/action/middleware inventory.
 - `npm run build` — current Vite build.
-- `npm test` — current frontend tests.
-- `npm run lint` — current frontend lint.
+- `npm run typecheck` — strict TypeScript check.
 - `composer test` — backend tests.

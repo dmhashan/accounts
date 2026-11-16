@@ -9,6 +9,7 @@ The v2 application is an isolated React + TypeScript SPA in `v2_frontend/`. It i
 - `src/App.tsx` owns session restoration and login/logout orchestration, retaining the authenticated app-context payload for the workspace shell.
 - `src/components/Brand.tsx` provides the shared FitFlow lockup and tenant logo/name lockup with a FitFlow attribution.
 - `src/components/forms/FormField.tsx` provides labeled text and password fields, including the accessible password visibility toggle.
+- `src/components/forms/TenantFormatFields.tsx` provides controlled date/time preference selects with representative output; the current shell reads preferences from context but does not edit or persist them.
 - `src/components/login/LoginScreen.tsx` composes the responsive sign-in layout; `LoginForm.tsx` owns form state, validation feedback, and submit/loading presentation.
 - `src/components/workspace/WorkspaceShell.tsx` composes the authenticated shell and handles sign-out feedback.
 - `WorkspaceSidebar.tsx`, `WorkspaceHeader.tsx`, and `WorkspaceNavigation.tsx` separate persistent desktop navigation and the shared generic destination from the header.

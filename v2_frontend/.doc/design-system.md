@@ -4,7 +4,7 @@
 
 The latest tenant-admin login/sidebar reference set uses a light visual system and supersedes the earlier dark palette below for this iteration: warm-white and soft gray surfaces, crisp near-black text, subtle gray borders, and restrained bright-blue accents. The sign-in and navigation shell use this light palette. This override is scoped to the current tenant admin entry experience; it does not finalize future dashboard styling.
 
-Current shell palette tokens are maintained in `src/styles.css`: canvas `#f5f7fa`, white surface `#ffffff`, blue action `#2879e8`, and text `#17212f`. Keep responsive navigation parity: persistent desktop sidebar; tablet/phone menu button plus avatar popover; drawer contains the same generic Workspace entry and sign-out. Do not add a bottom navigation bar or old feature navigation.
+Current shell palette tokens are maintained in `src/styles.css`: canvas `#f5f7fa`, white surface `#ffffff`, tenant-configured action/active color and text `#17212f`. Authenticated `/api/app/context` supplies the tenant name/logo, user identity, color theme/mode, and date/time formats. Keep responsive navigation parity: persistent desktop sidebar; tablet/phone menu button plus profile avatar popover; drawer contains the same generic Workspace entry and sign-out. Show a restrained “Powered by FitFlow” attribution. Do not add a bottom navigation bar or old feature navigation.
 
 ## Reference-image reading
 

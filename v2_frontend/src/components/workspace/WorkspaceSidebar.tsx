@@ -13,7 +13,7 @@ type WorkspaceSidebarProps = {
 export function WorkspaceSidebar({ context, onLogout, loggingOut }: WorkspaceSidebarProps) {
   return (
     <aside className="sidebar" aria-label="Workspace sidebar">
-      <div className="sidebar-brand"><Brand compact tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} poweredBy /></div>
+      <div className="sidebar-brand"><Brand compact tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} /></div>
       <div className="sidebar-caption">WORKSPACE</div>
       <WorkspaceNavigation />
       <PoweredByFitFlow />

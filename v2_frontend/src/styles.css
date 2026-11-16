@@ -31,7 +31,7 @@ html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
 body { min-height: 100vh; background: var(--canvas); color: var(--text); }
 button, input { font: inherit; }
 button { color: inherit; }
-button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 121, 232, 0.4); outline-offset: 3px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 40%, transparent); outline-offset: 3px; }
 
 .brand-lockup { display: inline-flex; width: fit-content; align-items: center; gap: 10px; }
 .brand-mark { display: inline-flex; width: 31px; height: 31px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 3px; border-radius: 9px; background: var(--blue); box-shadow: 0 5px 13px rgba(40, 121, 232, 0.2); }
@@ -79,10 +79,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(40, 121, 232
 .login-form { display: grid; gap: 21px; }
 .field-group { display: grid; gap: 8px; }
 .field-group label { color: #344154; font-size: 12px; font-weight: 650; }
-.field-group input { width: 100%; height: 49px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-control); color: var(--text); background: #fff; font-size: 13px; transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease; }
+.field-group input, .field-group select { width: 100%; min-height: 49px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-control); color: var(--text); background: var(--surface); font-size: 13px; transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease; }
 .field-group input::placeholder { color: #9aa5b3; }
 .field-group input:hover { border-color: #b9c5d5; }
-.field-group input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(40, 121, 232, 0.11); outline: none; }
+.field-group input:focus, .field-group select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 14%, transparent); outline: none; }
 .field-group input:disabled { cursor: not-allowed; background: var(--surface-soft); opacity: 0.72; }
 .password-input-wrap { position: relative; }
 .password-input-wrap input { padding-right: 52px; }

@@ -28,7 +28,7 @@ These instructions apply to work inside `v2_frontend/`. Read [README.md](README.
 
 ## Engineering workflow
 
-- Prefer reusable, accessible Vue components and typed/centralized API contracts when the implementation stack is confirmed.
+- Use the configured React + TypeScript stack. Prefer focused, reusable accessible components and typed API/context contracts; do not add uninstalled libraries or assume an alias.
 - Keep app-specific shells, route guards, API clients, and session handling isolated while sharing design tokens and safe UI primitives.
 - Add or update tests for behavior, authorization-dependent rendering, and responsive data parity where practical.
 - Document new endpoint contracts and architecture decisions in `.doc/` when they are established; distinguish verified backend facts from proposals.

@@ -2,21 +2,22 @@
 applyTo: "v2_frontend/**"
 ---
 
-# v2_frontend — Verified Rules
+# FitFlow v2 frontend rules
 
-## Current state
-- `v2_frontend/` currently contains `.doc/` only. It has no `package.json`, `tsconfig.json`, source tree, dependencies, scripts, or path aliases.
-- Do not assume React, Vue, TypeScript, a router, state/query/form library, UI kit, API client, or alias until v2 config files and source verify it.
-- The repository-root app is a separate Laravel/Vue 3 app. Do not treat its dependencies or paths as v2 dependencies.
+## Verified stack
+- Use React 19.3.1, TypeScript 7.0.2, Vite 8.3.8, and `lucide-react` 1.73.0 as pinned in `v2_frontend/package.json`.
+- Use `src/App.tsx` for app/session orchestration; place shared UI in `src/components/`, API/context code in `src/lib/api.ts`, date/time formatting in `src/lib/dateTime.ts`, and isolated styles in `src/styles.css`.
+- Do not assume a router, CSS framework, component kit, server-state library, test runner, or path alias. None is configured. Import via relative paths.
+- Use the v2 package scripts only: `npm run dev`, `npm run build`, and `npm run typecheck`.
 
-## Rules
-- Read the actual `v2_frontend/package.json`, TypeScript config, Vite config, and source tree before using a library, command, alias, or folder path. If absent, ask before scaffolding; never invent one.
-- Use only dependencies and versions declared by the v2 package manifest. Do not claim a version is installed based on a version range alone; check the lockfile when exact resolved versions matter.
-- Follow configured aliases exactly. Do not introduce `@/` or other aliases unless configured and verified.
-- Keep v2 APIs under `/api/*`; verify each endpoint, payload, response, and middleware in Laravel route/controller/service source before use. Do not invent endpoints or DTOs.
-- Keep portal, tenant staff, and member authentication isolated. Verify the backend flow for the target surface; never assume shared cookies, tokens, or guards.
-- Enforce tenant scope and permissions on the backend; client-side navigation or route guards are not authorization.
-- Support phone, tablet, desktop, and large displays. Reflow content; do not remove business data, actions, or tenant navigation at smaller sizes.
-- Follow `v2_frontend/.doc/design-system.md` for the supplied visual direction. Treat page layouts as undecided until specified.
-- Add/update tests using the test runner actually declared by the v2 package. Do not invent scripts.
-- Keep edits focused; omit unrelated files and placeholder code. Document verified architectural decisions in `v2_frontend/.doc/`.
+## API and security
+- Use the centralized native `fetch` helpers in `src/lib/api.ts`; send credentialed `/api/*` requests and follow its Laravel session/CSRF handling. Do not add a second client or persist credentials/tokens.
+- Verify endpoint methods, payloads, response shapes, and middleware in Laravel route/controller/service source before use. Do not invent endpoints or DTO fields.
+- Keep portal, tenant-staff, and member authentication isolated. Enforce tenant scope and authorization on the backend; client navigation is not authorization.
+- Do not log secrets or retry unsafe mutations automatically.
+
+## UI rules
+- Use small typed, accessible React components; keep components focused and reuse shared form, branding, profile, navigation, and date/time components.
+- Read tenant, user, permissions, and settings from the verified app-context response. Use tenant theme values only after validating them against supported options; format dates/times with `src/lib/dateTime.ts`.
+- Follow `v2_frontend/.doc/design-system.md`. Support phone, tablet, desktop, and large displays; retain every action/data point, use a mobile/tablet drawer and profile menu, and never add bottom navigation.
+- Keep legacy Laravel/Vue files unchanged unless explicitly requested. Document verified contract or design changes in `v2_frontend/.doc/`.

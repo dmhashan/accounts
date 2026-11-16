@@ -1,10 +1,15 @@
 const jsonHeaders = { Accept: 'application/json' };
 let csrfToken = '';
 
-export type TenantDateFormat = 'D MMM YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD' | 'MMM D, YYYY';
-export type TenantTimeFormat = 'HH:mm' | 'h:mm A';
-export type TenantColorTheme = 'crimson' | 'ocean' | 'forest' | 'violet' | 'sunset' | 'slate';
-export type TenantColorMode = 'system' | 'light' | 'dark';
+export const TENANT_DATE_FORMATS = ['D MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD', 'MMM D, YYYY'] as const;
+export const TENANT_TIME_FORMATS = ['HH:mm', 'h:mm A'] as const;
+export const TENANT_COLOR_THEMES = ['crimson', 'ocean', 'forest', 'violet', 'sunset', 'slate'] as const;
+export const TENANT_COLOR_MODES = ['system', 'light', 'dark'] as const;
+
+export type TenantDateFormat = typeof TENANT_DATE_FORMATS[number];
+export type TenantTimeFormat = typeof TENANT_TIME_FORMATS[number];
+export type TenantColorTheme = typeof TENANT_COLOR_THEMES[number];
+export type TenantColorMode = typeof TENANT_COLOR_MODES[number];
 
 export type StaffAppContext = {
   settings: {
@@ -27,11 +32,6 @@ export type StaffAppContext = {
   };
   permissions: Record<string, boolean>;
 };
-
-const dateFormats: TenantDateFormat[] = ['D MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD', 'MMM D, YYYY'];
-const timeFormats: TenantTimeFormat[] = ['HH:mm', 'h:mm A'];
-const colorThemes: TenantColorTheme[] = ['crimson', 'ocean', 'forest', 'violet', 'sunset', 'slate'];
-const colorModes: TenantColorMode[] = ['system', 'light', 'dark'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -58,10 +58,10 @@ function parseStaffAppContext(value: unknown): StaffAppContext {
 
   return {
     settings: {
-      dateFormat: isOneOf(settings.dateFormat, dateFormats, 'D MMM YYYY'),
-      timeFormat: isOneOf(settings.timeFormat, timeFormats, 'HH:mm'),
-      colorTheme: isOneOf(settings.colorTheme, colorThemes, 'crimson'),
-      colorMode: isOneOf(settings.colorMode, colorModes, 'system'),
+      dateFormat: isOneOf(settings.dateFormat, TENANT_DATE_FORMATS, 'D MMM YYYY'),
+      timeFormat: isOneOf(settings.timeFormat, TENANT_TIME_FORMATS, 'HH:mm'),
+      colorTheme: isOneOf(settings.colorTheme, TENANT_COLOR_THEMES, 'crimson'),
+      colorMode: isOneOf(settings.colorMode, TENANT_COLOR_MODES, 'system'),
       whatsappEnabled: settings.whatsappEnabled === true,
     },
     user: { id: user.id, name: user.name, email: user.email },
