@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react';
 import { LoginScreen } from './components/login/LoginScreen';
 import { WorkspaceShell } from './components/workspace/WorkspaceShell';
-import { hasStaffSession, loginStaff, logoutStaff, warmCsrfToken } from './lib/api';
+import { getStaffAppContext, loginStaff, logoutStaff, warmCsrfToken, type StaffAppContext } from './lib/api';
 
 type SessionState = 'checking' | 'signed-out' | 'signed-in' | 'unavailable';
 
 export default function App() {
   const [session, setSession] = useState<SessionState>('checking');
   const [connectionError, setConnectionError] = useState('');
+  const [context, setContext] = useState<StaffAppContext | null>(null);
 
   useEffect(() => {
     let active = true;
 
     async function initialize() {
       try {
-        const signedIn = await hasStaffSession();
-        if (!signedIn) await warmCsrfToken();
-        if (active) setSession(signedIn ? 'signed-in' : 'signed-out');
+        const staffContext = await getStaffAppContext();
+        if (!staffContext) await warmCsrfToken();
+        if (active) {
+          setContext(staffContext);
+          setSession(staffContext ? 'signed-in' : 'signed-out');
+        }
       } catch {
         if (active) {
           setConnectionError('Could not connect to FitFlow. Check your connection and try again.');
@@ -32,7 +36,10 @@ export default function App() {
   async function handleLogin(login: string, password: string) {
     await warmCsrfToken();
     await loginStaff(login, password);
+    const staffContext = await getStaffAppContext();
+    if (!staffContext) throw new Error('Your sign-in could not be verified. Please try again.');
     setConnectionError('');
+    setContext(staffContext);
     setSession('signed-in');
   }
 
@@ -40,6 +47,7 @@ export default function App() {
     await warmCsrfToken(true);
     await logoutStaff();
     setConnectionError('');
+    setContext(null);
     setSession('signed-out');
     await warmCsrfToken();
   }
@@ -48,7 +56,7 @@ export default function App() {
     return <main className="app-loading" aria-label="Loading FitFlow"><span className="loading-indicator" aria-hidden="true" /> Connecting to FitFlow…</main>;
   }
 
-  if (session === 'signed-in') return <WorkspaceShell onLogout={handleLogout} />;
+  if (session === 'signed-in' && context) return <WorkspaceShell context={context} onLogout={handleLogout} />;
 
   return <LoginScreen onLogin={handleLogin} connectionError={session === 'unavailable' ? connectionError : ''} />;
 }

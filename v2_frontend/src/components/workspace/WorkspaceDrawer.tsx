@@ -1,16 +1,19 @@
 import { X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import type { StaffAppContext } from '../../lib/api';
 import { Brand } from '../Brand';
+import { PoweredByFitFlow } from './PoweredByFitFlow';
 import { WorkspaceNavigation } from './WorkspaceNavigation';
 
 type WorkspaceDrawerProps = {
+  context: StaffAppContext;
   onClose: () => void;
   onLogout: () => void;
   loggingOut: boolean;
   menuButtonRef: React.RefObject<HTMLButtonElement | null>;
 };
 
-export function WorkspaceDrawer({ onClose, onLogout, loggingOut, menuButtonRef }: WorkspaceDrawerProps) {
+export function WorkspaceDrawer({ context, onClose, onLogout, loggingOut, menuButtonRef }: WorkspaceDrawerProps) {
   const drawerRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -53,13 +56,14 @@ export function WorkspaceDrawer({ onClose, onLogout, loggingOut, menuButtonRef }
       <button className="drawer-backdrop" type="button" aria-label="Close navigation" onClick={onClose} />
       <aside ref={drawerRef} className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Workspace navigation">
         <div className="drawer-heading">
-          <Brand compact />
+          <Brand compact tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} poweredBy />
           <button ref={closeRef} className="icon-button drawer-close" type="button" aria-label="Close navigation" onClick={onClose}>
             <X size={20} aria-hidden="true" />
           </button>
         </div>
         <div className="sidebar-caption">WORKSPACE</div>
         <WorkspaceNavigation />
+        <PoweredByFitFlow />
         <button className="signout-button drawer-signout" type="button" onClick={onLogout} disabled={loggingOut}>
           <span>{loggingOut ? 'Signing out…' : 'Sign out'}</span>
         </button>

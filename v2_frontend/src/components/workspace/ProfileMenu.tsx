@@ -1,13 +1,15 @@
 import { LoaderCircle, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import type { StaffAppContext } from '../../lib/api';
 import { Avatar } from './Avatar';
 
 type ProfileMenuProps = {
+  context: StaffAppContext;
   onLogout: () => void;
   loggingOut: boolean;
 };
 
-export function ProfileMenu({ onLogout, loggingOut }: ProfileMenuProps) {
+export function ProfileMenu({ context, onLogout, loggingOut }: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -56,19 +58,23 @@ export function ProfileMenu({ onLogout, loggingOut }: ProfileMenuProps) {
         ref={triggerRef}
         className="profile-trigger"
         type="button"
-        aria-label="Open profile menu"
+        aria-label={`Open profile menu for ${context.user.name}`}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <Avatar />
+        <Avatar name={context.user.name} />
       </button>
 
       {open && (
         <div ref={menuRef} className="profile-popover" role="menu" aria-label="Profile menu" onKeyDown={handleMenuKeyDown}>
           <div className="profile-summary">
-            <Avatar size="large" />
-            <span><strong>FitFlow Admin</strong><small>Signed in</small></span>
+            <Avatar name={context.user.name} size="large" />
+            <span className="profile-details">
+              <strong>{context.user.name}</strong>
+              <small>{context.user.email}</small>
+              <small>{context.tenant.name}</small>
+            </span>
           </div>
           <div className="popover-divider" />
           <button
