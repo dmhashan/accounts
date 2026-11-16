@@ -13,22 +13,17 @@ class AppContextService
         private readonly MemberPortalUrlService $memberPortalUrl,
     ) {}
 
-    public function build(User $user, Tenant $tenant): array
+    public function build(?User $user, Tenant $tenant): array
     {
         $cfg = $this->config->all($tenant->id);
 
-        return [
+        $context = [
             'settings' => [
                 'dateFormat' => $cfg['general.date_format'] ?? 'D MMM YYYY',
                 'timeFormat' => $cfg['general.time_format'] ?? 'HH:mm',
                 'colorTheme' => $cfg['general.color_theme'] ?? 'crimson',
                 'colorMode' => $cfg['general.color_mode'] ?? 'system',
                 'whatsappEnabled' => ($cfg['general.gowa_enabled'] ?? '0') === '1',
-            ],
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
             ],
             'tenant' => [
                 'id' => $tenant->id,
@@ -39,6 +34,18 @@ class AppContextService
                 'phone' => $tenant->phone,
                 'logo_url' => $tenant->logo_path ? $this->media->url($tenant->logo_path) : null,
                 'member_portal_url' => $this->memberPortalUrl->urlForTenant($tenant),
+            ],
+        ];
+
+        if (!$user) {
+            return $context;
+        }
+
+        return $context + [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
             ],
             'permissions' => [
                 'dashboard' => $this->hasAnyPermission($user, [
