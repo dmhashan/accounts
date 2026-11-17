@@ -2,7 +2,7 @@ import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ApiError, getAppContext, requestApi } from '../src/lib/api.ts';
 import { formatDate, formatTime } from '../src/lib/dateTime.ts';
-import { dateRange, parseSaleDate } from '../src/features/payments/types.ts';
+import { dateRange, initialPaymentTab, parseSaleDate } from '../src/features/payments/types.ts';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -56,4 +56,11 @@ test('payment date ranges retain custom boundaries and validate sale dates', () 
   assert.equal(parseSaleDate('29 Feb 2024, 14:30')?.getDate(), 29);
   assert.equal(parseSaleDate('29 Feb 2026, 14:30'), null);
   assert.equal(parseSaleDate('invalid'), null);
+});
+
+test('default payment tab follows available permissions', () => {
+  assert.equal(initialPaymentTab(true, true), 'membership');
+  assert.equal(initialPaymentTab(true, false), 'membership');
+  assert.equal(initialPaymentTab(false, true), 'sales');
+  assert.equal(initialPaymentTab(false, false), 'membership');
 });

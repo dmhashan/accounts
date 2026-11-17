@@ -9,7 +9,7 @@ export function WorkspaceNavigation({ context, path, navigate }: Props) {
     { label: 'Dashboard', path: '/dashboard', icon: House, allowed: true, available: true },
     { label: 'Members', path: '/members', icon: UsersRound, allowed: !!permissions.members, available: true },
     { label: 'Payments', path: '/payments', icon: CreditCard, allowed: !!permissions.paymentsManage || !!permissions.sales, available: true },
-    { label: 'POS', path: '/pos', icon: ShoppingBag, allowed: !!permissions.sales || !!permissions.salesCreate, available: false },
+    { label: 'POS', path: '/pos', icon: ShoppingBag, allowed: !!permissions.salesOutstanding || !!permissions.salesCreate || !!permissions.salesEdit, available: true },
     { label: 'Inventory management', path: '/inventory', icon: Package, allowed: !!permissions.inventory, available: false },
     { label: 'Coach Portal', path: '/coach', icon: Dumbbell, allowed: true, available: false },
     { label: 'Admin Portal', path: '/admin-portal', icon: ShieldCheck, allowed: true, available: false },

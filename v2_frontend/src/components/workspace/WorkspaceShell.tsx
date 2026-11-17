@@ -8,6 +8,7 @@ import { WorkspaceWelcome } from './WorkspaceWelcome';
 
 const MembersPage = lazy(() => import('../../features/members/MembersPage'));
 const PaymentsPage = lazy(() => import('../../features/payments/PaymentsPage').then((module) => ({ default: module.PaymentsPage })));
+const POSPage = lazy(() => import('../../features/pos/POSPage'));
 
 function currentPath(): string {
   return window.location.hash.slice(1).split('?')[0] || '/dashboard';
@@ -24,6 +25,7 @@ export function WorkspaceShell({ context, onLogout }: WorkspaceShellProps) {
   const [error, setError] = useState('');
   const [prefersDark, setPrefersDark] = useState(false);
   const [path, setPath] = useState(currentPath);
+  const [posVisited, setPosVisited] = useState(() => currentPath() === '/pos');
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const navigate = useCallback((destination: string) => {
@@ -33,7 +35,11 @@ export function WorkspaceShell({ context, onLogout }: WorkspaceShellProps) {
   const colorMode = context.settings.colorMode === 'system' ? (prefersDark ? 'dark' : 'light') : context.settings.colorMode;
 
   useEffect(() => {
-    const updatePath = () => setPath(currentPath());
+    const updatePath = () => {
+      const next = currentPath();
+      if (next === '/pos') setPosVisited(true);
+      setPath(next);
+    };
     window.addEventListener('hashchange', updatePath);
     return () => window.removeEventListener('hashchange', updatePath);
   }, []);
@@ -76,14 +82,16 @@ export function WorkspaceShell({ context, onLogout }: WorkspaceShellProps) {
           menuButtonRef={menuButtonRef}
           onLogout={() => void handleLogout()}
           loggingOut={loggingOut}
-          pageTitle={path.startsWith('/members') ? 'Members' : path === '/payments' ? 'Payments' : 'Dashboard'}
+          pageTitle={path.startsWith('/members') ? 'Members' : path === '/payments' ? 'Payments' : path === '/pos' ? 'POS' : 'Dashboard'}
         />
         {error && <div className="shell-alert" role="alert" aria-live="assertive">{error}</div>}
         <Suspense fallback={<div className="app-loading" role="status">Loading page…</div>}>
           {path === '/dashboard' ? <WorkspaceWelcome context={context} />
             : path === '/members' || path.startsWith('/members/') ? <MembersPage context={context} path={path} navigate={navigate} />
-              : path === '/payments' ? <PaymentsPage context={context} />
+              : path === '/payments' ? <PaymentsPage context={context} navigate={navigate} />
+                : path === '/pos' ? null
                 : <div className="workspace-content"><h1>Page not found</h1><button type="button" className="nav-item" onClick={() => navigate('/dashboard')}>Back to dashboard</button></div>}
+          {posVisited && <div hidden={path !== '/pos'}><POSPage context={context} /></div>}
         </Suspense>
       </section>
       {drawerOpen && (

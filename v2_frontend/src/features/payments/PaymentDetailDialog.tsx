@@ -29,7 +29,7 @@ export function PaymentDetailDialog({ detail, context, onClose }: { detail: Paym
   const saleDate = detail.kind === 'sale' ? parseSaleDate(detail.record.created_at) : null;
 
   return <dialog ref={dialogRef} className="pay-dialog pay-detail-dialog" aria-labelledby="pay-detail-title" onCancel={(event) => { event.preventDefault(); onClose(); }}>
-    <div className="pay-dialog-heading"><div><span className="pay-eyebrow">RECORD DETAILS</span><h2 id="pay-detail-title">{title}</h2><p>{detail.kind === 'payment' ? detail.record.member_name : detail.record.customer_name || 'Customer not specified'}</p></div><button ref={closeRef} type="button" className="pay-icon-button" onClick={onClose} aria-label={`Close ${title} details`}><X size={20} /></button></div>
+    <div className="pay-dialog-heading"><div><h2 id="pay-detail-title">{title}</h2><p>{detail.kind === 'payment' ? detail.record.member_name : detail.record.customer_name || 'Customer not specified'}</p></div><button ref={closeRef} type="button" className="pay-icon-button" onClick={onClose} aria-label={`Close ${title} details`}><X size={20} /></button></div>
     <div className={`pay-status ${detail.record.is_paid ? 'paid' : 'outstanding'}`}>{detail.record.is_paid ? 'Paid' : 'Outstanding'}</div>
     {detail.kind === 'payment' ? <dl className="pay-record-details">
       <Detail label="Type">{detail.record.type === 'membership' ? 'Membership' : 'Other'}</Detail>

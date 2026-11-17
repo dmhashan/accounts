@@ -2,7 +2,7 @@
 
 ## Navigation
 
-The shared desktop sidebar and tablet/phone drawer use hash routes so refresh and browser history work without new server rewrites. Dashboard, Members and Payments are available according to permissions. POS, Inventory management, Coach Portal and Admin Portal are displayed as unavailable until their destinations and functionality are defined. No bottom navigation is used.
+The shared desktop sidebar and tablet/phone drawer use hash routes so refresh and browser history work without new server rewrites. Dashboard, Members, Payments and POS are available according to permissions. Inventory management, Coach Portal and Admin Portal are displayed as unavailable until their destinations and functionality are defined. No bottom navigation is used.
 
 ## Members
 
@@ -10,9 +10,9 @@ The shared desktop sidebar and tablet/phone drawer use hash routes so refresh an
 
 ## Payments
 
-`src/features/payments/` implements the five requested tabs and separate payment category actions. Membership and Other use `/api/payments` and `/api/payments/meta`; their create forms use the existing server business logic. Sales are separately loaded from `/api/sales` when permitted and shown as sale records, not assumed paid transactions. Payments and sales use six-column horizontally scrollable tables; selecting an ID opens the accessible record detail dialog.
+`src/features/payments/` provides Membership, Sales, and Other tabs and separate creation actions. Membership and Other use `/api/payments` and `/api/payments/meta`; their create forms use the existing server business logic. Sales are loaded from `/api/sales` when permitted and shown as sale records, not assumed paid transactions. Each tab uses a six-column horizontally scrollable table; selecting an ID opens the accessible record detail dialog.
 
-**Backend constraints:** The payment and sales APIs paginate independently and do not accept date range filters. The date selector therefore filters only the currently fetched page, and the UI explicitly warns that matching records may exist on other pages. Unrecognized dates remain visible. The admission tab and Add admission action are unavailable because `members.admission_fee` is not evidence of payment and the backend does not expose a distinct admission-payment category. Add sale remains unavailable until a POS sale flow exists; no synthetic admission or sale payment is created.
+**Backend constraints:** The payment and sales APIs paginate independently and do not provide a unified list or date range filters. The All tab is omitted until a unified API is available. The date selector filters only the currently fetched page, and the UI explicitly warns that matching records may exist on other pages. Unrecognized dates remain visible. Admission tab and action are omitted; `members.admission_fee` is not evidence of payment and the backend does not expose a distinct admission-payment category. Add sale opens the POS for authorized staff; no synthetic admission or sale payment is created.
 
 Date presets use the browser's local calendar; weeks begin Monday, the current period ends today, and the last-three-months preset includes the current calendar month plus the previous two months. Display formatting follows tenant settings.
 

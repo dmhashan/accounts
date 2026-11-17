@@ -29,6 +29,11 @@ export type PaymentMeta = {
 };
 
 export type Preset = 'month' | 'last-month' | 'three-months' | 'today' | 'yesterday' | 'week' | 'last-week' | 'custom';
+export type PaymentTab = 'membership' | 'sales' | 'other';
+
+export function initialPaymentTab(canPayments: boolean, canSales: boolean): PaymentTab {
+  return !canPayments && canSales ? 'sales' : 'membership';
+}
 
 export function localDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

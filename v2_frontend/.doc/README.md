@@ -9,6 +9,7 @@ This folder is the working source of truth for the FitFlow v2 frontend. It recor
 - [Visual direction and responsive rules](design-system.md) — reference-image palette, typography, surface treatments, responsive behavior, and decisions intentionally left open.
 - [Copilot instructions](copilot-instructions.md) — working constraints for future agents contributing to v2.
 - [Members and payments implementation](members-payments.md) — routes, responsive behavior, API limitations, and verification.
+- [POS implementation](pos.md) — catalog, checkout, responsive behavior, permission boundaries, and estimated pricing.
 
 ## Status and source precedence
 
