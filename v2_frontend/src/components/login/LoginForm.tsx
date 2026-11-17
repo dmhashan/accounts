@@ -1,6 +1,7 @@
 import { ArrowRight, LoaderCircle } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { PasswordField, TextField } from '../forms/FormField';
+import { Alert, Button } from '../ui';
 
 type LoginFormProps = {
   onLogin: (login: string, password: string) => Promise<void>;
@@ -32,10 +33,10 @@ export function LoginForm({ onLogin, connectionError }: LoginFormProps) {
   return (
     <>
       {visibleError && (
-        <div className="form-alert" role="alert" aria-live="assertive">
+        <Alert tone="error" className="form-alert" role="alert" aria-live="assertive">
           <span className="alert-mark" aria-hidden="true">!</span>
           <span>{visibleError}</span>
-        </div>
+        </Alert>
       )}
 
       <form className="login-form" onSubmit={handleSubmit}>
@@ -66,13 +67,13 @@ export function LoginForm({ onLogin, connectionError }: LoginFormProps) {
           required
         />
 
-        <button className="submit-button" type="submit" disabled={submitting || !login.trim() || !password}>
+        <Button className="submit-button" tone="primary" type="submit" disabled={submitting || !login.trim() || !password}>
           {submitting ? (
             <><LoaderCircle className="spin" size={18} aria-hidden="true" /> Signing in…</>
           ) : (
             <>Sign in <ArrowRight size={18} aria-hidden="true" /></>
           )}
-        </button>
+        </Button>
       </form>
     </>
   );

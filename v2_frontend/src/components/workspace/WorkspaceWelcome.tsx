@@ -1,6 +1,7 @@
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 import type { StaffAppContext } from '../../lib/api';
 import { Brand } from '../Brand';
+import { Card } from '../ui';
 
 type WorkspaceWelcomeProps = {
   context: StaffAppContext;
@@ -20,12 +21,12 @@ export function WorkspaceWelcome({ context }: WorkspaceWelcomeProps) {
           <p>Your workspace for <strong>{context.tenant.name}</strong> is ready. More tools for your team will appear here as they’re added.</p>
           <div className="welcome-domain"><span className="tenant-status-dot" aria-hidden="true" /> Connected to <strong>{context.tenant.domain}</strong></div>
         </div>
-        <div className="welcome-brand-card" aria-label={`${context.tenant.name}, powered by FitFlow`}>
+        <Card className="welcome-brand-card" aria-label={`${context.tenant.name}, powered by FitFlow`}>
           <Brand tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} poweredBy />
           <div className="welcome-brand-rule" />
           <span className="welcome-brand-caption">A better rhythm for your team.</span>
           <ArrowUpRight className="welcome-brand-arrow" size={19} aria-hidden="true" />
-        </div>
+        </Card>
       </section>
       <div className="workspace-note"><span>YOUR WORKSPACE</span><p>This space is ready for your team. Your sign-in is protected by your tenant’s secure staff session.</p></div>
     </div>

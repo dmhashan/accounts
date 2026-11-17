@@ -1,44 +1,34 @@
-import { Eye, EyeOff } from 'lucide-react';
-import { useState, type InputHTMLAttributes } from 'react';
+import type { ReactNode } from 'react';
+import { HelperText, Label } from 'flowbite-react';
+import { cx } from './fieldStyles';
 
-type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> & {
+export type FieldError = ReactNode;
+
+export type FormFieldProps = {
   id: string;
-  label: string;
+  label: ReactNode;
+  optional?: boolean;
+  required?: boolean;
+  error?: FieldError;
+  errorId?: string;
+  className?: string;
+  labelClassName?: string;
+  children: ReactNode;
 };
 
-export function TextField({ id, label, ...inputProps }: TextFieldProps) {
+export function FormField({ id, label, optional, required, error, errorId, className, labelClassName, children }: FormFieldProps) {
   return (
-    <div className="field-group">
-      <label htmlFor={id}>{label}</label>
-      <input id={id} {...inputProps} />
+    <div className={cx('grid min-w-0 gap-2', className)}>
+      <Label htmlFor={id} className={cx('text-xs font-semibold text-[var(--text)]', labelClassName)}>
+        {label}
+        {required && <span className="text-[var(--danger)]" aria-hidden="true"> *</span>}
+        {optional && <span className="ml-1 font-normal text-[var(--muted)]">(optional)</span>}
+      </Label>
+      {children}
+      {error ? <HelperText id={errorId} color="failure" role="alert" theme={{ root: { base: 'mt-0 text-[11px] font-medium leading-5 text-[var(--danger)]', colors: { failure: 'text-[var(--danger)]' } } }}>{error}</HelperText> : null}
     </div>
   );
 }
 
-type PasswordFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'type'> & {
-  id: string;
-  label: string;
-};
-
-export function PasswordField({ id, label, ...inputProps }: PasswordFieldProps) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <div className="field-group">
-      <label htmlFor={id}>{label}</label>
-      <div className="password-input-wrap">
-        <input id={id} type={visible ? 'text' : 'password'} {...inputProps} />
-        <button
-          className="password-toggle"
-          type="button"
-          aria-label={visible ? 'Hide password' : 'Show password'}
-          aria-pressed={visible}
-          onClick={() => setVisible((current) => !current)}
-          disabled={inputProps.disabled}
-        >
-          {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-        </button>
-      </div>
-    </div>
-  );
-}
+export { TextField } from './TextField';
+export { PasswordField } from './PasswordField';

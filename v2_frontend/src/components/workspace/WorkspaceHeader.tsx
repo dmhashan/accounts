@@ -1,5 +1,6 @@
 import { Menu } from 'lucide-react';
 import type { StaffAppContext } from '../../lib/api';
+import { Button } from '../ui';
 import { TenantDateTime } from './TenantDateTime';
 import { ProfileMenu } from './ProfileMenu';
 
@@ -15,9 +16,9 @@ type WorkspaceHeaderProps = {
 export function WorkspaceHeader({ context, onOpenMenu, menuButtonRef, onLogout, loggingOut, pageTitle }: WorkspaceHeaderProps) {
   return (
     <header className="workspace-topbar">
-      <button ref={menuButtonRef} className="icon-button menu-button" type="button" aria-label="Open navigation menu" onClick={onOpenMenu}>
+      <Button ref={menuButtonRef} tone="ghost" className="icon-button menu-button" aria-label="Open navigation menu" onClick={onOpenMenu}>
         <Menu size={21} aria-hidden="true" />
-      </button>
+      </Button>
       <div className="workspace-breadcrumb"><strong>{context.tenant.name}</strong><span>{pageTitle}</span></div>
       <TenantDateTime dateFormat={context.settings.dateFormat} timeFormat={context.settings.timeFormat} />
       <ProfileMenu context={context} onLogout={onLogout} loggingOut={loggingOut} />

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { StaffAppContext } from '../../lib/api';
 import { getTenantThemeStyle } from '../../lib/theme';
+import { Alert, Button } from '../ui';
 import { WorkspaceDrawer } from './WorkspaceDrawer';
 import { WorkspaceHeader } from './WorkspaceHeader';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
@@ -84,13 +85,13 @@ export function WorkspaceShell({ context, onLogout }: WorkspaceShellProps) {
           loggingOut={loggingOut}
           pageTitle={path.startsWith('/members') ? 'Members' : path === '/payments' ? 'Payments' : path === '/pos' ? 'POS' : 'Dashboard'}
         />
-        {error && <div className="shell-alert" role="alert" aria-live="assertive">{error}</div>}
+        {error && <Alert tone="error" className="shell-alert" role="alert" aria-live="assertive">{error}</Alert>}
         <Suspense fallback={<div className="app-loading" role="status">Loading page…</div>}>
           {path === '/dashboard' ? <WorkspaceWelcome context={context} />
             : path === '/members' || path.startsWith('/members/') ? <MembersPage context={context} path={path} navigate={navigate} />
               : path === '/payments' ? <PaymentsPage context={context} navigate={navigate} />
                 : path === '/pos' ? null
-                : <div className="workspace-content"><h1>Page not found</h1><button type="button" className="nav-item" onClick={() => navigate('/dashboard')}>Back to dashboard</button></div>}
+                : <div className="workspace-content"><h1>Page not found</h1><Button tone="secondary" className="nav-item" onClick={() => navigate('/dashboard')}>Back to dashboard</Button></div>}
           {posVisited && <div hidden={path !== '/pos'}><POSPage context={context} /></div>}
         </Suspense>
       </section>

@@ -1,11 +1,12 @@
 import { Package, Plus, Search } from 'lucide-react';
+import { TextField } from '../../components/forms';
 import { money, type CartLine, type Tier, type Variation } from './cart';
 
 export function Catalog({ variations, cart, tier, search, onSearch, onAdd, disabled }: { variations: Variation[]; cart: CartLine[]; tier: Tier; search: string; onSearch: (value: string) => void; onAdd: (item: Variation) => void; disabled: boolean }) {
   const filtered = variations.filter((item) => `${item.product_name ?? ''} ${item.name} ${item.label}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   return <section className="pos-catalog" aria-labelledby="pos-catalog-heading">
     <div className="pos-section-heading"><div><h2 id="pos-catalog-heading">Product catalog</h2></div><span className="pos-count">{filtered.length} products</span></div>
-    <label className="pos-search"><Search size={19} aria-hidden="true" /><span className="pos-sr-only">Search products</span><input type="search" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search products or variations" /></label>
+    <TextField id="pos-product-search" label="Search products" labelClassName="pos-sr-only" className="pos-search" type="search" startAdornment={<Search size={19} aria-hidden="true" />} value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search products or variations" />
     {filtered.length === 0 ? <div className="pos-empty"><Package size={23} /><strong>{search.trim() ? 'No matching products' : 'No products available'}</strong></div> : <div className="pos-product-grid">{filtered.map((item) => {
       const selected = cart.find((line) => line.variationId === item.id)?.quantity ?? 0;
       const unavailable = item.available_stock <= 0;

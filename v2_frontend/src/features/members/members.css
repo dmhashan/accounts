@@ -3,11 +3,6 @@
 .members-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 18px; }
 .members-heading h1 { margin: 0; font-size: clamp(26px, 3vw, 32px); line-height: 1.15; letter-spacing: -.04em; font-weight: 700; }
 .members-heading p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.members-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 7px; padding: 0 15px; border: 1px solid var(--blue-hover); border-radius: 8px; background: var(--blue-hover); color: white; font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
-.members-button:hover:not(:disabled) { filter: brightness(.9); }
-.members-button--secondary { border-color: var(--border-strong); background: var(--surface); color: var(--text); }
-.members-button--secondary:hover:not(:disabled) { background: var(--surface-hover); }
-.members-button:disabled { opacity: .48; cursor: not-allowed; }
 .members-panel, .members-form { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .members-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .members-tabs { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -15,6 +10,9 @@
 .members-tabs button:hover { background: var(--surface-hover); }
 .members-tabs button.is-selected { background: var(--blue-soft); color: var(--blue-ink); }
 .members-filters { display: flex; flex-wrap: wrap; gap: 9px; }
+.members-filters > label:not(.members-search) { width: 100%; }
+.members-search { min-height: 41px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 12px; }
+.members-filters .app-select { min-width: 145px; }
 .members-filters select, .members-search { min-height: 41px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 12px; }
 .members-filters select { padding: 0 32px 0 11px; }
 .members-search { display: flex; min-width: 250px; align-items: center; gap: 8px; padding: 0 11px; color: var(--muted); }
@@ -44,7 +42,6 @@
 .members-state--error { color: var(--danger); }
 .members-pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 11px; }
 .members-pagination > div { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-.members-pagination .members-button { min-height: 38px; }
 .members-profile-title { display: flex; align-items: center; gap: 16px; }
 .members-profile-title > .members-avatar { width: 62px; height: 62px; border-radius: 12px; font-size: 22px; }
 .members-profile-title .members-statuses { margin-top: 10px; }
@@ -61,7 +58,8 @@
 .members-field { display: grid; min-width: 0; gap: 7px; }
 .members-field label, .members-field-label { color: var(--text); font-size: 12px; font-weight: 650; }
 .members-field label span { color: var(--danger); }
-.members-field input, .members-field select, .members-field textarea { width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+.members-field input, .members-field textarea { width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+.members-field > .app-select { width: 100%; }
 .members-field textarea { resize: vertical; }
 .members-field [aria-invalid="true"] { border-color: var(--danger); }
 .members-field-error { color: var(--danger); font-size: 11px; line-height: 1.4; }
@@ -75,14 +73,15 @@
 .members-form-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 15px; padding: 16px 20px; color: var(--muted); font-size: 11px; }
 .members-form-actions > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
 .members-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-.members-page textarea:focus-visible, .members-page button:focus-visible, .members-page input:focus-visible, .members-page select:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 40%, transparent); outline-offset: 2px; }
+.members-page textarea:focus-visible, .members-page button:focus-visible, .members-page input:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 40%, transparent); outline-offset: 2px; }
 @media (max-width: 600px) {
   .members-page { width: calc(100% - 32px); padding: 26px 0 48px; }
   .members-heading { align-items: flex-start; flex-direction: column; }
   .members-toolbar { align-items: stretch; padding: 15px; }
   .members-filters { width: 100%; }
   .members-search { min-width: 0; flex: 1 1 100%; }
-  .members-filters > label:not(.members-search), .members-filters select { width: 100%; }
+  .members-filters > label:not(.members-search) { width: 100%; }
+  .members-filters .app-select { width: 100%; }
   .members-pagination { align-items: flex-start; flex-direction: column; padding: 15px; }
   .members-detail-grid { grid-template-columns: 1fr; }
   .members-form-section { grid-template-columns: 1fr; gap: 18px; padding: 20px 16px; }

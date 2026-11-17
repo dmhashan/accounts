@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv, type ProxyOptions } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import flowbiteReact from "flowbite-react/plugin/vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, new URL('.', import.meta.url).pathname, '');
@@ -18,7 +20,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss(), flowbiteReact()],
     server: {
       proxy: {
         '/api': tenantProxy,

@@ -1,49 +1,60 @@
-import type { SelectHTMLAttributes } from 'react';
+import type { AriaAttributes } from 'react';
 import { TENANT_DATE_FORMATS, TENANT_TIME_FORMATS, type TenantDateFormat, type TenantTimeFormat } from '../../lib/api';
 import { formatDate, formatTime } from '../../lib/dateTime';
+import { OptionField } from './OptionField';
 
-type DateFormatFieldProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange'> & {
+type SharedFormatFieldProps = {
   id: string;
+  name?: string;
+  className?: string;
+  disabled?: boolean;
+  required?: boolean;
+  'aria-invalid'?: AriaAttributes['aria-invalid'];
+  'aria-describedby'?: string;
+};
+
+type DateFormatFieldProps = SharedFormatFieldProps & {
   value: TenantDateFormat;
   onChange: (value: TenantDateFormat) => void;
 };
 
 export function DateFormatField({ value, onChange, ...selectProps }: DateFormatFieldProps) {
   return (
-    <div className="field-group">
-      <label htmlFor={selectProps.id}>Date format</label>
-      <select
-        {...selectProps}
-        value={value}
-        onChange={(event) => onChange(event.target.value as TenantDateFormat)}
-      >
-        {TENANT_DATE_FORMATS.map((format) => (
-          <option value={format} key={format}>{format} · {formatDate(new Date(2026, 4, 28), format)}</option>
-        ))}
-      </select>
-    </div>
+    <OptionField<TenantDateFormat>
+      id={selectProps.id}
+      label="Date format"
+      name={selectProps.name}
+      className={selectProps.className}
+      isDisabled={selectProps.disabled}
+      required={selectProps.required}
+      aria-invalid={selectProps['aria-invalid']}
+      aria-describedby={selectProps['aria-describedby']}
+      value={value}
+      onValueChange={onChange}
+      options={TENANT_DATE_FORMATS.map((format) => ({ value: format, label: `${format} · ${formatDate(new Date(2026, 4, 28), format)}` }))}
+    />
   );
 }
 
-type TimeFormatFieldProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange'> & {
-  id: string;
+type TimeFormatFieldProps = SharedFormatFieldProps & {
   value: TenantTimeFormat;
   onChange: (value: TenantTimeFormat) => void;
 };
 
 export function TimeFormatField({ value, onChange, ...selectProps }: TimeFormatFieldProps) {
   return (
-    <div className="field-group">
-      <label htmlFor={selectProps.id}>Time format</label>
-      <select
-        {...selectProps}
-        value={value}
-        onChange={(event) => onChange(event.target.value as TenantTimeFormat)}
-      >
-        {TENANT_TIME_FORMATS.map((format) => (
-          <option value={format} key={format}>{format} · {formatTime(new Date(2026, 4, 28, 14, 30), format)}</option>
-        ))}
-      </select>
-    </div>
+    <OptionField<TenantTimeFormat>
+      id={selectProps.id}
+      label="Time format"
+      name={selectProps.name}
+      className={selectProps.className}
+      isDisabled={selectProps.disabled}
+      required={selectProps.required}
+      aria-invalid={selectProps['aria-invalid']}
+      aria-describedby={selectProps['aria-describedby']}
+      value={value}
+      onValueChange={onChange}
+      options={TENANT_TIME_FORMATS.map((format) => ({ value: format, label: `${format} · ${formatTime(new Date(2026, 4, 28, 14, 30), format)}` }))}
+    />
   );
 }

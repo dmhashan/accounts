@@ -1,3 +1,8 @@
+@import 'tailwindcss';
+@import 'flowbite-react/plugin/tailwindcss';
+@source '../.flowbite-react/class-list.json';
+@source './**/*.{ts,tsx}';
+
 :root {
   color-scheme: light;
   font-family: "DM Sans", "Avenir Next", Avenir, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -31,7 +36,7 @@ html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
 body { min-height: 100vh; background: var(--canvas); color: var(--text); }
 button, input { font: inherit; }
 button { color: inherit; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 40%, transparent); outline-offset: 3px; }
+button:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 40%, transparent); outline-offset: 3px; }
 
 .brand-lockup { display: inline-flex; width: fit-content; align-items: center; gap: 10px; }
 .brand-mark { display: inline-flex; width: 31px; height: 31px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 3px; border-radius: 9px; background: var(--blue); box-shadow: 0 5px 13px rgba(40, 121, 232, 0.2); }
@@ -84,7 +89,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .field-group input, .field-group select { width: 100%; min-height: 49px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-control); color: var(--text); background: var(--surface); font-size: 13px; transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease; }
 .field-group input::placeholder { color: #9aa5b3; }
 .field-group input:hover { border-color: #b9c5d5; }
-.field-group input:focus, .field-group select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 14%, transparent); outline: none; }
+.field-group input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 14%, transparent); outline: none; }
 .field-group input:disabled { cursor: not-allowed; background: var(--surface-soft); opacity: 0.72; }
 .password-input-wrap { position: relative; }
 .password-input-wrap input { padding-right: 52px; }
@@ -116,6 +121,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sidebar-brand .brand-wordmark, .drawer-heading .brand-wordmark, .welcome-brand-card .brand-wordmark { overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
 .sidebar-caption { padding: 0 11px; color: #8a96a5; font-size: 9px; font-weight: 760; letter-spacing: 0.14em; }
 .workspace-nav { display: grid; gap: 6px; margin-top: 13px; }
+.workspace-nav > div, .workspace-nav ul { width: 100%; }
+.workspace-nav [role="button"][aria-disabled="true"] { cursor: not-allowed; opacity: .55; }
 .nav-item { display: flex; min-height: 45px; align-items: center; gap: 12px; padding: 0 12px; border: 1px solid transparent; border-radius: 9px; color: #58677a; background: transparent; font-size: 12px; font-weight: 620; text-align: left; cursor: pointer; transition: color 140ms ease, background 140ms ease; }
 .nav-item svg { flex: 0 0 auto; color: #758398; }
 .nav-item:hover { color: #263a53; background: var(--surface-hover); }
@@ -152,7 +159,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .profile-trigger:hover { border-color: #aac9f1; box-shadow: 0 3px 12px rgba(40, 121, 232, 0.12); }
 .profile-avatar { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: var(--blue-ink); background: var(--blue-soft); font-size: 11px; font-weight: 750; letter-spacing: -0.025em; }
 .profile-avatar--large { width: 38px; height: 38px; }
-.profile-popover { position: absolute; top: calc(100% + 10px); right: 0; z-index: 20; width: 230px; padding: 9px; border: 1px solid var(--border); border-radius: 13px; background: white; box-shadow: var(--shadow-popover); animation: pop-in 130ms ease-out; }
 .profile-summary { display: flex; align-items: center; gap: 11px; padding: 9px 8px 11px; }
 .profile-summary strong, .profile-summary small { display: block; }
 .profile-summary strong { color: var(--text); font-size: 12px; font-weight: 680; }
@@ -189,14 +195,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .workspace-empty h1 { margin: 13px 0 8px; color: #233247; font-size: clamp(30px, 4vw, 42px); font-weight: 610; letter-spacing: -0.06em; }
 .workspace-empty p { max-width: 390px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .shell-alert { position: fixed; right: 24px; bottom: 22px; z-index: 30; max-width: min(420px, calc(100vw - 32px)); padding: 13px 16px; border: 1px solid #f0c8c2; border-radius: 11px; color: var(--danger); background: #fff8f6; font-size: 12px; box-shadow: var(--shadow-popover); }
-.drawer-layer { position: fixed; inset: 0; z-index: 40; }
-.drawer-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(23, 33, 47, 0.34); animation: fade-in 130ms ease-out; }
-.mobile-drawer { position: absolute; inset: 0 auto 0 0; display: flex; width: min(320px, calc(100vw - 42px)); flex-direction: column; padding: max(20px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); border-right: 1px solid var(--border); background: white; box-shadow: 12px 0 36px rgba(23, 33, 47, 0.13); animation: slide-in 180ms ease-out; }
+.mobile-drawer { width: min(320px, calc(100vw - 42px)); padding: max(20px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); border-right: 1px solid var(--border); background: white; box-shadow: 12px 0 36px rgba(23, 33, 47, 0.13); }
 .drawer-heading { display: flex; min-height: 48px; align-items: center; justify-content: space-between; margin: 0 4px 38px 8px; }
-.drawer-close { border-color: var(--border); }
-.drawer-signout { margin-top: auto; border-color: var(--border); }
+.drawer-signout { margin-top: 0; border-color: var(--border); }
 .mobile-drawer .powered-by-footer { margin-top: auto; margin-bottom: 12px; }
-.drawer-signout { margin-top: 0; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-in { from { transform: translateX(-14px); opacity: 0.75; } to { transform: translateX(0); opacity: 1; } }
 @keyframes pop-in { from { transform: translateY(-4px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -204,7 +206,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .workspace-shell[data-color-mode="dark"] { --canvas: #101318; --surface: #171c24; --surface-soft: #1d242e; --surface-hover: #222b36; --border: #29323e; --border-strong: #3a4654; --text: #eef2f7; --muted: #a7b2c1; --quiet: #8995a4; color-scheme: dark; }
 .workspace-shell[data-color-mode="dark"] .sidebar,
 .workspace-shell[data-color-mode="dark"] .mobile-drawer,
-.workspace-shell[data-color-mode="dark"] .profile-popover { background: var(--surface); }
 .workspace-shell[data-color-mode="dark"] .workspace-topbar { background: rgba(23, 28, 36, 0.94); }
 .workspace-shell[data-color-mode="dark"] .workspace-welcome { background: linear-gradient(115deg, var(--surface) 0%, var(--surface) 63%, color-mix(in srgb, var(--blue) 16%, var(--surface)) 100%); }
 .workspace-shell[data-color-mode="dark"] .welcome-brand-card { border-color: var(--border); background: color-mix(in srgb, var(--surface) 92%, transparent); }
@@ -290,3 +291,42 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+/* Shared Flowbite React primitives, themed with FitFlow tenant tokens. */
+.ui-button { min-height: 42px; gap: 7px; border-radius: var(--radius-control); box-shadow: none; font: inherit; font-size: 12px; font-weight: 700; }
+.ui-button--primary { border-color: var(--blue-hover); background: var(--blue-hover); color: white; }
+.ui-button--primary:hover:not(:disabled) { background: color-mix(in srgb, var(--blue-hover) 88%, black); }
+.ui-button--secondary { border-color: var(--border-strong); background: var(--surface); color: var(--text); }
+.ui-button--secondary:hover:not(:disabled) { background: var(--surface-hover); }
+.ui-button--ghost { border-color: transparent; background: transparent; color: inherit; box-shadow: none; }
+.ui-button--danger { border-color: var(--danger); background: var(--danger); color: white; }
+.ui-button--compact { min-height: 34px; padding: 5px 8px; }
+.ui-alert { width: 100%; border-radius: 10px; }
+.ui-alert--error { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); background: var(--danger-soft); color: var(--danger); }
+.ui-alert--success { border-color: #a5d5ba; background: #effaf3; color: #195e38; }
+.ui-alert--info { border-color: var(--border); background: var(--surface-soft); color: var(--muted); }
+.ui-card { border-color: var(--border); background: var(--surface); box-shadow: none; }
+.ui-pagination { font: inherit; }
+.ui-pagination button { min-height: 40px; border-color: var(--border-strong); color: var(--text); background: var(--surface); }
+.ui-pagination button:hover:not(:disabled) { background: var(--surface-hover); }
+.ui-pagination button[aria-current="page"] { border-color: var(--blue); color: white; background: var(--blue); }
+.ui-table { width: 100%; color: var(--text); background: var(--surface); box-shadow: none; }
+.ui-table thead { background: var(--surface-soft); }
+.ui-table th { color: var(--muted); background: var(--surface-soft); }
+.ui-table td { border-color: var(--border); background: var(--surface); color: var(--text); }
+.ui-modal { color: var(--text); }
+.ui-modal > div { background: rgba(15, 23, 42, .55); }
+.ui-modal [role="dialog"] > div { border-color: var(--border); background: var(--surface); color: var(--text); }
+.ui-modal h3 { color: var(--text); }
+.ui-modal button { color: var(--muted); }
+.ui-dropdown > div { border-color: var(--border); background: var(--surface); box-shadow: var(--shadow-popover); }
+.profile-dropdown .profile-summary { min-width: 210px; }
+.profile-dropdown .profile-menu-action { color: #5b6b7f; }
+.profile-trigger:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 45%, transparent); outline-offset: 3px; }
+.workspace-shell[data-color-mode="dark"] .ui-modal [role="dialog"] > div,
+.workspace-shell[data-color-mode="dark"] .ui-dropdown > div { background: var(--surface); color: var(--text); }
+.workspace-shell[data-color-mode="dark"] .ui-alert--info { background: var(--surface-soft); color: var(--muted); }
+.workspace-shell[data-color-mode="dark"] .ui-table td { background: var(--surface); color: var(--text); }
+
+/* Remove legacy custom control framing where Flowbite owns it. */
+.form-alert, .shell-alert { padding: 12px 14px; }
+.pay-detail-customer { margin: 0 0 12px; color: var(--muted); font-size: 14px; }

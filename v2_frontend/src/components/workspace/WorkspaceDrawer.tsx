@@ -1,7 +1,7 @@
-import { X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { Drawer, DrawerHeader, DrawerItems } from 'flowbite-react';
 import type { StaffAppContext } from '../../lib/api';
 import { Brand } from '../Brand';
+import { Button } from '../ui';
 import { PoweredByFitFlow } from './PoweredByFitFlow';
 import { WorkspaceNavigation } from './WorkspaceNavigation';
 
@@ -16,60 +16,24 @@ type WorkspaceDrawerProps = {
 };
 
 export function WorkspaceDrawer({ context, onClose, onLogout, loggingOut, menuButtonRef, path, navigate }: WorkspaceDrawerProps) {
-  const drawerRef = useRef<HTMLElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const previousFocus = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-        menuButtonRef.current?.focus();
-        return;
-      }
-      if (event.key !== 'Tab' || !drawerRef.current) return;
-
-      const focusable = Array.from(drawerRef.current.querySelectorAll<HTMLElement>(
-        'button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
-      ));
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      if (previousFocus?.isConnected) previousFocus.focus();
-    };
-  }, [menuButtonRef, onClose]);
+  function close() {
+    onClose();
+    window.requestAnimationFrame(() => menuButtonRef.current?.focus());
+  }
 
   return (
-    <div className="drawer-layer">
-      <button className="drawer-backdrop" type="button" aria-label="Close navigation" onClick={onClose} />
-      <aside ref={drawerRef} className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Workspace navigation">
-        <div className="drawer-heading">
-          <Brand compact tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} />
-          <button ref={closeRef} className="icon-button drawer-close" type="button" aria-label="Close navigation" onClick={onClose}>
-            <X size={20} aria-hidden="true" />
-          </button>
-        </div>
+    <Drawer open onClose={close} position="left" className="mobile-drawer" aria-label="Workspace navigation">
+      <DrawerHeader className="drawer-heading">
+        <Brand compact tenantName={context.tenant.name} logoUrl={context.tenant.logo_url} />
+      </DrawerHeader>
+      <DrawerItems className="flex min-h-0 flex-1 flex-col">
         <div className="sidebar-caption">WORKSPACE</div>
-        <WorkspaceNavigation context={context} path={path} navigate={(destination) => { navigate(destination); onClose(); }} />
+        <WorkspaceNavigation context={context} path={path} navigate={(destination) => { navigate(destination); close(); }} />
         <PoweredByFitFlow />
-        <button className="signout-button drawer-signout" type="button" onClick={onLogout} disabled={loggingOut}>
+        <Button tone="ghost" className="signout-button drawer-signout" type="button" onClick={onLogout} disabled={loggingOut}>
           <span>{loggingOut ? 'Signing out…' : 'Sign out'}</span>
-        </button>
-      </aside>
-    </div>
+        </Button>
+      </DrawerItems>
+    </Drawer>
   );
 }
