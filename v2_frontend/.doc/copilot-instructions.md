@@ -2,6 +2,8 @@
 
 These instructions apply to work inside `v2_frontend/`. Read [README.md](README.md), [system-overview.md](system-overview.md), [api-catalog.md](api-catalog.md), and [design-system.md](design-system.md) before making architectural or UI changes.
 
+**Branch scope:** When the current branch is `v2-ui`, modify files only inside `v2_frontend/`. Do not edit root Laravel/Vue files or any other folder.
+
 ## Product and app boundaries
 
 - Product name is **FitFlow**; product domain is `fitflow.lk`.
@@ -32,3 +34,4 @@ These instructions apply to work inside `v2_frontend/`. Read [README.md](README.
 - Keep app-specific shells, route guards, API clients, and session handling isolated while sharing design tokens and safe UI primitives.
 - Add or update tests for behavior, authorization-dependent rendering, and responsive data parity where practical.
 - Document new endpoint contracts and architecture decisions in `.doc/` when they are established; distinguish verified backend facts from proposals.
+

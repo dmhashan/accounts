@@ -1,29 +1,31 @@
 import { useEffect, useState } from 'react';
 import { LoginScreen } from './components/login/LoginScreen';
 import { WorkspaceShell } from './components/workspace/WorkspaceShell';
-import { getStaffAppContext, loginStaff, logoutStaff, warmCsrfToken, type StaffAppContext } from './lib/api';
+import { getAppContext, loginStaff, logoutStaff, warmCsrfToken, type AppContext, type StaffAppContext } from './lib/api';
 
 type SessionState = 'checking' | 'signed-out' | 'signed-in' | 'unavailable';
 
 export default function App() {
   const [session, setSession] = useState<SessionState>('checking');
   const [connectionError, setConnectionError] = useState('');
-  const [context, setContext] = useState<StaffAppContext | null>(null);
+  const [context, setContext] = useState<AppContext | null>(null);
 
   useEffect(() => {
     let active = true;
 
     async function initialize() {
       try {
-        const staffContext = await getStaffAppContext();
-        if (!staffContext) await warmCsrfToken();
+        const appContext = await getAppContext();
+        if (!appContext?.user) await warmCsrfToken();
         if (active) {
-          setContext(staffContext);
-          setSession(staffContext ? 'signed-in' : 'signed-out');
+          setContext(appContext);
+          setSession(appContext?.user ? 'signed-in' : 'signed-out');
         }
-      } catch {
+      } catch (reason) {
         if (active) {
-          setConnectionError('Could not connect to FitFlow. Check your connection and try again.');
+          setConnectionError(reason instanceof Error && reason.name === 'ApiError'
+            ? reason.message
+            : 'Could not connect to FitFlow. Check your connection and try again.');
           setSession('unavailable');
         }
       }
@@ -36,8 +38,8 @@ export default function App() {
   async function handleLogin(login: string, password: string) {
     await warmCsrfToken();
     await loginStaff(login, password);
-    const staffContext = await getStaffAppContext();
-    if (!staffContext) throw new Error('Your sign-in could not be verified. Please try again.');
+    const staffContext = await getAppContext();
+    if (!staffContext?.user) throw new Error('Your sign-in could not be verified. Please try again.');
     setConnectionError('');
     setContext(staffContext);
     setSession('signed-in');
@@ -47,7 +49,8 @@ export default function App() {
     await warmCsrfToken(true);
     await logoutStaff();
     setConnectionError('');
-    setContext(null);
+    const tenantContext = await getAppContext();
+    setContext(tenantContext);
     setSession('signed-out');
     await warmCsrfToken();
   }
@@ -56,7 +59,9 @@ export default function App() {
     return <main className="app-loading" aria-label="Loading FitFlow"><span className="loading-indicator" aria-hidden="true" /> Connecting to FitFlow…</main>;
   }
 
-  if (session === 'signed-in' && context) return <WorkspaceShell context={context} onLogout={handleLogout} />;
+  if (session === 'signed-in' && context?.user) {
+    return <WorkspaceShell context={context as StaffAppContext} onLogout={handleLogout} />;
+  }
 
-  return <LoginScreen onLogin={handleLogin} connectionError={session === 'unavailable' ? connectionError : ''} />;
+  return <LoginScreen context={context} onLogin={handleLogin} connectionError={session === 'unavailable' ? connectionError : ''} />;
 }

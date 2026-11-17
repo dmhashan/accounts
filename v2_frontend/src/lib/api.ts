@@ -11,7 +11,7 @@ export type TenantTimeFormat = typeof TENANT_TIME_FORMATS[number];
 export type TenantColorTheme = typeof TENANT_COLOR_THEMES[number];
 export type TenantColorMode = typeof TENANT_COLOR_MODES[number];
 
-export type StaffAppContext = {
+type AppContextBase = {
   settings: {
     dateFormat: TenantDateFormat;
     timeFormat: TenantTimeFormat;
@@ -19,7 +19,6 @@ export type StaffAppContext = {
     colorMode: TenantColorMode;
     whatsappEnabled: boolean;
   };
-  user: { id: number; name: string; email: string };
   tenant: {
     id: number;
     name: string;
@@ -30,8 +29,19 @@ export type StaffAppContext = {
     logo_url: string | null;
     member_portal_url: string | null;
   };
+};
+
+export type StaffAppContext = AppContextBase & {
+  user: { id: number; name: string; email: string };
   permissions: Record<string, boolean>;
 };
+
+export type TenantAppContext = AppContextBase & {
+  user: null;
+  permissions: null;
+};
+
+export type AppContext = StaffAppContext | TenantAppContext;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -45,18 +55,17 @@ function nullableString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-function parseStaffAppContext(value: unknown): StaffAppContext {
-  if (!isRecord(value) || !isRecord(value.user) || !isRecord(value.tenant) || !isRecord(value.settings) || !isRecord(value.permissions)) {
-    throw new ApiError('The workspace profile response was incomplete. Refresh the page and try again.');
+function parseAppContext(value: unknown): AppContext {
+  if (!isRecord(value) || !isRecord(value.tenant) || !isRecord(value.settings)) {
+    throw new ApiError('The workspace context response was incomplete. Refresh the page and try again.');
   }
 
   const { user, tenant, settings, permissions } = value;
-  if (typeof user.id !== 'number' || typeof user.name !== 'string' || typeof user.email !== 'string'
-    || typeof tenant.id !== 'number' || typeof tenant.name !== 'string' || typeof tenant.domain !== 'string') {
-    throw new ApiError('The workspace profile response was invalid. Refresh the page and try again.');
+  if (typeof tenant.id !== 'number' || typeof tenant.name !== 'string' || typeof tenant.domain !== 'string') {
+    throw new ApiError('The tenant context response was invalid. Refresh the page and try again.');
   }
 
-  return {
+  const base: AppContextBase = {
     settings: {
       dateFormat: isOneOf(settings.dateFormat, TENANT_DATE_FORMATS, 'D MMM YYYY'),
       timeFormat: isOneOf(settings.timeFormat, TENANT_TIME_FORMATS, 'HH:mm'),
@@ -64,7 +73,6 @@ function parseStaffAppContext(value: unknown): StaffAppContext {
       colorMode: isOneOf(settings.colorMode, TENANT_COLOR_MODES, 'system'),
       whatsappEnabled: settings.whatsappEnabled === true,
     },
-    user: { id: user.id, name: user.name, email: user.email },
     tenant: {
       id: tenant.id,
       name: tenant.name,
@@ -75,6 +83,20 @@ function parseStaffAppContext(value: unknown): StaffAppContext {
       logo_url: nullableString(tenant.logo_url),
       member_portal_url: nullableString(tenant.member_portal_url),
     },
+  };
+
+  if (user === undefined && permissions === undefined) {
+    return { ...base, user: null, permissions: null };
+  }
+
+  if (!isRecord(user) || !isRecord(permissions)
+    || typeof user.id !== 'number' || typeof user.name !== 'string' || typeof user.email !== 'string') {
+    throw new ApiError('The staff profile context response was invalid. Refresh the page and try again.');
+  }
+
+  return {
+    ...base,
+    user: { id: user.id, name: user.name, email: user.email },
     permissions: Object.fromEntries(Object.entries(permissions).map(([key, enabled]) => [key, enabled === true])),
   };
 }
@@ -156,7 +178,7 @@ export async function logoutStaff(): Promise<void> {
   await postJson('/api/auth/logout');
 }
 
-export async function getStaffAppContext(): Promise<StaffAppContext | null> {
+export async function getAppContext(): Promise<AppContext | null> {
   const response = await fetch('/api/app/context', {
     method: 'GET',
     credentials: 'include',
@@ -171,5 +193,5 @@ export async function getStaffAppContext(): Promise<StaffAppContext | null> {
     throw await responseError(response);
   }
 
-  return parseStaffAppContext(await response.json() as unknown);
+  return parseAppContext(await response.json() as unknown);
 }

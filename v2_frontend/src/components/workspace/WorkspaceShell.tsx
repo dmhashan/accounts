@@ -1,6 +1,6 @@
-import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { StaffAppContext } from '../../lib/api';
+import { getTenantThemeStyle } from '../../lib/theme';
 import { WorkspaceDrawer } from './WorkspaceDrawer';
 import { WorkspaceHeader } from './WorkspaceHeader';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
@@ -11,15 +11,6 @@ type WorkspaceShellProps = {
   onLogout: () => Promise<void>;
 };
 
-const tenantThemes = {
-  crimson: { primary: '#ef4444', dark: '#991b1b', light: '#fca5a5' },
-  ocean: { primary: '#0ea5e9', dark: '#075985', light: '#7dd3fc' },
-  forest: { primary: '#22c55e', dark: '#166534', light: '#86efac' },
-  violet: { primary: '#8b5cf6', dark: '#5b21b6', light: '#c4b5fd' },
-  sunset: { primary: '#f97316', dark: '#9a3412', light: '#fdba74' },
-  slate: { primary: '#64748b', dark: '#334155', light: '#cbd5e1' },
-} as const;
-
 export function WorkspaceShell({ context, onLogout }: WorkspaceShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -27,7 +18,6 @@ export function WorkspaceShell({ context, onLogout }: WorkspaceShellProps) {
   const [prefersDark, setPrefersDark] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
-  const colors = tenantThemes[context.settings.colorTheme];
   const colorMode = context.settings.colorMode === 'system' ? (prefersDark ? 'dark' : 'light') : context.settings.colorMode;
 
   useEffect(() => {
@@ -38,13 +28,7 @@ export function WorkspaceShell({ context, onLogout }: WorkspaceShellProps) {
     return () => media.removeEventListener('change', updatePreference);
   }, []);
 
-  const themeStyle = {
-    '--blue': colors.primary,
-    '--blue-hover': colors.dark,
-    '--blue-light': colors.light,
-    '--blue-soft': `color-mix(in srgb, ${colors.primary} 9%, var(--surface))`,
-    '--blue-ink': colorMode === 'dark' ? colors.light : colors.dark,
-  } as CSSProperties & Record<'--blue' | '--blue-hover' | '--blue-light' | '--blue-soft' | '--blue-ink', string>;
+  const themeStyle = getTenantThemeStyle(context.settings.colorTheme, colorMode);
 
   useEffect(() => {
     const previousTitle = document.title;

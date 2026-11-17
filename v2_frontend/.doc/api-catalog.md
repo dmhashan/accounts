@@ -22,7 +22,7 @@ All paths below are relative to `/api`. The route source is given for each group
 |---|---|---|---|
 | Health | `routes/api/health.php` | Health/status checks | Public/operational; inspect middleware |
 | Tenant staff auth | `routes/api/auth.php` | `/auth/login`, `/auth/logout`, `/auth/refresh` | Login/refresh public as defined; logout authenticated |
-| Tenant app context | `routes/api/context.php` | `/app/context` and context data | Tenant staff session |
+| Tenant app context | `routes/api/context.php` | `/app/context`; tenant/settings before login, plus user/permissions when authenticated | Tenant host; user fields are conditional |
 | Dashboard | `routes/api/dashboard.php` | Dashboard summary/data | Authenticated tenant staff and dashboard permission |
 | Users/staff | `routes/api/users.php` | User list/detail/meta/create/update/status/password reset/delete | `users.*` permissions |
 | Members | `routes/api/members.php` | Member CRUD/meta, payments/plans, wallet, documents, measurements, biometric, member-linked features | User/member/payment or feature permissions; varies by endpoint |
@@ -54,7 +54,7 @@ All paths below are relative to `/api`. The route source is given for each group
 - `POST /api/auth/login`
 - `POST /api/auth/logout` (authenticated)
 - `POST /api/auth/refresh`
-- `GET /api/app/context` (authenticated; app context endpoint is `/app/context`, not the older documented `/context` path)
+- `GET /api/app/context` (tenant/settings are returned before login; staff responses also include user and permissions; path is `/app/context`)
 
 ### Super-admin portal
 

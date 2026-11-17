@@ -1,18 +1,24 @@
 import { LockKeyhole, ShieldCheck } from 'lucide-react';
+import type { AppContext } from '../../lib/api';
+import { getTenantThemeStyle } from '../../lib/theme';
 import { Brand } from '../Brand';
 import { LoginForm } from './LoginForm';
 
 type LoginScreenProps = {
+  context: AppContext | null;
   onLogin: (login: string, password: string) => Promise<void>;
   connectionError: string;
 };
 
-export function LoginScreen({ onLogin, connectionError }: LoginScreenProps) {
+export function LoginScreen({ context, onLogin, connectionError }: LoginScreenProps) {
+  const tenantName = context?.tenant.name;
+  const themeStyle = context ? getTenantThemeStyle(context.settings.colorTheme, context.settings.colorMode) : undefined;
+
   return (
-    <main className="login-page">
+    <main className="login-page" style={themeStyle}>
       <header className="login-topbar">
-        <Brand adminLabel />
-        <span className="tenant-label"><span aria-hidden="true" /> TENANT WORKSPACE</span>
+        <Brand adminLabel tenantName={tenantName} logoUrl={context?.tenant.logo_url} poweredBy={Boolean(tenantName)} />
+        <span className="tenant-label"><span aria-hidden="true" /> STAFF WORKSPACE</span>
       </header>
 
       <section className="login-layout" aria-label="FitFlow Admin sign in">
@@ -38,7 +44,7 @@ export function LoginScreen({ onLogin, connectionError }: LoginScreenProps) {
 
             <div className="login-security"><ShieldCheck size={16} aria-hidden="true" /> Your sign-in is protected by your gym’s secure session.</div>
           </div>
-          <footer className="login-footer">© {new Date().getFullYear()} FitFlow <span>·</span> Made for movement</footer>
+          <footer className="login-footer">© {new Date().getFullYear()} {tenantName || 'FitFlow'} <span>·</span> Made for movement</footer>
         </section>
       </section>
     </main>

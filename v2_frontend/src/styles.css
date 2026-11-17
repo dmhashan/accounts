@@ -52,6 +52,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 /* Sign in */
 .login-page { min-height: 100vh; padding: 0 clamp(24px, 6vw, 92px); background: var(--surface); }
 .login-topbar { display: flex; min-height: 86px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.login-topbar > .brand-lockup { max-width: min(72vw, 520px); }
+.login-topbar .brand-name-group { max-width: min(48vw, 340px); }
 .tenant-label { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 9px; font-weight: 740; letter-spacing: 0.15em; }
 .tenant-label span { width: 7px; height: 7px; border-radius: 50%; background: #41a276; box-shadow: 0 0 0 4px #e8f6ef; }
 .login-layout { display: grid; width: min(1120px, 100%); min-height: calc(100vh - 87px); grid-template-columns: minmax(0, 1fr) minmax(390px, 0.88fr); align-items: center; gap: clamp(52px, 8vw, 132px); margin: 0 auto; padding: 52px 0 44px; }

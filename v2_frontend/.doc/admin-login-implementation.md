@@ -26,10 +26,11 @@ The v2 application is an isolated React + TypeScript SPA in `v2_frontend/`. It i
 - `POST /api/auth/logout` requires an authenticated session.
 - Tenant API routes are in the Laravel `web` middleware group, so browser requests send cookies and a CSRF header.
 - `GET /login` returns the tenant's session-bound `<meta name="csrf-token">`; the app reads this token before login/logout. Sending the encrypted `XSRF-TOKEN` cookie as a plain `X-CSRF-TOKEN` caused HTTP 419, so do not substitute the cookie value for the meta token.
-- `GET /api/app/context` is the verified authenticated endpoint used to restore signed-in state and load user, tenant, logo, settings, and permission context. It does not render or fetch dashboard features.
-- The context contract is the flat JSON returned by `AppContextService::build()`: `settings`, `user`, `tenant`, and `permissions`. Valid palette values are `crimson`, `ocean`, `forest`, `violet`, `sunset`, and `slate`; date/time formats use the backend enums.
+- `GET /api/app/context` returns tenant/settings before login and adds user/permissions when staff is authenticated. Do not equate HTTP 200 with an authenticated staff session.
+- The context contract is the flat JSON returned by `AppContextService::build()`: `settings` and `tenant` are present for signed-out requests; `user` and `permissions` are added for authenticated staff. Valid palette values are `crimson`, `ocean`, `forest`, `violet`, `sunset`, and `slate`; date/time formats use backend enums.
+- The login screen receives signed-out context and uses the same tenant logo/name and validated theme as the workspace. Its default FitFlow identity is only a fallback while context is unavailable.
 - `settings.colorMode` is one of `system`, `light`, or `dark`; the shell follows that preference and tracks OS appearance changes for system mode. Unknown theme/mode values safely fall back to `crimson`/`system`.
-- An authenticated `GET /login` intentionally redirects to `/dashboard`, and `/dashboard` redirects to the legacy SPA hash route. The v2 app checks `/api/app/context` before loading the login page, so it does not mistake this expected redirect for a login failure. To get a fresh CSRF meta token for logout, the Vite-only `/__tenant-root` proxy maps to Laravel `/`, which serves the authenticated tenant shell.
+- An authenticated `GET /login` intentionally redirects to `/dashboard`, and `/dashboard` redirects to the legacy SPA hash route. The v2 app reads `/api/app/context` to distinguish signed-out tenant branding from an authenticated staff context. To get a fresh CSRF meta token for logout, the Vite-only `/__tenant-root` proxy maps to Laravel `/`, which serves the authenticated tenant shell.
 - The client sends `credentials: 'include'` and the `/login` meta token in `X-CSRF-TOKEN`. It does not call a Sanctum endpoint, store credentials, or implement an unverified password-recovery flow.
 
 ## Production API proxy
@@ -43,3 +44,7 @@ The sidebar intentionally contains only the generic Workspace destination and si
 ## Current visual direction
 
 For this iteration, the latest light UI references supersede the earlier dark dashboard palette in the general design-system notes: warm light-gray canvas, white surfaces, soft gray borders, near-black text, and restrained tenant-colored actions/active states. Components retain visible focus, disabled, hover, loading, and error states, and use safe-area padding and reduced-motion handling on narrow screens. Tenant accent colors use the verified legacy palette values from `resources/js/spa/composables/useTheme.js`. Date and time use the browser's local timezone because the current context contract does not expose a tenant timezone.
+
+## Branch scope rule
+
+When working on the `v2-ui` branch, make changes only inside `v2_frontend/`. Do not modify root Laravel/Vue files or any other folder. Keep this rule with the v2 Copilot documents and follow it for all v2-ui tasks.
