@@ -102,12 +102,18 @@ function parseAppContext(value: unknown): AppContext {
 }
 
 export class ApiError extends Error {
+  readonly status?: number;
+  readonly errors?: Record<string, string[]>;
+
   constructor(
     message: string,
-    readonly status?: number,
+    status?: number,
+    errors?: Record<string, string[]>,
   ) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.errors = errors;
   }
 }
 
@@ -125,7 +131,7 @@ async function responseError(response: Response): Promise<ApiError> {
     : undefined;
   const message = validationMessage || payload.message || `Request failed (${response.status}).`;
 
-  return new ApiError(message, response.status);
+  return new ApiError(message, response.status, payload.errors);
 }
 
 export async function warmCsrfToken(authenticated = false): Promise<void> {
@@ -147,6 +153,33 @@ export async function warmCsrfToken(authenticated = false): Promise<void> {
   }
 
   csrfToken = csrf;
+}
+
+type ApiRequestOptions = {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  body?: unknown;
+  signal?: AbortSignal;
+};
+
+export async function requestApi<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  if (!path.startsWith('/api/')) throw new ApiError('Invalid API path.');
+  const method = options.method ?? 'GET';
+  if (method !== 'GET') await warmCsrfToken(true);
+
+  const response = await fetch(path, {
+    method,
+    credentials: 'include',
+    signal: options.signal,
+    headers: {
+      ...jsonHeaders,
+      ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(method !== 'GET' ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+    },
+    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+  });
+  if (!response.ok) throw await responseError(response);
+  if (response.status === 204) return undefined as T;
+  return await response.json() as T;
 }
 
 async function postJson(path: string, body?: Record<string, string>): Promise<void> {

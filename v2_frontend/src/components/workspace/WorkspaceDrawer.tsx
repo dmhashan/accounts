@@ -11,9 +11,11 @@ type WorkspaceDrawerProps = {
   onLogout: () => void;
   loggingOut: boolean;
   menuButtonRef: React.RefObject<HTMLButtonElement | null>;
+  path: string;
+  navigate: (path: string) => void;
 };
 
-export function WorkspaceDrawer({ context, onClose, onLogout, loggingOut, menuButtonRef }: WorkspaceDrawerProps) {
+export function WorkspaceDrawer({ context, onClose, onLogout, loggingOut, menuButtonRef, path, navigate }: WorkspaceDrawerProps) {
   const drawerRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -62,7 +64,7 @@ export function WorkspaceDrawer({ context, onClose, onLogout, loggingOut, menuBu
           </button>
         </div>
         <div className="sidebar-caption">WORKSPACE</div>
-        <WorkspaceNavigation />
+        <WorkspaceNavigation context={context} path={path} navigate={(destination) => { navigate(destination); onClose(); }} />
         <PoweredByFitFlow />
         <button className="signout-button drawer-signout" type="button" onClick={onLogout} disabled={loggingOut}>
           <span>{loggingOut ? 'Signing out…' : 'Sign out'}</span>

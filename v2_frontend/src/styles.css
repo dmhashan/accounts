@@ -119,6 +119,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .nav-item { display: flex; min-height: 45px; align-items: center; gap: 12px; padding: 0 12px; border: 1px solid transparent; border-radius: 9px; color: #58677a; background: transparent; font-size: 12px; font-weight: 620; text-align: left; cursor: pointer; transition: color 140ms ease, background 140ms ease; }
 .nav-item svg { flex: 0 0 auto; color: #758398; }
 .nav-item:hover { color: #263a53; background: var(--surface-hover); }
+.nav-item:disabled { cursor: not-allowed; opacity: 0.6; }
+.nav-coming-soon { margin-left: auto; font-size: 9px; color: var(--muted); }
 .nav-item.is-active { color: var(--blue-ink); background: var(--blue-soft); }
 .nav-item.is-active svg { color: var(--blue); }
 .signout-button { display: flex; min-height: 44px; align-items: center; gap: 11px; padding: 0 12px; border: 1px solid transparent; border-radius: 9px; color: #667487; background: transparent; font-size: 12px; font-weight: 590; text-align: left; cursor: pointer; transition: color 140ms ease, background 140ms ease; }

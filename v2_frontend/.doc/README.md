@@ -8,6 +8,7 @@ This folder is the working source of truth for the FitFlow v2 frontend. It recor
 - [API catalog](api-catalog.md) — existing API route groups, controllers, authorization boundaries, integration guidance, and how to inspect the authoritative live route inventory.
 - [Visual direction and responsive rules](design-system.md) — reference-image palette, typography, surface treatments, responsive behavior, and decisions intentionally left open.
 - [Copilot instructions](copilot-instructions.md) — working constraints for future agents contributing to v2.
+- [Members and payments implementation](members-payments.md) — routes, responsive behavior, API limitations, and verification.
 
 ## Status and source precedence
 
@@ -22,4 +23,5 @@ This folder is the working source of truth for the FitFlow v2 frontend. It recor
 - `php artisan route:list --path=api` — live API method/URI/action/middleware inventory.
 - `npm run build` — current Vite build.
 - `npm run typecheck` — strict TypeScript check.
+- `npm test` — dependency-free module regression tests (Node 24).
 - `composer test` — backend tests.
