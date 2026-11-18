@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\StockEntry;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
@@ -14,6 +16,7 @@ class InventoryService
     public function __construct(
         private readonly AuditService $auditService,
         private readonly ManagerNotificationDispatcher $managerNotifications,
+        private readonly MediaStorageService $media,
     ) {}
 
     public function meta(int $tenantId): array
@@ -67,15 +70,17 @@ class InventoryService
     public function showProduct(Product $product, int $tenantId): array
     {
         $this->ensureProductTenant($product, $tenantId);
-        $product->load('variations:id,product_id,name');
+        $product->load(['variations' => fn ($query) => $query->select('id', 'product_id', 'name', 'image_path')->orderBy('id')]);
 
         return [
             'id' => $product->id,
             'name' => $product->name,
+            'category_id' => $product->category_id,
             'variations' => $product->variations->map(function (ProductVariation $variation) {
                 return [
                     'id' => $variation->id,
                     'name' => $variation->name,
+                    'image_url' => $this->variationImageUrl($variation),
                 ];
             })->values(),
         ];
@@ -85,6 +90,7 @@ class InventoryService
     {
         $product = Product::create([
             'name' => $validated['name'],
+            'category_id' => $validated['category_id'] ?? null,
         ]);
 
         $variationNames = collect($validated['variations'] ?? [])
@@ -107,9 +113,12 @@ class InventoryService
     {
         $this->ensureProductTenant($product, $tenantId);
 
-        $product->update([
-            'name' => $validated['name'],
-        ]);
+        $attributes = ['name' => $validated['name']];
+
+        if (array_key_exists('category_id', $validated)) {
+            $attributes['category_id'] = $validated['category_id'];
+        }
+        $product->update($attributes);
 
         $variationPayload = collect($validated['variations'] ?? [])
             ->filter(fn ($variation) => filled($variation['name'] ?? null))
@@ -127,7 +136,12 @@ class InventoryService
         $idsToDelete = array_diff($existingIds, $incomingIds);
 
         if (!empty($idsToDelete)) {
+            $imagePaths = $product->variations()->whereIn('id', $idsToDelete)->whereNotNull('image_path')->pluck('image_path');
             $product->variations()->whereIn('id', $idsToDelete)->delete();
+
+            foreach ($imagePaths as $path) {
+                $this->media->delete($path);
+            }
         }
 
         foreach ($variationPayload as $variation) {
@@ -151,7 +165,12 @@ class InventoryService
     public function destroyProduct(Product $product, int $tenantId): void
     {
         $this->ensureProductTenant($product, $tenantId);
+        $imagePaths = $product->variations()->whereNotNull('image_path')->pluck('image_path');
         $product->delete();
+
+        foreach ($imagePaths as $path) {
+            $this->media->delete($path);
+        }
     }
 
     public function variations(int $tenantId): array
@@ -225,7 +244,63 @@ class InventoryService
     public function destroyVariation(ProductVariation $variation, int $tenantId): void
     {
         $this->ensureVariationTenant($variation, $tenantId);
+        $path = $variation->image_path;
         $variation->delete();
+
+        if ($path) {
+            $this->media->delete($path);
+        }
+    }
+
+    public function variationImageUrl(ProductVariation $variation): ?string
+    {
+        return $variation->image_path ? $this->media->url($variation->image_path) : null;
+    }
+
+    public function uploadVariationImage(ProductVariation $variation, int $tenantId, UploadedFile $file): ?string
+    {
+        $this->ensureVariationTenant($variation, $tenantId);
+        $newPath = $this->media->store($file, 'product-variation-images');
+
+        if ($newPath === '') {
+            throw new \RuntimeException('Unable to store variation image.');
+        }
+
+        try {
+            $oldPath = DB::transaction(function () use ($variation, $newPath) {
+                $locked = ProductVariation::query()->lockForUpdate()->findOrFail($variation->id);
+                $oldPath = $locked->image_path;
+                $locked->update(['image_path' => $newPath]);
+
+                return $oldPath;
+            });
+        } catch (\Throwable $exception) {
+            $this->media->delete($newPath);
+
+            throw $exception;
+        }
+
+        if ($oldPath && $oldPath !== $newPath) {
+            $this->media->delete($oldPath);
+        }
+
+        return $this->media->url($newPath);
+    }
+
+    public function deleteVariationImage(ProductVariation $variation, int $tenantId): void
+    {
+        $this->ensureVariationTenant($variation, $tenantId);
+        $path = DB::transaction(function () use ($variation) {
+            $locked = ProductVariation::query()->lockForUpdate()->findOrFail($variation->id);
+            $path = $locked->image_path;
+            $locked->update(['image_path' => null]);
+
+            return $path;
+        });
+
+        if ($path) {
+            $this->media->delete($path);
+        }
     }
 
     public function stock(int $tenantId, int $perPage): array

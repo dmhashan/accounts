@@ -1,14 +1,15 @@
 <template>
   <section class="app-page-frame">
     <AppPageHeader show-back />
-
     <div class="app-page-scroll">
-      <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+      <div v-if="errorMessage" role="alert" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
         {{ errorMessage }}
       </div>
-
-      <form class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
-        <div class="space-y-4">
+      <p v-if="loading" class="p-4 text-sm text-secondary-500">
+        Loading product…
+      </p>
+      <form v-else class="app-surface rounded-2xl p-4 md:p-6" @submit.prevent="submit">
+        <fieldset :disabled="submitting || !!reconcileRows || blocked" class="space-y-5 disabled:opacity-70">
           <AppFormField label="Product Name" required>
             <AppFormInput
               v-model="form.name"
@@ -17,136 +18,278 @@
               maxlength="255"
             />
           </AppFormField>
-
           <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Variation List</label>
-              <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-secondary-300 dark:border-secondary-700" @click="addVariation">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <label for="product-category" class="text-sm font-medium text-secondary-700 dark:text-secondary-300">Category</label>
+              <button type="button" class="text-sm font-medium text-primary-600 dark:text-primary-400" @click="showCategories = true">
+                Manage categories
+              </button>
+            </div>
+            <select id="product-category" v-model="form.category_id" class="w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm text-secondary-900 dark:border-secondary-700 dark:bg-secondary-800 dark:text-white">
+              <option :value="null">
+                Uncategorized
+              </option>
+              <option v-if="form.category_id !== null && !categories.some((c) => String(c.id) === String(form.category_id))" :value="form.category_id">
+                Current category unavailable
+              </option>
+              <option v-for="category in categories" :key="category.id" :value="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+            <p v-if="categoryError" role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+              {{ categoryError }} <button type="button" class="underline" @click="loadCategories">
+                Retry
+              </button>
+            </p>
+          </div>
+          <div>
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+                  Variations
+                </h2>
+                <p class="text-xs text-secondary-500">
+                  Images are cropped to 100 × 100 and uploaded after saving.
+                </p>
+              </div>
+              <button type="button" class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm dark:border-secondary-700" @click="addVariation()">
                 Add Variation
               </button>
             </div>
-
-            <div class="space-y-2">
-              <div v-for="(variation, index) in form.variations" :key="variation.key" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
-                <AppFormInput
-                  v-model="variation.name"
-                  type="text"
-                  maxlength="255"
-                  placeholder="Variation name"
-                />
-                <button type="button" class="px-3 py-2 text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-lg" @click="removeVariation(index)">
-                  Remove
+            <div class="space-y-3">
+              <div v-for="(variation, index) in form.variations" :key="variation.key" class="flex flex-wrap items-start gap-3 rounded-xl border border-secondary-200 p-3 dark:border-secondary-700 sm:flex-nowrap">
+                <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary-100 dark:bg-secondary-800">
+                  <img
+                    v-if="variation.preview || (!variation.removeImage && variation.image_url)"
+                    :src="variation.preview || variation.image_url"
+                    :alt="`${variation.name || 'Variation'} image`"
+                    class="h-full w-full object-cover"
+                  />
+                  <ImageIcon v-else class="h-6 w-6 text-secondary-400" />
+                </div>
+                <div class="min-w-[12rem] flex-1 space-y-2">
+                  <AppFormInput
+                    v-model="variation.name"
+                    type="text"
+                    maxlength="255"
+                    placeholder="Variation name"
+                    :aria-label="`Variation ${index + 1} name`"
+                  />
+                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    <label class="cursor-pointer font-medium text-primary-600 dark:text-primary-400">
+                      {{ variation.preview || (!variation.removeImage && variation.image_url) ? 'Change image' : 'Choose image' }}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="sr-only"
+                        :aria-label="`Choose image for variation ${index + 1}`"
+                        @change="selectImage($event, variation)"
+                      />
+                    </label>
+                    <button
+                      v-if="variation.preview || (!variation.removeImage && variation.image_url)"
+                      type="button"
+                      class="text-red-600 dark:text-red-400"
+                      @click="removeImage(variation)"
+                    >
+                      Remove image
+                    </button>
+                    <span v-if="variation.pendingBlob || variation.removeImage" class="text-amber-700 dark:text-amber-400">Pending save</span>
+                  </div>
+                  <p v-if="variation.imageError" role="alert" class="text-xs text-red-600 dark:text-red-400">
+                    {{ variation.imageError }}
+                  </p>
+                </div>
+                <button type="button" class="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 dark:border-red-700 dark:text-red-400" @click="removeVariation(index)">
+                  Remove variation
                 </button>
               </div>
             </div>
-
-            <p class="mt-2 text-xs text-secondary-500 dark:text-secondary-400">
-              Empty variation rows are ignored on save.
+            <p class="mt-2 text-xs text-secondary-500">
+              Empty variation rows are ignored. Variation names must be unique.
             </p>
           </div>
-        </div>
-
-        <div class="mt-5 flex items-center justify-end gap-2">
-          <RouterLink to="/inventory" class="px-4 py-2 border border-secondary-300 dark:border-secondary-700 rounded-lg text-sm">
+        </fieldset>
+        <div class="mt-5 flex flex-wrap items-center justify-end gap-2">
+          <RouterLink to="/inventory" class="rounded-lg border border-secondary-300 px-4 py-2 text-sm dark:border-secondary-700">
             Cancel
           </RouterLink>
-          <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm" :disabled="submitting">
-            {{ submitting ? 'Saving...' : (isEdit ? 'Update Product' : 'Create Product') }}
+          <button
+            v-if="reconcileRows && productId"
+            type="button"
+            class="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+            :disabled="submitting"
+            @click="retryReconcile"
+          >
+            {{ submitting ? 'Checking…' : 'Retry finding saved variations' }}
+          </button>
+          <button
+            v-else
+            type="submit"
+            class="rounded-lg bg-primary-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+            :disabled="submitting || blocked || !!reconcileRows"
+          >
+            {{ submitting ? 'Saving…' : (productId ? 'Update Product' : 'Create Product') }}
           </button>
         </div>
       </form>
     </div>
+    <ProductCategoryManager
+      v-if="showCategories"
+      @close="showCategories = false"
+      @changed="categoriesChanged"
+      @deleted="categoryDeleted"
+    />
+    <AvatarCropModal
+      v-if="cropSrc"
+      :image-src="cropSrc"
+      title="Crop variation image"
+      confirm-label="Use image"
+      :output-size="100"
+      @confirm="confirmCrop"
+      @cancel="cropSrc = null"
+    />
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import { ImageIcon } from 'lucide-vue-next';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
+import AvatarCropModal from '../components/AvatarCropModal.vue';
+import ProductCategoryManager from '../components/ProductCategoryManager.vue';
 
 const route = useRoute();
 const router = useRouter();
-const isEdit = computed(() => Boolean(route.params.id));
+const productId = ref(route.params.id || null);
 const submitting = ref(false);
+const loading = ref(Boolean(productId.value));
+const blocked = ref(false);
 const errorMessage = ref('');
-
+const categoryError = ref('');
+const categories = ref([]);
+const showCategories = ref(false);
+const cropSrc = ref(null);
+const cropVariation = ref(null);
+const reconcileRows = ref(null);
+const form = ref({ name: '', category_id: null, variations: [] });
 let variationKey = 0;
+let allowLeave = false;
 
-const form = ref({
-    name: '',
-    variations: [],
-});
-
-function addVariation(name = '', id = null) {
-    form.value.variations.push({ key: ++variationKey, id, name });
+function addVariation(name = '', id = null, imageUrl = null) {
+    form.value.variations.push({ key: ++variationKey, id, name, image_url: imageUrl, pendingBlob: null, preview: null, removeImage: false, imageError: '' });
 }
-
-function removeVariation(index) {
-    form.value.variations.splice(index, 1);
+function removeVariation(index) { form.value.variations.splice(index, 1); }
+function categoriesChanged(list) { categories.value = list; categoryError.value = ''; }
+function categoryDeleted(id) { if (String(form.value.category_id) === String(id)) form.value.category_id = null; }
+async function loadCategories() {
+    try { const response = await apiRequest('/api/inventory/categories'); categoriesChanged(response.data || []); }
+    catch (error) { categoryError.value = error?.response?.data?.message || 'Failed to load categories.'; }
 }
-
 async function loadProduct() {
-    if (!isEdit.value) {
-        addVariation();
-        return;
-    }
-
-    const response = await apiRequest(`/api/inventory/products/${route.params.id}`);
-    form.value.name = response.data?.name || '';
-
-    const variations = response.data?.variations || [];
-    if (variations.length === 0) {
-        addVariation();
-        return;
-    }
-
-    form.value.variations = [];
-    variations.forEach((variation) => {
-        addVariation(variation.name, variation.id);
-    });
+    if (!productId.value) { addVariation(); return; }
+    try {
+        const response = await apiRequest(`/api/inventory/products/${productId.value}`);
+        const product = response.data;
+        form.value.name = product.name || '';
+        form.value.category_id = product.category_id ?? null;
+        (product.variations || []).forEach((variation) => addVariation(variation.name, variation.id, variation.image_url));
+        if (!form.value.variations.length) addVariation();
+    } catch (error) { errorMessage.value = error?.response?.data?.message || 'Failed to load product.'; blocked.value = true; }
+    finally { loading.value = false; }
 }
+function selectImage(event, variation) {
+    const file = event.target.files?.[0]; event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { variation.imageError = 'Choose a JPEG, PNG or WebP image.'; return; }
+    variation.imageError = '';
+    const reader = new FileReader();
+    reader.onload = () => { cropVariation.value = variation; cropSrc.value = reader.result; };
+    reader.onerror = () => { variation.imageError = 'Could not read the image.'; };
+    reader.readAsDataURL(file);
+}
+function confirmCrop(blob) {
+    const variation = cropVariation.value;
+    cropSrc.value = null;
+    if (!blob || !variation) return;
+    variation.pendingBlob = blob; variation.removeImage = false; variation.imageError = '';
+    const reader = new FileReader();
+    reader.onload = () => { if (variation.pendingBlob === blob) variation.preview = reader.result; };
+    reader.readAsDataURL(blob);
+}
+function removeImage(variation) {
+    variation.pendingBlob = null; variation.preview = null; variation.removeImage = Boolean(variation.image_url); variation.imageError = '';
+}
+function hasPending() { return Boolean(reconcileRows.value || blocked.value || form.value.variations.some((v) => v.pendingBlob || v.removeImage)); }
+onBeforeRouteLeave(() => allowLeave || !hasPending() || window.confirm('There are unsaved image changes. Leave this page?'));
+function beforeUnload(event) { if (hasPending()) { event.preventDefault(); event.returnValue = ''; } }
+onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
 
+// Match new rows by unique submitted name, never by response order.
+function reconcile(product, rows) {
+    if (!Array.isArray(product?.variations)) throw new Error('Saved variations were not returned.');
+    const usedIds = new Set(rows.filter((row) => row.id !== null && row.id !== undefined).map((row) => String(row.id)));
+    const assignments = [];
+    for (const row of rows.filter((item) => item.id === null || item.id === undefined)) {
+      const matches = product.variations.filter((v) => v.id !== null && v.id !== undefined && !usedIds.has(String(v.id)) && v.name === row.name);
+        if (matches.length !== 1) throw new Error(`Could not uniquely identify variation "${row.name}".`);
+        usedIds.add(String(matches[0].id)); assignments.push([row.key, matches[0].id]);
+    }
+    for (const [key, id] of assignments) form.value.variations.find((v) => v.key === key).id = id;
+}
+async function resolveSavedRows(product = null) {
+    if (!Array.isArray(product?.variations)) product = (await apiRequest(`/api/inventory/products/${productId.value}`)).data;
+    reconcile(product, reconcileRows.value);
+    reconcileRows.value = null;
+}
+async function uploadImages() {
+    let failed = false;
+    for (const variation of form.value.variations) {
+        if (!variation.pendingBlob && !variation.removeImage) continue;
+        if (!variation.id) { variation.imageError = 'Save a named variation before uploading its image.'; failed = true; continue; }
+        try {
+            let response;
+            if (variation.pendingBlob) {
+                const data = new FormData(); data.append('image', variation.pendingBlob, 'variation.jpg');
+                response = await apiRequest(`/api/inventory/variations/${variation.id}/image`, { method: 'post', data });
+            } else response = await apiRequest(`/api/inventory/variations/${variation.id}/image`, { method: 'delete' });
+            variation.image_url = response.data?.image_url ?? null; variation.pendingBlob = null; variation.preview = null; variation.removeImage = false; variation.imageError = '';
+        } catch (error) { variation.imageError = error?.response?.data?.message || 'Image update failed. Save again to retry.'; failed = true; }
+    }
+    if (failed) throw new Error('Product saved, but some images could not be updated. Your pending images are retained; save again to retry.');
+}
+async function retryReconcile() {
+    submitting.value = true; errorMessage.value = '';
+    try { await resolveSavedRows(); await uploadImages(); allowLeave = true; await router.push('/inventory'); }
+    catch (error) { errorMessage.value = `Product may already be saved. ${error.message || 'Could not retrieve saved variations.'} Retry without creating it again.`; }
+    finally { submitting.value = false; }
+}
 async function submit() {
-    submitting.value = true;
-    errorMessage.value = '';
-
+    if (submitting.value || blocked.value || reconcileRows.value) return;
+    const rows = form.value.variations.filter((v) => v.name.trim()).map((v) => ({ key: v.key, id: v.id, name: v.name.trim() }));
+    if (form.value.variations.some((v) => !v.name.trim() && (v.pendingBlob || v.removeImage))) { errorMessage.value = 'Enter a variation name for each pending image.'; return; }
+    if (new Set(rows.map((v) => v.name.toLocaleLowerCase())).size !== rows.length) { errorMessage.value = 'Variation names must be unique.'; return; }
+    submitting.value = true; errorMessage.value = '';
+    const payload = { name: form.value.name, category_id: form.value.category_id, variations: rows.map(({ id, name }) => ({ id: id ?? undefined, name })) };
+    let saved = false;
     try {
-        const payload = {
-            name: form.value.name,
-            variations: form.value.variations.map((variation) => ({
-                id: variation.id ?? undefined,
-                name: variation.name,
-            })),
-        };
-
-        if (isEdit.value) {
-            await apiRequest(`/api/inventory/products/${route.params.id}`, {
-                method: 'put',
-                data: payload,
-            });
-        } else {
-            await apiRequest('/api/inventory/products', {
-                method: 'post',
-                data: payload,
-            });
-        }
-
-        router.push('/inventory');
+        const response = await apiRequest(productId.value ? `/api/inventory/products/${productId.value}` : '/api/inventory/products', { method: productId.value ? 'put' : 'post', data: payload });
+        saved = true;
+        productId.value = productId.value || response.data?.id || null;
+        if (!productId.value) { blocked.value = true; throw new Error('Product was saved but its ID was not returned. Check inventory before retrying to avoid duplicates.'); }
+        if (rows.some((v) => v.id === null || v.id === undefined)) { reconcileRows.value = rows; await resolveSavedRows(response.data); }
+        await uploadImages();
+        allowLeave = true; await router.push('/inventory');
     } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to save product.';
-    } finally {
-        submitting.value = false;
-    }
+        if (!saved && (!error?.response || error.response.status >= 500)) {
+          blocked.value = true;
+            errorMessage.value = 'The save result is uncertain. Check inventory before trying again to avoid duplicate products or variations.';
+        } else errorMessage.value = error?.response?.data?.message || error.message || 'Failed to save product.';
+    } finally { submitting.value = false; }
 }
-
-onMounted(async () => {
-    try {
-        await loadProduct();
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to load product data.';
-    }
-});
+onMounted(() => { window.addEventListener('beforeunload', beforeUnload); loadCategories(); loadProduct(); });
 </script>

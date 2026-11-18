@@ -26,6 +26,11 @@
 
     <div v-if="activeTab === 'products'" class="min-h-0 flex flex-1 flex-col">
       <div class="app-page-scroll">
+        <div v-if="context.permissions?.inventoryProducts" class="mb-3 flex justify-end">
+          <button type="button" class="rounded-lg border border-secondary-300 px-3 py-2 text-sm text-secondary-700 hover:bg-secondary-50 dark:border-secondary-700 dark:text-secondary-300 dark:hover:bg-secondary-800" @click="showCategories = true">
+            Manage categories
+          </button>
+        </div>
         <div class="app-surface rounded-2xl overflow-hidden">
           <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
             <article
@@ -453,6 +458,7 @@
         </div>
       </div>
     </div>
+    <ProductCategoryManager v-if="showCategories" @close="showCategories = false" />
   </section>
 </template>
 
@@ -464,12 +470,14 @@ import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
+import ProductCategoryManager from '../components/ProductCategoryManager.vue';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
 
 const route = useRoute();
 const router = useRouter();
 const context = useAppContext();
+const showCategories = ref(false);
 
 const activeTab = ref(route.path === '/inventory/stock' ? 'stock' : route.path === '/inventory/display' ? 'display' : route.path === '/inventory/audit' ? 'audit' : 'products');
 const errorMessage = ref('');

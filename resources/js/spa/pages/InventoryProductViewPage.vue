@@ -36,6 +36,14 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
             <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+              Category
+            </p>
+            <p class="font-medium text-secondary-800 dark:text-secondary-200">
+              {{ categoryName }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
               Variations
             </p>
             <p class="font-medium text-secondary-800 dark:text-secondary-200">
@@ -54,13 +62,21 @@
 
         <!-- Mobile -->
         <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
-          <div v-for="v in product.variations" :key="v.id" class="p-4">
-            <p class="text-sm font-medium text-secondary-900 dark:text-white">
-              {{ v.name }}
-            </p>
-            <p v-if="v.sku" class="text-xs text-secondary-500 dark:text-secondary-400">
-              SKU: {{ v.sku }}
-            </p>
+          <div v-for="v in product.variations" :key="v.id" class="flex items-center gap-3 p-4">
+            <img
+              v-if="v.image_url"
+              :src="v.image_url"
+              :alt="`${v.name} image`"
+              class="h-12 w-12 rounded-lg object-cover"
+            />
+            <div>
+              <p class="text-sm font-medium text-secondary-900 dark:text-white">
+                {{ v.name }}
+              </p>
+              <p v-if="v.sku" class="text-xs text-secondary-500 dark:text-secondary-400">
+                SKU: {{ v.sku }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -79,7 +95,14 @@
           <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
             <tr v-for="v in product.variations" :key="v.id" class="hover:bg-secondary-50 dark:hover:bg-secondary-800/40">
               <td class="px-4 py-3 font-medium text-secondary-900 dark:text-white">
-                {{ v.name }}
+                <div class="flex items-center gap-3">
+                  <img
+                    v-if="v.image_url"
+                    :src="v.image_url"
+                    :alt="`${v.name} image`"
+                    class="h-12 w-12 rounded-lg object-cover"
+                  />{{ v.name }}
+                </div>
               </td>
               <td class="px-4 py-3 text-secondary-600 dark:text-secondary-400">
                 {{ v.sku || '—' }}
@@ -93,7 +116,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { apiRequest } from '../composables/useApiClient';
 import AppPageHeader from '../components/AppPageHeader.vue';
@@ -104,6 +127,12 @@ const router = useRouter();
 const loading = ref(false);
 const errorMessage = ref('');
 const product = ref({});
+const categories = ref([]);
+const categoryLoadFailed = ref(false);
+const categoryName = computed(() => {
+  if (!product.value.category_id) return 'Uncategorized';
+  return categories.value.find((category) => String(category.id) === String(product.value.category_id))?.name || (categoryLoadFailed.value ? 'Category unavailable' : 'Unknown category');
+});
 const deleting = ref(false);
 
 async function deleteProduct() {
@@ -132,5 +161,8 @@ async function load() {
     }
 }
 
-onMounted(() => load());
+onMounted(() => {
+  load();
+  apiRequest('/api/inventory/categories').then((response) => { categories.value = response.data || []; }).catch(() => { categoryLoadFailed.value = true; });
+});
 </script>

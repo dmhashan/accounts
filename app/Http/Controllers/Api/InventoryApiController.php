@@ -47,16 +47,14 @@ class InventoryApiController extends Controller
             ],
             'variations' => ['nullable', 'array'],
             'variations.*.name' => ['nullable', 'string', 'max:255'],
+            'category_id' => ['nullable', 'integer', 'exists:product_categories,id'],
         ]);
 
         $product = $this->inventoryService->storeProduct($tenantId, $validated);
 
         return response()->json([
             'message' => 'Product created successfully.',
-            'data' => [
-                'id' => $product->id,
-                'name' => $product->name,
-            ],
+            'data' => $this->inventoryService->showProduct($product, $tenantId),
         ], 201);
     }
 
@@ -75,12 +73,14 @@ class InventoryApiController extends Controller
             'variations' => ['nullable', 'array'],
             'variations.*.id' => ['nullable', 'integer'],
             'variations.*.name' => ['nullable', 'string', 'max:255'],
+            'category_id' => ['nullable', 'integer', 'exists:product_categories,id'],
         ]);
 
         $this->inventoryService->updateProduct($product, $tenantId, $validated);
 
         return response()->json([
             'message' => 'Product updated successfully.',
+            'data' => $this->inventoryService->showProduct($product, $tenantId),
         ]);
     }
 
@@ -155,6 +155,24 @@ class InventoryApiController extends Controller
         return response()->json([
             'message' => 'Variation deleted successfully.',
         ]);
+    }
+
+    public function uploadVariationImage(Request $request, ProductVariation $variation): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', Rule::dimensions()->width(100)->height(100)],
+        ]);
+
+        return response()->json(['data' => [
+            'image_url' => $this->inventoryService->uploadVariationImage($variation, app('tenant')->id, $request->file('image')),
+        ]]);
+    }
+
+    public function deleteVariationImage(ProductVariation $variation): JsonResponse
+    {
+        $this->inventoryService->deleteVariationImage($variation, app('tenant')->id);
+
+        return response()->json(['data' => ['image_url' => null]]);
     }
 
     public function stock(Request $request): JsonResponse

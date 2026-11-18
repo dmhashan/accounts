@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CompanyAccount;
 use App\Models\Member;
+use App\Models\ProductCategory;
 use App\Models\ProductVariation;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
@@ -13,6 +14,7 @@ class SaleMetaService
 {
     public function __construct(
         private readonly PaymentMethodService $paymentMethods,
+        private readonly MediaStorageService $media,
     ) {}
 
     public function build(int $tenantId): array
@@ -29,7 +31,7 @@ class SaleMetaService
             ->pluck('total_quantity_sold', 'sale_items.product_variation_id');
 
         $variations = ProductVariation::query()
-            ->with('product:id,name')
+            ->with('product:id,name,category_id')
             ->get()
             ->sort(function (ProductVariation $left, ProductVariation $right) use ($variationSalesCounts) {
                 $leftSales = (int) ($variationSalesCounts[$left->id] ?? 0);
@@ -84,11 +86,14 @@ class SaleMetaService
             ->get();
 
         return [
+            'categories' => ProductCategory::query()->orderBy('name')->get(['id', 'name', 'color', 'icon']),
             'variations' => $variations->map(function (ProductVariation $variation) use ($availableStock, $priceMap) {
                 return [
                     'id' => $variation->id,
                     'name' => $variation->name,
                     'product_name' => $variation->product?->name,
+                    'category_id' => $variation->product?->category_id,
+                    'image_url' => $variation->image_path ? $this->media->url($variation->image_path) : null,
                     'label' => trim(($variation->product?->name ?? 'Product') . ' - ' . $variation->name),
                     'available_stock' => (int) ($availableStock[$variation->id] ?? 0),
                     'prices' => $priceMap[$variation->id] ?? ['local' => 0, 'foreign' => 0],

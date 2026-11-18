@@ -48,7 +48,7 @@
 
     <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
       <div class="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:min-h-[calc(100vh-280px)] lg:grid-cols-12 lg:gap-4">
-        <div class="flex h-[30dvh] min-h-[12rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 dark:border-secondary-700 dark:bg-secondary-900 md:h-[32dvh] md:min-h-[14rem] md:p-4 lg:col-span-6 lg:h-auto lg:min-h-[14rem]">
+        <div class="flex h-[42dvh] min-h-[19rem] flex-col rounded-xl border border-secondary-200 bg-white p-3 dark:border-secondary-700 dark:bg-secondary-900 md:h-[42dvh] md:min-h-[20rem] md:p-4 lg:col-span-6 lg:h-auto lg:min-h-[20rem]">
           <div class="mb-3 flex items-center justify-between gap-3">
             <h3 class="text-base font-semibold text-secondary-900 dark:text-white">
               Products
@@ -60,6 +60,30 @@
               type="text"
               placeholder="Search product..."
             />
+          </div>
+          <div class="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" role="group" aria-label="Product categories">
+            <button
+              type="button"
+              class="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+              :class="selectedCategoryId === null ? 'border-primary-600 bg-primary-600 text-white' : 'border-secondary-200 text-secondary-700 hover:bg-secondary-100 dark:border-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-800'"
+              :aria-pressed="selectedCategoryId === null"
+              @click="selectedCategoryId = null"
+            >
+              <LayoutGrid class="h-4 w-4" aria-hidden="true" />
+              All
+            </button>
+            <button
+              v-for="category in categories"
+              :key="category.id"
+              type="button"
+              class="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+              :class="[getColorClasses(category.color).bg, getColorClasses(category.color).text, getColorClasses(category.color).border, selectedCategoryId === category.id ? 'ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-secondary-900' : 'hover:opacity-80']"
+              :aria-pressed="selectedCategoryId === category.id"
+              @click="selectedCategoryId = category.id"
+            >
+              <component :is="categoryIcon(category.icon)" class="h-4 w-4" aria-hidden="true" />
+              {{ category.name }}
+            </button>
           </div>
           <div class="min-h-0 flex-1 overflow-y-auto pr-1">
             <div class="space-y-2">
@@ -77,13 +101,25 @@
                 @keydown.enter.prevent="handleProductActivate(variation)"
                 @keydown.space.prevent="handleProductActivate(variation)"
               >
-                <div class="min-w-0">
-                  <p class="text-xs md:text-sm font-semibold text-secondary-900 dark:text-white truncate">
-                    {{ variation.label }}
-                  </p>
-                  <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">
-                    Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}
-                  </p>
+                <div class="flex min-w-0 items-center gap-3">
+                  <img
+                    v-if="variation.image_url && !failedImages.has(variation.image_url)"
+                    :src="variation.image_url"
+                    alt=""
+                    class="h-12 w-12 shrink-0 rounded-lg object-cover"
+                    @error="failedImages.add(variation.image_url)"
+                  />
+                  <span v-else class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-secondary-100 text-secondary-400 dark:bg-secondary-800 dark:text-secondary-500" aria-hidden="true">
+                    <Package class="h-5 w-5" />
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-xs md:text-sm font-semibold text-secondary-900 dark:text-white truncate">
+                      {{ variation.label }}
+                    </p>
+                    <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">
+                      Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}
+                    </p>
+                  </div>
                 </div>
               </article>
               <p v-if="filteredVariationOptions.length === 0" class="text-sm text-secondary-500 dark:text-secondary-400">
@@ -302,9 +338,10 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { CheckCircle, Globe, House } from 'lucide-vue-next';
+import { Apple, Beef, Boxes, CheckCircle, Coffee, CupSoda, Droplets, Dumbbell, Gift, Globe, Heart, House, LayoutGrid, Package, Pill, Shirt, ShoppingBag, Sparkles, Tag, Utensils, Wine } from 'lucide-vue-next';
 import { useAppContext } from '../composables/useAppContext';
 import { apiRequest } from '../composables/useApiClient';
+import { getColorClasses } from '../utils/paymentMethodHelper';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppFormField from '../components/forms/AppFormField.vue';
 import AppFormInput from '../components/forms/AppFormInput.vue';
@@ -320,6 +357,9 @@ const loadingSale = ref(false);
 const submitting = ref(false);
 const errorMessage = ref('');
 const variationOptions = ref([]);
+const categories = ref([]);
+const selectedCategoryId = ref(null);
+const failedImages = ref(new Set());
 const productSearch = ref('');
 const members = ref([]);
 const activeProductId = ref(null);
@@ -338,6 +378,12 @@ const soldVariationIds = ref([]);
 let rowKey = 0;
 let productUiTimer = null;
 let cartFocusTimer = null;
+
+const categoryIcons = { Apple, Beef, Boxes, Coffee, CupSoda, Droplets, Dumbbell, Gift, Heart, Package, Pill, Shirt, ShoppingBag, Sparkles, Tag, Utensils, Wine };
+
+function categoryIcon(icon) {
+  return Object.hasOwn(categoryIcons, icon) ? categoryIcons[icon] : Tag;
+}
 
 const isEdit = computed(() => Boolean(route.params.id));
 const canCreateSale = computed(() => Boolean(context.permissions?.salesCreate));
@@ -369,6 +415,10 @@ const filteredVariationOptions = computed(() => {
         const stock = Number(variation?.available_stock || 0);
         if (stock <= 0) {
             return false;
+        }
+
+        if (selectedCategoryId.value !== null && (variation.category_id === null || variation.category_id === undefined || String(variation.category_id) !== String(selectedCategoryId.value))) {
+          return false;
         }
 
         if (!term) {
@@ -541,6 +591,11 @@ async function loadMeta() {
     try {
         const response = await apiRequest('/api/sales/meta');
         variationOptions.value = response.variations || [];
+        categories.value = Array.isArray(response.categories) ? response.categories : [];
+        if (selectedCategoryId.value !== null && !categories.value.some((category) => category.id === selectedCategoryId.value)) {
+          selectedCategoryId.value = null;
+        }
+        failedImages.value = new Set();
         members.value = response.members || [];
         companyAccounts.value = response.accounts || [];
         paymentMethods.value = response.payment_methods || [];
@@ -726,6 +781,7 @@ function resetForNewSale() {
     };
     selectedPayNowAccountId.value = paymentMethods.value[0]?.id ?? null;
     productSearch.value = '';
+    selectedCategoryId.value = null;
     errorMessage.value = '';
 }
 

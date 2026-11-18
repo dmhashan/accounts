@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\InventoryApiController;
+use App\Http\Controllers\Api\ProductCategoryApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('/inventory')->middleware('auth')->group(function () {
@@ -8,6 +9,11 @@ Route::prefix('/inventory')->middleware('auth')->group(function () {
     // Products & variations — requires inventory.manage
     Route::middleware('permission:inventory.manage')->group(function () {
         Route::get('/meta', [InventoryApiController::class, 'meta']);
+
+        Route::get('/categories', [ProductCategoryApiController::class, 'index']);
+        Route::post('/categories', [ProductCategoryApiController::class, 'store']);
+        Route::put('/categories/{category}', [ProductCategoryApiController::class, 'update']);
+        Route::delete('/categories/{category}', [ProductCategoryApiController::class, 'destroy']);
 
         Route::get('/products', [InventoryApiController::class, 'products']);
         Route::get('/products/{product}', [InventoryApiController::class, 'showProduct']);
@@ -19,6 +25,8 @@ Route::prefix('/inventory')->middleware('auth')->group(function () {
         Route::post('/variations', [InventoryApiController::class, 'storeVariation']);
         Route::put('/variations/{variation}', [InventoryApiController::class, 'updateVariation']);
         Route::delete('/variations/{variation}', [InventoryApiController::class, 'destroyVariation']);
+        Route::post('/variations/{variation}/image', [InventoryApiController::class, 'uploadVariationImage']);
+        Route::delete('/variations/{variation}/image', [InventoryApiController::class, 'deleteVariationImage']);
     });
 
     // Stock entries — requires inventory.stock
