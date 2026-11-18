@@ -31,7 +31,7 @@ class SaleMetaService
             ->pluck('total_quantity_sold', 'sale_items.product_variation_id');
 
         $variations = ProductVariation::query()
-            ->with('product:id,name,category_id')
+            ->with('product:id,name,category_id,track_stock,is_active')
             ->get()
             ->sort(function (ProductVariation $left, ProductVariation $right) use ($variationSalesCounts) {
                 $leftSales = (int) ($variationSalesCounts[$left->id] ?? 0);
@@ -93,10 +93,19 @@ class SaleMetaService
                     'name' => $variation->name,
                     'product_name' => $variation->product?->name,
                     'category_id' => $variation->product?->category_id,
+                    'track_stock' => (bool) $variation->product?->track_stock,
+                    'is_active' => (bool) $variation->product?->is_active,
                     'image_url' => $variation->image_path ? $this->media->url($variation->image_path) : null,
                     'label' => trim(($variation->product?->name ?? 'Product') . ' - ' . $variation->name),
-                    'available_stock' => (int) ($availableStock[$variation->id] ?? 0),
-                    'prices' => $priceMap[$variation->id] ?? ['local' => 0, 'foreign' => 0],
+                    'available_stock' => $variation->product?->track_stock ? (int) ($availableStock[$variation->id] ?? 0) : null,
+                    'prices' => $variation->product?->track_stock
+                        ? ($priceMap[$variation->id] ?? ['local' => 0, 'foreign' => 0])
+                        : (($variation->untracked_local_price !== null || $variation->untracked_foreign_price !== null) ? [
+                            'local' => $variation->untracked_local_price !== null ? (float) $variation->untracked_local_price : null,
+                            'foreign' => $variation->untracked_foreign_price !== null ? (float) $variation->untracked_foreign_price : null,
+                        ] : null),
+                    'unit_cost' => !$variation->product?->track_stock && $variation->untracked_unit_cost !== null
+                        ? (float) $variation->untracked_unit_cost : null,
                 ];
             })->values(),
             'members' => $members->map(function (Member $member) {

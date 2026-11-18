@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\StockEntry;
+use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -102,7 +103,7 @@ class StockController extends Controller
         return view('inventory.stock.edit', compact('stock', 'products', 'variations'));
     }
 
-    public function update(Request $request, StockEntry $stock)
+    public function update(Request $request, StockEntry $stock, InventoryService $inventory)
     {
         $this->ensureTenant($stock);
         $tenantId = app('tenant')->id;
@@ -118,35 +119,23 @@ class StockController extends Controller
             'foreign_selling_price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $product = Product::query()->findOrFail($validated['product_id']);
-        $variation = ProductVariation::query()->findOrFail($validated['product_variation_id']);
+        $error = $inventory->updateStock($stock, $tenantId, $validated);
 
-        if ($variation->product_id !== $product->id) {
+        if ($error) {
             return back()->withInput()->withErrors([
-                'product_variation_id' => 'Selected variation does not belong to the selected product.',
+                'product_variation_id' => $error,
             ]);
         }
-
-        $stock->update([
-            'product_id' => $product->id,
-            'product_variation_id' => $variation->id,
-            'quantity' => $validated['quantity'],
-            'manufacturing_date' => $validated['manufacturing_date'],
-            'expiry_date' => $validated['expiry_date'],
-            'purchasing_price' => $validated['purchasing_price'],
-            'local_selling_price' => $validated['local_selling_price'],
-            'foreign_selling_price' => $validated['foreign_selling_price'],
-        ]);
 
         return redirect()->route('inventory.stock.index')
             ->with('success', 'Stock updated successfully.');
     }
 
-    public function destroy(StockEntry $stock)
+    public function destroy(StockEntry $stock, InventoryService $inventory)
     {
         $this->ensureTenant($stock);
 
-        $stock->delete();
+        $inventory->destroyStock($stock, app('tenant')->id);
 
         return redirect()->route('inventory.stock.index')
             ->with('success', 'Stock entry deleted successfully.');

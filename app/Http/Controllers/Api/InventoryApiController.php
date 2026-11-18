@@ -47,7 +47,10 @@ class InventoryApiController extends Controller
             ],
             'variations' => ['nullable', 'array'],
             'variations.*.name' => ['nullable', 'string', 'max:255'],
+            ...$this->variationPricingRules('variations.*.'),
             'category_id' => ['nullable', 'integer', 'exists:product_categories,id'],
+            'track_stock' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $product = $this->inventoryService->storeProduct($tenantId, $validated);
@@ -73,7 +76,10 @@ class InventoryApiController extends Controller
             'variations' => ['nullable', 'array'],
             'variations.*.id' => ['nullable', 'integer'],
             'variations.*.name' => ['nullable', 'string', 'max:255'],
+            ...$this->variationPricingRules('variations.*.'),
             'category_id' => ['nullable', 'integer', 'exists:product_categories,id'],
+            'track_stock' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $this->inventoryService->updateProduct($product, $tenantId, $validated);
@@ -105,6 +111,7 @@ class InventoryApiController extends Controller
         $validated = $request->validate([
             'product_id' => ['required', 'exists:products,id'],
             'name' => ['required', 'string', 'max:255'],
+            ...$this->variationPricingRules(),
         ]);
 
         $result = $this->inventoryService->storeVariation($tenantId, $validated);
@@ -133,6 +140,7 @@ class InventoryApiController extends Controller
         $validated = $request->validate([
             'product_id' => ['required', 'exists:products,id'],
             'name' => ['required', 'string', 'max:255'],
+            ...$this->variationPricingRules(),
         ]);
 
         $error = $this->inventoryService->updateVariation($variation, $tenantId, $validated);
@@ -146,6 +154,15 @@ class InventoryApiController extends Controller
         return response()->json([
             'message' => 'Variation updated successfully.',
         ]);
+    }
+
+    private function variationPricingRules(string $prefix = ''): array
+    {
+        return [
+            $prefix . 'untracked_local_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            $prefix . 'untracked_foreign_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            $prefix . 'untracked_unit_cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999.9999', 'decimal:0,4'],
+        ];
     }
 
     public function destroyVariation(ProductVariation $variation): JsonResponse

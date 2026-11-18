@@ -16,6 +16,7 @@ class SaleItem extends Model
         'unit_cost',
         'subtotal',
         'cost_total',
+        'stock_allocations',
     ];
 
     protected $casts = [
@@ -23,6 +24,7 @@ class SaleItem extends Model
         'unit_cost' => 'decimal:4',
         'subtotal' => 'decimal:2',
         'cost_total' => 'decimal:2',
+        'stock_allocations' => 'array',
     ];
 
     public function sale(): BelongsTo

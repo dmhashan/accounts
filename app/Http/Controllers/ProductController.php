@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -87,6 +88,15 @@ class ProductController extends Controller
             'variations.*.name' => ['nullable', 'string', 'max:255'],
         ]);
 
+        $incomingIds = collect($validated['variations'] ?? [])
+            ->filter(fn ($variation) => filled($variation['name'] ?? null))
+            ->pluck('id')->filter()->all();
+        $removedIds = $product->variations()->whereNotIn('id', $incomingIds)->pluck('id');
+
+        if (SaleItem::query()->whereIn('product_variation_id', $removedIds)->exists()) {
+            abort(422, 'Variations used in sales cannot be removed. Disable the product instead.');
+        }
+
         $product->update([
             'name' => $validated['name'],
         ]);
@@ -128,6 +138,9 @@ class ProductController extends Controller
     {
         $this->ensureTenant($product);
 
+        if (SaleItem::query()->where('product_id', $product->id)->exists()) {
+            abort(422, 'Products used in sales cannot be deleted. Disable the product instead.');
+        }
         $product->delete();
 
         return redirect()->route('inventory.products.index')

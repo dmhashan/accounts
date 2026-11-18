@@ -4,14 +4,18 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductVariation;
+use App\Models\SaleItem;
 use App\Models\StockEntry;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
     private const LOW_STOCK_THRESHOLD = 5;
+
+    private const UNTRACKED_PRICING_FIELDS = ['untracked_local_price', 'untracked_foreign_price', 'untracked_unit_cost'];
 
     public function __construct(
         private readonly AuditService $auditService,
@@ -55,6 +59,8 @@ class InventoryService
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'track_stock' => $product->track_stock,
+                    'is_active' => $product->is_active,
                     'variations_count' => $product->variations_count,
                 ];
             }),
@@ -70,17 +76,20 @@ class InventoryService
     public function showProduct(Product $product, int $tenantId): array
     {
         $this->ensureProductTenant($product, $tenantId);
-        $product->load(['variations' => fn ($query) => $query->select('id', 'product_id', 'name', 'image_path')->orderBy('id')]);
+        $product->load(['variations' => fn ($query) => $query->select('id', 'product_id', 'name', 'image_path', ...self::UNTRACKED_PRICING_FIELDS)->orderBy('id')]);
 
         return [
             'id' => $product->id,
             'name' => $product->name,
             'category_id' => $product->category_id,
+            'track_stock' => $product->track_stock,
+            'is_active' => $product->is_active,
             'variations' => $product->variations->map(function (ProductVariation $variation) {
                 return [
                     'id' => $variation->id,
                     'name' => $variation->name,
                     'image_url' => $this->variationImageUrl($variation),
+                    ...$this->variationPricing($variation),
                 ];
             })->values(),
         ];
@@ -91,18 +100,20 @@ class InventoryService
         $product = Product::create([
             'name' => $validated['name'],
             'category_id' => $validated['category_id'] ?? null,
+            'track_stock' => $validated['track_stock'] ?? true,
+            'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        $variationNames = collect($validated['variations'] ?? [])
-            ->pluck('name')
-            ->filter(fn ($name) => filled($name))
-            ->map(fn ($name) => trim((string) $name))
-            ->filter(fn ($name) => $name !== '')
-            ->unique();
+        $variations = collect($validated['variations'] ?? [])
+            ->filter(fn ($variation) => filled($variation['name'] ?? null))
+            ->map(fn ($variation) => array_merge($variation, ['name' => trim((string) $variation['name'])]))
+            ->filter(fn ($variation) => $variation['name'] !== '')
+            ->unique('name');
 
-        foreach ($variationNames as $name) {
+        foreach ($variations as $variation) {
             $product->variations()->create([
-                'name' => $name,
+                'name' => $variation['name'],
+                ...Arr::only($variation, self::UNTRACKED_PRICING_FIELDS),
             ]);
         }
 
@@ -113,12 +124,33 @@ class InventoryService
     {
         $this->ensureProductTenant($product, $tenantId);
 
+        if (array_key_exists('variations', $validated)) {
+            $incomingIds = collect($validated['variations'] ?? [])
+                ->filter(fn ($variation) => filled($variation['name'] ?? null) && trim((string) $variation['name']) !== '')
+                ->pluck('id')->filter()->all();
+            $removedIds = $product->variations()->whereNotIn('id', $incomingIds)->pluck('id');
+
+            if (SaleItem::query()->whereIn('product_variation_id', $removedIds)->exists()) {
+                abort(422, 'Variations used in sales cannot be removed. Disable the product instead.');
+            }
+        }
+
         $attributes = ['name' => $validated['name']];
 
         if (array_key_exists('category_id', $validated)) {
             $attributes['category_id'] = $validated['category_id'];
         }
+
+        foreach (['track_stock', 'is_active'] as $key) {
+            if (array_key_exists($key, $validated)) {
+                $attributes[$key] = $validated[$key];
+            }
+        }
         $product->update($attributes);
+
+        if (!array_key_exists('variations', $validated)) {
+            return;
+        }
 
         $variationPayload = collect($validated['variations'] ?? [])
             ->filter(fn ($variation) => filled($variation['name'] ?? null))
@@ -126,6 +158,7 @@ class InventoryService
                 return [
                     'id' => isset($variation['id']) ? (int) $variation['id'] : null,
                     'name' => trim((string) $variation['name']),
+                    ...Arr::only($variation, self::UNTRACKED_PRICING_FIELDS),
                 ];
             })
             ->filter(fn ($variation) => $variation['name'] !== '');
@@ -148,6 +181,7 @@ class InventoryService
             if ($variation['id']) {
                 $product->variations()->where('id', $variation['id'])->update([
                     'name' => $variation['name'],
+                    ...Arr::only($variation, self::UNTRACKED_PRICING_FIELDS),
                 ]);
                 continue;
             }
@@ -157,6 +191,7 @@ class InventoryService
             if (!$exists) {
                 $product->variations()->create([
                     'name' => $variation['name'],
+                    ...Arr::only($variation, self::UNTRACKED_PRICING_FIELDS),
                 ]);
             }
         }
@@ -165,6 +200,10 @@ class InventoryService
     public function destroyProduct(Product $product, int $tenantId): void
     {
         $this->ensureProductTenant($product, $tenantId);
+
+        if (SaleItem::query()->where('product_id', $product->id)->exists()) {
+            abort(422, 'Products used in sales cannot be deleted. Disable the product instead.');
+        }
         $imagePaths = $product->variations()->whereNotNull('image_path')->pluck('image_path');
         $product->delete();
 
@@ -187,6 +226,7 @@ class InventoryService
                     'name' => $variation->name,
                     'product_id' => $variation->product_id,
                     'product_name' => $variation->product?->name,
+                    ...$this->variationPricing($variation),
                 ];
             }),
         ];
@@ -210,6 +250,7 @@ class InventoryService
         $variation = ProductVariation::create([
             'product_id' => $product->id,
             'name' => $validated['name'],
+            ...Arr::only($validated, self::UNTRACKED_PRICING_FIELDS),
         ]);
 
         return [
@@ -222,6 +263,10 @@ class InventoryService
         $this->ensureVariationTenant($variation, $tenantId);
 
         $product = Product::query()->findOrFail($validated['product_id']);
+
+        if ((int) $variation->product_id !== (int) $product->id && SaleItem::query()->where('product_variation_id', $variation->id)->exists()) {
+            return 'Variations used in sales cannot be moved to another product.';
+        }
 
         $exists = ProductVariation::query()
             ->where('product_id', $product->id)
@@ -236,6 +281,7 @@ class InventoryService
         $variation->update([
             'product_id' => $product->id,
             'name' => $validated['name'],
+            ...Arr::only($validated, self::UNTRACKED_PRICING_FIELDS),
         ]);
 
         return null;
@@ -244,6 +290,10 @@ class InventoryService
     public function destroyVariation(ProductVariation $variation, int $tenantId): void
     {
         $this->ensureVariationTenant($variation, $tenantId);
+
+        if (SaleItem::query()->where('product_variation_id', $variation->id)->exists()) {
+            abort(422, 'Variations used in sales cannot be deleted. Disable the product instead.');
+        }
         $path = $variation->image_path;
         $variation->delete();
 
@@ -255,6 +305,17 @@ class InventoryService
     public function variationImageUrl(ProductVariation $variation): ?string
     {
         return $variation->image_path ? $this->media->url($variation->image_path) : null;
+    }
+
+    private function variationPricing(ProductVariation $variation): array
+    {
+        $prices = [];
+
+        foreach (self::UNTRACKED_PRICING_FIELDS as $field) {
+            $prices[$field] = $variation->$field !== null ? (float) $variation->$field : null;
+        }
+
+        return $prices;
     }
 
     public function uploadVariationImage(ProductVariation $variation, int $tenantId, UploadedFile $file): ?string
@@ -428,41 +489,59 @@ class InventoryService
             return 'Selected variation does not belong to the selected product.';
         }
 
-        $newQty = (int) $validated['quantity'];
-        $newDisplayQty = isset($validated['display_quantity']) ? (int) $validated['display_quantity'] : (int) $stock->display_quantity;
+        $result = DB::transaction(function () use ($stock, $tenantId, $validated, $product, $variation) {
+            $stock = StockEntry::query()->lockForUpdate()->findOrFail($stock->id);
+            $this->ensureStockTenant($stock, $tenantId);
 
-        if ($newDisplayQty > $newQty) {
-            return 'Display quantity cannot exceed total stock quantity.';
+            if (((int) $stock->product_id !== (int) $product->id || (int) $stock->product_variation_id !== (int) $variation->id)
+                && $this->hasMutableSaleAllocation($stock)) {
+                return ['error' => 'Stock entries referenced by an unpaid sale cannot be reassigned.'];
+            }
+
+            $newQty = (int) $validated['quantity'];
+            $newDisplayQty = isset($validated['display_quantity']) ? (int) $validated['display_quantity'] : (int) $stock->display_quantity;
+
+            if ($newDisplayQty > $newQty) {
+                return ['error' => 'Display quantity cannot exceed total stock quantity.'];
+            }
+
+            $before = [
+                'quantity' => (int) $stock->quantity,
+                'display_quantity' => (int) $stock->display_quantity,
+                'purchasing_price' => (float) $stock->purchasing_price,
+                'local_selling_price' => (float) $stock->local_selling_price,
+                'foreign_selling_price' => (float) $stock->foreign_selling_price,
+            ];
+
+            $stock->update([
+                'product_id' => $product->id,
+                'product_variation_id' => $variation->id,
+                'quantity' => $newQty,
+                'display_quantity' => $newDisplayQty,
+                'manufacturing_date' => $validated['manufacturing_date'] ?? null,
+                'expiry_date' => $validated['expiry_date'] ?? null,
+                'purchasing_price' => $validated['purchasing_price'],
+                'local_selling_price' => $validated['local_selling_price'],
+                'foreign_selling_price' => $validated['foreign_selling_price'],
+            ]);
+
+            $this->auditService->log($tenantId, 'updated', $stock, $before, [
+                'quantity' => (int) $stock->quantity,
+                'display_quantity' => (int) $stock->display_quantity,
+                'purchasing_price' => (float) $stock->purchasing_price,
+                'local_selling_price' => (float) $stock->local_selling_price,
+                'foreign_selling_price' => (float) $stock->foreign_selling_price,
+            ]);
+
+            return ['stock' => $stock, 'before' => $before];
+        }, 3);
+
+        if (isset($result['error'])) {
+            return $result['error'];
         }
 
-        $before = [
-            'quantity' => (int) $stock->quantity,
-            'display_quantity' => (int) $stock->display_quantity,
-            'purchasing_price' => (float) $stock->purchasing_price,
-            'local_selling_price' => (float) $stock->local_selling_price,
-            'foreign_selling_price' => (float) $stock->foreign_selling_price,
-        ];
-
-        $stock->update([
-            'product_id' => $product->id,
-            'product_variation_id' => $variation->id,
-            'quantity' => $newQty,
-            'display_quantity' => $newDisplayQty,
-            'manufacturing_date' => $validated['manufacturing_date'] ?? null,
-            'expiry_date' => $validated['expiry_date'] ?? null,
-            'purchasing_price' => $validated['purchasing_price'],
-            'local_selling_price' => $validated['local_selling_price'],
-            'foreign_selling_price' => $validated['foreign_selling_price'],
-        ]);
-
-        $this->auditService->log($tenantId, 'updated', $stock, $before, [
-            'quantity' => (int) $stock->quantity,
-            'display_quantity' => (int) $stock->display_quantity,
-            'purchasing_price' => (float) $stock->purchasing_price,
-            'local_selling_price' => (float) $stock->local_selling_price,
-            'foreign_selling_price' => (float) $stock->foreign_selling_price,
-        ]);
-
+        $stock = $result['stock'];
+        $before = $result['before'];
         $this->managerNotifications->dispatch($tenantId, 'stock.updated', "Stock entry #{$stock->id} was edited.", [
             'Product' => $product->name,
             'Variation' => $variation->name,
@@ -479,22 +558,60 @@ class InventoryService
     {
         $this->ensureStockTenant($stock, $tenantId);
 
-        $before = [
-            'quantity' => (int) $stock->quantity,
-            'display_quantity' => (int) $stock->display_quantity,
-        ];
-        $product = Product::query()->find($stock->product_id);
-        $variation = ProductVariation::query()->find($stock->product_variation_id);
+        $details = DB::transaction(function () use ($stock, $tenantId) {
+            $stock = StockEntry::query()->lockForUpdate()->findOrFail($stock->id);
+            $this->ensureStockTenant($stock, $tenantId);
 
-        $this->auditService->log($tenantId, 'deleted', $stock, $before, null);
+            if ($this->hasMutableSaleAllocation($stock)) {
+                abort(422, 'Stock entries referenced by an unpaid sale cannot be deleted.');
+            }
 
-        $stock->delete();
-        $this->managerNotifications->dispatch($tenantId, 'stock.deleted', "Stock entry #{$stock->id} was deleted.", [
-            'Product' => $product?->name ?? 'Unknown product',
-            'Variation' => $variation?->name ?? 'Unknown variation',
-            'Quantity' => $before['quantity'],
-            'Display quantity' => $before['display_quantity'],
-        ]);
+            $before = [
+                'quantity' => (int) $stock->quantity,
+                'display_quantity' => (int) $stock->display_quantity,
+            ];
+            $product = Product::query()->find($stock->product_id);
+            $variation = ProductVariation::query()->find($stock->product_variation_id);
+
+            $this->auditService->log($tenantId, 'deleted', $stock, $before, null);
+
+            $stock->delete();
+
+            return [
+                'Product' => $product?->name ?? 'Unknown product',
+                'Variation' => $variation?->name ?? 'Unknown variation',
+                'Quantity' => $before['quantity'],
+                'Display quantity' => $before['display_quantity'],
+            ];
+        }, 3);
+
+        $this->managerNotifications->dispatch($tenantId, 'stock.deleted', "Stock entry #{$stock->id} was deleted.", $details);
+    }
+
+    private function hasMutableSaleAllocation(StockEntry $stock): bool
+    {
+        // A locking read sees committed allocations after waiting for the stock lock,
+        // even under MySQL's repeatable-read isolation. Decode in PHP so SQLite and
+        // MySQL agree on JSON object matching and numeric/string IDs.
+        $items = SaleItem::query()
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereNull('sales.deleted_at')
+            ->where('sales.is_paid', false)
+            ->where('sale_items.product_variation_id', $stock->product_variation_id)
+            ->whereNotNull('sale_items.stock_allocations')
+            ->select('sale_items.stock_allocations')
+            ->lockForUpdate()
+            ->cursor();
+
+        foreach ($items as $item) {
+            foreach ($item->stock_allocations ?? [] as $allocation) {
+                if (isset($allocation['stock_entry_id']) && (string) $allocation['stock_entry_id'] === (string) $stock->id) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public function releaseToDisplay(StockEntry $stock, int $tenantId, int $displayQuantity): ?string

@@ -144,7 +144,7 @@ class RealProfitReportService
             $cost = $item->cost_total !== null ? (float) $item->cost_total : null;
 
             if ($cost === null) {
-                $estimate = $costEstimates[$item->product_variation_id] ?? null;
+                $estimate = $item->stock_allocations === [] ? null : ($costEstimates[$item->product_variation_id] ?? null);
 
                 if ($estimate !== null) {
                     $unitCost = $estimate;

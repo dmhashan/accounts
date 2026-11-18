@@ -10,7 +10,8 @@
               :class="form.customer_type === 'local' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
               title="Local"
               aria-label="Local"
-              @click="form.customer_type = 'local'"
+              :disabled="hasUnavailableHistoricalItems && form.customer_type !== 'local'"
+              @click="setCustomerType('local')"
             >
               <House class="h-4 w-4" />
             </button>
@@ -20,7 +21,8 @@
               :class="form.customer_type === 'foreign' ? 'bg-primary-600 text-white' : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700'"
               title="Foreign"
               aria-label="Foreign"
-              @click="form.customer_type = 'foreign'"
+              :disabled="hasUnavailableHistoricalItems && form.customer_type !== 'foreign'"
+              @click="setCustomerType('foreign')"
             >
               <Globe class="h-4 w-4" />
             </button>
@@ -45,6 +47,9 @@
     <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
       {{ errorMessage }}
     </div>
+    <p v-if="hasUnavailableHistoricalItems" class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+      Customer type cannot be changed while a disabled or unavailable historical item remains in the cart.
+    </p>
 
     <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleFormSubmit">
       <div class="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:min-h-[calc(100vh-280px)] lg:grid-cols-12 lg:gap-4">
@@ -94,7 +99,7 @@
                 tabindex="0"
                 class="border border-secondary-200 dark:border-secondary-700 rounded-lg p-2 md:p-3 flex items-center justify-between gap-2 md:gap-3 transition-colors"
                 :class="[
-                  variation.available_stock > 0 ? 'cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-800' : 'cursor-not-allowed opacity-60',
+                  'cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-800',
                   activeProductId === variation.id ? 'ring-2 ring-primary-500/60 bg-primary-50 dark:bg-primary-900/20' : ''
                 ]"
                 @click="handleProductActivate(variation)"
@@ -117,7 +122,7 @@
                       {{ variation.label }}
                     </p>
                     <p class="text-[11px] md:text-xs text-secondary-500 dark:text-secondary-400">
-                      Stock: {{ variation.available_stock }} • {{ money(variationPrice(variation)) }}
+                      {{ availabilityLabel(variation) }} • {{ variationPrice(variation) === null ? 'Price not set' : money(variationPrice(variation)) }}
                     </p>
                   </div>
                 </div>
@@ -145,11 +150,27 @@
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <p class="text-sm font-semibold text-secondary-900 dark:text-white">
-                    {{ selectedVariation(item.product_variation_id)?.label || 'Item' }}
+                    {{ itemLabel(item) }}
                   </p>
                   <p class="text-xs text-secondary-500 dark:text-secondary-400">
-                    Unit: {{ money(unitPrice(item)) }}
+                    Unit: {{ unitPrice(item) === null ? 'Price required' : money(unitPrice(item)) }}
                   </p>
+                  <p v-if="!selectedVariation(item.product_variation_id) || selectedVariation(item.product_variation_id).is_active === false" class="text-xs text-amber-700 dark:text-amber-400">
+                    {{ selectedVariation(item.product_variation_id) ? 'Disabled product — keep this historical line unchanged or remove it' : 'Product unavailable — keep this historical line unchanged or remove it; price shown is historical' }}
+                  </p>
+                  <label v-if="selectedVariation(item.product_variation_id)?.track_stock === false && selectedVariation(item.product_variation_id)?.is_active !== false" class="mt-1 block text-xs text-secondary-500 dark:text-secondary-400">
+                    Unit price
+                    <input
+                      v-model.number="item.untrackedPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      class="ml-2 w-24 rounded border border-secondary-300 bg-white px-2 py-1 text-sm text-secondary-900 dark:border-secondary-600 dark:bg-secondary-800 dark:text-white"
+                      :aria-label="`Unit price for ${itemLabel(item)}`"
+                      @input="item.untrackedPriceOverridden = true"
+                    />
+                  </label>
                 </div>
                 <button type="button" class="text-xs text-red-600 dark:text-red-400" @click="removeByKey(item.key)">
                   Remove
@@ -158,13 +179,23 @@
 
               <div class="mt-2 flex items-center justify-between">
                 <div class="inline-flex rounded-lg border border-secondary-200 dark:border-secondary-700 overflow-hidden">
-                  <button type="button" class="px-3 py-1.5 text-sm" @click="decrementQty(item)">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-sm disabled:opacity-40"
+                    :disabled="isUnavailableHistorical(item)"
+                    @click="decrementQty(item)"
+                  >
                     -
                   </button>
                   <div class="px-3 py-1.5 text-sm min-w-10 text-center">
                     {{ item.quantity }}
                   </div>
-                  <button type="button" class="px-3 py-1.5 text-sm" @click="incrementQty(item)">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-sm disabled:opacity-40"
+                    :disabled="isUnavailableHistorical(item)"
+                    @click="incrementQty(item)"
+                  >
                     +
                   </button>
                 </div>
@@ -299,12 +330,12 @@
               </p>
               <p
                 class="text-4xl font-bold leading-none"
-                :class="stock.available_stock > 0 ? 'text-secondary-900 dark:text-white' : 'text-red-500 dark:text-red-400'"
+                :class="stock.track_stock === false || stock.available_stock > 0 ? 'text-secondary-900 dark:text-white' : 'text-red-500 dark:text-red-400'"
               >
-                {{ stock.available_stock }}
+                {{ stock.track_stock === false ? 'Unlimited' : stock.available_stock }}
               </p>
               <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">
-                units left
+                {{ stock.track_stock === false ? 'Stock not tracked' : 'units left' }}
               </p>
             </div>
           </div>
@@ -374,6 +405,9 @@ const saleLocked = ref(false);
 const successModalOpen = ref(false);
 const saleResult = ref(null);
 const soldVariationIds = ref([]);
+const originalQuantities = ref({});
+const originalCustomerType = ref(null);
+const saleLoadFailed = ref(false);
 
 let rowKey = 0;
 let productUiTimer = null;
@@ -408,12 +442,13 @@ const selectedMember = computed(() => {
     return members.value.find((member) => member.id === form.value.customer_member_id) || null;
 });
 
+const hasUnavailableHistoricalItems = computed(() => form.value.items.some(isUnavailableHistorical));
+
 const filteredVariationOptions = computed(() => {
     const term = productSearch.value.trim().toLowerCase();
 
     return variationOptions.value.filter((variation) => {
-        const stock = Number(variation?.available_stock || 0);
-        if (stock <= 0) {
+        if (variation.is_active === false || maxQuantity(variation) <= 0) {
             return false;
         }
 
@@ -445,7 +480,7 @@ const updatedStockItems = computed(() => {
 const submitDisabled = computed(() => {
     if (saleLocked.value) return true;
     if (!hasActionPermission.value) return true;
-    if (submitting.value || loadingMeta.value || form.value.items.length === 0) return true;
+    if (submitting.value || loadingMeta.value || loadingSale.value || saleLoadFailed.value || form.value.items.length === 0) return true;
     return false;
 });
 
@@ -465,14 +500,48 @@ function selectedVariation(variationId) {
     return variationOptions.value.find((variation) => variation.id === variationId) || null;
 }
 
-function variationPrice(variation) {
-    return Number(variation?.prices?.[form.value.customer_type] || 0);
+function originalQuantity(variationId) {
+  return Number(originalQuantities.value[variationId] || 0);
+}
+
+function maxQuantity(variation) {
+  if (!variation) return 0;
+  if (variation.is_active === false) return originalQuantity(variation.id);
+  if (variation.track_stock === false) return Infinity;
+  return Math.max(0, Number(variation.available_stock || 0)) + originalQuantity(variation.id);
+}
+
+function availabilityLabel(variation) {
+  if (variation.track_stock === false) return 'Unlimited · Stock not tracked';
+  const reserved = originalQuantity(variation.id);
+  return `Stock: ${variation.available_stock ?? 0}${reserved ? ` (+ ${reserved} in this sale)` : ''}`;
+}
+
+function itemLabel(item) {
+  return selectedVariation(item.product_variation_id)?.label || item.historicalLabel || `Product variation #${item.product_variation_id}`;
+}
+
+function isUnavailableHistorical(item) {
+  const variation = selectedVariation(item.product_variation_id);
+  return isEdit.value && item.originalQuantity !== null && item.originalQuantity !== undefined && (!variation || variation.is_active === false);
+}
+
+function variationPrice(variation, customerType = form.value.customer_type) {
+    const raw = variation?.prices?.[customerType];
+    if (raw === null || raw === undefined || raw === '' || !Number.isFinite(Number(raw)) || Number(raw) < 0) {
+        return variation?.track_stock === false ? null : 0;
+    }
+    return Number(raw);
 }
 
 function unitPrice(item) {
     const variation = selectedVariation(item.product_variation_id);
+  if (variation?.track_stock === false && variation.is_active !== false) return validUntrackedPrice(item.untrackedPrice) ? Number(item.untrackedPrice) : null;
+  if (item.originalQuantity !== null && item.originalQuantity !== undefined && Number(item.quantity) === item.originalQuantity && form.value.customer_type === originalCustomerType.value) {
+    return Number(item.historicalUnitPrice ?? 0);
+  }
     if (!variation) {
-        return 0;
+      return Number(item.historicalUnitPrice || 0);
     }
 
     return variationPrice(variation);
@@ -500,13 +569,15 @@ function addVariationToCart(variation) {
         key: ++rowKey,
         product_variation_id: variation.id,
         quantity: 1,
+        untrackedPrice: variation.track_stock === false ? variationPrice(variation) : null,
+        untrackedPriceOverridden: false,
     });
 
     focusCartItem(variation.id);
 }
 
 function handleProductActivate(variation) {
-    if (Number(variation?.available_stock || 0) <= 0) {
+  if (!variation || variation.is_active === false || maxQuantity(variation) <= 0) {
         return;
     }
 
@@ -558,13 +629,18 @@ async function focusCartItem(variationId) {
 }
 
 function incrementQty(item) {
-    const stock = Number(selectedVariation(item.product_variation_id)?.available_stock || 0);
-    if (item.quantity < stock) {
-        item.quantity += 1;
+  if (isUnavailableHistorical(item)) return;
+  const variation = selectedVariation(item.product_variation_id);
+  const limit = variation ? maxQuantity(variation) : originalQuantity(item.product_variation_id);
+  const total = form.value.items.filter((row) => row.product_variation_id === item.product_variation_id)
+    .reduce((sum, row) => sum + Number(row.quantity), 0);
+  if (total < limit) {
+    item.quantity = Number(item.quantity) + 1;
     }
 }
 
 function decrementQty(item) {
+  if (isUnavailableHistorical(item)) return;
     if (item.quantity > 1) {
         item.quantity -= 1;
     }
@@ -576,6 +652,29 @@ function removeByKey(key) {
 
 function selectCustomer(memberId) {
     form.value.customer_member_id = memberId;
+}
+
+function setCustomerType(type) {
+  if (form.value.customer_type === type) return;
+  form.value.customer_type = type;
+  for (const item of form.value.items) {
+    const variation = selectedVariation(item.product_variation_id);
+    if (variation?.track_stock === false && variation.is_active !== false && !item.untrackedPriceOverridden) {
+      item.untrackedPrice = variationPrice(variation, type);
+    }
+  }
+}
+
+function validUntrackedPrice(price) {
+  return price !== '' && price !== null && price !== undefined && Number.isFinite(Number(price)) && Number(price) >= 0;
+}
+
+function validateUntrackedPrices() {
+  if (form.value.items.some((item) => selectedVariation(item.product_variation_id)?.track_stock === false && selectedVariation(item.product_variation_id)?.is_active !== false && !validUntrackedPrice(item.untrackedPrice))) {
+    errorMessage.value = 'Enter a valid non-negative unit price for each untracked product.';
+    return false;
+  }
+  return true;
 }
 
 // Removed: handleDocumentClick
@@ -614,6 +713,7 @@ async function loadSale() {
     if (!isEdit.value || !canEditSale.value) return;
     
     loadingSale.value = true;
+    saleLoadFailed.value = false;
     errorMessage.value = '';
 
     try {
@@ -623,6 +723,7 @@ async function loadSale() {
         form.value.customer_name = saleData.customer_name || '';
         form.value.customer_member_id = saleData.customer_member_id || null;
         form.value.customer_type = saleData.customer_type;
+        originalCustomerType.value = saleData.customer_type;
         form.value.payment_method = saleData.payment_method;
         form.value.reference_number = saleData.reference_number || '';
         form.value.paid_amount = saleData.paid_amount;
@@ -633,13 +734,22 @@ async function loadSale() {
             errorMessage.value = 'Paid sales cannot be edited or deleted.';
         }
 
-        // Load items
+        originalQuantities.value = {};
+        for (const item of saleData.items) {
+          originalQuantities.value[item.product_variation_id] = originalQuantity(item.product_variation_id) + Number(item.quantity);
+        }
         form.value.items = saleData.items.map((item) => ({
             key: ++rowKey,
             product_variation_id: item.product_variation_id,
-            quantity: item.quantity,
+          quantity: Number(item.quantity),
+            originalQuantity: Number(item.quantity),
+          historicalUnitPrice: item.unit_price,
+            untrackedPrice: item.unit_price,
+            untrackedPriceOverridden: variationPrice(selectedVariation(item.product_variation_id), saleData.customer_type) === null || Number(item.unit_price) !== variationPrice(selectedVariation(item.product_variation_id), saleData.customer_type),
+          historicalLabel: item.label || [item.product_name, item.variation_name].filter(Boolean).join(' - '),
         }));
     } catch (error) {
+        saleLoadFailed.value = true;
         errorMessage.value = error?.response?.data?.message || 'Failed to load sale details.';
     } finally {
         loadingSale.value = false;
@@ -653,6 +763,8 @@ async function submitSale(mode = 'update') {
             : 'You do not have permission to create sales.';
         return;
     }
+
+    if (!validateUntrackedPrices()) return;
 
     submitting.value = true;
     errorMessage.value = '';
@@ -681,6 +793,7 @@ async function submitSale(mode = 'update') {
                 .map((item) => ({
                     product_variation_id: Number(item.product_variation_id),
                     quantity: Number(item.quantity),
+                  ...(selectedVariation(item.product_variation_id)?.track_stock === false && selectedVariation(item.product_variation_id)?.is_active !== false ? { unit_price: Number(item.untrackedPrice) } : {}),
                 })),
         };
 
@@ -752,6 +865,8 @@ function handleFormSubmit() {
 
 function openPayNowModal() {
     if (submitDisabled.value) return;
+  if (!validateUntrackedPrices()) return;
+  errorMessage.value = '';
     if (!selectedPayNowAccountId.value && paymentMethods.value.length > 0) {
         selectedPayNowAccountId.value = paymentMethods.value[0].id;
     }
@@ -770,6 +885,8 @@ function resetForNewSale() {
     successModalOpen.value = false;
     saleResult.value = null;
     soldVariationIds.value = [];
+    originalQuantities.value = {};
+    originalCustomerType.value = null;
     form.value = {
         customer_name: '',
         customer_member_id: null,

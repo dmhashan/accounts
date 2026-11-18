@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductVariation;
+use App\Models\SaleItem;
 use Illuminate\Http\Request;
 
 class ProductVariationController extends Controller
@@ -82,6 +83,10 @@ class ProductVariationController extends Controller
 
         $product = Product::query()->findOrFail($validated['product_id']);
 
+        if ((int) $variation->product_id !== (int) $product->id && SaleItem::query()->where('product_variation_id', $variation->id)->exists()) {
+            abort(422, 'Variations used in sales cannot be moved to another product.');
+        }
+
         $exists = ProductVariation::where('product_id', $product->id)
             ->where('name', $validated['name'])
             ->where('id', '!=', $variation->id)
@@ -106,6 +111,9 @@ class ProductVariationController extends Controller
     {
         $this->ensureTenant($variation);
 
+        if (SaleItem::query()->where('product_variation_id', $variation->id)->exists()) {
+            abort(422, 'Variations used in sales cannot be deleted. Disable the product instead.');
+        }
         $variation->delete();
 
         return redirect()->route('inventory.variations.index')

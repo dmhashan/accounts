@@ -133,7 +133,7 @@ class SaleApiController extends Controller
     public function show(Sale $sale): JsonResponse
     {
 
-        $items = $sale->items()->get();
+        $items = $sale->items()->with(['product:id,name', 'variation:id,name'])->get();
 
         return response()->json([
             'data' => [
@@ -158,8 +158,11 @@ class SaleApiController extends Controller
                     return [
                         'id' => $item->id,
                         'product_variation_id' => $item->product_variation_id,
+                        'product_name' => $item->product?->name,
+                        'variation_name' => $item->variation?->name,
                         'quantity' => $item->quantity,
                         'unit_price' => (float) $item->unit_price,
+                        'unit_cost' => $item->unit_cost !== null ? (float) $item->unit_cost : null,
                         'subtotal' => (float) $item->subtotal,
                     ];
                 }),
@@ -259,6 +262,8 @@ class SaleApiController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_variation_id' => ['required', 'exists:product_variations,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.unit_price' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
+            'items.*.unit_cost' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
         ];
     }
 

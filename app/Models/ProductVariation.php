@@ -12,6 +12,9 @@ class ProductVariation extends Model
         'product_id',
         'name',
         'image_path',
+        'untracked_local_price',
+        'untracked_foreign_price',
+        'untracked_unit_cost',
     ];
 
     public function product(): BelongsTo

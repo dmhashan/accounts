@@ -45,6 +45,9 @@
               <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                 Variations: {{ product.variations_count }}
               </p>
+              <p class="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                Status: {{ product.is_active === false ? 'Disabled' : 'Active' }} · Stock: {{ product.track_stock === false ? 'Unlimited' : 'Tracked' }}
+              </p>
             </article>
             <div v-if="filteredProducts.length === 0" class="p-6 text-sm text-secondary-500 dark:text-secondary-400">
               No products found.
@@ -64,6 +67,12 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
                     Variations
                   </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Status
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase">
+                    Stock tracking
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-secondary-200 dark:divide-secondary-700">
@@ -82,9 +91,15 @@
                   <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
                     {{ product.variations_count }}
                   </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ product.is_active === false ? 'Disabled' : 'Active' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-secondary-700 dark:text-secondary-300">
+                    {{ product.track_stock === false ? 'Unlimited' : 'Tracked' }}
+                  </td>
                 </tr>
                 <tr v-if="filteredProducts.length === 0">
-                  <td colspan="3" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                  <td colspan="5" class="px-6 py-10 text-center text-sm text-secondary-500 dark:text-secondary-400">
                     No products found.
                   </td>
                 </tr>

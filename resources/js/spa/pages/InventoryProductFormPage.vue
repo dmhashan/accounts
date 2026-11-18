@@ -42,6 +42,22 @@
               </button>
             </p>
           </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-secondary-200 p-4 dark:border-secondary-700">
+              <input v-model="form.track_stock" type="checkbox" class="mt-1 h-4 w-4 accent-primary-600" />
+              <span>
+                <span class="block text-sm font-semibold text-secondary-900 dark:text-white">Track stock</span>
+                <span class="mt-1 block text-xs text-secondary-500 dark:text-secondary-400">Limit sales to available inventory. Turn off for unlimited products or services.</span>
+              </span>
+            </label>
+            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-secondary-200 p-4 dark:border-secondary-700">
+              <input v-model="form.is_active" type="checkbox" class="mt-1 h-4 w-4 accent-primary-600" />
+              <span>
+                <span class="block text-sm font-semibold text-secondary-900 dark:text-white">Active for sale</span>
+                <span class="mt-1 block text-xs text-secondary-500 dark:text-secondary-400">Turn off to hide this product from new sales. Existing sales remain in history.</span>
+              </span>
+            </label>
+          </div>
           <div>
             <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -99,6 +115,38 @@
                   <p v-if="variation.imageError" role="alert" class="text-xs text-red-600 dark:text-red-400">
                     {{ variation.imageError }}
                   </p>
+                  <div v-if="!form.track_stock" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300">
+                      Local selling price
+                      <AppFormInput
+                        v-model="variation.untracked_local_price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        :aria-label="`Local selling price for variation ${index + 1}`"
+                      />
+                    </label>
+                    <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300">
+                      Foreign selling price
+                      <AppFormInput
+                        v-model="variation.untracked_foreign_price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        :aria-label="`Foreign selling price for variation ${index + 1}`"
+                      />
+                    </label>
+                    <label class="block text-xs font-medium text-secondary-700 dark:text-secondary-300">
+                      Unit cost (optional)
+                      <AppFormInput
+                        v-model="variation.untracked_unit_cost"
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        :aria-label="`Unit cost for variation ${index + 1}`"
+                      />
+                    </label>
+                  </div>
                 </div>
                 <button type="button" class="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 dark:border-red-700 dark:text-red-400" @click="removeVariation(index)">
                   Remove variation
@@ -176,12 +224,12 @@ const showCategories = ref(false);
 const cropSrc = ref(null);
 const cropVariation = ref(null);
 const reconcileRows = ref(null);
-const form = ref({ name: '', category_id: null, variations: [] });
+const form = ref({ name: '', category_id: null, track_stock: true, is_active: true, variations: [] });
 let variationKey = 0;
 let allowLeave = false;
 
-function addVariation(name = '', id = null, imageUrl = null) {
-    form.value.variations.push({ key: ++variationKey, id, name, image_url: imageUrl, pendingBlob: null, preview: null, removeImage: false, imageError: '' });
+function addVariation(name = '', id = null, imageUrl = null, prices = {}) {
+  form.value.variations.push({ key: ++variationKey, id, name, image_url: imageUrl, untracked_local_price: prices.untracked_local_price ?? '', untracked_foreign_price: prices.untracked_foreign_price ?? '', untracked_unit_cost: prices.untracked_unit_cost ?? '', pendingBlob: null, preview: null, removeImage: false, imageError: '' });
 }
 function removeVariation(index) { form.value.variations.splice(index, 1); }
 function categoriesChanged(list) { categories.value = list; categoryError.value = ''; }
@@ -197,7 +245,9 @@ async function loadProduct() {
         const product = response.data;
         form.value.name = product.name || '';
         form.value.category_id = product.category_id ?? null;
-        (product.variations || []).forEach((variation) => addVariation(variation.name, variation.id, variation.image_url));
+        form.value.track_stock = product.track_stock ?? true;
+        form.value.is_active = product.is_active ?? true;
+        (product.variations || []).forEach((variation) => addVariation(variation.name, variation.id, variation.image_url, variation));
         if (!form.value.variations.length) addVariation();
     } catch (error) { errorMessage.value = error?.response?.data?.message || 'Failed to load product.'; blocked.value = true; }
     finally { loading.value = false; }
@@ -270,11 +320,13 @@ async function retryReconcile() {
 }
 async function submit() {
     if (submitting.value || blocked.value || reconcileRows.value) return;
-    const rows = form.value.variations.filter((v) => v.name.trim()).map((v) => ({ key: v.key, id: v.id, name: v.name.trim() }));
+    const rows = form.value.variations.filter((v) => v.name.trim()).map((v) => ({ key: v.key, id: v.id, name: v.name.trim(), untracked_local_price: v.untracked_local_price, untracked_foreign_price: v.untracked_foreign_price, untracked_unit_cost: v.untracked_unit_cost }));
     if (form.value.variations.some((v) => !v.name.trim() && (v.pendingBlob || v.removeImage))) { errorMessage.value = 'Enter a variation name for each pending image.'; return; }
     if (new Set(rows.map((v) => v.name.toLocaleLowerCase())).size !== rows.length) { errorMessage.value = 'Variation names must be unique.'; return; }
+    const priceFields = ['untracked_local_price', 'untracked_foreign_price', 'untracked_unit_cost'];
+    if (rows.some((row) => priceFields.some((field) => row[field] !== '' && row[field] !== null && row[field] !== undefined && (!Number.isFinite(Number(row[field])) || Number(row[field]) < 0)))) { errorMessage.value = 'Variation prices and costs must be non-negative numbers.'; return; }
     submitting.value = true; errorMessage.value = '';
-    const payload = { name: form.value.name, category_id: form.value.category_id, variations: rows.map(({ id, name }) => ({ id: id ?? undefined, name })) };
+    const payload = { name: form.value.name, category_id: form.value.category_id, track_stock: form.value.track_stock, is_active: form.value.is_active, variations: rows.map(({ id, name, ...row }) => ({ id: id ?? undefined, name, ...Object.fromEntries(priceFields.map((field) => [field, row[field] === '' || row[field] === null || row[field] === undefined ? null : Number(row[field])])) })) };
     let saved = false;
     try {
         const response = await apiRequest(productId.value ? `/api/inventory/products/${productId.value}` : '/api/inventory/products', { method: productId.value ? 'put' : 'post', data: payload });

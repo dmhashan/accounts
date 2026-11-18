@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\SendMemberNotificationJob;
 use App\Models\Member;
 use App\Models\PaymentMethod;
+use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -27,7 +28,7 @@ class SaleProcessingService
         $today = Carbon::today()->toDateString();
 
         $sale = DB::transaction(function () use ($tenantId, $validated, $today) {
-            [$saleItems, $total, $itemsPayload] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
+            [$saleItems, $total] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
             $member = $this->resolveMember($validated, $tenantId);
             [$paidAmount, $balance, $isPaid, $accountId, $paymentMethod] = $this->resolvePayment($validated, $member, $total, $tenantId);
 
@@ -46,11 +47,10 @@ class SaleProcessingService
             ]);
 
             $this->replaceSaleItems($sale, $saleItems);
-            $this->deductStock($itemsPayload, $tenantId, $today);
             $this->recordAccountTransactionForSale($sale, $tenantId, null, $paymentMethod);
 
             return $sale;
-        });
+        }, 3);
 
         if ($sale->is_paid) {
             $this->sendSalePaidNotification($sale);
@@ -80,10 +80,37 @@ class SaleProcessingService
         $today = Carbon::today()->toDateString();
 
         $updatedSale = DB::transaction(function () use ($sale, $tenantId, $validated, $today) {
-            $this->restoreStockForExistingItems($sale, $tenantId, $today);
+            $sale = Sale::query()->lockForUpdate()->findOrFail($sale->id);
+            $this->ensureSaleIsMutable($sale);
+            $oldItems = $sale->items()->lockForUpdate()->get();
+            $remaining = $oldItems->keyBy('id');
+            $retained = [];
+            $newPayload = [];
+
+            foreach ($validated['items'] as $item) {
+                $match = $remaining->first(fn (SaleItem $old) => (int) $old->product_variation_id === (int) $item['product_variation_id']
+                    && (int) $old->quantity === (int) $item['quantity']
+                    && $sale->customer_type === $validated['customer_type']
+                    && (!isset($item['unit_price']) || (float) $item['unit_price'] === (float) $old->unit_price)
+                    && (!isset($item['unit_cost']) || ($old->unit_cost !== null && (float) $item['unit_cost'] === (float) $old->unit_cost)),
+                );
+
+                if ($match) {
+                    $retained[] = $match;
+                    $remaining->forget($match->id);
+                } else {
+                    $newPayload[] = $item;
+                }
+            }
+
+            foreach ($remaining as $old) {
+                $this->restoreStockForItem($old, $tenantId, $today);
+                $old->delete();
+            }
             $this->refundWalletIfNeeded($sale, $tenantId);
 
-            [$saleItems, $total, $itemsPayload] = $this->buildSaleItemsAndTotals($validated, $tenantId, $today);
+            [$saleItems, $total] = $this->buildSaleItemsAndTotals(array_replace($validated, ['items' => $newPayload]), $tenantId, $today);
+            $total += array_sum(array_map(fn (SaleItem $item) => (float) $item->subtotal, $retained));
             $member = $this->resolveMember($validated, $tenantId);
             [$paidAmount, $balance, $isPaid, $accountId, $paymentMethod] = $this->resolvePayment($validated, $member, $total, $tenantId);
 
@@ -101,11 +128,12 @@ class SaleProcessingService
                 'is_paid' => $isPaid,
             ]);
 
-            $this->replaceSaleItems($sale, $saleItems);
-            $this->deductStock($itemsPayload, $tenantId, $today);
+            foreach ($saleItems as $item) {
+                $sale->items()->create($item);
+            }
 
             return $sale;
-        });
+        }, 3);
 
         $this->managerNotifications->dispatch($tenantId, 'sale.updated', "Sale #{$updatedSale->id} was edited.", [
             'Previous total' => 'LKR ' . number_format($before['total'], 2),
@@ -133,11 +161,16 @@ class SaleProcessingService
         $today = Carbon::today()->toDateString();
 
         DB::transaction(function () use ($sale, $tenantId, $today) {
-            $this->restoreStockForExistingItems($sale, $tenantId, $today);
+            $sale = Sale::query()->lockForUpdate()->findOrFail($sale->id);
+            $this->ensureSaleIsMutable($sale);
+
+            foreach ($sale->items()->lockForUpdate()->get() as $item) {
+                $this->restoreStockForItem($item, $tenantId, $today);
+            }
             $this->refundWalletIfNeeded($sale, $tenantId);
 
             $sale->delete();
-        });
+        }, 3);
 
         $this->managerNotifications->dispatch($tenantId, 'sale.deleted', "Sale #{$saleId} was deleted.", $details);
     }
@@ -274,12 +307,47 @@ class SaleProcessingService
             abort(422, 'Invalid variation selection.');
         }
 
+        $products = Product::query()->whereIn('id', $variations->pluck('product_id')->unique())
+            ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+
         $saleItems = [];
         $total = 0;
 
         foreach ($itemsPayload as $item) {
             $variation = $variations->get($item['product_variation_id']);
             $quantity = (int) $item['quantity'];
+            $product = $products->get($variation->product_id);
+
+            if (!$product || !$product->is_active) {
+                abort(422, 'Inactive products cannot be added to a sale.');
+            }
+
+            if (!$product->track_stock) {
+                $configuredPrice = $validated['customer_type'] === 'local'
+                    ? $variation->untracked_local_price
+                    : $variation->untracked_foreign_price;
+                $price = $item['unit_price'] ?? $configuredPrice;
+
+                if ($price === null) {
+                    abort(422, 'A unit price is required for products without stock tracking when no price is configured for this customer type.');
+                }
+                $unitPrice = (float) $price;
+                $cost = $item['unit_cost'] ?? $variation->untracked_unit_cost;
+                $unitCost = $cost !== null ? (float) $cost : null;
+                $subtotal = $unitPrice * $quantity;
+                $total += $subtotal;
+                $saleItems[] = [
+                    'product_id' => $product->id,
+                    'product_variation_id' => $variation->id,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'unit_cost' => $unitCost,
+                    'subtotal' => $subtotal,
+                    'cost_total' => $unitCost !== null ? round($unitCost * $quantity, 2) : null,
+                    'stock_allocations' => [],
+                ];
+                continue;
+            }
 
             $stockEntries = $this->saleableStockEntries($variation->id, $today)
                 ->lockForUpdate()
@@ -302,6 +370,7 @@ class SaleProcessingService
                 : $priceEntry->foreign_selling_price;
 
             $costTotal = $this->costTotalForQuantity($stockEntries, $quantity);
+            $allocations = $this->deductStockEntries($stockEntries, $quantity, $tenantId);
             $unitCost = $quantity > 0 ? $costTotal / $quantity : 0;
             $subtotal = $unitPrice * $quantity;
             $total += $subtotal;
@@ -314,10 +383,11 @@ class SaleProcessingService
                 'unit_cost' => round($unitCost, 4),
                 'subtotal' => $subtotal,
                 'cost_total' => round($costTotal, 2),
+                'stock_allocations' => $allocations,
             ];
         }
 
-        return [$saleItems, $total, $itemsPayload];
+        return [$saleItems, $total];
     }
 
     private function saleableStockEntries(int $variationId, string $today)
@@ -421,85 +491,91 @@ class SaleProcessingService
         }
     }
 
-    private function deductStock(array $itemsPayload, int $tenantId, string $today): void
+    private function deductStockEntries($entries, int $quantity, int $tenantId): array
     {
-        foreach ($itemsPayload as $item) {
-            $remaining = $item['quantity'];
+        $remaining = $quantity;
+        $allocations = [];
 
-            $entries = $this->saleableStockEntries((int) $item['product_variation_id'], $today)
-                ->lockForUpdate()
-                ->get();
-
-            foreach ($entries as $entry) {
-                if ($remaining <= 0) {
-                    break;
-                }
-
-                $deduct = min($entry->display_quantity, $remaining);
-
-                if ($deduct <= 0) {
-                    continue;
-                }
-
-                $before = [
-                    'quantity' => (int) $entry->quantity,
-                    'display_quantity' => (int) $entry->display_quantity,
-                ];
-
-                $entry->update([
-                    'quantity' => $entry->quantity - $deduct,
-                    'display_quantity' => $entry->display_quantity - $deduct,
-                ]);
-
-                $this->auditService->log($tenantId, 'sale_deducted', $entry, $before, [
-                    'quantity' => (int) $entry->quantity,
-                    'display_quantity' => (int) $entry->display_quantity,
-                    'deducted' => $deduct,
-                ]);
-
-                $remaining -= $deduct;
+        foreach ($entries as $entry) {
+            if ($remaining <= 0) {
+                break;
             }
+
+            $deduct = min($entry->display_quantity, $remaining);
+
+            if ($deduct <= 0) {
+                continue;
+            }
+
+            $before = [
+                'quantity' => (int) $entry->quantity,
+                'display_quantity' => (int) $entry->display_quantity,
+            ];
+
+            $entry->update([
+                'quantity' => $entry->quantity - $deduct,
+                'display_quantity' => $entry->display_quantity - $deduct,
+            ]);
+
+            $this->auditService->log($tenantId, 'sale_deducted', $entry, $before, [
+                'quantity' => (int) $entry->quantity,
+                'display_quantity' => (int) $entry->display_quantity,
+                'deducted' => $deduct,
+            ]);
+
+            $allocations[] = ['stock_entry_id' => $entry->id, 'quantity' => $deduct];
+            $remaining -= $deduct;
         }
+
+        return $allocations;
     }
 
-    private function restoreStockForExistingItems(Sale $sale, int $tenantId, string $today): void
+    private function restoreStockForItem(SaleItem $item, int $tenantId, string $today): void
     {
-        $oldItems = $sale->items()->get();
+        $allocations = $item->stock_allocations;
 
-        foreach ($oldItems as $item) {
-            $remaining = $item->quantity;
-
-            $entries = StockEntry::query()
+        if ($allocations === null) {
+            // Legacy sales did not record batch provenance. Preserve the old fallback,
+            // but never silently lose a restoration when no eligible batch remains.
+            $entry = StockEntry::query()
                 ->where('product_variation_id', $item->product_variation_id)
                 ->where(function ($query) use ($today) {
                     $query->whereDate('expiry_date', '>=', $today)
                         ->orWhereNull('expiry_date');
                 })
                 ->orderBy('expiry_date')
+                ->orderBy('id')
                 ->lockForUpdate()
-                ->get();
+                ->first();
 
-            foreach ($entries as $entry) {
-                if ($remaining <= 0) {
-                    break;
-                }
-
-                $before = [
-                    'quantity' => (int) $entry->quantity,
-                    'display_quantity' => (int) $entry->display_quantity,
-                ];
-
-                $entry->increment('quantity', $remaining);
-                $entry->increment('display_quantity', $remaining);
-
-                $this->auditService->log($tenantId, 'sale_restored', $entry, $before, [
-                    'quantity' => (int) $entry->fresh()->quantity,
-                    'display_quantity' => (int) $entry->fresh()->display_quantity,
-                    'restored' => $remaining,
-                ]);
-
-                $remaining = 0;
+            if (!$entry) {
+                abort(422, 'Cannot restore legacy sale stock: no eligible stock entry exists.');
             }
+            $allocations = [['stock_entry_id' => $entry->id, 'quantity' => (int) $item->quantity]];
+        }
+
+        foreach ($allocations as $allocation) {
+            $entry = StockEntry::query()->where('product_id', $item->product_id)
+                ->where('product_variation_id', $item->product_variation_id)
+                ->lockForUpdate()->find($allocation['stock_entry_id']);
+
+            if (!$entry) {
+                abort(422, 'Cannot restore sale stock: an original stock entry is missing or changed.');
+            }
+            $quantity = (int) $allocation['quantity'];
+            $before = [
+                'quantity' => (int) $entry->quantity,
+                'display_quantity' => (int) $entry->display_quantity,
+            ];
+
+            $entry->increment('quantity', $quantity);
+            $entry->increment('display_quantity', $quantity);
+
+            $this->auditService->log($tenantId, 'sale_restored', $entry, $before, [
+                'quantity' => (int) $entry->quantity,
+                'display_quantity' => (int) $entry->display_quantity,
+                'restored' => $quantity,
+            ]);
         }
     }
 

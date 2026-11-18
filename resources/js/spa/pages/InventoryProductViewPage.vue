@@ -50,6 +50,22 @@
               {{ product.variations_count ?? (product.variations?.length ?? 0) }}
             </p>
           </div>
+          <div>
+            <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+              Status
+            </p>
+            <p class="font-medium text-secondary-800 dark:text-secondary-200">
+              {{ product.is_active === false ? 'Disabled' : 'Active' }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-secondary-400 uppercase tracking-wide mb-1">
+              Stock tracking
+            </p>
+            <p class="font-medium text-secondary-800 dark:text-secondary-200">
+              {{ product.track_stock === false ? 'Unlimited' : 'Tracked' }}
+            </p>
+          </div>
         </div>
       </div>
 

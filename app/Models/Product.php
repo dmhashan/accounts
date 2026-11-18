@@ -11,6 +11,13 @@ class Product extends Model
     protected $fillable = [
         'name',
         'category_id',
+        'track_stock',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'track_stock' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function category(): BelongsTo

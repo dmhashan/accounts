@@ -5,11 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Member;
 use App\Models\ProductVariation;
 use App\Models\Sale;
-use App\Models\SaleItem;
 use App\Models\StockEntry;
+use App\Services\SaleProcessingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
 {
@@ -30,6 +29,7 @@ class SaleController extends Controller
         $today = Carbon::today()->toDateString();
 
         $variations = ProductVariation::query()
+            ->whereHas('product', fn ($query) => $query->where('is_active', true))
             ->with('product')
             ->orderBy('name')
             ->get();
@@ -67,10 +67,8 @@ class SaleController extends Controller
         return view('sales.create', compact('variations', 'availableStock', 'priceMap', 'members'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, SaleProcessingService $sales)
     {
-        $tenantId = app('tenant')->id;
-
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_type' => ['required', 'in:local,foreign'],
@@ -78,120 +76,19 @@ class SaleController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_variation_id' => ['required', 'exists:product_variations,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.unit_price' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
+            'items.*.unit_cost' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
         ]);
 
-        $today = Carbon::today()->toDateString();
+        $sales->create(app('tenant')->id, $validated);
 
-        return DB::transaction(function () use ($validated, $today) {
-            $itemsPayload = $validated['items'];
-            $variationIds = collect($itemsPayload)->pluck('product_variation_id')->unique();
-
-            $variations = ProductVariation::query()
-                ->whereIn('id', $variationIds)
-                ->with('product')
-                ->get()
-                ->keyBy('id');
-
-            if ($variations->count() !== $variationIds->count()) {
-                abort(422, 'Invalid variation selection.');
-            }
-
-            $saleItems = [];
-            $total = 0;
-
-            foreach ($itemsPayload as $item) {
-                $variation = $variations->get($item['product_variation_id']);
-
-                $available = StockEntry::query()
-                    ->where('product_variation_id', $variation->id)
-                    ->where(function ($query) use ($today) {
-                        $query->whereDate('expiry_date', '>=', $today)
-                            ->orWhereNull('expiry_date');
-                    })
-                    ->sum('quantity');
-
-                if ($item['quantity'] > $available) {
-                    abort(422, 'Insufficient stock for ' . $variation->product->name . ' - ' . $variation->name);
-                }
-
-                $priceEntry = StockEntry::query()
-                    ->where('product_variation_id', $variation->id)
-                    ->where(function ($query) use ($today) {
-                        $query->whereDate('expiry_date', '>=', $today)
-                            ->orWhereNull('expiry_date');
-                    })
-                    ->orderBy('expiry_date')
-                    ->first();
-
-                if (!$priceEntry) {
-                    abort(422, 'No valid stock for ' . $variation->product->name . ' - ' . $variation->name);
-                }
-
-                $unitPrice = $validated['customer_type'] === 'local'
-                    ? $priceEntry->local_selling_price
-                    : $priceEntry->foreign_selling_price;
-
-                $subtotal = $unitPrice * $item['quantity'];
-                $total += $subtotal;
-
-                $saleItems[] = [
-                    'product_id' => $variation->product_id,
-                    'product_variation_id' => $variation->id,
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $unitPrice,
-                    'subtotal' => $subtotal,
-                ];
-            }
-
-            $paidAmount = (float) $validated['paid_amount'];
-            $balance = $paidAmount - $total;
-
-            $sale = Sale::create([
-                'customer_name' => $validated['customer_name'] ?? null,
-                'customer_type' => $validated['customer_type'],
-                'total_amount' => $total,
-                'paid_amount' => $paidAmount,
-                'balance' => $balance,
-            ]);
-
-            foreach ($saleItems as $saleItem) {
-                $saleItem['sale_id'] = $sale->id;
-                SaleItem::create($saleItem);
-            }
-
-            foreach ($itemsPayload as $item) {
-                $remaining = $item['quantity'];
-
-                $entries = StockEntry::query()
-                    ->where('product_variation_id', $item['product_variation_id'])
-                    ->whereDate('expiry_date', '>=', $today)
-                    ->orderBy('expiry_date')
-                    ->lockForUpdate()
-                    ->get();
-
-                foreach ($entries as $entry) {
-                    if ($remaining <= 0) {
-                        break;
-                    }
-
-                    $deduct = min($entry->quantity, $remaining);
-                    $entry->update(['quantity' => $entry->quantity - $deduct]);
-                    $remaining -= $deduct;
-                }
-            }
-
-            return redirect()->route('sales.index')
-                ->with('success', 'Sale completed successfully.');
-        });
+        return redirect()->route('sales.index')->with('success', 'Sale completed successfully.');
     }
 
-    public function destroy(Sale $sale)
+    public function destroy(Sale $sale, SaleProcessingService $sales)
     {
-        $tenantId = app('tenant')->id;
+        $sales->delete($sale, app('tenant')->id);
 
-        $sale->delete();
-
-        return redirect()->route('sales.index')
-            ->with('success', 'Sale deleted successfully.');
+        return redirect()->route('sales.index')->with('success', 'Sale deleted successfully.');
     }
 }
