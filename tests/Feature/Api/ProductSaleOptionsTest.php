@@ -30,7 +30,8 @@ class ProductSaleOptionsTest extends ApiRouteTestCase
         ])->assertOk()->assertJsonPath('data.track_stock', false)->assertJsonPath('data.is_active', false)
             ->assertJsonPath('data.variations.0.id', $variationId);
         $this->getJson('/api/inventory/products/' . $id)->assertOk()->assertJsonPath('data.is_active', false);
-        $this->getJson('/api/inventory/products')->assertOk()->assertJsonFragment(['id' => $id, 'track_stock' => false, 'is_active' => false]);
+        $this->getJson('/api/inventory/products')->assertOk()->assertJsonMissing(['id' => $id]);
+        $this->getJson('/api/inventory/products?product_filter=disabled')->assertOk()->assertJsonFragment(['id' => $id, 'track_stock' => false, 'is_active' => false]);
         $this->getJson('/api/sales/meta')->assertOk()->assertJsonFragment([
             'id' => $variationId, 'track_stock' => false, 'is_active' => false, 'available_stock' => null, 'prices' => null,
         ]);

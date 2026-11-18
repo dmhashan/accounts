@@ -22,7 +22,22 @@
 
     <div v-if="errorMessage" class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-200">
       {{ errorMessage }}
+      <button type="button" class="ml-2 min-h-11 font-semibold underline" @click="loadActiveTab(1)">
+        Retry
+      </button>
     </div>
+
+    <InventoryCategoryFilters
+      v-if="canFilterActiveTab"
+      v-model="productFilter"
+      :categories="categories"
+      :loading="loadingCategories"
+      :error="categoryError"
+      @retry="loadCategories"
+    />
+    <p v-if="activeListLoading" role="status" class="mb-3 text-sm text-secondary-600 dark:text-secondary-300">
+      Loading inventory…
+    </p>
 
     <div v-if="activeTab === 'products'" class="min-h-0 flex flex-1 flex-col">
       <div class="app-page-scroll">
@@ -31,7 +46,7 @@
             Manage categories
           </button>
         </div>
-        <div class="app-surface rounded-2xl overflow-hidden">
+        <div v-if="!loadingProducts && !errorMessage" class="app-surface rounded-2xl overflow-hidden">
           <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
             <article
               v-for="product in filteredProducts"
@@ -124,7 +139,7 @@
 
     <div v-if="activeTab === 'stock'" class="min-h-0 flex flex-1 flex-col">
       <div class="app-page-scroll">
-        <div class="app-surface rounded-2xl overflow-hidden">
+        <div v-if="!loadingStock && !errorMessage" class="app-surface rounded-2xl overflow-hidden">
           <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
             <article
               v-for="entry in filteredStockEntries"
@@ -137,7 +152,7 @@
               </p>
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div><span class="text-secondary-500 dark:text-secondary-400">Total Stock:</span> {{ entry.quantity }}</div>
-                <div><span class="text-secondary-500 dark:text-secondary-400">On Display:</span> {{ entry.display_quantity }}</div>
+                <div><span class="text-secondary-500 dark:text-secondary-400">On Display:</span> {{ entry.display_quantity }} <span v-if="entry.is_low_stock" class="font-semibold text-yellow-700 dark:text-yellow-300">Low</span></div>
                 <div><span class="text-secondary-500 dark:text-secondary-400">MFG:</span> {{ entry.manufacturing_date || '-' }}</div>
                 <div><span class="text-secondary-500 dark:text-secondary-400">EXP:</span> {{ entry.expiry_date || '-' }}</div>
               </div>
@@ -240,7 +255,7 @@
     <!-- Display Tab -->
     <div v-if="activeTab === 'display'" class="min-h-0 flex flex-1 flex-col">
       <div class="app-page-scroll">
-        <div class="app-surface rounded-2xl overflow-hidden">
+        <div v-if="!loadingDisplay && !errorMessage" class="app-surface rounded-2xl overflow-hidden">
           <!-- Mobile cards -->
           <div class="md:hidden divide-y divide-secondary-200 dark:divide-secondary-700">
             <article v-for="entry in displayEntries" :key="entry.id" class="p-4 space-y-2">
@@ -250,6 +265,7 @@
               <div class="grid grid-cols-2 gap-2 text-xs text-secondary-600 dark:text-secondary-400">
                 <div><span>Total Stock:</span> {{ entry.quantity }}</div>
                 <div><span>Backroom:</span> {{ entry.quantity - entry.display_quantity }}</div>
+                <div><span>Expiry:</span> {{ entry.expiry_date || '—' }}</div>
               </div>
               <div class="flex items-center gap-2 mt-2">
                 <label class="text-xs text-secondary-500 dark:text-secondary-400 shrink-0">Display Qty:</label>
@@ -473,7 +489,12 @@
         </div>
       </div>
     </div>
-    <ProductCategoryManager v-if="showCategories" @close="showCategories = false" />
+    <ProductCategoryManager
+      v-if="showCategories"
+      @close="handleCategoryManagerClose"
+      @changed="handleCategoriesChanged"
+      @deleted="handleCategoryDeleted"
+    />
   </section>
 </template>
 
@@ -485,6 +506,7 @@ import AppHeaderAction from '../components/AppHeaderAction.vue';
 import AppPagination from '../components/AppPagination.vue';
 import AppPageHeader from '../components/AppPageHeader.vue';
 import AppSearchField from '../components/AppSearchField.vue';
+import InventoryCategoryFilters from '../components/InventoryCategoryFilters.vue';
 import ProductCategoryManager from '../components/ProductCategoryManager.vue';
 import { apiRequest } from '../composables/useApiClient';
 import { useAppContext } from '../composables/useAppContext';
@@ -495,7 +517,14 @@ const context = useAppContext();
 const showCategories = ref(false);
 
 const activeTab = ref(route.path === '/inventory/stock' ? 'stock' : route.path === '/inventory/display' ? 'display' : route.path === '/inventory/audit' ? 'audit' : 'products');
-const errorMessage = ref('');
+const productFilter = ref('all');
+const categories = ref([]);
+const loadingCategories = ref(false);
+const categoryError = ref('');
+const listErrors = ref({ products: '', stock: '', display: '' });
+const errorMessage = computed(() => listErrors.value[activeTab.value] || '');
+let categoryRequest = 0;
+const listRequests = { products: 0, stock: 0, display: 0 };
 
 const products = ref([]);
 const stockEntries = ref([]);
@@ -512,6 +541,17 @@ const displayMeta = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 
 const productPerPage = ref(10);
 const stockPerPage = ref(10);
 const displayPerPage = ref(10);
+
+const canFilterActiveTab = computed(() => ({
+  products: context.permissions?.inventoryProducts,
+  stock: context.permissions?.inventoryStock,
+  display: context.permissions?.inventoryDisplay,
+}[activeTab.value] || false));
+const activeListLoading = computed(() => ({
+  products: loadingProducts.value,
+  stock: loadingStock.value,
+  display: loadingDisplay.value,
+}[activeTab.value] || false));
 
 // Per-entry display drafts keyed by stock entry id
 const displayDraft = ref({});
@@ -624,70 +664,86 @@ function triggerActiveSearch() {
 
 async function loadProducts(page = 1) {
     if (!context.permissions?.inventoryProducts) return;
-
-    loadingProducts.value = true;
-
-    try {
-        const response = await apiRequest('/api/inventory/products', {
-            params: {
-                page,
-                per_page: productPerPage.value,
-            },
-        });
-
-        products.value = response.data || [];
-        productMeta.value = response.meta || productMeta.value;
-        productPerPage.value = productMeta.value.per_page || productPerPage.value;
-    } finally {
-        loadingProducts.value = false;
-    }
+  await loadList('products', page, products, productMeta, productPerPage, loadingProducts);
 }
 
 async function loadStock(page = 1) {
     if (!context.permissions?.inventoryStock) return;
-
-    loadingStock.value = true;
-
-    try {
-        const response = await apiRequest('/api/inventory/stock', {
-            params: {
-                page,
-                per_page: stockPerPage.value,
-            },
-        });
-
-        stockEntries.value = response.data || [];
-        stockMeta.value = response.meta || stockMeta.value;
-        stockPerPage.value = stockMeta.value.per_page || stockPerPage.value;
-    } finally {
-        loadingStock.value = false;
-    }
+  await loadList('stock', page, stockEntries, stockMeta, stockPerPage, loadingStock);
 }
 
 async function loadDisplay(page = 1) {
     if (!context.permissions?.inventoryDisplay) return;
+  await loadList('display', page, displayEntries, displayMeta, displayPerPage, loadingDisplay);
+}
 
-    loadingDisplay.value = true;
+async function loadList(tab, page, entries, meta, perPage, loading) {
+  const request = ++listRequests[tab];
+  loading.value = true;
+  listErrors.value[tab] = '';
+  meta.value = { ...meta.value, current_page: page };
 
-    try {
-        const response = await apiRequest('/api/inventory/display', {
-            params: {
-                page,
-                per_page: displayPerPage.value,
-            },
-        });
-
-        displayEntries.value = response.data || [];
-        displayMeta.value = response.meta || displayMeta.value;
-        displayPerPage.value = displayMeta.value.per_page || displayPerPage.value;
-
-        // Initialise drafts for new entries
-        displayEntries.value.forEach((entry) => {
-            displayDraft.value[entry.id] = entry.display_quantity;
-        });
-    } finally {
-        loadingDisplay.value = false;
+  try {
+    const response = await apiRequest(`/api/inventory/${tab}`, {
+      params: { page, per_page: perPage.value, product_filter: productFilter.value },
+    });
+    if (request !== listRequests[tab]) return;
+    entries.value = response.data || [];
+    meta.value = response.meta || meta.value;
+    perPage.value = meta.value.per_page || perPage.value;
+    if (tab === 'display') {
+      entries.value.forEach((entry) => { displayDraft.value[entry.id] = entry.display_quantity; });
     }
+  } catch (error) {
+    if (request !== listRequests[tab]) return;
+    entries.value = [];
+    meta.value = { current_page: 1, last_page: 1, per_page: perPage.value, total: 0 };
+    listErrors.value[tab] = error?.response?.data?.message || 'Failed to load inventory data.';
+  } finally {
+    if (request === listRequests[tab]) loading.value = false;
+  }
+}
+
+async function loadCategories() {
+  const request = ++categoryRequest;
+  loadingCategories.value = true;
+  categoryError.value = '';
+  try {
+    const response = await apiRequest('/api/inventory/category-filters');
+    if (request !== categoryRequest) return;
+    categories.value = Array.isArray(response.data) ? response.data : [];
+    if (productFilter.value.startsWith('category:') && !categories.value.some((category) => `category:${category.id}` === productFilter.value)) {
+      productFilter.value = 'all';
+    }
+  } catch (error) {
+    if (request !== categoryRequest) return;
+    categoryError.value = error?.response?.data?.message || 'Failed to load categories.';
+  } finally {
+    if (request === categoryRequest) loadingCategories.value = false;
+  }
+}
+
+function loadActiveTab(page = 1) {
+  if (activeTab.value === 'products') return loadProducts(page);
+  if (activeTab.value === 'stock') return loadStock(page);
+  if (activeTab.value === 'display') return loadDisplay(page);
+}
+
+function handleCategoriesChanged() {
+  loadCategories();
+  loadActiveTab(1);
+}
+
+function handleCategoryManagerClose() {
+  showCategories.value = false;
+  handleCategoriesChanged();
+}
+
+function handleCategoryDeleted(id) {
+  categories.value = categories.value.filter((category) => String(category.id) !== String(id));
+  if (productFilter.value === `category:${id}`) productFilter.value = 'all';
+  loadCategories();
+  loadActiveTab(1);
 }
 
 async function loadAuditLogs() {
@@ -702,22 +758,6 @@ async function loadAuditLogs() {
         // ignore permission errors silently
     } finally {
         loadingAudit.value = false;
-    }
-}
-
-async function loadAll() {
-    errorMessage.value = '';
-
-    const requests = [];
-
-    if (context.permissions?.inventoryProducts) requests.push(loadProducts());
-    if (context.permissions?.inventoryStock) requests.push(loadStock());
-    if (context.permissions?.inventoryDisplay) requests.push(loadDisplay());
-
-    try {
-        await Promise.all(requests);
-    } catch (error) {
-        errorMessage.value = error?.response?.data?.message || 'Failed to load inventory data.';
     }
 }
 
@@ -770,11 +810,12 @@ function handleDisplayLimitChange(limit) {
 watch(activeTab, (tab) => {
     if (tab === 'audit' && auditLogs.value.length === 0) {
         loadAuditLogs();
-    }
-    if (tab === 'display' && displayEntries.value.length === 0) {
-        loadDisplay(1);
+  } else if (tab !== 'audit') {
+    loadActiveTab(1);
     }
 });
+
+watch(productFilter, () => loadActiveTab(1));
 
 watch(
     () => route.path,
@@ -785,7 +826,8 @@ watch(
 );
 
 onMounted(() => {
-    loadAll();
+  if (context.permissions?.inventoryProducts || context.permissions?.inventoryStock || context.permissions?.inventoryDisplay) loadCategories();
+  loadActiveTab(1);
 
     if (activeTab.value === 'audit') {
         loadAuditLogs();

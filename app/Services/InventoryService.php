@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\SaleItem;
 use App\Models\StockEntry;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -47,11 +48,15 @@ class InventoryService
         ];
     }
 
-    public function products(int $tenantId, int $perPage): array
+    public function products(int $tenantId, int $perPage, string $productFilter = 'all'): array
     {
-        $products = Product::query()
+        $query = Product::query();
+        $this->applyProductFilter($query, $productFilter);
+
+        $products = $query
             ->withCount('variations')
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate($perPage);
 
         return [
@@ -59,6 +64,7 @@ class InventoryService
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'category_id' => $product->category_id,
                     'track_stock' => $product->track_stock,
                     'is_active' => $product->is_active,
                     'variations_count' => $product->variations_count,
@@ -364,13 +370,15 @@ class InventoryService
         }
     }
 
-    public function stock(int $tenantId, int $perPage): array
+    public function stock(int $tenantId, int $perPage, string $productFilter = 'all'): array
     {
         $today = Carbon::today()->toDateString();
 
         $stockEntries = StockEntry::query()
-            ->with(['product:id,name', 'variation:id,name'])
+            ->whereHas('product', fn (Builder $query) => $this->applyProductFilter($query, $productFilter))
+            ->with(['product:id,name,category_id,is_active', 'variation:id,name'])
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate($perPage);
 
         $displayTotals = StockEntry::query()
@@ -389,6 +397,8 @@ class InventoryService
                     'id' => $entry->id,
                     'product_id' => $entry->product_id,
                     'product_name' => $entry->product?->name,
+                    'category_id' => $entry->product?->category_id,
+                    'is_active' => $entry->product?->is_active,
                     'product_variation_id' => $entry->product_variation_id,
                     'variation_name' => $entry->variation?->name,
                     'quantity' => (int) $entry->quantity,
@@ -410,6 +420,17 @@ class InventoryService
                 'low_stock_threshold' => self::LOW_STOCK_THRESHOLD,
             ],
         ];
+    }
+
+    private function applyProductFilter(Builder $query, string $productFilter): void
+    {
+        $query->where('is_active', $productFilter !== 'disabled');
+
+        if ($productFilter === 'none') {
+            $query->whereNull('category_id');
+        } elseif (str_starts_with($productFilter, 'category:')) {
+            $query->where('category_id', substr($productFilter, strlen('category:')));
+        }
     }
 
     public function showStock(StockEntry $stock, int $tenantId): array

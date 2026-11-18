@@ -210,8 +210,10 @@ class ProductCategoryAndImageTest extends ApiRouteTestCase
             $this->postJson('/api/inventory/products', ['name' => 'Test', 'category_id' => 999])->assertUnprocessable()->assertJsonValidationErrors('category_id');
             $this->assertSame('Other', DB::connection('other_tenant')->table('product_categories')->where('id', 999)->value('name'));
             $this->assertNull(DB::connection('other_tenant')->table('product_variations')->where('id', 999)->value('image_path'));
+            $this->getJson('/api/inventory/category-filters')->assertOk()->assertJsonMissing(['name' => 'Other']);
             DB::setDefaultConnection('other_tenant');
             $this->getJson('/api/inventory/categories')->assertOk()->assertJsonPath('data.0.name', 'Other');
+            $this->getJson('/api/inventory/category-filters')->assertOk()->assertJsonPath('data.0.name', 'Other');
         } finally {
             DB::setDefaultConnection($original);
             DB::purge('other_tenant');

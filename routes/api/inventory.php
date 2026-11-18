@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('/inventory')->middleware('auth')->group(function () {
 
+    Route::get('/category-filters', [ProductCategoryApiController::class, 'index'])
+        ->middleware('permission:inventory.manage,inventory.stock,inventory.display');
+
     // Products & variations — requires inventory.manage
     Route::middleware('permission:inventory.manage')->group(function () {
         Route::get('/meta', [InventoryApiController::class, 'meta']);

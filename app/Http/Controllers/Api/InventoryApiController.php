@@ -24,7 +24,7 @@ class InventoryApiController extends Controller
     {
         $perPage = min((int) $request->integer('per_page', 10), 50);
 
-        return response()->json($this->inventoryService->products(app('tenant')->id, $perPage));
+        return response()->json($this->inventoryService->products(app('tenant')->id, $perPage, $this->productFilter($request)));
     }
 
     public function showProduct(Product $product): JsonResponse
@@ -196,7 +196,7 @@ class InventoryApiController extends Controller
     {
         $perPage = min((int) $request->integer('per_page', 10), 50);
 
-        return response()->json($this->inventoryService->stock(app('tenant')->id, $perPage));
+        return response()->json($this->inventoryService->stock(app('tenant')->id, $perPage, $this->productFilter($request)));
     }
 
     public function showStock(StockEntry $stock): JsonResponse
@@ -282,7 +282,16 @@ class InventoryApiController extends Controller
     {
         $perPage = min((int) $request->integer('per_page', 10), 50);
 
-        return response()->json($this->inventoryService->stock(app('tenant')->id, $perPage));
+        return response()->json($this->inventoryService->stock(app('tenant')->id, $perPage, $this->productFilter($request)));
+    }
+
+    private function productFilter(Request $request): string
+    {
+        $validated = $request->validate([
+            'product_filter' => ['sometimes', 'required', 'string', 'regex:/\A(?:all|none|disabled|category:[1-9][0-9]*)\z/'],
+        ]);
+
+        return $validated['product_filter'] ?? 'all';
     }
 
     public function releaseToDisplay(Request $request, StockEntry $stock): JsonResponse
